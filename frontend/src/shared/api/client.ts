@@ -1,0 +1,32 @@
+import { env } from '@/shared/config/env';
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: unknown,
+  ) {
+    super(message);
+  }
+}
+
+// Phase 1 auth: the selected seeded user id is sent on every request
+// (X-Dev-User-Id). Replaced by a bearer token when Entra ID is added.
+let devUserId: string | null = null;
+export const setApiUser = (id: string | null) => {
+  devUserId = id;
+};
+
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set('Accept', 'application/json');
+  if (init.body) headers.set('Content-Type', 'application/json');
+  if (devUserId) headers.set('X-Dev-User-Id', devUserId);
+
+  const res = await fetch(`${env.apiBaseUrl}${path}`, { ...init, headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => undefined);
+    throw new ApiError(res.status, res.statusText, body);
+  }
+  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+}

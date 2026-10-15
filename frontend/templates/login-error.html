@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borek Flow – Sign-in error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0b0e45;--ink:#14164f;--muted:#6b7080;--line:#e3e5ea;--link:#1f4fb5;--err:#c4161c}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased}
+.page{display:grid;grid-template-columns:53fr 47fr;min-height:100vh}
+.hero{position:relative;background:var(--navy);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:56px 64px 48px;overflow:hidden}
+.art{position:absolute;inset:0 0 auto 0;height:52%;
+ background:
+  radial-gradient(ellipse 26% 34% at 63% 24%,#ff3b30 0,transparent 72%),
+  radial-gradient(ellipse 24% 30% at 46% 28%,#ff9a1f 0,transparent 72%),
+  radial-gradient(ellipse 22% 28% at 80% 44%,#ff2e7e 0,transparent 72%),
+  radial-gradient(ellipse 22% 26% at 40% 66%,#18c7d8 0,transparent 72%),
+  radial-gradient(ellipse 22% 28% at 90% 72%,#14d6c0 0,transparent 72%),
+  radial-gradient(ellipse 30% 36% at 18% 58%,#2a4bd8 0,transparent 72%),
+  linear-gradient(#070a3a,#0b0e45)}
+.art::after{content:"";position:absolute;inset:auto 0 0 0;height:35%;background:linear-gradient(transparent,var(--navy))}
+.hero>*{position:relative}
+.logo{font-weight:800;font-size:30px;letter-spacing:.02em;line-height:1}
+.logo small{display:block;font-size:8px;font-weight:500;letter-spacing:.42em;margin-top:4px;text-align:right}
+.product{font-size:11px;font-weight:600;letter-spacing:.04em;margin:18px 0 0 6px}
+.copy{margin-top:auto;margin-bottom:auto;padding-top:46vh}
+.copy h1{font-size:clamp(34px,3.6vw,46px);line-height:1.15;font-weight:300;margin:0 0 76px;max-width:11em}
+.copy p{font-size:15px;line-height:1.55;font-weight:300;margin:0;max-width:26em;opacity:.95}
+.hero footer{font-size:11px;opacity:.9;padding-left:8px}
+.panel{display:flex;flex-direction:column;justify-content:space-between;padding:176px 8% 48px 75px}
+.form-wrap{width:100%;max-width:348px}
+h2{font-size:32px;font-weight:300;margin:0 0 12px;color:var(--ink)}
+.sub{font-size:14px;line-height:1.1;color:var(--muted);margin:0 0 32px}
+.btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:40px;border:0;border-radius:4px;background:var(--navy);color:#fff;font:500 12px Inter,sans-serif;cursor:pointer}
+.btn:hover{background:#171b6b}
+.btn:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.ms{display:grid;grid-template-columns:repeat(2,6px);gap:1px}
+.ms i{width:6px;height:6px;display:block}
+.ms i:nth-child(1){background:#f25022}.ms i:nth-child(2){background:#7fba00}
+.ms i:nth-child(3){background:#00a4ef}.ms i:nth-child(4){background:#ffb900}
+.field{margin-top:20px}
+.field.has-err{margin-top:14px}
+label{display:block;font-size:10.5px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+input[type=email],input[type=password]{width:100%;height:32px;border:1px solid var(--line);border-radius:3px;padding:0 12px;font:400 12px Inter,sans-serif;color:var(--ink);background:#fff}
+input[aria-invalid=true]{border-color:#e8a3a6}
+.field-err{font-size:9.5px;color:var(--err);margin:6px 0 0}
+.login{margin-top:14px}
+.status{margin-top:20px}
+.status strong{display:block;font-size:12px;font-weight:600;color:var(--err)}
+.status span{display:block;font-size:9.5px;color:var(--muted);margin-top:8px}
+hr{border:0;border-top:1px solid var(--line);margin:24px 0}
+.lang h3{font-size:9.5px;font-weight:600;color:var(--muted);margin:0 0 14px}
+.lang a{font-size:11px;color:var(--link);text-decoration:none;margin-right:8px}
+.lang a:hover{text-decoration:underline}
+.help{font-size:10px;color:var(--muted);margin:0}
+@media (max-width:860px){.page{grid-template-columns:1fr}.hero{display:none}.panel{padding:64px 24px 32px;align-items:center}.help{margin-top:48px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    <div class="art" aria-hidden="true"></div>
+    <div>
+      <div class="logo">BOREK<small>SOLUTIONS GROUP</small></div>
+      <div class="product">Borek Flow</div>
+    </div>
+    <div class="copy">
+      <h1>Work, Moving Forward.</h1>
+      <p>One workspace for project plans, team tasks, and delivery progress.</p>
+    </div>
+    <footer>Borek Flow · Secure workspace</footer>
+  </section>
+
+  <main class="panel">
+    <div class="form-wrap">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in with your company account. Your access and workspace will load automatically.</p>
+
+      <button type="button" class="btn">
+        <span class="ms" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        Continue with Microsoft
+      </button>
+
+      <form novalidate>
+        <div class="field">
+          <label for="email">Email *</label>
+          <input id="email" type="email" value="name@borek" aria-invalid="true" aria-describedby="email-err" autocomplete="username">
+          <p class="field-err" id="email-err">Email format is invalid.</p>
+        </div>
+        <div class="field has-err">
+          <label for="password">Password *</label>
+          <input id="password" type="password" aria-invalid="true" aria-describedby="pw-err" autocomplete="current-password">
+          <p class="field-err" id="pw-err">Password is required.</p>
+        </div>
+        <button type="submit" class="btn login">Login</button>
+      </form>
+
+      <div class="status" role="alert">
+        <strong>Check your sign-in details</strong>
+        <span>Try again or reset your company password.</span>
+      </div>
+
+      <hr>
+      <div class="lang">
+        <h3>Language</h3>
+        <a href="?lang=en">English</a><a href="?lang=de">Deutsch</a>
+      </div>
+    </div>
+    <p class="help">Need access? Contact your workspace administrator.</p>
+  </main>
+</div>
+</body>
+</html>
