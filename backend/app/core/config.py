@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://pmhub:change-me@localhost:5432/pmhub"
     db_pool_size: int = 10
     db_max_overflow: int = 5
+    # Queries running longer than this are cancelled by PostgreSQL (protects the pool).
+    db_statement_timeout_ms: int = 30000
 
     # Comma-separated list of allowed frontend origins.
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
