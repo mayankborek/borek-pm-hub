@@ -6,6 +6,7 @@ import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
 import { ProjectBoardPage, ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
 import { MyWorkPage, TaskDetailPage, TasksPage } from '@/features/tasks/TaskPages';
+import { ProfilePage } from '@/features/profile/ProfilePage';
 import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';
 import { RedirectIfAuthed, RequireAuth, RequireRole, RoleHome } from './guards';
 
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
               { path: 'members', element: <ProjectMembersPage /> },
             ],
           },
+          { path: 'profile', element: <ProfilePage /> },
           { path: 'tasks', element: <TasksPage /> },
           { path: 'tasks/:taskId', element: <TaskDetailPage /> },
 

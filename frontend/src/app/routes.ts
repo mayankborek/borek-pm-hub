@@ -10,6 +10,7 @@ export const paths = {
   projectBoard: (id: string) => `/projects/${id}/board`,
   projectList: (id: string) => `/projects/${id}/list`,
   projectMembers: (id: string) => `/projects/${id}/members`,
+  profile: '/profile',
   tasks: '/tasks',
   task: (id: string) => `/tasks/${id}`,
   forbidden: '/forbidden',
@@ -31,4 +32,5 @@ export const navItems: NavItem[] = [
   { label: 'My Work', to: paths.myWork, roles: ['developer'], icon: '✓' },
   { label: 'Projects', to: paths.projects, roles: ['pm', 'developer'], icon: '❒' },
   { label: 'All Tasks', to: paths.tasks, roles: ['pm', 'developer'], icon: '☰' },
+  { label: 'Profile', to: paths.profile, roles: ['pm', 'developer'], icon: '☺' },
 ];
