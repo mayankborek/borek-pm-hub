@@ -1,0 +1,40 @@
+# Local development environment: API + PostgreSQL.
+# Start:  docker compose up --build
+# Stop:   docker compose down        (add -v to also delete the database data)
+name: borek-pm-hub
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: pmhub
+      POSTGRES_PASSWORD: change-me   # local development only
+      POSTGRES_DB: pmhub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pmhub_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pmhub -d pmhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://pmhub:change-me@db:5432/pmhub
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pmhub_pgdata:
