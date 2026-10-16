@@ -10,6 +10,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
+COPY scripts ./scripts
 
 RUN useradd --create-home appuser && chown -R appuser /app
 USER appuser

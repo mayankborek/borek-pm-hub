@@ -46,3 +46,7 @@ logs/
 
 # --- GitHub ---
 .github/
+
+# --- Local-only project context (pointer to the Obsidian vault) ---
+LOCAL_CONTEXT.md
+CLAUDE.local.md
