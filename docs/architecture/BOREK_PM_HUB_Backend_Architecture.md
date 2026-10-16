@@ -495,40 +495,42 @@ The PDDP defines three **environments**: Local, Staging, Production. Environment
 
 | Branch / ref | Purpose | Deploys to |
 |---|---|---|
-| `main` | Always working, always reviewed. The only long-lived branch | **Staging** automatically on every merge |
-| tag `v0.1.0`, `v0.2.0`, ... | A release you decided to ship | **Production**, after manual approval (as in the PDDP pipeline) |
-| `feature/...`, `fix/...`, `chore/...` | Short-lived work branches, one per Jira ticket | Nothing (CI runs only) |
+| `dev` | Integration branch for **everyone** (backend, frontend). Always working, always reviewed | **Staging** automatically on every merge |
+| `main` | Released code only. Updated by a PR from `dev` at the end of a sprint (release) | **Production**, after manual approval, from a tag |
+| tag `v0.1.0`, `v0.2.0`, ... | A release you decided to ship | Production |
+| `feature/...`, `fix/...`, `chore/...` | Short-lived work branches, one per Jira ticket, created from `dev` | Nothing (CI runs only) |
 
-> If the team prefers a visible `develop` branch (develop = staging, main = production), that works too, but it adds merges for only two developers. Decide once, write it in `docs/decisions/`.
+> Decision (team): `dev` stays the shared branch; `main` changes only when a sprint is released. Record it in `docs/decisions/`.
 
 ### 15.2 One branch per ticket
 Yes: **one branch per Jira ticket**, not per feature document and not one long branch for everything. Big tickets (Ticket 1) become several branches and PRs.
 
 ```
-feature/PMH-1-project-skeleton-and-docker
-feature/PMH-1-database-models-and-migration
-feature/PMH-2-dev-auth-and-permissions
-fix/PMH-14-task-filter-wrong-status
-chore/PMH-20-ci-pipeline
+feature/PT-1-project-skeleton-and-docker
+feature/PT-1-database-models-and-migration
+feature/PT-2-dev-auth-and-permissions
+fix/PT-14-task-filter-wrong-status
+chore/PT-20-ci-pipeline
 ```
-Format: `<type>/<JIRA-KEY>-<short-kebab-description>`. (`PMH` is a placeholder; use your real Jira project key.) The Jira key is what makes Jira link the branch, commits and PRs to the ticket automatically.
+Format: `<type>/<JIRA-KEY>-<short-kebab-description>`. (`PT` is the Jira project key) The Jira key is what makes Jira link the branch, commits and PRs to the ticket automatically.
 
 ### 15.3 Daily flow
 1. Pick the ticket, move it to *In Progress*.
-2. `git switch main && git pull`, then `git switch -c feature/PMH-4-task-crud-api`.
-3. Commit small and often: `PMH-4: add task create endpoint`.
-4. Push, open a **Pull Request** into `main`. PR title starts with the key: `PMH-4: Task CRUD APIs`.
+2. `git switch dev && git pull`, then `git switch -c feature/PT-4-task-crud-api`.
+3. Commit small and often: `PT-4: add task create endpoint`.
+4. Push, open a **Pull Request** into `dev`. PR title starts with the key: `PT-4: Task CRUD APIs`.
 5. CI must pass; the **other developer reviews** (this is your PDDP Definition of Done).
-6. **Squash and merge**, delete the branch, Jira moves to Done.
-7. Release: tag `main`, approve the production deployment.
+6. **Squash and merge** into `dev`, delete the branch, Jira moves to Done.
+7. Release (end of sprint): open a PR from `dev` into `main`, merge it with a **merge commit** (not squash), tag `main`, approve the production deployment.
 
 Keep PRs small (roughly under 400 changed lines) so reviews are fast and conflicts rare.
 
-### 15.4 Branch protection on `main`
+### 15.4 Branch protection on `dev` and `main`
 - No direct pushes; changes only via PR.
 - At least 1 approval; the author cannot approve their own PR.
 - Required checks: lint (Ruff), type check (mypy), tests, and the Alembic check below.
-- Require branches to be up to date before merging; linear history (squash merges).
+- Require branches to be up to date before merging.
+- Merge style: **squash** for ticket PRs into `dev`; **merge commit** for release PRs from `dev` into `main`. Squashing a release makes `dev` and `main` drift apart and causes repeated conflicts.
 
 ### 15.5 Alembic gotcha with two developers
 If both of you create a migration from the same starting point, Alembic ends up with **two heads** and deploys break. Rules:
@@ -550,9 +552,9 @@ Use **one repo** (`borek-pm-hub`) with `backend/`, `frontend/`, `docs/` as in se
 ### 15.8 Connecting the repo to Jira
 1. In Jira, install the Atlassian app for your Git platform (for GitHub: **GitHub for Jira**). This normally needs a **Jira admin**, so ask the PM or IT early.
 2. Connect the organisation/account and select the `borek-pm-hub` repo.
-3. From then on, any branch name, commit message or PR title containing the key (`PMH-4`) shows up on that ticket under **Development** (branches, commits, PRs, build status).
+3. From then on, any branch name, commit message or PR title containing the key (`PT-4`) shows up on that ticket under **Development** (branches, commits, PRs, build status).
 4. Optional Jira automation: PR opened moves the ticket to *In Review*; PR merged moves it to *Done*.
 5. Check that the connector exists for your platform if you use Azure DevOps; GitHub, GitLab and Bitbucket have official ones.
 
 ### 15.9 Hotfix
-If production breaks: branch `fix/PMH-xx-...` from the **release tag**, fix, PR into `main`, tag a patch release (`v0.1.1`), deploy. Never patch production by hand.
+If production breaks: branch `fix/PT-xx-...` from the **release tag**, fix, PR into `main`, tag a patch release (`v0.1.1`), deploy, then merge `main` back into `dev` so the fix is not lost. Never patch production by hand.
