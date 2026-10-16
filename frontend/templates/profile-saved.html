@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borek Flow – Profile (saved)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/profile.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><img src="assets/borek-logo.svg" alt="Borek Solutions Group"><span>Borek Flow</span></div>
+    <nav class="nav" aria-label="Primary">
+      <a href="#">Dashboard</a>
+      <a href="#">Projects</a>
+      <a href="#">Task list</a>
+      <a href="#">My Work</a>
+      <a href="#" aria-current="page">Profile</a>
+    </nav>
+  </aside>
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-row">
+        <h1>Profile</h1>
+        <div class="utilities">
+          <div class="lang" role="group" aria-label="Language"><a href="?lang=de">DE</a><i></i><a href="?lang=en" aria-current="true">EN</a></div>
+          <button type="button" class="icon-btn" aria-label="Notifications"><img src="assets/notifications.svg" alt=""></button>
+          <span class="vdiv"></span>
+          <div class="user"><span class="av">AM</span>Alex Morgan<img src="assets/chevron-down-sm.svg" alt=""></div>
+        </div>
+      </div>
+      <div class="splash" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    </header>
+    <main class="body">
+      <section class="card identity"><div class="avatar"><img src="assets/avatar.png" alt="Alex Morgan"></div><div class="who"><h2>Alex Morgan</h2><p>Senior Project Manager</p></div><a href="#" class="btn">Change photo</a></section>
+      <div class="layout">
+        <div class="primary">
+          <form class="card" novalidate>
+            <h3>Personal &amp; contact information</h3>
+            <p class="desc">Name and work email are managed by Borek. Phone number is optional.</p>
+            <div class="row"><div class="field"><label for="fn">First name</label><input id="fn" value="Alex" readonly></div><div class="field"><label for="ln">Last name</label><input id="ln" value="Morgan" readonly></div></div>
+            <div class="row"><div class="field"><label for="em">Work email</label><input id="em" type="email" value="alex.morgan@boreksolutions.com" readonly></div><div class="field"><label for="ph">Phone number (optional)</label><input id="ph" type="tel" value="+49 30 555 0147" autocomplete="tel"></div></div>
+          </form>
+          <div class="actions"><span class="saved" role="status">Changes saved just now</span><a href="profile.html" class="btn primary-btn">Done</a></div>
+        </div>        <aside class="secondary">
+          <section class="card">
+            <h3>Preferences</h3>
+            <p class="desc">Set defaults for this workspace.</p>
+            <div class="pref"><span class="label">Language</span>
+              <div class="select"><span>English (EN)</span><img src="assets/chevron-down.svg" alt=""></div></div>
+            <div class="pref"><span class="label">Theme</span>
+              <div class="toggle-row"><div><strong>Light mode</strong><small>Current theme: Light</small></div>
+              <button type="button" class="toggle" role="switch" aria-checked="false" aria-label="Dark mode"><img src="assets/toggle-off.svg" alt=""></button></div></div>
+          </section>
+          <section class="card">
+            <h3>Account &amp; security</h3>
+            <p class="desc">Manage access to your Borek account.</p>
+            <div class="setting"><div><strong>Password</strong><small>Last changed 24 Aug 2026</small></div><a href="#">Change</a></div>
+            <div class="account-actions"><a href="#">Sign out</a><i></i><a href="#" class="danger">Deactivate account</a></div>
+          </section>
+        </aside>      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
