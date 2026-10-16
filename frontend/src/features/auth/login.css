@@ -1,64 +1,61 @@
-/* Scoped from frontend/templates/login-*.html. Keyframes must stay top-level. */
+/* Login — matches Figma "PM Tool" › Login (1440×1024 frames). Keyframes must stay top-level. */
 @keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
 
 .login-page {
-  .page{display:grid;grid-template-columns:53fr 47fr;min-height:100vh}
-  
+  --l-navy:#0d1240;
+  --l-text-secondary:#5c6178;
+  --l-border:#e2e4ec;
+  --l-action:#124f94;
+
+  .page{display:grid;grid-template-columns:760fr 680fr;min-height:100vh}
+
   /* Hero */
-  .hero{position:relative;background:var(--navy);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:56px 64px 48px;overflow:hidden}
-  .art{position:absolute;inset:0 0 auto 0;height:52%;
-   background:
-    radial-gradient(ellipse 26% 34% at 63% 24%,#ff3b30 0,transparent 72%),
-    radial-gradient(ellipse 24% 30% at 46% 28%,#ff9a1f 0,transparent 72%),
-    radial-gradient(ellipse 22% 28% at 80% 44%,#ff2e7e 0,transparent 72%),
-    radial-gradient(ellipse 22% 26% at 40% 66%,#18c7d8 0,transparent 72%),
-    radial-gradient(ellipse 22% 28% at 90% 72%,#14d6c0 0,transparent 72%),
-    radial-gradient(ellipse 30% 36% at 18% 58%,#2a4bd8 0,transparent 72%),
-    linear-gradient(#070a3a,#0b0e45)}
-  .art::after{content:"";position:absolute;inset:auto 0 0 0;height:35%;background:linear-gradient(transparent,var(--navy))}
-  .hero>*{position:relative}
-  .logo{font-weight:800;font-size:30px;letter-spacing:.02em;line-height:1}
-  .logo small{display:block;font-size:8px;font-weight:500;letter-spacing:.42em;margin-top:4px;text-align:right}
-  .product{font-size:11px;font-weight:600;letter-spacing:.04em;margin:18px 0 0 6px}
-  .copy{margin-top:auto;margin-bottom:auto;padding-top:46vh}
-  .copy h1{font-size:clamp(34px,3.6vw,46px);line-height:1.15;font-weight:300;margin:0 0 76px;max-width:11em}
-  .copy p{font-size:15px;line-height:1.55;font-weight:300;margin:0;max-width:26em;opacity:.95}
-  .hero footer{font-size:11px;opacity:.9;padding-left:8px}
-  
+  .hero{position:relative;background:var(--l-navy);color:#fff;display:flex;flex-direction:column;padding:76px clamp(40px,6.1vw,88px) 93px;overflow:hidden}
+  .art{position:absolute;inset:0 0 auto 0;height:523px;background:#070a3a center/cover no-repeat}
+  .hero::before{content:"";position:absolute;left:0;right:0;top:390px;height:190px;z-index:1;
+    background:linear-gradient(180deg,rgba(13,18,64,0) 0%,rgba(13,18,64,.18) 48%,rgba(13,18,64,.72) 78%,#0d1240 100%)}
+  .hero>*:not(.art){position:relative;z-index:2}
+  .art{z-index:0;background-size:cover}
+  .logo{display:block;width:184px;height:auto}
+  .product{font-size:12px;font-weight:600;letter-spacing:.1em;margin:21px 0 0 7px}
+  .copy{margin:399px 0 0 -11px}
+  .copy h1{font-size:clamp(40px,3.89vw,56px);line-height:66px;font-weight:300;margin:0 0 86px;max-width:540px}
+  .copy p{font-size:18px;line-height:29px;font-weight:400;margin:0;max-width:520px}
+  .hero footer{margin-top:auto;padding-top:86px;font-size:12px;line-height:15px}
+
   /* Form panel */
-  .panel{display:flex;flex-direction:column;justify-content:space-between;padding:176px 8% 48px 75px}
-  .form-wrap{width:100%;max-width:348px}
-  h2{font-size:32px;font-weight:300;margin:0 0 12px;color:var(--ink)}
-  .sub{font-size:14px;line-height:1.1;color:var(--muted);margin:0 0 32px}
-  .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:40px;border:0;border-radius:4px;background:var(--navy);color:#fff;font:500 12px Inter,sans-serif;cursor:pointer}
+  .panel{display:flex;flex-direction:column;justify-content:space-between;padding:clamp(120px,21.9vh,224px) clamp(32px,4.4vw,64px) 60px clamp(40px,6.67vw,96px)}
+  .form-wrap{width:100%;max-width:448px}
+  h2{font-size:40px;line-height:48px;font-weight:300;margin:0 0 10px;color:var(--l-navy)}
+  .sub{font-size:16px;line-height:19px;color:var(--l-text-secondary);margin:0 0 40px;max-width:420px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:52px;border:1px solid var(--l-border);border-radius:8px;background:var(--l-navy);color:#fff;font:500 15px Inter,sans-serif;cursor:pointer}
   .btn:hover{background:#171b6b}
-  .btn:focus-visible,input:focus-visible,a:focus-visible,.check input:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+  .btn:focus-visible,input:focus-visible,a:focus-visible,.check input:focus-visible{outline:2px solid var(--l-action);outline-offset:2px}
   .btn[disabled]{background:var(--disabled);cursor:not-allowed}
-  .ms{display:grid;grid-template-columns:repeat(2,6px);gap:1px}
-  .ms i{width:6px;height:6px;display:block}
-  .ms i:nth-child(1){background:#f25022}.ms i:nth-child(2){background:#7fba00}
-  .ms i:nth-child(3){background:#00a4ef}.ms i:nth-child(4){background:#ffb900}
-  .field{margin-top:20px}
-  label{display:block;font-size:10.5px;font-weight:600;margin-bottom:6px;color:var(--ink)}
-  input[type=email],input[type=password]{width:100%;height:32px;border:1px solid var(--line);border-radius:3px;padding:0 12px;font:400 12px Inter,sans-serif;color:var(--ink);background:#fff}
-  input::placeholder{color:#2b2e55}
+  .ms{position:relative;display:block;width:20px;height:20px;overflow:hidden;flex:none}
+  .ms img{position:absolute;left:50%;top:calc(50% + .5px);width:54px;height:41px;max-width:none;object-fit:cover;transform:translate(-50%,-50%)}
+  .field{margin-top:16px}
+  .field:first-of-type{margin-top:20px}
+  label{display:block;font-size:12px;line-height:16px;font-weight:600;margin-bottom:4px;color:var(--l-navy)}
+  input[type=email],input[type=password]{width:100%;height:40px;border:1px solid var(--l-border);border-radius:6px;padding:0 16px;font:400 14px Inter,sans-serif;color:var(--l-navy);background:#fff}
+  input::placeholder{color:var(--l-navy)}
   input[aria-invalid=true]{border-color:#e8a3a6}
-  .field-err{font-size:9.5px;color:var(--err);margin:6px 0 0}
-  .login{margin-top:26px}
-  .check{display:flex;align-items:center;gap:8px;margin-top:20px;font-size:10.5px;color:var(--muted)}
-  .check input{width:12px;height:12px;margin:0;accent-color:var(--navy)}
-  .status{margin-top:20px}
-  .status strong{display:block;font-size:12px;font-weight:700;color:var(--ink)}
+  .field-err{font-size:12px;line-height:14px;color:var(--err);margin:4px 0 0}
+  .login{margin-top:16px}
+  .check{display:flex;align-items:center;gap:8px;margin:17px 0 0 2px;font-size:12px;font-weight:400;color:var(--l-text-secondary)}
+  .check input{width:18px;height:18px;margin:0;accent-color:var(--l-navy)}
+  .status{margin-top:14px}
+  .status strong{display:block;font-size:14px;line-height:20px;font-weight:700;color:var(--l-navy)}
   .status.error strong{color:var(--err);font-weight:600}
-  .status span{display:block;font-size:9.5px;color:var(--muted);margin-top:8px}
-  .progress{height:3px;background:#e6e7ee;border-radius:2px;margin-top:26px;overflow:hidden}
-  .progress span{display:block;height:100%;width:35%;background:var(--navy);border-radius:2px;animation:slide 1.2s ease-in-out infinite}
-  hr{border:0;border-top:1px solid var(--line);margin:26px 0 24px}
-  .lang h3{font-size:9.5px;font-weight:600;color:var(--muted);margin:0 0 14px}
-  .lang a{font-size:11px;color:var(--link);text-decoration:none;margin-right:8px}
+  .status span{display:block;font-size:12px;line-height:18px;color:var(--l-text-secondary);margin-top:8px}
+  .progress{height:4px;background:#e6e7ee;border-radius:2px;margin-top:14px;overflow:hidden}
+  .progress span{display:block;height:100%;width:35%;background:var(--l-navy);border-radius:2px;animation:slide 1.2s ease-in-out infinite}
+  hr{border:0;border-top:1px solid var(--l-border);margin:46px 0 33px}
+  .lang h3{font-size:12px;line-height:24px;font-weight:600;color:var(--l-text-secondary);margin:0 0 8px}
+  .lang a{font-size:14px;line-height:24px;font-weight:500;color:var(--l-action);text-decoration:none;margin-right:12px}
   .lang a:hover{text-decoration:underline}
-  .help{font-size:10px;color:var(--muted);margin:0}
-  
+  .help{font-size:13px;color:var(--l-text-secondary);margin:0}
+
   @media (max-width:860px){
    .page{grid-template-columns:1fr}
    .hero{display:none}

@@ -9,6 +9,10 @@ import {
   signInWithPassword,
 } from './authService';
 import type { User } from './types';
+import borekLogo from '@/assets/borek-logo.png';
+import ms365Logo from '@/assets/ms365-logo.png';
+import heroArt from '@/assets/login-hero.jpg';
+import { LOGIN_STRINGS, initialLang, type Lang } from './loginStrings';
 import './login.css';
 
 type View = 'default' | 'error' | 'signing-in' | 'no-access';
@@ -25,6 +29,14 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [view, setView] = useState<View>('default');
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [lang, setLang] = useState<Lang>(initialLang);
+  const t = LOGIN_STRINGS[lang];
+
+  const changeLang = (l: Lang) => {
+    setLang(l);
+    localStorage.setItem('lang', l);
+    document.documentElement.lang = l;
+  };
 
   const busy = view === 'signing-in';
 
@@ -46,8 +58,8 @@ export function LoginPage() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const next: FieldErrors = {};
-    if (!EMAIL_RE.test(email)) next.email = 'Email format is invalid.';
-    if (!password) next.password = 'Password is required.';
+    if (!EMAIL_RE.test(email)) next.email = t.emailInvalid;
+    if (!password) next.password = t.passwordRequired;
     setErrors(next);
     if (next.email || next.password) {
       setView('error');
@@ -60,40 +72,35 @@ export function LoginPage() {
     <div className="login-page">
       <div className="page">
         <section className="hero">
-          <div className="art" aria-hidden="true" />
+          <div className="art" aria-hidden="true" style={{ backgroundImage: `url(${heroArt})` }} />
           <div>
-            <div className="logo">
-              BOREK<small>SOLUTIONS GROUP</small>
-            </div>
+            <img className="logo" src={borekLogo} alt="Borek Solutions Group" />
             <div className="product">Borek Flow</div>
           </div>
           <div className="copy">
-            <h1>Work, Moving Forward.</h1>
-            <p>One workspace for project plans, team tasks, and delivery progress.</p>
+            <h1>{t.heroTitle}</h1>
+            <p>{t.heroText}</p>
           </div>
-          <footer>Borek Flow · Secure workspace</footer>
+        <footer>{t.footer}</footer>
         </section>
 
         <main className="panel">
           <div className="form-wrap" aria-busy={busy}>
-            <h2>Welcome back</h2>
+            <h2>{t.welcome}</h2>
             <p className="sub">
-              Sign in with your company account. Your access and workspace will load automatically.
+              {t.sub}
             </p>
 
             <button type="button" className="btn" disabled={busy} onClick={() => void run(signInWithMicrosoft)}>
               <span className="ms" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-                <i />
+                <img src={ms365Logo} alt="" />
               </span>
-              Continue with Microsoft
+              {t.microsoft}
             </button>
 
             <form noValidate onSubmit={onSubmit}>
               <div className="field">
-                <label htmlFor="email">Email *</label>
+                <label htmlFor="email">{t.email}</label>
                 <input
                   id="email"
                   type="email"
@@ -112,7 +119,7 @@ export function LoginPage() {
                 )}
               </div>
               <div className="field">
-                <label htmlFor="password">Password *</label>
+                <label htmlFor="password">{t.password}</label>
                 <input
                   id="password"
                   type="password"
@@ -130,39 +137,39 @@ export function LoginPage() {
                 )}
               </div>
               <button type="submit" className="btn login" disabled={busy}>
-                {busy ? 'Signing in...' : 'Login'}
+                {busy ? t.signingIn : t.login}
               </button>
               <label className="check">
-                <input type="checkbox" disabled={busy} /> Keep me signed in on this device
+                <input type="checkbox" disabled={busy} /> {t.keepSignedIn}
               </label>
             </form>
 
             {view === 'error' && (
               <div className="status error" role="alert">
-                <strong>Check your sign-in details</strong>
-                <span>Try again or reset your company password.</span>
+                <strong>{t.errorTitle}</strong>
+                <span>{t.errorText}</span>
               </div>
             )}
             {view === 'no-access' && (
               <div className="status" role="alert">
-                <strong>No workspace access</strong>
-                <span>Contact your workspace administrator to request an account.</span>
+                <strong>{t.noAccessTitle}</strong>
+                <span>{t.noAccessText}</span>
               </div>
             )}
             {busy && (
-              <div className="progress" role="progressbar" aria-label="Signing in">
+              <div className="progress" role="progressbar" aria-label={t.signingIn}>
                 <span />
               </div>
             )}
 
             <hr />
             <div className="lang">
-              <h3>Language</h3>
-              <a href="?lang=en">English</a>
-              <a href="?lang=de">Deutsch</a>
+              <h3>{t.language}</h3>
+              <a href="?lang=en" onClick={(e) => { e.preventDefault(); changeLang('en'); }}>English</a>
+              <a href="?lang=de" onClick={(e) => { e.preventDefault(); changeLang('de'); }}>Deutsch</a>
             </div>
           </div>
-          <p className="help">Need access? Contact your workspace administrator.</p>
+          <p className="help">{t.help}</p>
         </main>
       </div>
     </div>
