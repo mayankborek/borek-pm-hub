@@ -1,0 +1,45 @@
+/* Shared building blocks: buttons, pills, progress, page states, cards. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px;
+  border: 0; border-radius: 8px; background: var(--navy); color: #fff; font: 500 14px Inter, sans-serif;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { opacity: .92; }
+.btn:disabled { background: var(--disabled); cursor: not-allowed; }
+.btn.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.btn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: #fff; }
+.card h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.card .desc { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 13px;
+  border: 1px solid; font: 500 12px Inter, sans-serif; white-space: nowrap;
+}
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill.neutral { background: #f3f4f8; border-color: var(--line); color: #4a4f66; }
+.pill.progress { background: #e0edff; border-color: #3b6bd1; color: #1f4fa6; }
+.pill.track { background: #def5e8; border-color: #2e9457; color: #1a613b; }
+.pill.risk { background: #fff2d4; border-color: #c27a0a; color: #7a4a05; }
+.pill.blocked { background: #ffe3e8; border-color: #fbbfc7; color: #a21d30; }
+.pill.overdue { background: #f3f4f8; border-color: var(--line); color: var(--ink); font-weight: 600; }
+
+.progress { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.progress-track { flex: 1; height: 8px; border-radius: 4px; background: #eceef4; overflow: hidden; }
+.progress-fill { height: 100%; background: #124f94; border-radius: 4px; }
+.progress-value { width: 36px; text-align: right; font-size: 12px; color: var(--muted); }
+
+.state { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 32px; min-height: 320px; display: flex; flex-direction: column; }
+.state.center { align-items: center; justify-content: center; text-align: center; gap: 12px; }
+.state h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.state p { margin: 12px 0 0; font-size: 14px; color: var(--muted); max-width: 560px; }
+.state.center p { margin: 0; }
+.skel { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+.skel i {
+  display: block; width: min(420px, 100%); height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, #f3f4f8, #eceef4, #f3f4f8); background-size: 200% 100%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }

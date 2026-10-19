@@ -1,9 +1,11 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
+import { ProjectCreatePage, ProjectEditPage } from '@/features/projects/ProjectFormPage';
+import { ProjectOverviewPage } from '@/features/projects/ProjectOverviewPage';
 import { ProjectBoardPage, ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
 import { MyWorkPage, TaskDetailPage, TasksPage } from '@/features/tasks/TaskPages';
 import { ProfilePage } from '@/features/profile/ProfilePage';
@@ -39,11 +41,19 @@ export const router = createBrowserRouter([
 
           // Both roles (data is scoped by the backend)
           { path: 'projects', element: <ProjectsPage /> },
+          // PM only: create and edit
+          {
+            element: <RequireRole roles={['pm']} />,
+            children: [
+              { path: 'projects/new', element: <ProjectCreatePage /> },
+              { path: 'projects/:projectId/edit', element: <ProjectEditPage /> },
+            ],
+          },
           {
             path: 'projects/:projectId',
             element: <ProjectLayout />,
             children: [
-              { index: true, element: <Navigate to="board" replace /> },
+              { index: true, element: <ProjectOverviewPage /> },
               { path: 'board', element: <ProjectBoardPage /> },
               { path: 'list', element: <ProjectListPage /> },
               { path: 'members', element: <ProjectMembersPage /> },
