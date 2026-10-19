@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borek Flow – Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/dashboard.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/dash-borek-logo.svg" alt="Borek Solutions Group">
+      <span>Borek Flow</span>
+    </div>
+    <nav class="nav" aria-label="Primary">
+      <a href="dashboard.html" aria-current="page">Dashboard</a>
+      <a href="#">Task List</a>
+      <a href="#">My Work</a>
+    </nav>
+  </aside>
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-row">
+        <h1>Dashboard</h1>
+        <div class="utilities">
+          <div class="lang" role="group" aria-label="Language"><a href="?lang=de">DE</a><i></i><a href="?lang=en" aria-current="true">EN</a></div>
+          <span class="vdiv"></span>
+          <div class="user"><span class="av">AM</span>Alex Morgan<img src="assets/dash-chevron.svg" alt=""></div>
+        </div>
+      </div>
+      <div class="splash" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    </header>
+    <main class="body">
+      <div class="header">
+        <div class="greet">
+          <h2>Good Morning, Alex</h2>
+          <p>Portfolio health, team delivery, and attention items across active projects.</p>
+        </div>
+        <a class="btn" href="#">New Project</a>
+      </div>
+
+      <section class="metrics" aria-label="Metrics overview">
+        <article class="metric"><h3>Active Projects</h3><strong>12</strong><span>+2 this month</span></article>
+        <article class="metric"><h3>Tasks in Progress</h3><strong>38</strong><span>Across 8 teams</span></article>
+        <article class="metric"><h3>Due this Week</h3><strong>9</strong><span>3 need attention</span></article>
+        <article class="metric"><h3>Overdue Tasks</h3><strong>1</strong><span>Needs PM action</span></article>
+      </section>
+
+      <div class="split">
+        <section class="card">
+          <h3>All Accessible Projects</h3>
+          <p class="desc">Projects available to you · Open a project to see its overview</p>
+          <div class="table-head"><span>PROJECT</span><span>STATUS</span></div>
+          <div class="divider"></div>
+          <div class="row">
+            <a href="#">Customer portal  →</a>
+            <span class="pill risk"><img src="assets/dash-dot-at-risk.svg" alt=""> At Risk</span>
+          </div>
+          <div class="row">
+            <a href="#">Website redesign  →</a>
+            <span class="pill progress"><img src="assets/dash-dot-in-progress.svg" alt=""> In Progress</span>
+          </div>
+          <div class="row">
+            <a href="#">AI operations rollout  →</a>
+            <span class="pill track"><img src="assets/dash-dot-on-track.svg" alt=""> On Track</span>
+          </div>
+          <a class="more" href="#">View all 12 projects  →</a>
+        </section>
+
+        <section class="card attention">
+          <h3>Attention Areas</h3>
+          <p class="desc">Blocked or overdue work needing attention</p>
+          <div class="attention-list">
+            <div class="attn">
+              <div class="title warn">BFL-088 · Accessibility checklist</div>
+              <div class="meta">
+                <span>Website redesign · 12 Oct · 2 days overdue</span>
+                <span class="pill overdue"><img src="assets/dash-dot-overdue.svg" alt=""> Overdue</span>
+              </div>
+            </div>
+            <div class="attn">
+              <div class="title err">BFL-112 · API credentials</div>
+              <div class="meta">
+                <span>Website redesign · blocked for 2 days</span>
+                <span class="pill blocked"><img src="assets/dash-dot-blocked.svg" alt=""> Blocked</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
