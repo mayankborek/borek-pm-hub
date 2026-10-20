@@ -26,13 +26,14 @@ class MembershipSource(StrEnum):
     TASK_ASSIGNMENT = "task_assignment"
 
 
-class TaskStatus(StrEnum):
-    OPEN = "open"
+class StatusCategory(StrEnum):
+    """Every project status belongs to one category; dashboards and "overdue" use the category."""
+
+    BACKLOG = "backlog"
+    TODO = "todo"
     IN_PROGRESS = "in_progress"
     BLOCKED = "blocked"
-    IN_REVIEW = "in_review"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    DONE = "done"
 
 
 class TaskPriority(StrEnum):

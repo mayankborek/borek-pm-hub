@@ -36,8 +36,9 @@ class MemberOut(BaseModel):
 class TaskSummary(BaseModel):
     """Task counts for list cards, overview and dashboard.
 
-    Archived and cancelled tasks are not counted. Overdue = due before today (UTC) and not
-    completed. `completion_percent` is completed / total, rounded, 0 when there are no tasks.
+    Archived tasks are not counted. Overdue = due before today (UTC) and not in a done
+    status. The counts follow the status categories (done / in_progress / blocked).
+    `completion_percent` is completed / total, rounded, 0 when there are no tasks.
     """
 
     total: int = 0

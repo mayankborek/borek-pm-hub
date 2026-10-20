@@ -21,6 +21,7 @@ class Action(StrEnum):
     PROJECT_LIST = "project:list"
     PROJECT_VIEW = "project:view"
     MEMBER_MANAGE = "member:manage"
+    STATUS_MANAGE = "status:manage"  # add, rename, reorder, delete a project's statuses
     TASK_CREATE = "task:create"
     TASK_EDIT_DETAILS = "task:edit_details"  # title, description, priority, due date
     TASK_ASSIGN = "task:assign"
@@ -37,6 +38,7 @@ class Resource:
 
     project_id: uuid.UUID | None = None
     is_member: bool = False
+    is_project_lead: bool = False
     assignee_id: uuid.UUID | None = None
 
 
@@ -69,6 +71,8 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
         return True
     if action in _MEMBER_ACTIONS:
         return resource.is_member
+    if action is Action.STATUS_MANAGE:
+        return resource.is_member and resource.is_project_lead
     if action is Action.TASK_CHANGE_STATUS:
         # Only on tasks assigned to them (the allowed transitions are checked by the workflow).
         return resource.is_member and resource.assignee_id == user.id

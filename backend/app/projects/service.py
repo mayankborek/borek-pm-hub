@@ -8,11 +8,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.common.enums import GlobalRole, MembershipSource, ProjectRole, TaskStatus
+from app.common.enums import GlobalRole, MembershipSource, ProjectRole, StatusCategory
 from app.core.errors import AppError
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import MemberIn, ProjectCreate, ProjectUpdate, TaskSummary
-from app.tasks.models import Task
+from app.tasks import statuses
+from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
 
 
@@ -65,7 +66,7 @@ async def task_summaries(
     if not project_ids:
         return {}
     today = datetime.now(UTC).date()
-    done = TaskStatus.COMPLETED.value
+    done = StatusCategory.DONE.value
 
     def count_where(condition: ColumnElement[bool]) -> ColumnElement[int]:
         return func.count(case((condition, 1)))
@@ -74,16 +75,13 @@ async def task_summaries(
         select(
             Task.project_id,
             func.count(Task.id),
-            count_where(Task.status == done),
-            count_where(Task.status == TaskStatus.IN_PROGRESS.value),
-            count_where(Task.status == TaskStatus.BLOCKED.value),
-            count_where(and_(Task.due_date < today, Task.status != done)),
+            count_where(WorkflowStatus.category == done),
+            count_where(WorkflowStatus.category == StatusCategory.IN_PROGRESS.value),
+            count_where(WorkflowStatus.category == StatusCategory.BLOCKED.value),
+            count_where(and_(Task.due_date < today, WorkflowStatus.category != done)),
         )
-        .where(
-            Task.project_id.in_(project_ids),
-            Task.archived_at.is_(None),
-            Task.status != TaskStatus.CANCELLED.value,
-        )
+        .join(WorkflowStatus, WorkflowStatus.id == Task.status_id)
+        .where(Task.project_id.in_(project_ids), Task.archived_at.is_(None))
         .group_by(Task.project_id)
     )
     return {
@@ -194,6 +192,7 @@ async def create_project(session: AsyncSession, user: User, data: ProjectCreate)
     except IntegrityError:
         await session.rollback()
         raise _duplicate_code(data.code) from None
+    await statuses.create_defaults(session, project.id)
     for member in data.members:
         session.add(
             ProjectMember(
