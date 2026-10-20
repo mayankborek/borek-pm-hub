@@ -1,12 +1,25 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
 
 export function AppLayout() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { pathname } = useLocation();
+  const [lang, setLang] = useState<'de' | 'en'>('en');
   if (!user) return null;
+
+  const initials = user.name
+    .split(' ')
+    .map((p) => p.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const title =
+    pathname === paths.profile
+      ? 'Profile'
+      : navItems.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))?.label ?? 'Borek Flow';
 
   const items = navItems.filter((i) => i.roles.includes(user.role));
 
@@ -28,25 +41,24 @@ export function AppLayout() {
 
       <div className="main">
         <header className="topbar">
-          <div className="user">
-            <span className="avatar" aria-hidden="true">
-              {user.name.charAt(0)}
-            </span>
-            <div>
-              <div className="user-name">{user.name}</div>
-              <div className="user-role">{user.role === 'pm' ? 'Project Manager' : 'Developer'}</div>
+          <div className="topbar-row">
+            <h1 className="topbar-title">{title}</h1>
+            <div className="topbar-actions">
+              <div className="lang-switch" role="group" aria-label="Language">
+                <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
+                <i />
+                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
+              </div>
+              <i className="topbar-divider" />
+              <Link to={paths.profile} className="user">
+                <span className="avatar" aria-hidden="true">{initials}</span>
+                <span className="user-name">{user.name}</span>
+              </Link>
             </div>
           </div>
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => {
-              signOut();
-              navigate(paths.login, { replace: true });
-            }}
-          >
-            Sign out
-          </button>
+          <div className="splash" aria-hidden="true">
+            <i /><i /><i /><i />
+          </div>
         </header>
         <main className="content">
           <Outlet />
