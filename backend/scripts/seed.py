@@ -1,4 +1,4 @@
-"""Seed demo data: 1 PM, 3 developers, 3 projects, and tasks covering every demo case.
+"""Seed demo data: 1 PM, 3 developers, 4 projects, and tasks covering every demo case.
 
 Run from the backend folder:  python -m scripts.seed          (adds data to an empty database)
                               python -m scripts.seed --reset  (wipes the data tables first)
@@ -64,6 +64,18 @@ PROJECTS = [
         15,
         120,
         {DEV3_ID: ProjectRole.PROJECT_LEAD},
+    ),
+    (
+        "DELTA",
+        "Delta Customer Portal",
+        ProjectStatus.ACTIVE,
+        -45,
+        60,
+        {
+            DEV1_ID: ProjectRole.DEVELOPER,
+            DEV2_ID: ProjectRole.PROJECT_LEAD,
+            DEV3_ID: ProjectRole.DEVELOPER,
+        },
     ),
 ]
 
@@ -211,6 +223,68 @@ TASKS = [
         None,
     ),
     ("GAMMA", "Draft migration plan", TaskStatus.OPEN, TaskPriority.HIGH, None, 25, 0, None),
+    (
+        "DELTA",
+        "Gather portal requirements",
+        TaskStatus.COMPLETED,
+        TaskPriority.HIGH,
+        DEV2_ID,
+        -35,
+        100,
+        None,
+    ),
+    (
+        "DELTA",
+        "Design portal wireframes",
+        TaskStatus.COMPLETED,
+        TaskPriority.MEDIUM,
+        DEV3_ID,
+        -25,
+        100,
+        None,
+    ),
+    (
+        "DELTA",
+        "Build account dashboard",
+        TaskStatus.IN_PROGRESS,
+        TaskPriority.HIGH,
+        DEV1_ID,
+        9,
+        65,
+        None,
+    ),
+    (
+        "DELTA",
+        "Implement SSO login",
+        TaskStatus.IN_REVIEW,
+        TaskPriority.CRITICAL,
+        DEV2_ID,
+        3,
+        90,
+        None,
+    ),
+    ("DELTA", "Invoice history page", TaskStatus.OPEN, TaskPriority.MEDIUM, DEV3_ID, 21, 0, None),
+    (
+        "DELTA",
+        "Fix session timeout bug",
+        TaskStatus.IN_PROGRESS,
+        TaskPriority.HIGH,
+        DEV1_ID,
+        -2,
+        35,
+        None,
+    ),  # overdue
+    (
+        "DELTA",
+        "Connect to billing service",
+        TaskStatus.BLOCKED,
+        TaskPriority.CRITICAL,
+        DEV2_ID,
+        8,
+        25,
+        "Billing team has not published the sandbox API yet",
+    ),
+    ("DELTA", "Load testing", TaskStatus.OPEN, TaskPriority.LOW, None, 40, 0, None),  # unassigned
 ]
 
 
