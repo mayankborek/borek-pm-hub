@@ -70,9 +70,13 @@ export function ProfilePage() {
           <h2>{user.name}</h2>
           <p>{roleLabel}</p>
         </div>
-        {editing && (
+        {editing ? (
           <button type="button" className="pf-btn">
             Change photo
+          </button>
+        ) : (
+          <button type="button" className="pf-btn primary" onClick={startEdit}>
+            Edit profile
           </button>
         )}
       </section>
@@ -82,7 +86,7 @@ export function ProfilePage() {
           {mode === 'view' ? (
             <section className="pf-card">
               <h3>Personal &amp; contact information</h3>
-              <p className="pf-desc">Keep your core details accurate for collaborators and system notifications.</p>
+              <p className="pf-desc">Your contact details for collaborators.</p>
               <div className="pf-row">
                 <div className="pf-field">
                   <span className="pf-label">First name</span>
@@ -97,7 +101,6 @@ export function ProfilePage() {
                 <div className="pf-field">
                   <span className="pf-label">Work email</span>
                   <span className="pf-value">{user.email}</span>
-                  <span className="pf-hint">Used for account notifications</span>
                 </div>
                 <div className="pf-field">
                   <span className="pf-label">Phone number</span>
@@ -139,12 +142,7 @@ export function ProfilePage() {
             </form>
           )}
 
-          <div className="pf-actions">
-            {mode === 'view' && (
-              <button type="button" className="pf-btn primary" onClick={startEdit}>
-                Edit profile
-              </button>
-            )}
+          {mode !== 'view' && <div className="pf-actions">
             {mode === 'edit' && (
               <>
                 <button type="button" className="pf-btn" onClick={cancel}>Cancel</button>
@@ -157,13 +155,12 @@ export function ProfilePage() {
                 <button type="button" className="pf-btn primary" onClick={() => setMode('view')}>Done</button>
               </>
             )}
-          </div>
+          </div>}
         </div>
 
         <aside className="pf-secondary">
           <section className="pf-card">
             <h3>Preferences</h3>
-            <p className="pf-desc">Set defaults for this workspace.</p>
             <div className="pf-pref">
               <label className="pf-label" htmlFor="pf-lang">Language</label>
               <div className="pf-select">
@@ -179,7 +176,6 @@ export function ProfilePage() {
               <div className="pf-toggle-row">
                 <div>
                   <strong>{dark ? 'Dark mode' : 'Light mode'}</strong>
-                  <small>Current theme: {dark ? 'Dark' : 'Light'}</small>
                 </div>
                 <button
                   type="button"
@@ -201,7 +197,6 @@ export function ProfilePage() {
             <div className="pf-setting">
               <div>
                 <strong>Password</strong>
-                <small>Last changed 24 Aug 2026</small>
               </div>
               <button type="button" className="pf-link">Change</button>
             </div>
@@ -216,8 +211,10 @@ export function ProfilePage() {
               >
                 Sign out
               </button>
-              <i />
-              <button type="button" className="pf-link danger">Deactivate account</button>
+              <div className="pf-deactivate">
+                <button type="button" className="pf-link danger">Deactivate account</button>
+                <small>Requires confirmation</small>
+              </div>
             </div>
           </section>
         </aside>
