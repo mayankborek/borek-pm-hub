@@ -30,3 +30,20 @@ export function todayIso(): string {
 }
 
 export const completionOf = (p: Project) => p.task_summary?.completion_percent ?? 0;
+
+/** Today plus `days`, as YYYY-MM-DD in the browser's local time. */
+export function addDaysIso(days: number): string {
+  const n = new Date();
+  n.setDate(n.getDate() + days);
+  const p = (v: number) => String(v).padStart(2, '0');
+  return `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`;
+}
+
+export type Health = 'On Track' | 'At Risk' | 'Off Track';
+
+/** The API has no health field yet, so derive it: on hold is off track, blocked or overdue work is at risk. */
+export function healthOf(p: Project): Health {
+  if (p.status === 'on_hold') return 'Off Track';
+  const s = p.task_summary;
+  return s && (s.blocked > 0 || s.overdue > 0) ? 'At Risk' : 'On Track';
+}

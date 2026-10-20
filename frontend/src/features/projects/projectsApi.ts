@@ -56,6 +56,15 @@ export const useOverdueTasks = (today: string) =>
     select: (page) => page.items.filter((t) => t.status !== 'completed' && t.status !== 'cancelled'),
   });
 
+/** Open tasks due from today through `end` (inclusive), for the dashboard's "Due this week" metric. */
+export const useDueSoonTasks = (today: string, end: string) =>
+  useQuery({
+    queryKey: ['tasks', 'due-soon', today, end],
+    queryFn: () => api<Page<TaskListItem>>(`/tasks${qs({ due_before: end, sort: 'due_date', page_size: 200 })}`),
+    select: (page) =>
+      page.items.filter((t) => t.status !== 'completed' && t.status !== 'cancelled' && !!t.due_date && t.due_date >= today && t.due_date <= end),
+  });
+
 export const useBlockedTasks = () =>
   useQuery({
     queryKey: ['tasks', 'blocked'],
