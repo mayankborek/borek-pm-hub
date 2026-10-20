@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backend architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #bf4520;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400;
+      letter-spacing: -0.02em; line-height: 1.15; color: var(--color-ink); margin-bottom: 0.5rem; }
+    .sub { font-size: 0.9rem; color: var(--color-muted); margin-bottom: 1.5rem; max-width: 70ch; line-height: 1.5; }
+    svg { width: 100%; min-width: 960px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 2rem; }
+    .card { background: #ffffff; border: 1px solid rgba(45,49,66,0.12); border-radius: 6px; padding: 1.25rem; }
+    .card .eyebrow { margin-bottom: 0.6rem; }
+    .card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+    .card p { font-size: 0.82rem; line-height: 1.5; color: var(--color-muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .dot.ink { background: var(--color-ink); } .dot.coral { background: var(--color-accent); } .dot.muted { background: var(--color-muted); }
+    footer { margin-top: 2rem; padding-top: 0.75rem; border-top: 1px solid rgba(45,49,66,0.12);
+      font-family: var(--font-mono); font-size: 0.62rem; color: var(--color-muted); }
+    @media (max-width: 800px) { .cards { grid-template-columns: 1fr; } }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Borek PM Hub</p>
+    <h1>Backend architecture</h1>
+    <p class="sub">One API in front of one database. Every request passes middleware, is identified, is checked by can(), and only then reaches the business rules and the data.</p>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 504" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
+        <title id="architecture-title">Backend architecture</title>
+        <desc id="architecture-desc">Architecture of the Borek PM Hub backend: the frontend calls a FastAPI API whose routers use an auth provider and the can() rule book, then a service layer, before reaching PostgreSQL.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        </defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+<!-- zone -->
+<rect x="184" y="88" width="552" height="320" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.1)" stroke-width="0.8"/><rect x="196" y="92" width="152" height="12" rx="2" fill="#f5f5f5"/><text x="272" y="101" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">BACKEND API · FASTAPI</text>
+<!-- arrows -->
+<line x1="160" y1="164" x2="208" y2="164" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+<line x1="344" y1="164" x2="392" y2="164" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="528" y1="164" x2="576" y2="164" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="712" y1="164" x2="784" y2="164" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="730" y="144" width="36" height="12" rx="2" fill="#f5f5f5"/><text x="748" y="153" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">SQL</text>
+<line x1="428" y1="200" x2="428" y2="296" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="378" y="242" width="36" height="12" rx="2" fill="#f5f5f5"/><text x="396" y="251" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">WHO?</text>
+<line x1="492" y1="200" x2="492" y2="296" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="506" y="242" width="36" height="12" rx="2" fill="#f5f5f5"/><text x="524" y="251" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">MAY?</text>
+<line x1="160" y1="332" x2="312" y2="332" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<rect x="214" y="312" width="44" height="12" rx="2" fill="#f5f5f5"/><text x="236" y="321" fill="#5a6580" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LATER</text>
+<!-- nodes -->
+<rect x="32" y="128" width="128" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="128" width="128" height="72" rx="6" fill="rgba(79,93,117,0.1)" stroke="#5a6580" stroke-width="1"/>
+<rect x="40" y="136" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="52" y="145" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">UI</text>
+<text x="96" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Frontend</text>
+<text x="96" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">Jaya · /api/v1</text>
+<rect x="208" y="128" width="136" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="208" y="128" width="136" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<rect x="216" y="136" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="228" y="145" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">MW</text>
+<text x="276" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Middleware</text>
+<text x="276" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">request ID · CORS</text>
+<rect x="392" y="128" width="136" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="392" y="128" width="136" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<rect x="400" y="136" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="414" y="145" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
+<text x="460" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Routers</text>
+<text x="460" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">auth · projects</text>
+<rect x="576" y="128" width="136" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="576" y="128" width="136" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<rect x="584" y="136" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="598" y="145" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+<text x="644" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Service layer</text>
+<text x="644" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">business rules</text>
+<rect x="784" y="128" width="144" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="784" y="128" width="144" height="72" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<rect x="792" y="136" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="804" y="145" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+<text x="856" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">PostgreSQL</text>
+<text x="856" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">16 · constraints</text>
+<rect x="312" y="296" width="136" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="312" y="296" width="136" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<rect x="320" y="304" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="336" y="313" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">AUTH</text>
+<text x="380" y="340" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Auth provider</text>
+<text x="380" y="356" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">X-Dev-User-Id</text>
+<rect x="476" y="296" width="136" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="476" y="296" width="136" height="72" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+<rect x="484" y="304" width="40" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.5)" stroke-width="0.8"/>
+<text x="504" y="313" fill="#bf4520" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">RULES</text>
+<text x="544" y="340" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">can()</text>
+<text x="544" y="356" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">single rule book</text>
+<rect x="32" y="296" width="128" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="296" width="128" height="72" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.2)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="40" y="304" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
+<text x="54" y="313" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+<text x="96" y="340" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Entra ID</text>
+<text x="96" y="356" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">later · 501 stub</text>
+<!-- legend -->
+<line x1="30" y1="448" x2="930" y2="448" stroke="rgba(45,49,66,0.1)" stroke-width="0.8"/>
+<text x="30" y="464" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="112" y="455" width="16" height="12" rx="3" fill="rgba(79,93,117,0.1)" stroke="#5a6580"/><text x="136" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">Client</text>
+<rect x="200" y="455" width="16" height="12" rx="3" fill="#ffffff" stroke="#2d3142"/><text x="224" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">Backend code</text>
+<rect x="328" y="455" width="16" height="12" rx="3" fill="rgba(191,69,32,0.08)" stroke="#bf4520"/><text x="352" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">The one rule book</text>
+<rect x="480" y="455" width="16" height="12" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/><text x="504" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">Database</text>
+<rect x="584" y="455" width="16" height="12" rx="3" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.2)" stroke-dasharray="4,3"/><text x="608" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">Not built yet</text>
+<line x1="712" y1="461" x2="736" y2="461" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/><text x="744" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">HTTP</text>
+<line x1="808" y1="461" x2="832" y2="461" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="840" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace">Call</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card"><p class="eyebrow">Layers</p><h3><span class="dot ink"></span>Router, service, database</h3><p>Routers handle HTTP and permission checks. Services hold the business rules and talk to the database. Nothing else touches the DB.</p></div>
+      <div class="card"><p class="eyebrow">The one rule</p><h3><span class="dot coral"></span>can() decides everything</h3><p>Every endpoint asks can() before acting. If the UI hides a button, the server still enforces the rule. Non-members get 404, not 403.</p></div>
+      <div class="card"><p class="eyebrow">Phase 1 shortcut</p><h3><span class="dot muted"></span>Dev login, Entra later</h3><p>Identity comes from the X-Dev-User-Id header. Real sign-in plugs into the Auth provider only; no endpoint changes.</p></div>
+    </div>
+    <footer>Borek PM Hub · generated from the backend code (app/, alembic/) · 20.10.2026</footer>
+  </div>
+</body>
+</html>

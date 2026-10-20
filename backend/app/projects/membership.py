@@ -39,3 +39,18 @@ async def is_member(session: AsyncSession, user_id: uuid.UUID, project_id: uuid.
         )
     )
     return row.first() is not None
+
+
+async def project_role(
+    session: AsyncSession, user_id: uuid.UUID, project_id: uuid.UUID
+) -> str | None:
+    """The user's role in an active project, or None when they are not a member."""
+    return await session.scalar(
+        select(ProjectMember.project_role)
+        .join(Project, Project.id == ProjectMember.project_id)
+        .where(
+            ProjectMember.user_id == user_id,
+            ProjectMember.project_id == project_id,
+            Project.archived_at.is_(None),
+        )
+    )

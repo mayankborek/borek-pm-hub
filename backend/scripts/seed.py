@@ -18,11 +18,11 @@ from app.common.enums import (
     ProjectRole,
     ProjectStatus,
     TaskPriority,
-    TaskStatus,
 )
 from app.core.config import get_settings
 from app.core.database import get_engine, get_sessionmaker
 from app.projects.models import Project, ProjectMember
+from app.tasks import statuses
 from app.tasks.models import Task
 from app.users.models import User
 
@@ -67,12 +67,12 @@ PROJECTS = [
     ),
 ]
 
-# (project code, title, status, priority, assignee, due offset days, progress, blocked reason)
+# (project code, title, status name, priority, assignee, due offset days, progress, blocked reason)
 TASKS = [
     (
         "ALPHA",
         "Set up CI pipeline",
-        TaskStatus.COMPLETED,
+        "Done",
         TaskPriority.HIGH,
         DEV1_ID,
         -20,
@@ -82,7 +82,7 @@ TASKS = [
     (
         "ALPHA",
         "Design database schema",
-        TaskStatus.COMPLETED,
+        "Done",
         TaskPriority.CRITICAL,
         DEV1_ID,
         -30,
@@ -92,7 +92,7 @@ TASKS = [
     (
         "ALPHA",
         "Build login screen",
-        TaskStatus.IN_PROGRESS,
+        "In progress",
         TaskPriority.HIGH,
         DEV2_ID,
         7,
@@ -102,7 +102,7 @@ TASKS = [
     (
         "ALPHA",
         "Implement report export",
-        TaskStatus.OPEN,
+        "To do",
         TaskPriority.MEDIUM,
         DEV2_ID,
         14,
@@ -112,7 +112,7 @@ TASKS = [
     (
         "ALPHA",
         "Fix date formatting bug",
-        TaskStatus.IN_PROGRESS,
+        "In progress",
         TaskPriority.HIGH,
         DEV1_ID,
         -3,
@@ -122,7 +122,7 @@ TASKS = [
     (
         "ALPHA",
         "Integrate payment API",
-        TaskStatus.BLOCKED,
+        "Blocked",
         TaskPriority.CRITICAL,
         DEV1_ID,
         5,
@@ -132,7 +132,7 @@ TASKS = [
     (
         "ALPHA",
         "Write user documentation",
-        TaskStatus.OPEN,
+        "To do",
         TaskPriority.LOW,
         None,
         30,
@@ -142,7 +142,7 @@ TASKS = [
     (
         "ALPHA",
         "Review security checklist",
-        TaskStatus.IN_REVIEW,
+        "Code review",
         TaskPriority.MEDIUM,
         DEV2_ID,
         2,
@@ -152,7 +152,7 @@ TASKS = [
     (
         "BETA",
         "Create landing page",
-        TaskStatus.IN_PROGRESS,
+        "In progress",
         TaskPriority.MEDIUM,
         DEV3_ID,
         10,
@@ -162,7 +162,7 @@ TASKS = [
     (
         "BETA",
         "Customer data import",
-        TaskStatus.OPEN,
+        "To do",
         TaskPriority.HIGH,
         DEV2_ID,
         -7,
@@ -172,7 +172,7 @@ TASKS = [
     (
         "BETA",
         "Set up monitoring",
-        TaskStatus.BLOCKED,
+        "Blocked",
         TaskPriority.HIGH,
         DEV3_ID,
         12,
@@ -182,18 +182,18 @@ TASKS = [
     (
         "BETA",
         "Accessibility audit",
-        TaskStatus.OPEN,
+        "To do",
         TaskPriority.LOW,
         None,
         None,
         0,
         None,
     ),  # unassigned, no due date
-    ("BETA", "Old prototype cleanup", TaskStatus.CANCELLED, TaskPriority.LOW, None, -10, 0, None),
+    ("BETA", "Old prototype cleanup", "Backlog", TaskPriority.LOW, None, -10, 0, None),  # archived
     (
         "BETA",
         "Finalize navigation",
-        TaskStatus.COMPLETED,
+        "Done",
         TaskPriority.MEDIUM,
         DEV3_ID,
         -5,
@@ -203,15 +203,25 @@ TASKS = [
     (
         "GAMMA",
         "Inventory legacy systems",
-        TaskStatus.OPEN,
+        "To do",
         TaskPriority.MEDIUM,
         DEV3_ID,
         20,
         0,
         None,
     ),
-    ("GAMMA", "Draft migration plan", TaskStatus.OPEN, TaskPriority.HIGH, None, 25, 0, None),
+    ("GAMMA", "Draft migration plan", "To do", TaskPriority.HIGH, None, 25, 0, None),
 ]
+
+
+# Labels for a few tasks, so label filters have something to show.
+LABELS = {
+    "Fix date formatting bug": ["bug"],
+    "Integrate payment API": ["integration", "backend"],
+    "Build login screen": ["frontend"],
+    "Set up monitoring": ["devops"],
+}
+ARCHIVED_TITLES = {"Old prototype cleanup"}
 
 
 def check_environment() -> None:
@@ -221,7 +231,10 @@ def check_environment() -> None:
 
 async def reset(session: AsyncSession) -> None:
     await session.execute(
-        text("TRUNCATE tasks, project_members, projects, users RESTART IDENTITY CASCADE")
+        text(
+            "TRUNCATE tasks, project_statuses, project_members, projects, users "
+            "RESTART IDENTITY CASCADE"
+        )
     )
 
 
@@ -238,6 +251,7 @@ async def seed(session: AsyncSession, today: date | None = None) -> None:
     await session.flush()
 
     projects: dict[str, Project] = {}
+    status_ids: dict[str, dict[str, uuid.UUID]] = {}
     for code, name, status, start, end, members in PROJECTS:
         project = Project(
             code=code,
@@ -251,6 +265,9 @@ async def seed(session: AsyncSession, today: date | None = None) -> None:
         session.add(project)
         await session.flush()
         projects[code] = project
+        status_ids[code] = {
+            status.name: status.id for status in await statuses.create_defaults(session, project.id)
+        }
         for user_id, role in members.items():
             session.add(
                 ProjectMember(
@@ -263,22 +280,25 @@ async def seed(session: AsyncSession, today: date | None = None) -> None:
             )
 
     now = datetime.now(UTC)
-    for code, title, task_status, priority, assignee, due, progress, reason in TASKS:
+    for code, title, status_name, priority, assignee, due, progress, reason in TASKS:
         project = projects[code]
         project.task_counter += 1
         session.add(
             Task(
                 project_id=project.id,
-                key=f"TSK-{project.task_counter:03d}",
+                key=f"{project.code}-{project.task_counter}",
                 title=title,
-                status=task_status.value,
+                status_id=status_ids[code][status_name],
+                labels=LABELS.get(title, []),
                 priority=priority.value,
                 assignee_id=assignee,
                 due_date=None if due is None else today + timedelta(days=due),
                 progress=progress,
                 blocked_reason=reason,
+                blocked_at=now if reason else None,
                 created_by=PM_ID,
-                completed_at=now if task_status is TaskStatus.COMPLETED else None,
+                completed_at=now if status_name == "Done" else None,
+                archived_at=now if title in ARCHIVED_TITLES else None,
             )
         )
     await session.flush()
