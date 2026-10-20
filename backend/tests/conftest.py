@@ -8,11 +8,12 @@ import asyncio
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import Any
 
 import asyncpg
 import pytest
 import pytest_asyncio
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -22,6 +23,8 @@ from alembic.config import Config
 from app.common.enums import GlobalRole
 from app.core.config import get_settings
 from app.projects.models import Project
+from app.tasks import statuses
+from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -74,7 +77,10 @@ async def session(test_db_url: str) -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(test_db_url, poolclass=NullPool)
     async with engine.begin() as connection:
         await connection.execute(
-            text("TRUNCATE tasks, project_members, projects, users RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE tasks, project_statuses, project_members, projects, users "
+                "RESTART IDENTITY CASCADE"
+            )
         )
     async with async_sessionmaker(engine, expire_on_commit=False)() as db_session:
         yield db_session
@@ -98,4 +104,40 @@ async def make_project(session: AsyncSession, created_by: uuid.UUID, code: str =
     project = Project(code=code, name="Test project", created_by=created_by)
     session.add(project)
     await session.flush()
+    await statuses.create_defaults(session, project.id)  # like POST /projects does
     return project
+
+
+async def status_by_name(session: AsyncSession, project_id: uuid.UUID, name: str) -> WorkflowStatus:
+    status = await session.scalar(
+        select(WorkflowStatus).where(
+            WorkflowStatus.project_id == project_id, WorkflowStatus.name == name
+        )
+    )
+    assert status is not None, name
+    return status
+
+
+async def make_task(
+    session: AsyncSession,
+    project: Project,
+    created_by: uuid.UUID,
+    *,
+    status: str = "To do",
+    title: str = "A task",
+    **values: Any,
+) -> Task:
+    """Insert a task directly (bypassing the API) with the next key number."""
+    project.task_counter += 1
+    status_row = await status_by_name(session, project.id, status)
+    values.setdefault("key", f"{project.code}-{project.task_counter}")
+    task = Task(
+        project_id=project.id,
+        title=title,
+        status_id=status_row.id,
+        created_by=created_by,
+        **values,
+    )
+    session.add(task)
+    await session.flush()
+    return task

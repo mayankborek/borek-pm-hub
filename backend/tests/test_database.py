@@ -9,19 +9,21 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.common.enums import GlobalRole, TaskStatus
+from app.common.enums import GlobalRole
 from app.projects.models import Project, ProjectMember
-from app.tasks.models import Task
+from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
-from tests.conftest import make_project, make_user
+from tests.conftest import make_project, make_user, status_by_name
 
 
 async def _task(session: AsyncSession, **overrides: Any) -> Task:
     pm = await make_user(session, GlobalRole.PM)
     project = await make_project(session, pm.id)
+    todo = await status_by_name(session, project.id, "To do")
     values: dict[str, Any] = {
         "project_id": project.id,
-        "key": "TSK-001",
+        "status_id": todo.id,
+        "key": "PRJ-1",
         "title": "A task",
         "created_by": pm.id,
     }
@@ -35,7 +37,8 @@ async def _task(session: AsyncSession, **overrides: Any) -> Task:
 async def test_defaults_are_applied(session: AsyncSession) -> None:
     task = await _task(session)
     await session.refresh(task)
-    assert task.status == "open"
+    assert (await session.get(WorkflowStatus, task.status_id)).name == "To do"  # type: ignore[union-attr]
+    assert task.labels == []
     assert task.priority == "medium"
     assert task.progress == 0
     assert task.version == 1
@@ -47,13 +50,10 @@ async def test_defaults_are_applied(session: AsyncSession) -> None:
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"status": "done"},
         {"priority": "urgent"},
         {"progress": 101},
         {"progress": -1},
         {"start_date": date(2026, 5, 10), "due_date": date(2026, 5, 1)},
-        {"status": TaskStatus.BLOCKED.value},
-        {"status": TaskStatus.BLOCKED.value, "blocked_reason": "   "},
     ],
 )
 async def test_invalid_task_is_rejected_by_the_database(
@@ -63,22 +63,57 @@ async def test_invalid_task_is_rejected_by_the_database(
         await _task(session, **overrides)
 
 
-async def test_blocked_task_with_reason_is_accepted(session: AsyncSession) -> None:
-    task = await _task(session, status="blocked", blocked_reason="Waiting for credentials")
-    assert task.id is not None
+async def test_task_cannot_use_another_projects_status(session: AsyncSession) -> None:
+    first = await _task(session)
+    other = await make_project(session, first.created_by, code="OTHER")
+    foreign = await status_by_name(session, other.id, "To do")
+    first.status_id = foreign.id
+    with pytest.raises(IntegrityError):
+        await session.flush()
+
+
+async def test_status_names_are_unique_per_project(session: AsyncSession) -> None:
+    task = await _task(session)
+    session.add(
+        WorkflowStatus(project_id=task.project_id, name="To do", category="todo", position=99)
+    )
+    with pytest.raises(IntegrityError):
+        await session.flush()
+
+
+async def test_status_category_is_checked(session: AsyncSession) -> None:
+    task = await _task(session)
+    session.add(
+        WorkflowStatus(project_id=task.project_id, name="Odd", category="weird", position=99)
+    )
+    with pytest.raises(IntegrityError):
+        await session.flush()
 
 
 async def test_task_key_is_unique_per_project_only(session: AsyncSession) -> None:
     first = await _task(session)
     other_project = await make_project(session, first.created_by, code="OTHER")
     # Same key in another project is fine ...
+    other_todo = await status_by_name(session, other_project.id, "To do")
     session.add(
-        Task(project_id=other_project.id, key="TSK-001", title="x", created_by=first.created_by)
+        Task(
+            project_id=other_project.id,
+            status_id=other_todo.id,
+            key="PRJ-1",
+            title="x",
+            created_by=first.created_by,
+        )
     )
     await session.flush()
     # ... but not twice in the same project.
     session.add(
-        Task(project_id=first.project_id, key="TSK-001", title="y", created_by=first.created_by)
+        Task(
+            project_id=first.project_id,
+            status_id=first.status_id,
+            key="PRJ-1",
+            title="y",
+            created_by=first.created_by,
+        )
     )
     with pytest.raises(IntegrityError):
         await session.flush()
@@ -167,8 +202,8 @@ async def test_required_indexes_exist(session: AsyncSession) -> None:
 
     found = await session.run_sync(names)
     assert {
-        "ix_tasks_project_id_status",
-        "ix_tasks_assignee_id_status",
+        "ix_tasks_project_id_status_id",
+        "ix_tasks_assignee_id_status_id",
         "ix_tasks_project_id_due_date",
         "ix_tasks_project_id_updated_at",
     } <= found["tasks"]

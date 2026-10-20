@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.projects.models import Project
-from app.tasks.models import Task
+from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
 from scripts import seed as seed_module
 from scripts.seed import seed
@@ -20,24 +20,29 @@ async def test_seed_covers_every_demo_case(session: AsyncSession) -> None:
     assert sum(u.global_role == "pm" for u in users) == 1
     assert sum(u.global_role == "developer" for u in users) >= 2
 
-    tasks = (await session.execute(select(Task))).scalars().all()
-    assert any(t.assignee_id is None and t.status == "open" for t in tasks)  # unassigned
-    assert any(t.status == "blocked" and t.blocked_reason for t in tasks)  # blocked
-    assert any(t.status == "completed" for t in tasks)
-    assert any(t.status == "cancelled" for t in tasks)
-    assert any(
-        t.due_date and t.due_date < today and t.status not in ("completed", "cancelled")
-        for t in tasks
-    )  # overdue
+    rows = (await session.execute(select(Task, WorkflowStatus).join(WorkflowStatus))).all()
+    tasks = [(task, status.category) for task, status in rows]
+    assert any(t.assignee_id is None and cat == "todo" for t, cat in tasks)  # unassigned
+    assert any(cat == "blocked" and t.blocked_reason and t.blocked_at for t, cat in tasks)
+    assert any(cat == "done" and t.completed_at for t, cat in tasks)
+    assert any(t.archived_at for t, _ in tasks)  # archived
+    assert any(t.labels for t, _ in tasks)
+    assert any(t.due_date and t.due_date < today and cat != "done" for t, cat in tasks)  # overdue
 
-    # Task keys are TSK-001.. per project and match each project's counter.
+    # Task keys are <CODE>-1.. per project and match each project's counter.
     for project in (await session.execute(select(Project))).scalars():
         keys = (
             (await session.execute(select(Task.key).where(Task.project_id == project.id)))
             .scalars()
             .all()
         )
-        assert sorted(keys) == [f"TSK-{n:03d}" for n in range(1, project.task_counter + 1)]
+        assert sorted(keys) == sorted(
+            f"{project.code}-{n}" for n in range(1, project.task_counter + 1)
+        )
+        defaults = await session.scalar(
+            select(func.count(WorkflowStatus.id)).where(WorkflowStatus.project_id == project.id)
+        )
+        assert defaults == 7
 
 
 async def test_seed_refuses_to_run_twice(session: AsyncSession) -> None:

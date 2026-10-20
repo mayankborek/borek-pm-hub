@@ -65,6 +65,17 @@ def test_developer_changes_status_only_on_own_task_in_a_member_project() -> None
     assert not can(developer, Action.TASK_CHANGE_STATUS, no_longer_member)
 
 
+def test_only_pm_and_project_lead_manage_statuses() -> None:
+    developer = make(GlobalRole.DEVELOPER)
+    lead = Resource(project_id=PROJECT_ID, is_member=True, is_project_lead=True)
+    assert can(developer, Action.STATUS_MANAGE, lead)
+    assert not can(developer, Action.STATUS_MANAGE, MEMBER)  # plain member
+    assert not can(developer, Action.STATUS_MANAGE, OUTSIDER)
+    assert not can(developer, Action.STATUS_MANAGE)
+    not_member_any_more = Resource(project_id=PROJECT_ID, is_member=False, is_project_lead=True)
+    assert not can(developer, Action.STATUS_MANAGE, not_member_any_more)
+
+
 @pytest.mark.parametrize("role", list(GlobalRole))
 def test_inactive_user_can_do_nothing(role: GlobalRole) -> None:
     assert not can(make(role, active=False), Action.PROJECT_LIST)

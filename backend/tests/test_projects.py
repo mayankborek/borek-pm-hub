@@ -9,10 +9,9 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.enums import GlobalRole, TaskPriority, TaskStatus
+from app.common.enums import GlobalRole
 from app.projects.models import Project, ProjectMember
-from app.tasks.models import Task
-from tests.conftest import make_project, make_user
+from tests.conftest import make_project, make_task, make_user
 from tests.test_auth import HEADER, build_app, client_for
 
 URL = "/api/v1/projects"
@@ -187,38 +186,35 @@ async def test_task_summary_has_every_count_the_frontend_shows(
     project = await make_project(session, pm.id, code="TSKS")
     today = datetime.now(UTC).date()
     yesterday, tomorrow = today - timedelta(days=1), today + timedelta(days=1)
-    # (status, due date, archived)
+    # (status name, due date, archived)
     tasks = [
-        ("open", yesterday, False),  # overdue
-        ("in_progress", tomorrow, False),
-        ("blocked", yesterday, False),  # blocked and overdue
-        ("completed", yesterday, False),  # done, so not overdue
-        ("completed", None, False),
-        ("cancelled", yesterday, False),  # ignored
-        ("open", yesterday, True),  # archived, ignored
+        ("To do", yesterday, False),  # overdue
+        ("In progress", tomorrow, False),
+        ("Code review", tomorrow, False),  # also counts as in progress (same category)
+        ("Blocked", yesterday, False),  # blocked and overdue
+        ("Done", yesterday, False),  # done, so not overdue
+        ("Done", None, False),
+        ("To do", yesterday, True),  # archived, ignored
     ]
     for number, (status, due, archived) in enumerate(tasks, start=1):
-        session.add(
-            Task(
-                project_id=project.id,
-                key=f"TSK-{number:03d}",
-                title=f"t{number}",
-                status=TaskStatus(status).value,
-                priority=TaskPriority.MEDIUM.value,
-                due_date=due,
-                blocked_reason="waiting" if status == "blocked" else None,
-                created_by=pm.id,
-                archived_at=datetime.now(UTC) if archived else None,
-            )
+        await make_task(
+            session,
+            project,
+            pm.id,
+            status=status,
+            title=f"t{number}",
+            due_date=due,
+            blocked_reason="waiting" if status == "Blocked" else None,
+            archived_at=datetime.now(UTC) if archived else None,
         )
     await session.flush()
     expected = {
-        "total": 5,
+        "total": 6,
         "completed": 2,
-        "in_progress": 1,
+        "in_progress": 2,
         "blocked": 1,
         "overdue": 2,
-        "completion_percent": 40,
+        "completion_percent": 33,
     }
 
     listing = await client.get(URL, headers=as_user(pm.id))
@@ -500,17 +496,7 @@ async def test_removing_member_unassigns_their_tasks(
     dev = await make_user(session)
     project = await make_project(session, pm.id)
     await add_member(session, project, dev.id)
-    task = Task(
-        project_id=project.id,
-        key="TSK-001",
-        title="Work",
-        status=TaskStatus.OPEN.value,
-        priority=TaskPriority.HIGH.value,
-        assignee_id=dev.id,
-        created_by=pm.id,
-    )
-    session.add(task)
-    await session.flush()
+    task = await make_task(session, project, pm.id, assignee_id=dev.id)
 
     response = await client.delete(f"{URL}/{project.id}/members/{dev.id}", headers=as_user(pm.id))
 
