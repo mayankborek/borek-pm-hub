@@ -34,8 +34,8 @@ export function ProjectLayout() {
 
   const tabs = [
     { label: 'Overview', to: paths.project(projectId), end: true },
+    { label: 'Backlog', to: paths.projectList(projectId) },
     { label: 'Board', to: paths.projectBoard(projectId) },
-    { label: 'List', to: paths.projectList(projectId) },
     { label: 'Members', to: paths.projectMembers(projectId) },
   ];
 

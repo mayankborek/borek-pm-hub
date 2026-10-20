@@ -38,7 +38,7 @@ export function ProjectOverviewPage() {
             View board
           </Link>
           <Link className="btn secondary" to={paths.projectList(project.id)}>
-            View task list
+            View backlog
           </Link>
           <Link className="btn secondary" to={`${paths.tasks}?project_id=${project.id}`}>
             All tasks for this project
