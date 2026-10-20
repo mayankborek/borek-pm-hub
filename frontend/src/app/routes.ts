@@ -32,7 +32,5 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { label: 'Dashboard', to: paths.dashboard, roles: ['pm'], icon: '▦' },
   { label: 'My Work', to: paths.myWork, roles: ['developer'], icon: '✓' },
-  { label: 'Projects', to: paths.projects, roles: ['pm', 'developer'], icon: '❒' },
-  { label: 'All Tasks', to: paths.tasks, roles: ['pm', 'developer'], icon: '☰' },
-  { label: 'Profile', to: paths.profile, roles: ['pm', 'developer'], icon: '☺' },
+  { label: 'Task List', to: paths.tasks, roles: ['pm', 'developer'], icon: '☰' },
 ];

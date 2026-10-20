@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
+import borekLogo from '@/assets/borek-logo-nav.svg';
 
 export function AppLayout() {
   const { user, signOut } = useAuth();
@@ -13,15 +14,12 @@ export function AppLayout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <strong>BOREK</strong>
-          <span>Flow</span>
+          <img src={borekLogo} alt="BOREK Solutions Group" width={112} height={26} />
+          <span>Borek Flow</span>
         </div>
         <nav aria-label="Main">
           {items.map((item) => (
             <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-              <span aria-hidden="true" className="nav-icon">
-                {item.icon}
-              </span>
               {item.label}
             </NavLink>
           ))}

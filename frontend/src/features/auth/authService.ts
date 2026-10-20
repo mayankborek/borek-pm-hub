@@ -10,8 +10,8 @@ export class InvalidCredentialsError extends Error {}
  * Later: Microsoft Entra ID via the same interface.
  */
 const SEEDED: User[] = [
-  { id: 'pm-1', name: 'Test PM', email: 'pm@borek.com', role: 'pm' },
-  { id: 'dev-1', name: 'Dev 1', email: 'dev1@borek.com', role: 'developer' },
+  { id: '00000000-0000-4000-8000-000000000001', name: 'Test PM', email: 'pm@borek.com', role: 'pm' },
+  { id: '00000000-0000-4000-8000-000000000011', name: 'Dev 1', email: 'dev1@borek.com', role: 'developer' },
 ];
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

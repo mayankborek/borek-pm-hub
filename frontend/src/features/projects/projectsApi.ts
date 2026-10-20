@@ -1,8 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api } from '@/shared/api/client';
-import type { Page, Project, ProjectInput, TaskListItem } from './types';
+import type { Page, Project, ProjectInput } from './types';
 
-const qs = (params: Record<string, string | number | undefined>) => {
+export const qs = (params: Record<string, string | number | undefined>) => {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') sp.set(k, String(v));
   const s = sp.toString();
@@ -47,21 +47,6 @@ export const useUpdateProject = (id: string) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.all }),
   });
 };
-
-/** Open tasks past their due date, for the dashboard. Filtered again client-side. */
-export const useOverdueTasks = (today: string) =>
-  useQuery({
-    queryKey: ['tasks', 'overdue', today],
-    queryFn: () => api<Page<TaskListItem>>(`/tasks${qs({ due_before: today, sort: 'due_date', page_size: 200 })}`),
-    select: (page) => page.items.filter((t) => t.status !== 'completed' && t.status !== 'cancelled'),
-  });
-
-export const useBlockedTasks = () =>
-  useQuery({
-    queryKey: ['tasks', 'blocked'],
-    queryFn: () => api<Page<TaskListItem>>(`/tasks${qs({ status: 'blocked', page_size: 200 })}`),
-    select: (page) => page.items.filter((t) => t.status === 'blocked'),
-  });
 
 export interface FieldErrors {
   [field: string]: string;

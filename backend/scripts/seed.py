@@ -1,4 +1,4 @@
-"""Seed demo data: 1 PM, 3 developers, 3 projects, and tasks covering every demo case.
+"""Seed demo data: 1 PM, 3 developers, 4 projects, and tasks covering every demo case.
 
 Run from the backend folder:  python -m scripts.seed          (adds data to an empty database)
                               python -m scripts.seed --reset  (wipes the data tables first)
@@ -64,6 +64,18 @@ PROJECTS = [
         15,
         120,
         {DEV3_ID: ProjectRole.PROJECT_LEAD},
+    ),
+    (
+        "DELTA",
+        "Delta Customer Portal",
+        ProjectStatus.ACTIVE,
+        -45,
+        60,
+        {
+            DEV1_ID: ProjectRole.DEVELOPER,
+            DEV2_ID: ProjectRole.PROJECT_LEAD,
+            DEV3_ID: ProjectRole.DEVELOPER,
+        },
     ),
 ]
 
