@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useBlockedTasks, useDueSoonTasks, useOverdueTasks, useProjects } from '@/features/projects/projectsApi';
-import { STATUS_LABEL, addDaysIso, formatDate, healthOf, todayIso } from '@/features/projects/projectUi';
+import { parseApiError, useProjects } from '@/features/projects/projectsApi';
+import { useBlockedTasks, useDueSoonTasks, useOverdueTasks } from './dashboardApi';
+import { STATUS_LABEL, addDaysIso, daysOverdue, formatDate, healthOf, todayIso } from '@/features/projects/projectUi';
 import type { Project, TaskListItem } from '@/features/projects/types';
 import { Pill } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
@@ -43,7 +44,7 @@ export function DashboardPage() {
       {projects.isPending ? (
         <LoadingState title="Loading your dashboard" text="Fetching project metrics and items that need attention." />
       ) : projects.isError ? (
-        <ErrorState title="We couldn’t load your projects" text="Check your connection and try again." onRetry={() => void projects.refetch()} />
+        <ErrorState title="We couldn’t load your projects" text={parseApiError(projects.error).message} onRetry={() => void projects.refetch()} />
       ) : projects.data.items.length === 0 ? (
         <EmptyState title="No projects yet" text="Create a project to start tracking work, delivery, and attention items for your team." action={newProject} />
       ) : (
@@ -114,6 +115,11 @@ function DashboardBody({ projects, total }: { projects: Project[]; total: number
   );
 }
 
+const overdueText = (due: string | null, today: string) => {
+  const d = daysOverdue(due, today);
+  return d === 1 ? '1 day overdue' : `${d} days overdue`;
+};
+
 function AttentionAreas({ projects }: { projects: Project[] }) {
   const today = todayIso();
   const overdue = useOverdueTasks(today);
@@ -128,7 +134,7 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
   ].slice(0, 6);
 
   const loading = overdue.isPending || blocked.isPending;
-  const failed = overdue.isError && blocked.isError;
+  const failed = overdue.isError || blocked.isError;
 
   return (
     <section className="card" aria-label="Attention areas">
@@ -138,9 +144,12 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
         <p className="muted attn-note" aria-busy="true">
           Loading…
         </p>
-      ) : failed ? (
+      ) : null}
+      {!loading && failed && (
         <p className="muted attn-note" role="alert">
-          Attention items are unavailable right now.{' '}
+          {overdue.isError && blocked.isError
+            ? 'Attention items are unavailable right now.'
+            : `${overdue.isError ? 'Overdue' : 'Blocked'} tasks could not be loaded.`}{' '}
           <button
             type="button"
             className="link-btn"
@@ -152,9 +161,11 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
             Retry
           </button>
         </p>
-      ) : items.length === 0 ? (
+      )}
+      {!loading && !failed && items.length === 0 ? (
         <p className="muted attn-note">Nothing is blocked or overdue. Nice work.</p>
-      ) : (
+      ) : null}
+      {!loading && items.length > 0 && (
         <ul className="attn-list">
           {items.map(({ task, kind }) => (
             <li key={task.id}>
@@ -164,7 +175,7 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
               <div className="attn-meta">
                 <span>
                   {task.project_name ?? names.get(task.project_id) ?? 'Project'}
-                  {kind === 'overdue' ? ` · due ${formatDate(task.due_date)}` : ' · blocked'}
+                  {kind === 'overdue' ? ` · ${formatDate(task.due_date)} · ${overdueText(task.due_date, today)}` : ' · blocked'}
                 </span>
                 <Pill tone={kind === 'overdue' ? 'overdue' : 'blocked'}>{kind === 'overdue' ? 'Overdue' : 'Blocked'}</Pill>
               </div>

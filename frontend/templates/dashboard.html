@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/dashboard.css">
+<link rel="stylesheet" href="assets/task-details.css">
 </head>
 <body>
 <div class="app">
@@ -17,8 +18,7 @@
     </div>
     <nav class="nav" aria-label="Primary">
       <a href="dashboard.html" aria-current="page">Dashboard</a>
-      <a href="#">Task List</a>
-      <a href="#">My Work</a>
+      <a href="task-details-bfl-088.html">Task List</a>
     </nav>
   </aside>
   <div class="content">
@@ -52,42 +52,43 @@
       <div class="split">
         <section class="card">
           <h3>All Accessible Projects</h3>
-          <p class="desc">Projects available to you · Open a project to see its overview</p>
-          <div class="table-head"><span>PROJECT</span><span>STATUS</span></div>
+          <p class="desc">12 projects available to you</p>
+          <div class="ptable">
+          <div class="phead"><span>PROJECT</span><span>LIFECYCLE</span><span>HEALTH</span></div>
           <div class="divider"></div>
-          <div class="row">
-            <a href="#">Customer portal  →</a>
-            <span class="pill risk"><img src="assets/dash-dot-at-risk.svg" alt=""> At Risk</span>
+          <a class="prow" href="#"><span class="pname">Customer portal  →</span><span class="lc in-progress">In Progress</span><span class="hl at-risk">At Risk</span></a>
+          <a class="prow" href="#"><span class="pname">Website redesign  →</span><span class="lc in-progress">In Progress</span><span class="hl on-track">On Track</span></a>
+          <a class="prow" href="#"><span class="pname">AI operations rollout  →</span><span class="lc in-progress">In Progress</span><span class="hl on-track">On Track</span></a>
+          <a class="prow" href="#"><span class="pname">Q4 launch planning  →</span><span class="lc planned">Planned</span><span class="hl at-risk">At Risk</span></a>
+          <a class="prow" href="#"><span class="pname">Data quality programme  →</span><span class="lc in-progress">In Progress</span><span class="hl on-track">On Track</span></a>
+          <a class="prow" href="#"><span class="pname">Mobile app refresh  →</span><span class="lc in-progress">In Progress</span><span class="hl at-risk">At Risk</span></a>
+          <a class="prow" href="#"><span class="pname">Internal tools migration  →</span><span class="lc planned">Planned</span><span class="hl at-risk">At Risk</span></a>
+          <a class="prow" href="#"><span class="pname">Client onboarding improvements  →</span><span class="lc in-progress">In Progress</span><span class="hl on-track">On Track</span></a>
+          <a class="prow" href="#"><span class="pname">Security review  →</span><span class="lc on-hold">On Hold</span><span class="hl off-track">Off Track</span></a>
+          <a class="prow" href="#"><span class="pname">Analytics dashboard  →</span><span class="lc planned">Planned</span><span class="hl at-risk">At Risk</span></a>
+          <a class="prow" href="#"><span class="pname">Partner integrations  →</span><span class="lc in-progress">In Progress</span><span class="hl on-track">On Track</span></a>
+          <a class="prow" href="#"><span class="pname">Employee self-service  →</span><span class="lc in-progress">In Progress</span><span class="hl on-track">On Track</span></a>
           </div>
-          <div class="row">
-            <a href="#">Website redesign  →</a>
-            <span class="pill progress"><img src="assets/dash-dot-in-progress.svg" alt=""> In Progress</span>
-          </div>
-          <div class="row">
-            <a href="#">AI operations rollout  →</a>
-            <span class="pill track"><img src="assets/dash-dot-on-track.svg" alt=""> On Track</span>
-          </div>
-          <a class="more" href="#">View all 12 projects  →</a>
         </section>
 
         <section class="card attention">
           <h3>Attention Areas</h3>
           <p class="desc">Blocked or overdue work needing attention</p>
           <div class="attention-list">
-            <div class="attn">
+            <a class="attn" href="task-details-bfl-088.html">
               <div class="title warn">BFL-088 · Accessibility checklist</div>
               <div class="meta">
                 <span>Website redesign · 12 Oct · 2 days overdue</span>
-                <span class="pill overdue"><img src="assets/dash-dot-overdue.svg" alt=""> Overdue</span>
+                <span class="pill overdue">Overdue</span>
               </div>
-            </div>
-            <div class="attn">
+            </a>
+            <a class="attn" href="task-details-bfl-112.html">
               <div class="title err">BFL-112 · API credentials</div>
               <div class="meta">
                 <span>Website redesign · blocked for 2 days</span>
-                <span class="pill blocked"><img src="assets/dash-dot-blocked.svg" alt=""> Blocked</span>
+                <span class="tstat blocked">Blocked</span>
               </div>
-            </div>
+            </a>
           </div>
         </section>
       </div>
