@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { TaskRow, TaskTableHead } from './TaskParts';
@@ -78,9 +78,4 @@ export function TasksPage() {
       )}
     </section>
   );
-}
-
-export function TaskDetailPage() {
-  const { taskId } = useParams();
-  return <PagePlaceholder title={`Task ${taskId}`} description="Task detail, status and assignee." />;
 }

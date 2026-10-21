@@ -19,7 +19,9 @@ export function AppLayout() {
   const title =
     pathname === paths.profile
       ? 'Profile'
-      : navItems.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))?.label ?? 'Borek Flow';
+      : pathname.startsWith(`${paths.tasks}/`)
+        ? 'Task details'
+        : navItems.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))?.label ?? 'Borek Flow';
 
   const items = navItems.filter((i) => i.roles.includes(user.role));
 

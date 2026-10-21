@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
 import { qs } from '@/features/projects/projectsApi';
 
@@ -83,3 +83,60 @@ export const useProjectTasks = (projectId: string, f: TaskFilter) =>
     enabled: !!projectId,
     placeholderData: keepPreviousData,
   });
+
+export interface TaskDetail extends Task {
+  description: string | null;
+  start_date: string | null;
+  reporter: UserBrief;
+  updated_at: string;
+}
+
+export interface TaskStatusOption {
+  id: string;
+  name: string;
+  category: StatusCategory;
+}
+
+export interface ProjectMember {
+  user_id: string;
+  name: string;
+  email: string;
+}
+
+/** Fields accepted by PATCH /tasks/{id}; `version` is the optimistic-locking counter from the last read. */
+export type TaskPatch = Partial<{
+  title: string;
+  description: string | null;
+  status_id: string;
+  priority: TaskPriority;
+  labels: string[];
+  start_date: string | null;
+  due_date: string | null;
+  assignee_id: string | null;
+}>;
+
+export const useTask = (id: string) =>
+  useQuery({ queryKey: [...taskKeys.all, 'detail', id], queryFn: () => api<TaskDetail>(`/tasks/${id}`), enabled: !!id });
+
+export const useProjectStatuses = (projectId?: string) =>
+  useQuery({
+    queryKey: ['projects', 'statuses', projectId],
+    queryFn: () => api<TaskStatusOption[]>(`/projects/${projectId}/statuses`),
+    enabled: !!projectId,
+  });
+
+export const useProjectMembers = (projectId?: string) =>
+  useQuery({
+    queryKey: ['projects', 'members', projectId],
+    queryFn: () => api<ProjectMember[]>(`/projects/${projectId}/members`),
+    enabled: !!projectId,
+  });
+
+export const useUpdateTask = (task?: TaskDetail) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: TaskPatch) =>
+      api<TaskDetail>(`/tasks/${task!.id}`, { method: 'PATCH', body: JSON.stringify({ ...patch, version: task!.version }) }),
+    onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
+  });
+};
