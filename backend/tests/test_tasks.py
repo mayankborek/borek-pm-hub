@@ -676,3 +676,210 @@ async def test_removed_member_loses_access_to_their_tasks(
     ).status_code == 404
     body = (await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(world.pm))).json()
     assert body["assignee"] is None
+
+
+# --- assignment and My Work (PT-17) -----------------------------------------------------------
+
+
+def assignee_url(task: Task) -> str:
+    return f"/api/v1/tasks/{task.id}/assignee"
+
+
+async def test_pm_assigns_reassigns_and_unassigns(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    task = await make_task(session, world.project, world.pm.id)
+    pm = as_user(world.pm)
+
+    first = await client.put(
+        assignee_url(task), headers=pm, json={"version": 1, "assignee_id": str(world.dev.id)}
+    )
+    again = await client.put(  # same assignee: accepted, nothing changes
+        assignee_url(task), headers=pm, json={"version": 2, "assignee_id": str(world.dev.id)}
+    )
+    moved = await client.put(
+        assignee_url(task), headers=pm, json={"version": 2, "assignee_id": str(world.other_dev.id)}
+    )
+    cleared = await client.put(
+        assignee_url(task), headers=pm, json={"version": 3, "assignee_id": None}
+    )
+
+    assert first.status_code == 200 and first.json()["assignee"]["id"] == str(world.dev.id)
+    assert again.status_code == 200 and again.json()["version"] == 2
+    assert moved.json()["assignee"]["id"] == str(world.other_dev.id)
+    assert cleared.json()["assignee"] is None and cleared.json()["version"] == 4
+
+
+async def test_assignee_must_be_an_active_member(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    task = await make_task(session, world.project, world.pm.id)
+    inactive = await make_user(session)
+    await join(session, world.project, inactive)
+    inactive.is_active = False
+    await session.flush()
+
+    for bad in (world.outsider.id, inactive.id, uuid.uuid4()):
+        response = await client.put(
+            assignee_url(task),
+            headers=as_user(world.pm),
+            json={"version": 1, "assignee_id": str(bad)},
+        )
+        assert response.status_code == 422
+        assert response.json()["error"]["details"][0]["issue"] == "not_a_member"
+    await session.refresh(task)
+    assert task.assignee_id is None and task.version == 1
+
+
+async def test_assignment_needs_pm_and_current_version(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    task = await make_task(session, world.project, world.pm.id, assignee_id=world.dev.id)
+    body = {"version": 1, "assignee_id": str(world.dev.id)}
+    pm = as_user(world.pm)
+
+    as_dev = await client.put(assignee_url(task), headers=as_user(world.dev), json=body)
+    as_outsider = await client.put(assignee_url(task), headers=as_user(world.outsider), json=body)
+    anonymous = await client.put(assignee_url(task), json=body)
+    stale = await client.put(
+        assignee_url(task), headers=pm, json={"version": 9, "assignee_id": str(world.other_dev.id)}
+    )
+    missing = await client.put(f"/api/v1/tasks/{uuid.uuid4()}/assignee", headers=pm, json=body)
+    extra = await client.put(assignee_url(task), headers=pm, json={**body, "priority": "low"})
+
+    assert as_dev.status_code == 403  # developers cannot self-assign existing tasks
+    assert as_outsider.status_code == 404
+    assert anonymous.status_code == 401
+    assert stale.status_code == 409 and stale.json()["error"]["code"] == "VERSION_CONFLICT"
+    assert missing.status_code == 404
+    assert extra.status_code == 422
+
+
+async def test_archived_task_cannot_be_assigned(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    task = await make_task(session, world.project, world.pm.id, archived_at=datetime.now(UTC))
+    response = await client.put(
+        assignee_url(task),
+        headers=as_user(world.pm),
+        json={"version": 1, "assignee_id": str(world.dev.id)},
+    )
+    assert response.status_code == 409 and response.json()["error"]["code"] == "TASK_ARCHIVED"
+
+
+async def test_my_tasks_lists_only_my_assigned_tasks_across_projects(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    await seed_tasks(session, world)  # "Login page" is the only one assigned to dev
+    second = await make_project(session, world.pm.id, code="SEC")
+    await join(session, second, world.dev)
+    await make_task(session, second, world.pm.id, title="Second project", assignee_id=world.dev.id)
+    await make_task(
+        session,
+        second,
+        world.pm.id,
+        title="Archived",
+        assignee_id=world.dev.id,
+        archived_at=datetime.now(UTC),
+    )
+    # assigned to the developer, but in a project they are not a member of
+    hidden = await make_project(session, world.pm.id, code="HID")
+    await make_task(session, hidden, world.pm.id, title="Not mine now", assignee_id=world.dev.id)
+
+    url = "/api/v1/me/tasks"
+    mine = await titles(client, url, as_user(world.dev))
+    spoof = await titles(client, url, as_user(world.dev), assignee_id=str(world.other_dev.id))
+    unassigned = await titles(client, url, as_user(world.dev), unassigned="true")
+
+    assert set(mine) == {"Login page", "Second project"}
+    assert spoof == mine and unassigned == mine  # the assignee filters cannot show others' work
+    assert await titles(client, url, as_user(world.pm)) == []
+    assert (await client.get(url)).status_code == 401
+
+
+async def test_my_tasks_filters_and_sorting(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    today = date.today()
+    await make_task(
+        session,
+        world.project,
+        world.pm.id,
+        title="Overdue",
+        priority="low",
+        due_date=today - timedelta(days=3),
+        assignee_id=world.dev.id,
+    )
+    await make_task(
+        session,
+        world.project,
+        world.pm.id,
+        title="Late but done",
+        status="Done",
+        completed_at=datetime.now(UTC),
+        due_date=today - timedelta(days=3),
+        assignee_id=world.dev.id,
+    )
+    await make_task(
+        session,
+        world.project,
+        world.pm.id,
+        title="Soon",
+        priority="critical",
+        status="In progress",
+        due_date=today + timedelta(days=2),
+        assignee_id=world.dev.id,
+    )
+    await make_task(
+        session,
+        world.project,
+        world.pm.id,
+        title="Stuck",
+        priority="high",
+        status="Blocked",
+        blocked_reason="waiting",
+        blocked_at=datetime.now(UTC),
+        assignee_id=world.dev.id,
+    )
+    url, dev = "/api/v1/me/tasks", as_user(world.dev)
+    in_progress = await status_by_name(session, world.project.id, "In progress")
+
+    assert await titles(client, url, dev, sort="priority") == [
+        "Soon",
+        "Stuck",
+        "Late but done",
+        "Overdue",
+    ]
+    assert await titles(client, url, dev, overdue="true") == ["Overdue"]  # done is not overdue
+    assert await titles(client, url, dev, category="blocked") == ["Stuck"]
+    assert await titles(client, url, dev, status_id=str(in_progress.id)) == ["Soon"]
+    assert await titles(client, url, dev, due_after=str(today)) == ["Soon"]
+    assert await titles(client, url, dev, project_id=str(uuid.uuid4())) == []
+    by_due = await titles(client, url, dev)  # default sort: due date, no date last
+    assert by_due[-1] == "Stuck" and by_due[-2] == "Soon"
+
+
+async def test_reassignment_shows_up_in_my_tasks_and_for_the_pm(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    task = await make_task(
+        session, world.project, world.pm.id, title="Moving", assignee_id=world.dev.id
+    )
+    url = "/api/v1/me/tasks"
+    assert await titles(client, url, as_user(world.dev)) == ["Moving"]
+
+    await client.put(
+        assignee_url(task),
+        headers=as_user(world.pm),
+        json={"version": 1, "assignee_id": str(world.other_dev.id)},
+    )
+    assert await titles(client, url, as_user(world.dev)) == []
+    assert await titles(client, url, as_user(world.other_dev)) == ["Moving"]
+
+    await client.patch(
+        f"/api/v1/tasks/{task.id}",
+        headers=as_user(world.other_dev),
+        json={"version": 2, "progress": 40},
+    )
+    seen = (await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(world.pm))).json()
+    assert seen["progress"] == 40 and seen["assignee"]["id"] == str(world.other_dev.id)

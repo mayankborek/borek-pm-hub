@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     Date,
     DateTime,
@@ -15,10 +16,10 @@ from sqlalchemy import (
     Uuid,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.common.enums import StatusCategory, TaskPriority, sql_in
+from app.common.enums import AttachmentKind, StatusCategory, TaskPriority, sql_in
 from app.core.database import Base, IdMixin, TimestampMixin
 
 
@@ -95,3 +96,58 @@ class Task(IdMixin, TimestampMixin, Base):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __mapper_args__ = {"version_id_col": version}
+
+
+class TaskComment(IdMixin, TimestampMixin, Base):
+    """A comment on a task (F08). Deleting archives it."""
+
+    __tablename__ = "task_comments"
+    __table_args__ = (Index("ix_task_comments_task_id_created_at", "task_id", "created_at"),)
+
+    task_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tasks.id"), nullable=False)
+    author_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TaskAttachment(IdMixin, TimestampMixin, Base):
+    """A file (stored by the app) or a link (URL only) attached to a task. Deleting archives it."""
+
+    __tablename__ = "task_attachments"
+    __table_args__ = (
+        CheckConstraint(sql_in("kind", AttachmentKind), name="kind"),
+        CheckConstraint(
+            "(kind = 'link' AND url IS NOT NULL) OR (kind = 'file' AND storage_key IS NOT NULL)",
+            name="kind_matches_fields",
+        ),
+        Index("ix_task_attachments_task_id_created_at", "task_id", "created_at"),
+    )
+
+    task_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tasks.id"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(10), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    url: Mapped[str | None] = mapped_column(String(2000))
+    storage_key: Mapped[str | None] = mapped_column(String(100))  # file name inside UPLOAD_DIR
+    content_type: Mapped[str | None] = mapped_column(String(150))
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TaskActivity(IdMixin, Base):
+    """Who changed what and when (F08). Rows are only ever added."""
+
+    __tablename__ = "task_activity"
+    __table_args__ = (Index("ix_task_activity_task_id_created_at", "task_id", "created_at"),)
+
+    task_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tasks.id"), nullable=False)
+    actor_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
+    action: Mapped[str] = mapped_column(String(30), nullable=False)
+    # {"field": [old, new]} with readable values (status and assignee names, not ids).
+    changes: Mapped[dict[str, list[object]]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()"), nullable=False
+    )

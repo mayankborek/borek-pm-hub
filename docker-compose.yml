@@ -33,6 +33,7 @@ services:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
       - ./backend/scripts:/app/scripts
+      - pmhub_uploads:/app/uploads   # task attachment files
     # Apply database migrations, then start the API with auto-reload.
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
@@ -41,3 +42,4 @@ services:
 
 volumes:
   pmhub_pgdata:
+  pmhub_uploads:

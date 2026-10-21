@@ -27,6 +27,7 @@ class Action(StrEnum):
     TASK_ASSIGN = "task:assign"
     TASK_CHANGE_STATUS = "task:change_status"  # also covers progress and blocked_reason
     TASK_VIEW = "task:view"
+    TASK_COMMENT = "task:comment"  # comments and attachments
     TASK_ARCHIVE = "task:archive"
     MY_TASKS = "task:my_tasks"
     DASHBOARD_VIEW = "dashboard:view"
@@ -55,7 +56,9 @@ _PM_ONLY = frozenset(
     }
 )
 # Developers need project membership for these.
-_MEMBER_ACTIONS = frozenset({Action.PROJECT_VIEW, Action.TASK_VIEW, Action.TASK_CREATE})
+_MEMBER_ACTIONS = frozenset(
+    {Action.PROJECT_VIEW, Action.TASK_VIEW, Action.TASK_CREATE, Action.TASK_COMMENT}
+)
 _ANY_USER = frozenset({Action.PROJECT_LIST, Action.MY_TASKS})
 
 

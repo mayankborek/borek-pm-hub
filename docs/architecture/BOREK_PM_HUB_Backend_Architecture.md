@@ -1,6 +1,6 @@
 # Borek PM Hub: Backend Architecture Baseline (Phase 1)
 
-> Status: **Draft v0.2** (updated after reading feature specs F01 to F09). Written for the backend developer as the reference point for all Phase 1 work.
+> Status: **Draft v0.3** (v0.2 after reading feature specs F01 to F09; v0.3 on 20.10.2026 for the custom-status model and the PT-16 task APIs). Written for the backend developer as the reference point for all Phase 1 work.
 > Items marked **[CONFIRM]** are proposals that need a yes/no from the PM or the team lead.
 > Source: PDDP v2 (October 2026), the six Phase 1 backend tickets, and the Phase 1 feature specs F01 to F09.
 
@@ -140,7 +140,7 @@ borek-pm-hub/
 │   │   │   ├── schemas.py
 │   │   │   ├── repository.py
 │   │   │   ├── service.py
-│   │   │   ├── workflow.py        # Allowed status transitions (single place)
+│   │   │   ├── statuses.py        # Per-project statuses and the category rules
 │   │   │   └── router.py
 │   │   ├── health/                # /health (liveness) and /ready (readiness)
 │   │   └── common/                # Shared enums, constants, small utilities
@@ -193,18 +193,22 @@ You asked for no authentication in Phase 1: the login button just opens the main
 ## 7. Data model (Phase 1)
 
 ### Conventions
-- UUID primary keys (`id`), plus human-readable identifiers: project `code` (entered by the PM) and task key (`TSK-027`).
+- UUID primary keys (`id`), plus human-readable identifiers: project `code` (entered by the PM) and task key (`<project code>-<n>`, e.g. `BFL-27`).
 - Every table: `created_at`, `updated_at` (UTC, timestamptz). Mutable business tables also have `version` (integer, for optimistic locking) and `archived_at` (soft delete, nothing is physically deleted).
-- Statuses and priorities are stored as **varchar with CHECK constraints** (not native Postgres enums), because adding a value later is then a simple migration.
+- Priorities, roles and status categories are stored as **varchar with CHECK constraints** (not native Postgres enums), because adding a value later is then a simple migration. Task statuses are **rows** (`project_statuses`), defined per project.
 - All timestamps are stored in UTC; due dates are plain `date`.
 
 ### Entities
 
 ```
 users 1 ──── * project_members * ──── 1 projects
-  │                                       │
-  │ (assignee)                            │ 1
-  └──────────────── * tasks * ────────────┘
+  │                                       │ 1        │ 1
+  │ (assignee)                            │          └── * project_statuses
+  └──────────────── * tasks * ────────────┘                      │ 1
+                      │ 1                └─ (status_id, project_id) ─┘
+                      ├── * task_comments      (author_id -> users)
+                      ├── * task_attachments   (uploaded_by -> users)
+                      └── * task_activity      (actor_id -> users)
 ```
 
 **users**
@@ -222,7 +226,7 @@ users 1 ──── * project_members * ──── 1 projects
 | status | e.g. `planned`, `active`, `on_hold`, `completed` **[CONFIRM values with PM]** |
 | start_date, target_end_date | Rule: target_end_date must not be before start_date |
 | created_by (FK users) | |
-| task_counter | integer, used to generate `TSK-###` safely (see below) |
+| task_counter | integer, last used task number; used to generate the task key safely (see below) |
 
 **project_members**
 | Column | Notes |
@@ -232,39 +236,78 @@ users 1 ──── * project_members * ──── 1 projects
 | source | `invitation` / `task_assignment` |
 | granted_by, granted_at | |
 
+**project_statuses** (added in v0.3: statuses are customizable per project, Jira-style)
+| Column | Notes |
+|---|---|
+| id, project_id (FK) | `(id, project_id)` is unique so tasks can reference both |
+| name | 1 to 50 characters, unique per project (case-insensitive check in the service) |
+| category | `backlog` / `todo` / `in_progress` / `blocked` / `done`. Dashboards, "overdue" and the blocked rules use the category, so renaming a status is always safe |
+| position | order of the board columns |
+
+Every project starts with 7 statuses: Backlog, To do, In progress, Code review, Testing, Blocked, Done. The PM and the project lead can add, rename, reorder and delete statuses; a project always keeps at least one `done` status. Deleting a status that tasks use needs a target status (`move_to`).
+
 **tasks**
 | Column | Notes |
 |---|---|
 | id, project_id (FK, indexed) | |
-| key | `TSK-###`, unique per project, never reused |
+| key | `<project code>-<n>` (e.g. `BFL-27`), unique per project, never reused |
 | title (required), description | |
-| status | `open`, `in_progress`, `blocked`, `in_review`, `completed`, `cancelled` (from PDDP) |
+| status_id | FK to `project_statuses` through the composite key `(status_id, project_id)`: a task cannot use another project's status |
 | priority | `critical`, `high`, `medium`, `low` |
-| start_date, due_date | nullable; due_date must not be before start_date |
+| labels | text array, max 10 labels of max 30 characters, no duplicates (case-insensitive) |
+| start_date, due_date | nullable; due_date must not be before start_date. `due_date` is also the "estimate" of the designs: the date the task should be completed |
 | progress | integer 0 to 100, default 0, stored **independently of status** (F03, F08) |
 | assignee_id | nullable FK users (unassigned tasks are allowed, F09) |
-| blocked_reason | required when status = `blocked` |
+| blocked_reason, blocked_at | both set while the status is in the `blocked` category (reason required; checked in the service because the status is in another table) |
 | position | integer/rank for Kanban order (add when the board needs it) |
-| created_by, completed_at | |
+| created_by (the reporter), completed_at | `completed_at` is set while the status is in the `done` category |
 | version, archived_at | |
 
+**task_comments** (added in v0.4, F08)
+| Column | Notes |
+|---|---|
+| id, task_id (FK), author_id (FK users) | |
+| body | text, 1 to 5000 characters |
+| edited_at, archived_at | only the author edits; the author or a PM archives (nothing is deleted) |
+
+**task_attachments** (added in v0.4, F08)
+| Column | Notes |
+|---|---|
+| id, task_id (FK), uploaded_by (FK users) | |
+| kind | `file` (stored by the app) or `link` (URL only). CHECK: a link has `url`, a file has `storage_key` |
+| name | display name (file name without any path, or the link's name or host) |
+| url | links only, http/https, max 2000 characters |
+| storage_key, content_type, size_bytes | files only. The file lives in `UPLOAD_DIR` under the random key (a Docker volume); max `MAX_UPLOAD_MB` (10). Moving to Azure Blob Storage later changes only `core/storage.py` |
+| archived_at | uploader or PM archives; the stored file is kept |
+
+**task_activity** (added in v0.4, F08; rows are only ever added)
+| Column | Notes |
+|---|---|
+| id, task_id (FK), actor_id (FK users), created_at | |
+| action | `created`, `updated`, `archived`, `commented`, `attachment_added`, `attachment_removed` |
+| changes | jsonb `{field: [old, new]}` with readable values (status and assignee names, not ids), written in the same transaction as the change |
+
+Indexes: `(task_id, created_at)` on all three tables.
+
 ### Reserved for later (no tables now)
-`requirement_id` and `milestone_id` on tasks, `audit_events`, `comments`, `attachments`, `status_reports`. Adding a nullable column or a new table is a cheap migration, so we do **not** build them until the PM decides (see section 12).
+`requirement_id` and `milestone_id` on tasks, `status_reports`. Adding a nullable column or a new table is a cheap migration, so we do **not** build them until the PM decides (see section 12).
 
 ### Indexes (create from day one)
-- `tasks(project_id, status)` (board and list)
-- `tasks(assignee_id, status)` ("my tasks")
+- `tasks(project_id, status_id)` (board and list)
+- `tasks(assignee_id, status_id)` ("my tasks")
+- `project_statuses(project_id, position)` (board columns)
 - `tasks(project_id, key)` unique
 - `project_members(user_id)` and `(project_id, user_id)` unique
 - `tasks(project_id, due_date)` and `tasks(project_id, updated_at)` (sort by due date / last updated, F04)
 
 ### Rules enforced in the database
+- A task's status must belong to the task's project (composite foreign key `(status_id, project_id)`).
 - A task's assignee must be a member of the task's project. Enforce in the service **and** double-check with a test (a composite FK or constraint trigger is possible later).
 - `project_members` cannot contain the same user twice for a project.
 - A project always has at least one `project_lead` (service rule).
 
-### Generating `TSK-###` safely under concurrency
-Increment `projects.task_counter` in the same transaction that inserts the task, using an atomic `UPDATE projects SET task_counter = task_counter + 1 WHERE id = :id RETURNING task_counter`. The row lock serializes concurrent creators, so there are no duplicates or gaps from races, and numbers are never reused because tasks are archived, not deleted.
+### Generating the task key safely under concurrency
+Increment `projects.task_counter` in the same transaction that inserts the task, using an atomic `UPDATE projects SET task_counter = task_counter + 1 WHERE id = :id RETURNING task_counter`. The row lock serializes concurrent creators, so there are no duplicates or gaps from races, and numbers are never reused because tasks are archived, not deleted. The key is the project code, a dash and that number (`BFL-27`).
 
 ---
 
@@ -278,29 +321,29 @@ Enforced in one function `can(user, action, resource)`, called from every endpoi
 | List projects | All projects | Only projects they are a member of |
 | View project details | Yes | Only if member |
 | Add / remove / change project members | Yes | No |
-| Create task | Yes | No (or self-assign only? **[CONFIRM]**) |
+| Create task | Yes | Yes, in projects they are a member of, **assigned to themselves only** |
+| Add / rename / reorder / delete statuses | Yes | Only the project lead of that project |
 | Edit task details (title, description, priority, due date) | Yes | No |
 | Assign / reassign task | Yes | No |
-| Change task status | Any valid transition | Only on tasks assigned to them, only allowed transitions |
-| View tasks in a project | Yes | Yes, if member |
+| Change task status, progress, blocked reason | Any status | Only on tasks assigned to them, any status of the project |
+| View tasks in a project | Yes | Yes, **all tasks** of projects they are a member of (like Jira) |
 | "My tasks" | Own assigned | Own assigned |
 | Archive task | Yes | No |
-| PM dashboard (metrics, blocked and overdue lists) | Yes | **No** (403) |
+| Dashboard (metrics, blocked and overdue lists) | Yes, all projects | Yes, but only projects they are a member of (own progress plus per-member counts; **not built yet, F06**) |
 
 **Response codes:** `401` = no/unknown user, `403` = known user, not allowed, `404` = used instead of 403 when the user should not even know the project exists (prevents leaking project existence to non-members).
 
-### Status workflow (single source: `tasks/workflow.py`) **[CONFIRM; Ticket 5 says "approved workflow"]**
+### Status rules (v0.3, replaces the fixed transition table)
 
-| From → To | Who | Rule |
-|---|---|---|
-| open → in_progress | assignee, PM | Sets start date if empty |
-| in_progress → blocked | assignee, PM | `blocked_reason` required |
-| blocked → in_progress | assignee, PM | |
-| in_progress → in_review | assignee, PM | |
-| in_review → completed | PM (or reviewer) | Sets `completed_at` |
-| in_review → in_progress | PM, assignee | |
-| any → cancelled | PM only | |
-| completed → anything | PM only | Reopen |
+Statuses are defined per project (see `project_statuses` in section 7). Moving a task is **free**: any status of the project to any other. There is no transition table. What guards a move is the **category** of the destination status:
+
+| Destination category | Rule |
+|---|---|
+| `blocked` | `blocked_reason` is required (not blank); `blocked_at` is set |
+| `done` | `completed_at` is set |
+| anything else | `blocked_reason`, `blocked_at` and `completed_at` are cleared |
+
+The same rules are applied to every task of a status when the PM changes that status's category or deletes it with a `move_to` target. Developers may move only tasks assigned to them; the PM may move any task. **Decided (20.10.2026): no approval step for done statuses.** If one is ever wanted (for example only a reviewer may complete), it becomes a rule on the `done` category, not a new table.
 
 ### Validation rules (from F02, F03, F08, F09)
 - Project `code` unique; `name` required; `target_end_date` not before `start_date`.
@@ -314,10 +357,10 @@ All counts cover only projects the PM may manage and come from the same task tab
 | Metric | Proposed definition |
 |---|---|
 | Active projects | projects with status `active` |
-| Total tasks | non-archived tasks, **excluding cancelled** |
-| Completed / In progress / Blocked | count by status |
-| Overdue | `due_date` before today and status not `completed` or `cancelled` (as in F06 and the PDDP) |
-| Completion % | completed / total tasks (excluding cancelled), rounded; 0 if no tasks |
+| Total tasks | non-archived tasks |
+| Completed / In progress / Blocked | count by status **category** (`done` / `in_progress` / `blocked`) |
+| Overdue | `due_date` before today and status category not `done` |
+| Completion % | completed / total tasks, rounded; 0 if no tasks |
 Define "today" in one timezone (e.g. Europe/Berlin) in one place.
 
 ---
@@ -367,17 +410,31 @@ Updates (`PATCH`) include the record's current `version`. If another person chan
 | `GET/POST /api/v1/projects/{id}/members` | List / add members | 3 |
 | `PATCH/DELETE /api/v1/projects/{id}/members/{user_id}` | Change role / remove | 3 |
 | `POST /api/v1/projects/{id}/tasks` | Create task | 4 |
-| `GET /api/v1/projects/{id}/tasks` | List with filters: `status`, `priority`, `assignee_id`, `due_before`, `q` (keyword search); `sort=due_date\|updated_at`; `page`; `view=list\|board` | 4 |
-| `GET /api/v1/tasks` | Cross-project task list for the projects the user can access (adds `project_id` filter, returns project name) | 4 |
-| `GET /api/v1/dashboard/pm` | PM dashboard metrics and blocked/overdue lists (PM only) | **not in your six tickets** |
+| `GET /api/v1/projects/{id}/tasks` | List with filters: `status_id` and `category` (repeatable), `priority` (repeatable), `assignee_id`, `unassigned`, `label`, `due_before`, `due_after`, `overdue` (past due, not in a done status), `q` (title or key), `include_archived` (PM); `sort` = `created_at`, `updated_at`, `due_date`, `priority` (prefix `-` for descending); `page`, `page_size`; `view=list\|board` | 4 |
+| `GET /api/v1/tasks` | Cross-project task list for the projects the user can access (same filters plus `project_id`; each task carries `project_name`) | 4 |
+| `GET /api/v1/projects/{id}/statuses` | List the project's statuses with task counts | 4 |
+| `POST /api/v1/projects/{id}/statuses` | Add a status (PM or project lead) | 4 |
+| `PATCH /api/v1/projects/{id}/statuses/{status_id}` | Rename or change category | 4 |
+| `PUT /api/v1/projects/{id}/statuses/order` | Reorder (send every status id once) | 4 |
+| `DELETE /api/v1/projects/{id}/statuses/{status_id}?move_to=` | Delete; `move_to` required when tasks use it | 4 |
+| `GET /api/v1/dashboard` | PM only. `active_projects`, `projects_total`, `summary` (total, completed, in_progress, blocked, overdue, completion_percent = completed / non-archived tasks), `projects[]` cards (status, dates, task counts), `blocked` and `overdue` lists (`{total, items}`, `limit` 1-50, default 10). **Built 21.10.2026, no ticket number** | F06 |
+| `GET /api/v1/dashboard/me` | Any user: counts of my assigned tasks, my projects with per-member counts, my blocked and overdue tasks | F06, F07 |
 | `GET /api/v1/tasks/{id}` | Task detail | 4 |
-| `PATCH /api/v1/tasks/{id}` | Edit task | 4 |
+| `PATCH /api/v1/tasks/{id}` | Edit task (body carries `version`). PM: any field. Developer: only `status_id`, `progress`, `blocked_reason` on own tasks | 4 |
 | `DELETE /api/v1/tasks/{id}` | Archive task | 4 |
-| `PUT /api/v1/tasks/{id}/assignee` | Assign / reassign (validates membership) | 5 |
-| `POST /api/v1/tasks/{id}/status` | Change status through the workflow (body: `status`, optional `reason`, `version`) | 5 |
-| `GET /api/v1/me/tasks` | Developer's tasks across projects; filters: project, priority, status, due date | 5 |
+| `GET /api/v1/tasks/{id}/activity` | History: who changed what and when, newest first (`changes` = `{field: [old, new]}` with readable values); paginated | F08 |
+| `GET/POST /api/v1/tasks/{id}/comments` | List / add a comment (project members and PMs) | F08 |
+| `PATCH/DELETE /api/v1/tasks/{id}/comments/{cid}` | Edit (author only) / archive (author or PM) | F08 |
+| `GET /api/v1/tasks/{id}/attachments` | Files and links of the task | F08 |
+| `POST /api/v1/tasks/{id}/attachments` | Upload a file (`multipart/form-data`, field `file`, max `MAX_UPLOAD_MB`, default 10; stored in `UPLOAD_DIR`) | F08 |
+| `POST /api/v1/tasks/{id}/attachments/link` | Attach a link `{url, name?}` (http/https only) | F08 |
+| `GET /api/v1/tasks/{id}/attachments/{aid}/download` | Download a stored file (same auth as the API; send as attachment) | F08 |
+| `DELETE /api/v1/tasks/{id}/attachments/{aid}` | Archive (uploader or PM); the stored file is kept | F08 |
+| `PUT /api/v1/tasks/{id}/assignee` | PM only. Body `{version, assignee_id}`; `null` unassigns. Assignee must be an active project member (422 `not_a_member`); same assignee is a no-op; 409 on stale version or archived task. Developers cannot self-assign existing tasks | 5 |
+| `POST /api/v1/tasks/{id}/status` | **Not built.** Status changes go through `PATCH /tasks/{id}` (`status_id`, `blocked_reason`); free movement, so no transition table | 5 |
+| `GET /api/v1/me/tasks` | My Work (F07): the caller's own tasks across their active projects, default sort `due_date`. Same filters as `GET /tasks`; `assignee_id` and `unassigned` are ignored | 5 |
 
-`view=board` returns tasks grouped by status column so the frontend does not have to group.
+`view=board` returns `{columns: [{status, total, tasks}], total}`: one column per project status in the project's order, so the frontend does not have to group (at most 1000 tasks).
 
 ---
 
@@ -416,7 +473,7 @@ A k6/Locust script simulates **200 concurrent users** (mix: 70% reads, 25% task 
 | Client users (Phase 2) | `global_role` and `project_role` are extensible; clients get a **separate router prefix (`/portal/v1`) with separate response schemas**, so internal fields cannot leak by mistake |
 | Defense in depth | All project tables have `project_id`, so PostgreSQL row-level security can be added without redesign |
 | Requirements and milestones | Added as new tables and nullable FK columns on `tasks`, no rework |
-| Activity / audit history | Add an append-only `audit_events` table written in the same transaction as each change; hooks go in the service layer |
+| Activity / audit history | **Built for tasks** (`task_activity`, v0.4). Project-level and member changes are not recorded yet; the same hook pattern in the service layer extends it |
 | Notifications | Phase 1: simple polling endpoint. Phase 2: add a Postgres-backed job queue and worker |
 | Real-time board | Phase 3, using WebSockets or SSE; the stateless design stays |
 | Moving into Borek X | Modules do not touch each other's tables; the API is documented |
@@ -428,7 +485,7 @@ A k6/Locust script simulates **200 concurrent users** (mix: 70% reads, 25% task 
 ### For the PM
 1. Do tasks **have to** link to a requirement and a milestone in Phase 1? (The PM is writing a doc on this.) Baseline assumption: **no, optional later.**
 2. Confirm the **permission matrix** in section 8 (especially: can developers create tasks? which fields may developers edit on their own tasks?).
-3. Confirm the **status workflow** in section 8 (who approves in_review → completed? is there a reviewer?).
+3. ~~Status workflow~~ decided 20.10.2026: statuses are per project, tasks move freely, no approval step for done (section 8).
 4. Confirm **project status values** and required project fields.
 5. Is the "no login in Phase 1" approach in section 6 (pick a seeded user) acceptable, and is the staging environment network-restricted?
 6. Is there a sprint concept in Phase 1 (planning/backlog), or just tasks with due dates? Baseline assumption: **no sprints in Phase 1.**
@@ -457,12 +514,12 @@ A k6/Locust script simulates **200 concurrent users** (mix: 70% reads, 25% task 
 | **1. Setup, DB, dev environment** | `core/` (config, database, errors, logging), Docker Compose, Alembic baseline, models for users/projects/members/tasks, health endpoints, OpenAPI, seed script, CI skeleton |
 | **2. Auth and RBAC** | `auth/` (dev provider, `get_current_user`), `permissions.py`, 401/403/404 behavior, `/auth/me`, permission tests |
 | **3. Project APIs** | `projects/` module, membership endpoints |
-| **4. Task CRUD** | `tasks/` module, filters, pagination, board view response |
-| **5. Assignment, status, my tasks** | Assignment validation, `workflow.py`, `/me/tasks`, optimistic locking on status changes |
+| **4. Task CRUD** | `tasks/` module, custom statuses (`project_statuses`, `statuses.py`), filters, pagination, board view response |
+| **5. Assignment, status, my tasks** | Assignment validation, `/me/tasks` (built), optimistic locking on status changes (the category rules replace `workflow.py`) |
 | **6. Integration and testing** | Frontend integration, end-to-end PM→Developer flow, persistence check, **200-user load test**, Sprint Review readiness |
 
-**Not covered by your six tickets (raise with the PM so they are planned):**
-- PM dashboard metrics API (F06)
+**Not covered by your six tickets:**
+- Dashboard metrics API (F06): **will be built** (the team needs it and the UI designs exist), even without a ticket; raise a ticket with the PM so it is planned
 - Cross-project task list and keyword search (F04)
 - Seed/sample data covering overdue, blocked, unassigned and completed cases for both roles (F09). It fits inside Ticket 1.
 - Task activity/comments, if the PM keeps them in Phase 1 (F08)

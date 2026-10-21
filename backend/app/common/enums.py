@@ -36,6 +36,11 @@ class StatusCategory(StrEnum):
     DONE = "done"
 
 
+class AttachmentKind(StrEnum):
+    FILE = "file"
+    LINK = "link"
+
+
 class TaskPriority(StrEnum):
     CRITICAL = "critical"
     HIGH = "high"

@@ -48,7 +48,7 @@
     <div class="diagram-container">
       <svg viewBox="0 0 960 504" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="architecture-title architecture-desc">
         <title id="architecture-title">Backend architecture</title>
-        <desc id="architecture-desc">Architecture of the Borek PM Hub backend: the frontend calls a FastAPI API whose routers use an auth provider and the can() rule book, then a service layer, before reaching PostgreSQL.</desc>
+        <desc id="architecture-desc">Architecture of the Borek PM Hub backend: the frontend calls a FastAPI API whose routers (auth, projects, tasks and statuses, task details, dashboard) use an auth provider and the can() rule book, then a service layer, before reaching PostgreSQL.</desc>
         <defs>
           <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
           <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
@@ -87,7 +87,7 @@
 <rect x="400" y="136" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
 <text x="414" y="145" fill="#5a6580" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
 <text x="460" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Routers</text>
-<text x="460" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">auth · projects</text>
+<text x="460" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">auth·projects·tasks</text>
 <rect x="576" y="128" width="136" height="72" rx="6" fill="#f5f5f5"/>
 <rect x="576" y="128" width="136" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
 <rect x="584" y="136" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.3)" stroke-width="0.8"/>
@@ -131,7 +131,7 @@
       </svg>
     </div>
     <div class="cards">
-      <div class="card"><p class="eyebrow">Layers</p><h3><span class="dot ink"></span>Router, service, database</h3><p>Routers handle HTTP and permission checks. Services hold the business rules and talk to the database. Nothing else touches the DB.</p></div>
+      <div class="card"><p class="eyebrow">Layers</p><h3><span class="dot ink"></span>Router, service, database</h3><p>Routers handle HTTP and permission checks. Services hold the business rules (projects, tasks, per-project statuses, comments, attachments, history, dashboard) and talk to the database. Nothing else touches the DB.</p></div>
       <div class="card"><p class="eyebrow">The one rule</p><h3><span class="dot coral"></span>can() decides everything</h3><p>Every endpoint asks can() before acting. If the UI hides a button, the server still enforces the rule. Non-members get 404, not 403.</p></div>
       <div class="card"><p class="eyebrow">Phase 1 shortcut</p><h3><span class="dot muted"></span>Dev login, Entra later</h3><p>Identity comes from the X-Dev-User-Id header. Real sign-in plugs into the Auth provider only; no endpoint changes.</p></div>
     </div>

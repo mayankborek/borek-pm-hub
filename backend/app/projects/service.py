@@ -59,42 +59,50 @@ async def list_members(
     return await _load_members(session, project_id)
 
 
-async def task_summaries(
-    session: AsyncSession, project_ids: list[uuid.UUID]
-) -> dict[uuid.UUID, TaskSummary]:
-    """Counts per project in one query. Projects without tasks are absent (use `TaskSummary()`)."""
-    if not project_ids:
-        return {}
+def summary_columns() -> tuple[ColumnElement[int], ...]:
+    """Aggregate columns (total, completed, in progress, blocked, overdue) over tasks joined with
+    their status. Callers add the joins, filters and grouping; `make_summary` reads the row."""
     today = datetime.now(UTC).date()
     done = StatusCategory.DONE.value
 
     def count_where(condition: ColumnElement[bool]) -> ColumnElement[int]:
         return func.count(case((condition, 1)))
 
+    return (
+        func.count(Task.id),
+        count_where(WorkflowStatus.category == done),
+        count_where(WorkflowStatus.category == StatusCategory.IN_PROGRESS.value),
+        count_where(WorkflowStatus.category == StatusCategory.BLOCKED.value),
+        count_where(and_(Task.due_date < today, WorkflowStatus.category != done)),
+    )
+
+
+def make_summary(
+    total: int, completed: int, in_progress: int, blocked: int, overdue: int
+) -> TaskSummary:
+    return TaskSummary(
+        total=total,
+        completed=completed,
+        in_progress=in_progress,
+        blocked=blocked,
+        overdue=overdue,
+        completion_percent=round(100 * completed / total) if total else 0,
+    )
+
+
+async def task_summaries(
+    session: AsyncSession, project_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, TaskSummary]:
+    """Counts per project in one query. Projects without tasks are absent (use `TaskSummary()`)."""
+    if not project_ids:
+        return {}
     rows = await session.execute(
-        select(
-            Task.project_id,
-            func.count(Task.id),
-            count_where(WorkflowStatus.category == done),
-            count_where(WorkflowStatus.category == StatusCategory.IN_PROGRESS.value),
-            count_where(WorkflowStatus.category == StatusCategory.BLOCKED.value),
-            count_where(and_(Task.due_date < today, WorkflowStatus.category != done)),
-        )
+        select(Task.project_id, *summary_columns())
         .join(WorkflowStatus, WorkflowStatus.id == Task.status_id)
         .where(Task.project_id.in_(project_ids), Task.archived_at.is_(None))
         .group_by(Task.project_id)
     )
-    return {
-        project_id: TaskSummary(
-            total=total,
-            completed=completed,
-            in_progress=in_progress,
-            blocked=blocked,
-            overdue=overdue,
-            completion_percent=round(100 * completed / total) if total else 0,
-        )
-        for project_id, total, completed, in_progress, blocked, overdue in rows.all()
-    }
+    return {project_id: make_summary(*counts) for project_id, *counts in rows.all()}
 
 
 async def list_projects(

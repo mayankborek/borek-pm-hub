@@ -39,20 +39,23 @@ flowchart LR
 | `app/main.py`, `app/api.py` | Create the app; mount routers under `/api/v1` |
 | `app/auth/` | `dependencies.py` (current user), `providers/dev.py` (Phase 1 login), `providers/entra.py` (stub), `permissions.py` (`can()`) |
 | `app/projects/` | `router.py` (HTTP + permission checks), `service.py` (rules), `models.py`, `schemas.py` |
-| `app/tasks/`, `app/users/` | Models (task endpoints are not built yet) |
+| `app/tasks/` | `router.py` (statuses, tasks, assignment, `/me/tasks`), `service.py` (task rules, filters, board, assignment), `statuses.py` (per-project statuses), `models.py`, `schemas.py` |
+| `app/users/` | User model |
 | `app/core/` | Config, async DB session, errors, logging, request-ID middleware |
 | `alembic/`, `scripts/seed.py`, `tests/` | Migrations, demo data, pytest |
 
 ### Database schema
 
-Four tables, integrity enforced by the database. All foreign keys use PostgreSQL's default `ON DELETE NO ACTION`.
-Subsystem view: `created_by` / `granted_by` foreign keys, dates and other columns are omitted. Full DDL: `alembic/versions/0001_initial_schema.py`.
+Five tables, integrity enforced by the database. All foreign keys use PostgreSQL's default `ON DELETE NO ACTION`.
+Subsystem view: `created_by` / `granted_by` foreign keys, dates and other columns are omitted. Full DDL: `alembic/versions/0001_initial_schema.py` and `0002_custom_statuses.py`.
 
 ```mermaid
 erDiagram
     users ||--o{ project_members : "user_id"
     projects ||--o{ project_members : "project_id"
     projects ||--o{ tasks : "project_id"
+    projects ||--o{ project_statuses : "project_id"
+    project_statuses ||--o{ tasks : "status_id"
     users |o--o{ tasks : "assignee_id"
 
     users {
@@ -68,7 +71,7 @@ erDiagram
         varchar_20 code UK "immutable"
         varchar_200 name
         varchar_20 status
-        integer task_counter "last TSK number"
+        integer task_counter "last task number"
         integer version "optimistic lock"
         timestamptz archived_at "soft delete"
     }
@@ -79,18 +82,26 @@ erDiagram
         varchar_20 project_role "project_lead or developer"
         varchar_20 source
     }
+    project_statuses {
+        uuid id PK
+        uuid project_id FK
+        varchar_50 name "unique per project"
+        varchar_20 category "backlog todo in_progress blocked done"
+        integer position
+    }
     tasks {
         uuid id PK
         uuid project_id FK
-        varchar_20 key "TSK-### per project"
+        varchar_32 key "CODE-n per project"
         varchar_300 title
-        varchar_20 status
+        uuid status_id FK "a status of the same project"
+        text_array labels
         uuid assignee_id FK "nullable"
         integer version "optimistic lock"
     }
 ```
 
-Key constraints: unique `projects.code`, unique `(project_id, user_id)` per membership, unique `(project_id, key)` per task, `progress` between 0 and 100, a `blocked` task needs a reason.
+Key constraints: unique `projects.code`, unique `(project_id, user_id)` per membership, unique `(project_id, key)` per task, `progress` between 0 and 100, a task can only use a status of its own project, unique status name per project. A task in a blocked-category status needs a reason (checked in the service).
 A `version` column on projects and tasks gives optimistic locking: a stale update gets `409`.
 
 ### Data flow of one request

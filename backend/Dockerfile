@@ -14,7 +14,7 @@ COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
 COPY scripts ./scripts
 
-RUN useradd --create-home appuser && chown -R appuser /app
+RUN useradd --create-home appuser && mkdir -p /app/uploads && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000
