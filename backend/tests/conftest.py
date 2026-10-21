@@ -78,7 +78,8 @@ async def session(test_db_url: str) -> AsyncIterator[AsyncSession]:
     async with engine.begin() as connection:
         await connection.execute(
             text(
-                "TRUNCATE tasks, project_statuses, project_members, projects, users "
+                "TRUNCATE task_activity, task_attachments, task_comments, tasks, "
+                "project_statuses, project_members, projects, users "
                 "RESTART IDENTITY CASCADE"
             )
         )

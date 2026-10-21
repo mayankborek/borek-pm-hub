@@ -18,6 +18,7 @@ from app.projects.models import Project
 from app.tasks import service, statuses
 from app.tasks.models import Task
 from app.tasks.schemas import (
+    AssigneeUpdate,
     BoardOut,
     StatusCreate,
     StatusOrder,
@@ -92,6 +93,8 @@ def task_filters(
     unassigned: bool = False,
     label: Annotated[str | None, Query(max_length=30)] = None,
     due_before: Annotated[date | None, Query(description="Due strictly before this date")] = None,
+    due_after: Annotated[date | None, Query(description="Due strictly after this date")] = None,
+    overdue: Annotated[bool, Query(description="Past due and not in a done status")] = False,
     include_archived: Annotated[bool, Query(description="PM only; ignored for developers")] = False,
 ) -> service.TaskFilters:
     return service.TaskFilters(
@@ -103,6 +106,8 @@ def task_filters(
         unassigned=unassigned,
         label=label,
         due_before=due_before,
+        due_after=due_after,
+        overdue=overdue,
         include_archived=include_archived and user.global_role == GlobalRole.PM,
     )
 
@@ -231,6 +236,28 @@ async def list_tasks(
     return TaskListOut(items=items, total=total, page=page, page_size=page_size)
 
 
+@router.get("/me/tasks", response_model=TaskListOut)
+async def my_tasks(
+    user: CurrentUser,
+    session: SessionDep,
+    filters: Filters,
+    project_id: uuid.UUID | None = None,
+    sort: TaskSort = "due_date",
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> TaskListOut:
+    """My Work (F07): tasks assigned to the signed-in user across their active projects."""
+    require(user, Action.MY_TASKS)
+    filters.project_id = project_id
+    filters.assignee_id = user.id  # always the caller; the `assignee_id` and `unassigned` filters
+    filters.unassigned = False  # do not apply here
+    scope = None if user.global_role == GlobalRole.PM else service.scope_for_developer(user)
+    items, total = await service.list_tasks(
+        session, filters, sort=sort, page=page, page_size=page_size, scope=scope
+    )
+    return TaskListOut(items=items, total=total, page=page, page_size=page_size)
+
+
 # --- one task ---------------------------------------------------------------------------------
 
 
@@ -250,11 +277,20 @@ async def update_task(
         await _task_for(session, user, task_id, Action.TASK_EDIT_DETAILS, writable=True)
     if changed & service.STATUS_FIELDS:
         await _task_for(session, user, task_id, Action.TASK_CHANGE_STATUS, writable=True)
-    return await service.update_task(session, task, body)
+    return await service.update_task(session, task, body, user)
+
+
+@router.put("/tasks/{task_id}/assignee", response_model=TaskOut)
+async def assign_task(
+    task_id: uuid.UUID, body: AssigneeUpdate, user: CurrentUser, session: SessionDep
+) -> TaskOut:
+    """PM only: assign, reassign or unassign (`assignee_id: null`) a task."""
+    task = await _task_for(session, user, task_id, Action.TASK_ASSIGN, writable=True)
+    return await service.assign_task(session, task, body.assignee_id, body.version, user)
 
 
 @router.delete("/tasks/{task_id}", status_code=204)
 async def archive_task(task_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> None:
     """Archive (soft delete). The task stays in the database."""
     task = await _task_for(session, user, task_id, Action.TASK_ARCHIVE)
-    await service.archive_task(session, task)
+    await service.archive_task(session, task, user)

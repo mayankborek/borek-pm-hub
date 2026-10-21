@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Queries running longer than this are cancelled by PostgreSQL (protects the pool).
     db_statement_timeout_ms: int = 30000
 
+    # Task attachments (files) are stored in this folder; a Docker volume keeps them.
+    upload_dir: str = "uploads"
+    max_upload_mb: int = 10
+
     # Comma-separated list of allowed frontend origins.
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     log_level: str = "INFO"

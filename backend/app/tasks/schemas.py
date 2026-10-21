@@ -148,6 +148,15 @@ class TaskUpdate(BaseModel):
         return None if value is None else _clean_labels(value)
 
 
+class AssigneeUpdate(BaseModel):
+    """PUT body for assigning a task. `assignee_id: null` unassigns it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = Field(ge=1, description="Version from the last read (optimistic locking).")
+    assignee_id: uuid.UUID | None
+
+
 class UserBrief(BaseModel):
     id: uuid.UUID
     name: str

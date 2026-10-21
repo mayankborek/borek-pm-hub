@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from app.common.enums import StatusCategory, TaskPriority
 from app.core.errors import AppError
 from app.projects.models import Project, ProjectMember
-from app.tasks import statuses
+from app.tasks import activity, statuses
 from app.tasks.models import Task, WorkflowStatus
 from app.tasks.schemas import (
     BoardColumn,
@@ -134,6 +134,8 @@ class TaskFilters:
         unassigned: bool = False,
         label: str | None = None,
         due_before: date | None = None,
+        due_after: date | None = None,
+        overdue: bool = False,
         project_id: uuid.UUID | None = None,
         include_archived: bool = False,
     ) -> None:
@@ -145,6 +147,8 @@ class TaskFilters:
         self.unassigned = unassigned
         self.label = label
         self.due_before = due_before
+        self.due_after = due_after
+        self.overdue = overdue
         self.project_id = project_id
         self.include_archived = include_archived
 
@@ -168,6 +172,11 @@ class TaskFilters:
             found.append(Task.labels.contains([self.label]))
         if self.due_before:
             found.append(Task.due_date < self.due_before)
+        if self.due_after:
+            found.append(Task.due_date > self.due_after)
+        if self.overdue:  # past due and not finished
+            found.append(Task.due_date < datetime.now(UTC).date())
+            found.append(WorkflowStatus.category != StatusCategory.DONE.value)
         if self.q:
             pattern = f"%{self.q.strip().replace('%', r'\%').replace('_', r'\_')}%"
             found.append(
@@ -340,6 +349,8 @@ async def create_task(
     _apply_status(task, status, data.blocked_reason)
     session.add(task)
     try:
+        await session.flush()
+        activity.record(session, task.id, user.id, "created")
         await session.commit()
     except IntegrityError:
         await session.rollback()
@@ -370,7 +381,13 @@ async def _default_status(session: AsyncSession, project_id: uuid.UUID) -> Workf
     return first
 
 
-async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> TaskOut:
+async def _user_name(session: AsyncSession, user_id: uuid.UUID | None) -> str | None:
+    if user_id is None:
+        return None
+    return await session.scalar(select(User.name).where(User.id == user_id))
+
+
+async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor: User) -> TaskOut:
     if data.version != task.version:
         raise version_conflict()
     changes = data.model_dump(exclude={"version"}, exclude_unset=True)
@@ -386,6 +403,15 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> Ta
         await _check_assignee(session, task.project_id, changes["assignee_id"])
 
     # Do every lookup and check before touching the task, so a rejected request leaves it as is.
+    old_status = await session.get(WorkflowStatus, task.status_id)
+    assert old_status is not None
+    old_assignee = await _user_name(session, task.assignee_id)
+    before = activity.snapshot(task, old_status.name, old_assignee)
+    new_assignee = (
+        await _user_name(session, changes["assignee_id"])
+        if "assignee_id" in changes
+        else old_assignee
+    )
     new_status: WorkflowStatus | None = None
     if "status_id" in changes or "blocked_reason" in changes:
         if "status_id" in changes:
@@ -400,6 +426,11 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> Ta
         setattr(task, field, value.value if field == "priority" else value)
     if "progress" in changes:
         task.progress = changes["progress"]
+    changed = activity.diff(
+        before, activity.snapshot(task, (new_status or old_status).name, new_assignee)
+    )
+    if changed:
+        activity.record(session, task.id, actor.id, "updated", changed)
 
     try:
         await session.commit()
@@ -409,8 +440,32 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> Ta
     return await get_task_out(session, task.id)
 
 
-async def archive_task(session: AsyncSession, task: Task) -> None:
+async def assign_task(
+    session: AsyncSession, task: Task, assignee_id: uuid.UUID | None, version: int, actor: User
+) -> TaskOut:
+    """Assign, reassign or (with None) unassign. The assignee must be an active project member."""
+    if version != task.version:
+        raise version_conflict()
+    if assignee_id is not None:
+        await _check_assignee(session, task.project_id, assignee_id)
+    if assignee_id != task.assignee_id:  # same assignee: nothing to save, version stays
+        names = [
+            await _user_name(session, task.assignee_id),
+            await _user_name(session, assignee_id),
+        ]
+        activity.record(session, task.id, actor.id, "updated", {"assignee": names})
+        task.assignee_id = assignee_id
+        try:
+            await session.commit()
+        except StaleDataError:
+            await session.rollback()
+            raise version_conflict() from None
+    return await get_task_out(session, task.id)
+
+
+async def archive_task(session: AsyncSession, task: Task, actor: User) -> None:
     """Soft delete: hidden from lists, data kept. Archiving twice is harmless."""
     if task.archived_at is None:
         task.archived_at = datetime.now(UTC)
+        activity.record(session, task.id, actor.id, "archived")
         await session.commit()

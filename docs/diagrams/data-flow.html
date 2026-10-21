@@ -162,7 +162,7 @@
 <text x="607" y="215.5" fill="#2d3142" font-size="6" font-weight="600" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">API</text>
 <text x="644" y="231" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Service layer</text>
 <text x="644" y="242" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">rules · validation</text>
-<text x="644" y="253" fill="#5a6580" font-size="6.5" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">projects/service.py</text>
+<text x="644" y="253" fill="#5a6580" font-size="6.5" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">projects · tasks</text>
 <rect x="598" y="258" width="16" height="8" rx="3" fill="#b8915a"/>
 <text x="606" y="264" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">TB</text>
 <rect x="674" y="258" width="16" height="8" rx="3" fill="#b8915a"/>
@@ -215,13 +215,13 @@
 <line x1="472" y1="390" x2="496" y2="390" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arr-accent)"/>
 <text x="504" y="393" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', ui-monospace, monospace">facts for can()</text>
 <text x="144" y="414" fill="#4f5d75" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">CASE</text>
-<text x="212" y="417" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', ui-monospace, monospace">Any request, e.g. a PM creating a project or a developer listing their projects. Step 04 can stop it with 403 / 404.</text>
+<text x="212" y="417" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', ui-monospace, monospace">Any request, e.g. a PM creating a task or a developer moving their own task. Step 04 can stop it with 403 / 404.</text>
       </svg>
     </div>
     <div class="cards">
       <div class="card"><p class="eyebrow">Step 04</p><h3><span class="dot coral"></span>Permission before work</h3><p>The database is asked who the user is and what they belong to; can() then allows or denies before any business logic runs.</p></div>
       <div class="card"><p class="eyebrow">One shape in, one shape out</p><h3><span class="dot ink"></span>Same for every endpoint</h3><p>Requests are JSON with the dev user header. Responses are JSON, or the single error shape {error, request_id}.</p></div>
-      <div class="card"><p class="eyebrow">Where data changes</p><h3><span class="dot muted"></span>Only in step 05</h3><p>Only the service layer writes to PostgreSQL, and constraints plus the version column are the final guard.</p></div>
+      <div class="card"><p class="eyebrow">Where data changes</p><h3><span class="dot muted"></span>Only in step 05</h3><p>Only the service layer writes to PostgreSQL, and constraints plus the version column are the final guard (a stale task edit gets 409).</p></div>
     </div>
     <footer>Borek PM Hub · generated from the backend code (app/, alembic/) · 20.10.2026</footer>
   </div>
