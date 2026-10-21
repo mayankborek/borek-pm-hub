@@ -6,7 +6,7 @@
 
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .metric {
-  border: 1px solid var(--line); border-radius: 0; padding: 16px 20px; background: #fff;
+  border: 1px solid var(--line); border-radius: 0; padding: 16px 20px; background: var(--surface);
   display: flex; flex-direction: column; gap: 4px; min-height: 114px; box-sizing: border-box;
 }
 .metric h3 { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; }
@@ -22,21 +22,24 @@
 .proj-head span:not(:first-child), .proj-list li span { text-align: center; }
 .proj-list { margin-top: 6px; }
 .proj-list li { min-height: 32px; }
-.proj-list a { font-size: 13px; font-weight: 600; color: #124f94; text-decoration: none; }
+.proj-list a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 .proj-list a:hover { text-decoration: underline; }
 .proj-list li span { font-size: 12px; font-weight: 500; }
-.life.planned, .life.completed { color: #475263; }
+.life.planned, .life.completed { color: var(--muted); }
 .life.active { color: #1f4fa6; }
 .life.on_hold, .health.at-risk { color: #7a4a05; }
 .health.on-track { color: #1a613b; }
 .health.off-track { color: #8c212b; }
 .more { display: inline-block; margin-top: 10px; font-size: 12px; }
 
-.attn-list li { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+.attn-list li { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
 .attn-title { font-size: 13px; font-weight: 600; text-decoration: none; }
 .attn-title.warn { color: #e07e00; }
 .attn-title.err { color: #c94a32; }
 .attn-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.attn-meta .pill.blocked { background: none; border-color: transparent; color: #ad1f1f; font-weight: 500; }
+.attn-meta .pill.overdue { width: 112px; height: 28px; justify-content: center; border-radius: 0; padding: 0; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); font-weight: 600; }
+.main:has(.dashboard) { background: var(--surface); }
 .attn-note { margin: 16px 0 0; font-size: 13px; }
 
 @media (max-width: 1100px) {

@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
 
 export function AppLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const [lang, setLang] = useState<'de' | 'en'>('en');
+  const { lang, setLang, t } = usePrefs();
   if (!user) return null;
 
   const initials = user.name
@@ -30,10 +30,10 @@ export function AppLayout() {
           <img src={borekLogo} alt="BOREK Solutions Group" width={112} height={26} />
           <span>Borek Flow</span>
         </div>
-        <nav aria-label="Main">
+        <nav aria-label={t('Main')}>
           {items.map((item) => (
             <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
         </nav>
@@ -42,9 +42,9 @@ export function AppLayout() {
       <div className="main">
         <header className="topbar">
           <div className="topbar-row">
-            <h1 className="topbar-title">{title}</h1>
+            <h1 className="topbar-title">{t(title)}</h1>
             <div className="topbar-actions">
-              <div className="lang-switch" role="group" aria-label="Language">
+              <div className="lang-switch" role="group" aria-label={t('Language')}>
                 <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
                 <i />
                 <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>

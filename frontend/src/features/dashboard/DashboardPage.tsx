@@ -5,6 +5,7 @@ import { parseApiError, useProjects } from '@/features/projects/projectsApi';
 import { useBlockedTasks, useDueSoonTasks, useOverdueTasks } from './dashboardApi';
 import { STATUS_LABEL, addDaysIso, daysOverdue, formatDate, healthOf, todayIso } from '@/features/projects/projectUi';
 import type { Project, TaskListItem } from '@/features/projects/types';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { Pill } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import './dashboard.css';
@@ -20,12 +21,13 @@ const greeting = () => {
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const { t } = usePrefs();
   const projects = useProjects();
   const firstName = user?.name.split(' ')[0] ?? '';
 
   const newProject = (
     <Link className="btn" to={paths.projectNew}>
-      New Project
+      {t('New Project')}
     </Link>
   );
 
@@ -34,19 +36,19 @@ export function DashboardPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">
-            {greeting()}, {firstName}
+            {t(greeting())}, {firstName}
           </h1>
-          <p className="page-desc">Portfolio health, team delivery, and attention items across active projects.</p>
+          <p className="page-desc">{t('Portfolio health, team delivery, and attention items across active projects.')}</p>
         </div>
         {newProject}
       </div>
 
       {projects.isPending ? (
-        <LoadingState title="Loading your dashboard" text="Fetching project metrics and items that need attention." />
+        <LoadingState title={t('Loading your dashboard')} text={t('Fetching project metrics and items that need attention.')} />
       ) : projects.isError ? (
-        <ErrorState title="We couldn’t load your projects" text={parseApiError(projects.error).message} onRetry={() => void projects.refetch()} />
+        <ErrorState title={t('We couldn’t load your projects')} text={parseApiError(projects.error).message} onRetry={() => void projects.refetch()} />
       ) : projects.data.items.length === 0 ? (
-        <EmptyState title="No projects yet" text="Create a project to start tracking work, delivery, and attention items for your team." action={newProject} />
+        <EmptyState title={t('No projects yet')} text={t('Create a project to start tracking work, delivery, and attention items for your team.')} action={newProject} />
       ) : (
         <DashboardBody projects={projects.data.items} total={projects.data.total} />
       )}
@@ -55,21 +57,22 @@ export function DashboardPage() {
 }
 
 function DashboardBody({ projects, total }: { projects: Project[]; total: number }) {
+  const { t } = usePrefs();
   const hasSummary = projects.some((p) => p.task_summary);
   const today = todayIso();
   const dueSoon = useDueSoonTasks(today, addDaysIso(7));
   const active = projects.filter((p) => p.status === 'active').length;
   const metrics = [
-    { label: 'Active Projects', value: active, note: `${total} in total` },
-    { label: 'Tasks in Progress', value: hasSummary ? sum(projects, (p) => p.task_summary?.in_progress) : '—', note: 'Across all projects' },
-    { label: 'Due this Week', value: dueSoon.data ? dueSoon.data.length : '—', note: 'Next 7 days' },
-    { label: 'Overdue Tasks', value: hasSummary ? sum(projects, (p) => p.task_summary?.overdue) : '—', note: 'Needs PM action' },
+    { label: t('Active Projects'), value: active, note: t('{n} in total', { n: total }) },
+    { label: t('Tasks in Progress'), value: hasSummary ? sum(projects, (p) => p.task_summary?.in_progress) : '—', note: t('Across all projects') },
+    { label: t('Due this Week'), value: dueSoon.data ? dueSoon.data.length : '—', note: t('Next 7 days') },
+    { label: t('Overdue Tasks'), value: hasSummary ? sum(projects, (p) => p.task_summary?.overdue) : '—', note: t('Needs PM action') },
   ];
   const shown = projects.slice(0, PROJECT_ROWS);
 
   return (
     <>
-      <section className="metrics" aria-label="Metrics overview">
+      <section className="metrics" aria-label={t('Metrics overview')}>
         {metrics.map((m) => (
           <article className="metric" key={m.label}>
             <h3>{m.label}</h3>
@@ -80,15 +83,15 @@ function DashboardBody({ projects, total }: { projects: Project[]; total: number
       </section>
 
       <div className="split">
-        <section className="card" aria-label="Projects">
-          <h3>All Accessible Projects</h3>
+        <section className="card" aria-label={t('Projects')}>
+          <h3>{t('All Accessible Projects')}</h3>
           <p className="desc">
-            {total} {total === 1 ? 'project' : 'projects'} available to you
+            {t(total === 1 ? '{n} project available to you' : '{n} projects available to you', { n: total })}
           </p>
           <div className="proj-head" aria-hidden="true">
-            <span>Project</span>
-            <span>Lifecycle</span>
-            <span>Health</span>
+            <span>{t('Project')}</span>
+            <span>{t('Lifecycle')}</span>
+            <span>{t('Health')}</span>
           </div>
           <ul className="proj-list">
             {shown.map((p) => {
@@ -96,15 +99,15 @@ function DashboardBody({ projects, total }: { projects: Project[]; total: number
               return (
                 <li key={p.id}>
                   <Link to={paths.project(p.id)}>{p.name} →</Link>
-                  <span className={`life ${p.status}`}>{STATUS_LABEL[p.status]}</span>
-                  <span className={`health ${health.replace(' ', '-').toLowerCase()}`}>{health}</span>
+                  <span className={`life ${p.status}`}>{t(STATUS_LABEL[p.status])}</span>
+                  <span className={`health ${health.replace(' ', '-').toLowerCase()}`}>{t(health)}</span>
                 </li>
               );
             })}
           </ul>
           {total > shown.length && (
             <Link className="more" to={paths.projects}>
-              View all {total} projects →
+              {t('View all {n} projects →', { n: total })}
             </Link>
           )}
         </section>
@@ -115,12 +118,13 @@ function DashboardBody({ projects, total }: { projects: Project[]; total: number
   );
 }
 
-const overdueText = (due: string | null, today: string) => {
+const overdueText = (due: string | null, today: string, t: (s: string, v?: Record<string, number>) => string) => {
   const d = daysOverdue(due, today);
-  return d === 1 ? '1 day overdue' : `${d} days overdue`;
+  return d === 1 ? t('1 day overdue') : t('{n} days overdue', { n: d });
 };
 
 function AttentionAreas({ projects }: { projects: Project[] }) {
+  const { t } = usePrefs();
   const today = todayIso();
   const overdue = useOverdueTasks(today);
   const blocked = useBlockedTasks();
@@ -137,19 +141,19 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
   const failed = overdue.isError || blocked.isError;
 
   return (
-    <section className="card" aria-label="Attention areas">
-      <h3>Attention Areas</h3>
-      <p className="desc">Blocked or overdue work needing attention</p>
+    <section className="card" aria-label={t('Attention Areas')}>
+      <h3>{t('Attention Areas')}</h3>
+      <p className="desc">{t('Blocked or overdue work needing attention')}</p>
       {loading ? (
         <p className="muted attn-note" aria-busy="true">
-          Loading…
+          {t('Loading…')}
         </p>
       ) : null}
       {!loading && failed && (
         <p className="muted attn-note" role="alert">
           {overdue.isError && blocked.isError
-            ? 'Attention items are unavailable right now.'
-            : `${overdue.isError ? 'Overdue' : 'Blocked'} tasks could not be loaded.`}{' '}
+            ? t('Attention items are unavailable right now.')
+            : t(overdue.isError ? 'Overdue tasks could not be loaded.' : 'Blocked tasks could not be loaded.')}{' '}
           <button
             type="button"
             className="link-btn"
@@ -158,12 +162,12 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
               void blocked.refetch();
             }}
           >
-            Retry
+            {t('Retry')}
           </button>
         </p>
       )}
       {!loading && !failed && items.length === 0 ? (
-        <p className="muted attn-note">Nothing is blocked or overdue. Nice work.</p>
+        <p className="muted attn-note">{t('Nothing is blocked or overdue. Nice work.')}</p>
       ) : null}
       {!loading && items.length > 0 && (
         <ul className="attn-list">
@@ -175,9 +179,9 @@ function AttentionAreas({ projects }: { projects: Project[] }) {
               <div className="attn-meta">
                 <span>
                   {task.project_name ?? names.get(task.project_id) ?? 'Project'}
-                  {kind === 'overdue' ? ` · ${formatDate(task.due_date)} · ${overdueText(task.due_date, today)}` : ' · blocked'}
+                  {kind === 'overdue' ? ` · ${formatDate(task.due_date)} · ${overdueText(task.due_date, today, t)}` : ` · ${t('blocked')}`}
                 </span>
-                <Pill tone={kind === 'overdue' ? 'overdue' : 'blocked'}>{kind === 'overdue' ? 'Overdue' : 'Blocked'}</Pill>
+                <Pill tone={kind === 'overdue' ? 'overdue' : 'blocked'}>{kind === 'overdue' ? t('Overdue') : t('Blocked')}</Pill>
               </div>
             </li>
           ))}
