@@ -3,6 +3,7 @@ import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
+import { DevProjectsNav } from './DevProjectsNav';
 
 export function AppLayout() {
   const { user } = useAuth();
@@ -19,7 +20,11 @@ export function AppLayout() {
   const title =
     pathname === paths.profile
       ? 'Profile'
-      : /^\/projects\/(?!new$)[^/]+(\/board)?\/?$/.test(pathname)
+      : pathname === paths.myWork
+        ? 'My Work'
+        : pathname === paths.projects && user.role === 'developer'
+          ? 'My Projects'
+          :/^\/projects\/(?!new$)[^/]+(\/board)?\/?$/.test(pathname)
         ? 'Project Overview'
         : pathname.startsWith(`${paths.tasks}/`)
         ? 'Task details'
@@ -40,6 +45,7 @@ export function AppLayout() {
               {t(item.label)}
             </NavLink>
           ))}
+          {user.role === 'developer' && <DevProjectsNav />}
         </nav>
       </aside>
 

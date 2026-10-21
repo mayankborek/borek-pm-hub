@@ -31,6 +31,6 @@ export interface NavItem {
 /** Sidebar entries, filtered by the current user's role. */
 export const navItems: NavItem[] = [
   { label: 'Dashboard', to: paths.dashboard, roles: ['pm'], icon: '▦' },
-  { label: 'My Work', to: paths.myWork, roles: ['developer'], icon: '✓' },
-  { label: 'Task List', to: paths.tasks, roles: ['pm', 'developer'], icon: '☰' },
+  { label: 'My Task', to: paths.myWork, roles: ['developer'], icon: '✓' },
+  { label: 'Task List', to: paths.tasks, roles: ['pm'], icon: '☰' },
 ];

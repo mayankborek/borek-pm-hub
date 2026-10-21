@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { Pill, ProgressBar } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProjects } from './projectsApi';
+import emptyIllustration from './assets/empty-projects.jpg';
 import { STATUS_LABEL, STATUS_TONE, completionOf, formatDate } from './projectUi';
 import './projects.css';
 
@@ -24,13 +25,14 @@ export function ProjectsPage() {
     <section className="page-body">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Projects</h1>
+          {!isPm && <p className="page-crumb">Developer workspace / My projects</p>}
+          <h1 className="page-title">{isPm ? 'Projects' : 'My Projects'}</h1>
           <p className="page-desc">Projects you can access. Open a project to see its overview and tasks.</p>
         </div>
         {newButton}
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar" hidden={!isPm && data?.total === 0 && !search.trim()}>
         <input
           type="search"
           className="input"
@@ -49,6 +51,12 @@ export function ProjectsPage() {
       ) : data.items.length === 0 ? (
         search.trim() ? (
           <EmptyState title="No matching projects" text={`Nothing matches “${search.trim()}”. Try a different name or code.`} />
+        ) : !isPm ? (
+          <section className="state center empty-art">
+            <img src={emptyIllustration} alt="" width={254} height={254} />
+            <h3>No projects you can access yet</h3>
+            <p>When you’re added to a project, it will appear here. Create a project or ask a project manager to grant access.</p>
+          </section>
         ) : (
           <EmptyState
             title="No projects yet"

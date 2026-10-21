@@ -8,7 +8,8 @@ import { ProjectCreatePage, ProjectEditPage } from '@/features/projects/ProjectF
 import { ProjectOverviewPage } from '@/features/projects/ProjectOverviewPage';
 import { ProjectBoardPage } from '@/features/projects/ProjectBoardPage';
 import { ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
-import { MyWorkPage, TasksPage } from '@/features/tasks/TaskPages';
+import { TasksPage } from '@/features/tasks/TaskPages';
+import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
 import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';

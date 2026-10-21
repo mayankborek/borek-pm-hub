@@ -97,3 +97,39 @@
 .td-file span { flex: 1; }
 .td-link { padding: 0; border: 0; background: none; font: inherit; color: var(--link); cursor: pointer; text-align: left; }
 .td-link:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Date picker (Figma "Field picker · PM · Start date · October 2026"). */
+.dp { position: relative; min-width: 0; }
+.dp-btn { width: 100%; height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); color: var(--ink); font: 600 13px Inter, sans-serif; text-align: left; cursor: pointer; }
+.dp-btn.open { border-width: 2px; padding: 0 7px; }
+.dp-btn:focus-visible, .dp-pop button:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.dp-pop { position: absolute; z-index: 6; top: 100%; right: 0; width: 288px; margin-top: 2px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid #7d879c; box-shadow: 0 4px 16px rgba(13, 18, 64, .13); }
+.dp-pop button { border: 0; background: none; color: var(--ink); font: 400 13px/18px Inter, sans-serif; cursor: pointer; }
+.dp-head { display: flex; align-items: center; gap: 8px; height: 32px; }
+.dp-head span { flex: 1; text-align: center; font: 500 14px/20px Inter, sans-serif; color: var(--ink); }
+.dp-head button { width: 28px; height: 28px; }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.dp-week span { height: 20px; text-align: center; font-size: 12px; line-height: 16px; color: var(--muted); }
+.dp-grid button { height: 32px; }
+.dp-grid button:hover { background: var(--surface-2); }
+.dp-grid button.sel { background: var(--navy); color: #fff; }
+.dp-grid button[aria-disabled='true'] { color: var(--muted); opacity: .45; cursor: not-allowed; }
+.dp-hint, .dp-error { margin: 0; font-size: 12px; line-height: 16px; }
+.dp-hint { color: var(--muted); }
+.dp-error { min-height: 16px; color: var(--err); }
+.dp-foot { display: flex; justify-content: space-between; }
+.dp-pop .dp-foot button { color: var(--navy); }
+.dp-pop .dp-foot .dp-clear { color: var(--muted); }
+
+/* Assignee picker (Figma "Field picker · PM · Assignee options"). */
+.as { position: relative; min-width: 0; }
+.as-pop { position: absolute; z-index: 6; top: 100%; right: 0; width: 288px; margin-top: 2px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid #7d879c; box-shadow: 0 4px 16px rgba(13, 18, 64, .13); }
+.as-title { margin: 0; font: 600 12px/16px Inter, sans-serif; color: var(--muted); }
+.as-pop ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.as-pop li { display: flex; align-items: center; height: 36px; padding: 0 8px; font: 400 13px/18px Inter, sans-serif; color: var(--ink); cursor: pointer; }
+.as-pop li.active { background: var(--surface-2); }
+.as-pop li[aria-selected='true'] { background: #e3edfc; }
+:root[data-theme=dark] .as-pop li[aria-selected='true'] { background: var(--line); }
+
+.td-desc-static { margin: 0; padding: 8px 0; white-space: pre-wrap; font: 400 14px/20px Inter, sans-serif; color: var(--muted); }
+.td-static .pi { font-weight: 600; }

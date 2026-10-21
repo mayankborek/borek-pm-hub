@@ -9,7 +9,7 @@ interface Option {
 
 /** Named workflow states keep their own colour; anything else follows its category (Figma "Filter option · Status"). */
 const NAME_TONE: Record<string, string> = { 'code review': 'review', testing: 'testing' };
-const toneOf = (o: Option) => NAME_TONE[o.name.toLowerCase()] ?? o.category;
+export const toneOf = (o: Option) => NAME_TONE[o.name.toLowerCase()] ?? o.category;
 
 /** Single-select status dropdown whose options are the coloured status labels from the Board filter popover. */
 export function StatusSelect({ value, options, onChange }: { value: string; options: Option[]; onChange: (id: string) => void }) {

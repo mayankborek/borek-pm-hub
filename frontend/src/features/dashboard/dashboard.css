@@ -30,6 +30,13 @@
 .life.on_hold, .health.at-risk { color: #7a4a05; }
 .health.on-track { color: #1a613b; }
 .health.off-track { color: #8c212b; }
+.mw-head, .mw-list li { display: grid; grid-template-columns: minmax(0, 1fr) 100px 124px; gap: 24px; align-items: center; }
+.mw-head { margin-top: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 18px; color: var(--muted); text-transform: uppercase; }
+.mw-list { list-style: none; margin: 6px 0 0; padding: 0; }
+.mw-list li { min-height: 32px; }
+.mw-list a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+.mw-list a:hover { text-decoration: underline; }
+.mw-list .pi { font-size: 13px; }
 .more { display: inline-block; margin-top: 10px; font-size: 12px; }
 
 .attn-list li { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
@@ -49,4 +56,5 @@
 @media (max-width: 600px) {
   .metrics { grid-template-columns: 1fr; }
   .proj-head, .proj-list li { grid-template-columns: minmax(0, 1fr) 84px 76px; }
+  .mw-head, .mw-list li { grid-template-columns: minmax(0, 1fr) 84px 96px; gap: 12px; }
 }

@@ -1,14 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { TaskRow, TaskTableHead } from './TaskParts';
 import { emptyFilter, useAllTasks } from './tasksApi';
 import './tasks.css';
-
-export const MyWorkPage = () => (
-  <PagePlaceholder title="My Work" description="Tasks assigned to you across projects." />
-);
 
 /** Sidebar "Task List": GET /tasks across every project the user can access (backend scopes by role). */
 export function TasksPage() {

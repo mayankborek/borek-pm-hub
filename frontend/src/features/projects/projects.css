@@ -75,3 +75,9 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .project-head .crumbs { margin-bottom: 8px; }
 .project-head .page-title { font-size: 26px; font-weight: 600; margin: 0; color: var(--navy); }
 .project-sub { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+
+.page-crumb { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+.empty-art { gap: 24px; }
+.empty-art img { width: 254px; height: 254px; object-fit: cover; }
+.empty-art h3 { font-size: 20px; color: var(--muted); }
+.empty-art p { max-width: 640px; }

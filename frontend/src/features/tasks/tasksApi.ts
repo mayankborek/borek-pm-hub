@@ -26,6 +26,7 @@ export interface Task {
   due_date: string | null;
   progress: number;
   assignee: UserBrief | null;
+  blocked_at?: string | null;
   version: number;
 }
 
