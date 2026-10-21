@@ -136,11 +136,23 @@ export const useProjectMembers = (projectId?: string) =>
     enabled: !!projectId,
   });
 
+/**
+ * PATCH /tasks/{id}. The version is read from the cache at send time, so back-to-back edits use the last
+ * accepted version. A response is written to the cache only if it is newer than what is already there;
+ * "saved" feedback therefore always reflects data the server accepted.
+ */
 export const useUpdateTask = (task?: TaskDetail) => {
   const qc = useQueryClient();
+  const detailKey = [...taskKeys.all, 'detail', task?.id] as const;
   return useMutation({
-    mutationFn: (patch: TaskPatch) =>
-      api<TaskDetail>(`/tasks/${task!.id}`, { method: 'PATCH', body: JSON.stringify({ ...patch, version: task!.version }) }),
+    mutationFn: (patch: TaskPatch) => {
+      const current = qc.getQueryData<TaskDetail>(detailKey) ?? task!;
+      return api<TaskDetail>(`/tasks/${current.id}`, { method: 'PATCH', body: JSON.stringify({ ...patch, version: current.version }) });
+    },
+    onSuccess: (saved) => {
+      const cached = qc.getQueryData<TaskDetail>(detailKey);
+      if (!cached || saved.version >= cached.version) qc.setQueryData(detailKey, saved);
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });
 };

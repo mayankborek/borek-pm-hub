@@ -1,29 +1,36 @@
-import type { User } from './types';
+import { api } from '@/shared/api/client';
+import type { Role, User } from './types';
 
 export class NoAccessError extends Error {}
 export class InvalidCredentialsError extends Error {}
+export class ProviderUnavailableError extends Error {}
+
+interface UserOut {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+const toUser = (u: UserOut): User => ({ id: u.id, name: u.name, email: u.email, role: u.role as Role });
 
 /**
- * STUB. Replace with the real calls once the backend auth ticket is merged:
- *   GET /auth/dev-users  -> user picker (Phase 1)
- *   GET /auth/me         -> restore the session
- * Later: Microsoft Entra ID via the same interface.
+ * Phase 1 (AUTH_MODE=dev): the backend lists seeded users and trusts X-Dev-User-Id.
+ * The password is not checked in this mode. Entra ID sign-in plugs in behind the same two functions.
  */
-const SEEDED: User[] = [
-  { id: '00000000-0000-4000-8000-000000000001', name: 'Test PM', email: 'pm@borek.com', role: 'pm' },
-  { id: '00000000-0000-4000-8000-000000000011', name: 'Dev 1', email: 'dev1@borek.com', role: 'developer' },
-];
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export async function signInWithPassword(email: string, _password: string): Promise<User> {
-  await delay(600);
-  const user = SEEDED.find((u) => u.email === email.trim().toLowerCase());
-  if (!user) throw new NoAccessError();
-  return user;
+  const users = await api<UserOut[]>('/auth/dev-users');
+  const found = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+  if (!found) throw new NoAccessError();
+  return toUser(found);
 }
 
 export async function signInWithMicrosoft(): Promise<User> {
-  await delay(600);
-  return SEEDED[0];
+  // Needs the Entra tenant/client configuration and a token flow; not available yet.
+  throw new ProviderUnavailableError();
+}
+
+/** GET /auth/me: the server's view of the signed-in user (role included). Rejects with ApiError(401) if the session is invalid. */
+export async function fetchMe(): Promise<User> {
+  return toUser(await api<UserOut>('/auth/me'));
 }

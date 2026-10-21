@@ -186,11 +186,13 @@ export function TaskFilters({
   onChange,
   tasks,
   extra,
+  onClear,
 }: {
   filter: TaskFilter;
   onChange: (f: TaskFilter) => void;
   tasks: Task[];
   extra?: ReactNode;
+  onClear?: () => void;
 }) {
   const assignees = useSeenAssignees(tasks);
   return (
@@ -248,6 +250,11 @@ export function TaskFilters({
           </option>
         ))}
       </select>
+      {onClear && (filter.q.trim() || filter.category || filter.priority || filter.assigneeId) && (
+        <button type="button" className="link-btn" onClick={onClear}>
+          Clear all
+        </button>
+      )}
     </div>
   );
 }

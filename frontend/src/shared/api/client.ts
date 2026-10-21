@@ -18,6 +18,12 @@ export const setApiUser = (id: string | null) => {
   devUserId = id;
 };
 
+let onUnauthorized: (() => void) | null = null;
+/** AuthProvider registers this so any 401 ends the session in one place. */
+export const setUnauthorizedHandler = (fn: (() => void) | null) => {
+  onUnauthorized = fn;
+};
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
@@ -26,6 +32,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${env.apiBaseUrl}${path}`, { ...init, headers });
   if (!res.ok) {
+    if (res.status === 401 && devUserId) onUnauthorized?.();
     const body = await res.json().catch(() => undefined);
     throw new ApiError(res.status, res.statusText, body);
   }

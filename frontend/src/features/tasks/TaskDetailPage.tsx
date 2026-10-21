@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { formatDate } from '@/features/projects/projectUi';
 import { ApiError } from '@/shared/api/client';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
+import { useToast } from '@/shared/ui/Toast';
 import {
   downloadAttachment,
   useAttachmentActions,
@@ -40,7 +41,13 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 function Description({ task, save, readOnly }: { task: TaskDetail; save: (d: string | null) => void; readOnly?: boolean }) {
   const [text, setText] = useState(task.description ?? '');
-  useEffect(() => setText(task.description ?? ''), [task.description]);
+  // Draft vs confirmed: adopt a newer server value only if the user has no unsaved edit, so a failed or conflicting save never loses typing.
+  const confirmed = useRef(task.description ?? '');
+  useEffect(() => {
+    const next = task.description ?? '';
+    setText((draft) => (draft === confirmed.current ? next : draft));
+    confirmed.current = next;
+  }, [task.description]);
   if (readOnly) return <p className="td-desc-static">{task.description || 'No description.'}</p>;
   return (
     <textarea
@@ -62,6 +69,7 @@ export function TaskDetailPage() {
   const { data: task, isPending, isError, refetch } = useTask(taskId);
   const statuses = useProjectStatuses(task?.project_id);
   const members = useProjectMembers(task?.project_id);
+  const toast = useToast();
   const update = useUpdateTask(task);
   const attachments = useAttachments(taskId);
   const files = useAttachmentActions(taskId);
@@ -71,7 +79,12 @@ export function TaskDetailPage() {
   // No relations endpoint yet: kept in page state until the backend adds one.
   const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
   const [labels, setLabels] = useState('');
-  useEffect(() => setLabels(task?.labels.join(', ') ?? ''), [task?.labels]);
+  const confirmedLabels = useRef('');
+  useEffect(() => {
+    const next = task?.labels.join(', ') ?? '';
+    setLabels((draft) => (draft === confirmedLabels.current ? next : draft));
+    confirmedLabels.current = next;
+  }, [task?.labels]);
 
   if (isPending)
     return (
@@ -90,7 +103,11 @@ export function TaskDetailPage() {
       </section>
     );
 
-  const save = update.mutate;
+  const save = (patch: Parameters<typeof update.mutate>[0]) =>
+    update.mutate(patch, {
+      onError: (e) =>
+        toast.error(e instanceof ApiError && e.status === 409 ? 'Someone else changed this task. Your edit was not saved.' : 'Could not save your change.'),
+    });
   // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
   const isPm = user?.role === 'pm';
   const canStatus = isPm || task.assignee?.id === user?.id;

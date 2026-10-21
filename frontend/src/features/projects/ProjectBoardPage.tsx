@@ -4,14 +4,13 @@ import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { Avatar, TaskFilters } from '@/features/tasks/TaskParts';
+import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
 import {
-  emptyFilter,
   useProjectStatuses,
   useStatusActions,
   useProjectTasks,
   type StatusCategory,
   type Task,
-  type TaskFilter,
   type TaskPriority,
 } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
@@ -50,7 +49,7 @@ interface Column {
 /** Board tab: one column per project status, planned work only (Backlog-category tasks stay in the Backlog tab). */
 export function ProjectBoardPage() {
   const project = useProjectContext();
-  const [filter, setFilter] = useState<TaskFilter>(emptyFilter);
+  const { filter, applied, setFilter, clear } = useUrlFilter();
   const [composing, setComposing] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
@@ -59,7 +58,7 @@ export function ProjectBoardPage() {
   const { user } = useAuth();
   const isPm = user?.role === 'pm';
   const actions = useStatusActions(project.id);
-  const { data, isPending, isError, refetch } = useProjectTasks(project.id, filter);
+  const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
   const { data: statuses } = useProjectStatuses(project.id);
 
   const { columns, shown } = useMemo(() => {
@@ -113,11 +112,11 @@ export function ProjectBoardPage() {
   if (isPending) return <LoadingState title="Loading board" text="Fetching this project’s tasks." />;
   if (isError) return <ErrorState title="We couldn’t load the board" text="Check your connection and try again." onRetry={() => void refetch()} />;
 
-  const filtered = !!(filter.q.trim() || filter.category || filter.priority || filter.assigneeId);
+  const filtered = isFiltered(applied);
 
   return (
     <>
-      <TaskFilters filter={filter} onChange={setFilter} tasks={data.items} />
+      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} />
       {columns.length === 0 && !isPm ? (
         <EmptyState
           title={filtered ? 'No matching tasks' : 'No tasks on the board'}

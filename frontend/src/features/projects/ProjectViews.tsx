@@ -1,15 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { TaskFilters, TaskGroup, TaskRow } from '@/features/tasks/TaskParts';
-import { emptyFilter, useProjectTasks, type TaskFilter } from '@/features/tasks/tasksApi';
+import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
+import { useProjectTasks } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
 
 /** Backlog tab: GET /projects/{id}/tasks, planned work first, then tasks still in the Backlog category. */
 export function ProjectListPage() {
   const project = useProjectContext();
-  const [filter, setFilter] = useState<TaskFilter>(emptyFilter);
-  const { data, isPending, isError, refetch } = useProjectTasks(project.id, filter);
+  const { filter, applied, setFilter, clear } = useUrlFilter();
+  const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
 
   const { planned, backlog } = useMemo(() => {
     const items = data?.items ?? [];
@@ -22,12 +23,12 @@ export function ProjectListPage() {
   if (isPending) return <LoadingState title="Loading tasks" text="Fetching this project’s tasks." />;
   if (isError) return <ErrorState title="We couldn’t load tasks" text="Check your connection and try again." onRetry={() => void refetch()} />;
 
-  const filtered = !!(filter.q.trim() || filter.category || filter.priority || filter.assigneeId);
+  const filtered = isFiltered(applied);
   const noTasks = data.total === 0;
 
   return (
     <>
-      <TaskFilters filter={filter} onChange={setFilter} tasks={data.items} />
+      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} />
       {noTasks && !filtered ? (
         <EmptyState title="No tasks yet" text="Tasks added to this project will appear here." />
       ) : noTasks ? (

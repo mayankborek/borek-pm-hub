@@ -2,19 +2,22 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { TaskRow, TaskTableHead } from './TaskParts';
-import { emptyFilter, useAllTasks } from './tasksApi';
+import { TaskFilters } from './TaskParts';
+import { useAllTasks } from './tasksApi';
+import { isFiltered, useUrlFilter } from './useUrlFilter';
 import './tasks.css';
 
 /** Sidebar "Task List": GET /tasks across every project the user can access (backend scopes by role). */
 export function TasksPage() {
   const [params] = useSearchParams();
+  const { filter, applied, setFilter, clear } = useUrlFilter();
   const projectId = params.get('project_id') ?? '';
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, emptyFilter);
+  const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, applied);
 
   const tasks = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
   const total = data?.pages[0]?.total ?? 0;
-  const filtered = !!projectId;
+  const filtered = !!projectId || isFiltered(applied);
 
   return (
     <section className="page-body">
@@ -27,6 +30,8 @@ export function TasksPage() {
           Add Task
         </button>
       </div>
+
+      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={tasks} />
 
       {isPending ? (
         <LoadingState title="Loading tasks" text="Fetching tasks across your projects." />
