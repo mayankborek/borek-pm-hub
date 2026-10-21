@@ -1,5 +1,6 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/shared/api/client';
+import { api, ApiError, getApiUser } from '@/shared/api/client';
+import { env } from '@/shared/config/env';
 import { qs } from '@/features/projects/projectsApi';
 
 export type StatusCategory = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
@@ -192,3 +193,57 @@ export const useStatusActions = (projectId: string) => {
     }),
   };
 };
+
+/** Mirrors backend AttachmentOut (app/tasks/details_schemas.py). */
+export interface Attachment {
+  id: string;
+  task_id: string;
+  kind: 'file' | 'link';
+  name: string;
+  url: string | null;
+  download_url: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: UserBrief;
+  created_at: string;
+}
+
+const attachmentsKey = (taskId: string) => [...taskKeys.all, 'attachments', taskId] as const;
+
+export const useAttachments = (taskId: string) =>
+  useQuery({ queryKey: attachmentsKey(taskId), queryFn: () => api<Attachment[]>(`/tasks/${taskId}/attachments`), enabled: !!taskId });
+
+/** POST /tasks/{id}/attachments (multipart, one request per file) and DELETE to archive. */
+export const useAttachmentActions = (taskId: string) => {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: attachmentsKey(taskId) });
+  return {
+    upload: useMutation({
+      mutationFn: async (files: File[]) => {
+        for (const file of files) {
+          const body = new FormData();
+          body.append('file', file);
+          await api<Attachment>(`/tasks/${taskId}/attachments`, { method: 'POST', body });
+        }
+      },
+      onSettled: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => api<void>(`/tasks/${taskId}/attachments/${id}`, { method: 'DELETE' }),
+      onSettled: refresh,
+    }),
+  };
+};
+
+/** Downloads need the auth header, so fetch the file as a blob and save it. */
+export async function downloadAttachment(a: Attachment) {
+  const headers = new Headers();
+  const id = getApiUser();
+  if (id) headers.set('X-Dev-User-Id', id);
+  const res = await fetch(`${env.apiBaseUrl}/tasks/${a.task_id}/attachments/${a.id}/download`, { headers });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  const url = URL.createObjectURL(await res.blob());
+  const link = Object.assign(document.createElement('a'), { href: url, download: a.name });
+  link.click();
+  URL.revokeObjectURL(url);
+}

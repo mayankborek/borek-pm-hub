@@ -13,6 +13,7 @@ export class ApiError extends Error {
 // Phase 1 auth: the selected seeded user id is sent on every request
 // (X-Dev-User-Id). Replaced by a bearer token when Entra ID is added.
 let devUserId: string | null = null;
+export const getApiUser = () => devUserId;
 export const setApiUser = (id: string | null) => {
   devUserId = id;
 };
@@ -20,7 +21,7 @@ export const setApiUser = (id: string | null) => {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
-  if (init.body) headers.set('Content-Type', 'application/json');
+  if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   if (devUserId) headers.set('X-Dev-User-Id', devUserId);
 
   const res = await fetch(`${env.apiBaseUrl}${path}`, { ...init, headers });

@@ -1,18 +1,26 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { ApiError } from '@/shared/api/client';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import {
+  downloadAttachment,
+  useAttachmentActions,
+  useAttachments,
   useProjectMembers,
   useProjectStatuses,
   useTask,
   useUpdateTask,
+  type Task,
   type TaskDetail,
 } from './tasksApi';
+import { RelatedTaskDrawer, relationLabels, type Relationship } from './RelatedTaskDrawer';
 import { PrioritySelect } from './PrioritySelect';
 import { StatusSelect } from './StatusSelect';
 import './taskDetail.css';
+
+const fileSize = (n: number | null) =>
+  n == null ? '' : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 const stamp = (iso: string) =>
   new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -49,6 +57,13 @@ export function TaskDetailPage() {
   const statuses = useProjectStatuses(task?.project_id);
   const members = useProjectMembers(task?.project_id);
   const update = useUpdateTask(task);
+  const attachments = useAttachments(taskId);
+  const files = useAttachmentActions(taskId);
+  const picker = useRef<HTMLInputElement>(null);
+  const [fileError, setFileError] = useState('');
+  const [drawer, setDrawer] = useState(false);
+  // No relations endpoint yet: kept in page state until the backend adds one.
+  const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
   const [labels, setLabels] = useState('');
   useEffect(() => setLabels(task?.labels.join(', ') ?? ''), [task?.labels]);
 
@@ -98,10 +113,54 @@ export function TaskDetailPage() {
             <p className="td-hint">Click the text to edit · saves when you leave the field</p>
             <Description task={task} save={(description) => save({ description })} />
             <div className="td-attach">
-              <strong>Attachments · 0 files</strong>
-              <button type="button" className="td-outline" disabled title="File attachments are not available yet">
-                + Attach files
+              <strong>
+                Attachments · {attachments.data?.length ?? 0} {attachments.data?.length === 1 ? 'file' : 'files'}
+              </strong>
+              {(attachments.data ?? []).map((a) => (
+                <div key={a.id} className="td-file">
+                  {a.kind === 'link' ? (
+                    <a href={a.url ?? '#'} target="_blank" rel="noreferrer noopener">{a.name}</a>
+                  ) : (
+                    <button type="button" className="td-link" onClick={() => downloadAttachment(a).catch(() => setFileError('Could not download the file.'))}>
+                      {a.name}
+                    </button>
+                  )}
+                  <span>{fileSize(a.size_bytes)}</span>
+                  <button
+                    type="button"
+                    className="td-link"
+                    aria-label={`Remove ${a.name}`}
+                    disabled={files.remove.isPending}
+                    onClick={() => files.remove.mutate(a.id, { onError: () => setFileError('Could not remove the file.') })}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <input
+                ref={picker}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  e.target.value = '';
+                  if (!picked.length) return;
+                  setFileError('');
+                  files.upload.mutate(picked, {
+                    onError: (err) =>
+                      setFileError(err instanceof ApiError && err.status === 413 ? 'That file is too large.' : 'Could not upload the file.'),
+                  });
+                }}
+              />
+              <button type="button" className="td-outline" disabled={files.upload.isPending} onClick={() => picker.current?.click()}>
+                {files.upload.isPending ? 'Uploading…' : '+ Attach files'}
               </button>
+              {fileError && (
+                <p className="td-error" role="alert">
+                  {fileError}
+                </p>
+              )}
             </div>
           </section>
 
@@ -185,14 +244,36 @@ export function TaskDetailPage() {
           <section className="td-card">
             <div className="td-card-head">
               <h3>Related tasks</h3>
-              <button type="button" className="td-outline" disabled title="Task relations are not available yet">
+              <button type="button" className="td-outline" onClick={() => setDrawer(true)}>
                 Related Task
               </button>
             </div>
-            <p className="td-empty">No related tasks.</p>
+            {related.length === 0 && <p className="td-empty">No related tasks.</p>}
+            {related.map((r) => (
+              <div key={`${r.relation}-${r.task.id}`} className="td-related">
+                <Link to={paths.task(r.task.id)}>
+                  {r.task.key} · {r.task.title}
+                </Link>
+                <span>
+                  {relationLabels[r.relation]} · {r.task.status.name}
+                </span>
+              </div>
+            ))}
           </section>
         </div>
       </div>
+      {drawer && (
+        <RelatedTaskDrawer
+          task={task}
+          onClose={() => setDrawer(false)}
+          onAdd={(relation, other) => {
+            setRelated((prev) =>
+              prev.some((r) => r.task.id === other.id && r.relation === relation) ? prev : [...prev, { relation, task: other }],
+            );
+            setDrawer(false);
+          }}
+        />
+      )}
     </section>
   );
 }
