@@ -32,28 +32,50 @@ export function Avatar({ user, round }: { user: UserBrief; round?: boolean }) {
   );
 }
 
-export function TaskRow({ task, showProject }: { task: Task; showProject?: boolean }) {
+export function TaskRow({
+  task,
+  showProject,
+  selected,
+  onSelect,
+}: {
+  task: Task;
+  showProject?: boolean;
+  selected?: boolean;
+  onSelect?: (checked: boolean) => void;
+}) {
   return (
     <div className="task-row" role="row">
       <div className="task-title" role="cell">
-        <Link to={paths.task(task.id)}>
-          {task.key} · {task.title}
-        </Link>
-        {showProject && (
-          <>
-            {' · '}
+        {onSelect && (
+          <input
+            type="checkbox"
+            className="task-check"
+            aria-label={`Select ${task.key}`}
+            checked={!!selected}
+            onChange={(e) => onSelect(e.target.checked)}
+          />
+        )}
+        {showProject ? (
+          <span className="task-title-stack">
+            <Link to={paths.task(task.id)}>
+              {task.key} · {task.title}
+            </Link>
             {/* A project opens on its Overview first; Backlog and Board are one tab away. */}
             <Link className="proj-link" to={paths.project(task.project_id)}>
               {task.project_name}
             </Link>
-          </>
+          </span>
+        ) : (
+          <Link to={paths.task(task.id)}>
+            {task.key} · {task.title}
+          </Link>
         )}
       </div>
       <div className={`cell-status cat-${task.status.category}`} role="cell">
         {task.status.name}
       </div>
       <div className="cell-muted" role="cell">
-        {task.due_date ? formatDate(task.due_date) : 'No due date'}
+        {task.due_date ? formatDate(task.due_date) : '—'}
       </div>
       <div className="cell-muted" role="cell">
         {PRIORITY_LABEL[task.priority]}
@@ -65,9 +87,27 @@ export function TaskRow({ task, showProject }: { task: Task; showProject?: boole
             {task.assignee.name}
           </>
         ) : (
-          'Unassigned'
+          <>
+            <span className="avatar unassigned" aria-hidden="true">
+              —
+            </span>
+            Unassigned
+          </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Column header row of the all-projects task table (Figma "01 PM Task List — Primary"). */
+export function TaskTableHead() {
+  return (
+    <div className="task-row task-table-head" role="row">
+      <div role="columnheader">Task / Project</div>
+      <div role="columnheader">Status</div>
+      <div role="columnheader">Due date</div>
+      <div role="columnheader">Priority</div>
+      <div role="columnheader">Assignee</div>
     </div>
   );
 }
@@ -77,23 +117,53 @@ export function TaskGroup({
   count,
   countLabel = 'tasks',
   empty,
+  selectAll,
+  action,
   children,
 }: {
   title: string;
   count: number;
   countLabel?: string;
   empty?: string;
+  /** Shows the select-all checkbox and collapse chevron in the header (Figma "Board group heading"). */
+  selectAll?: { checked: boolean; indeterminate: boolean; onChange: (checked: boolean) => void };
+  action?: ReactNode;
   children: ReactNode;
 }) {
+  const [open, setOpen] = useState(true);
   return (
     <section className="task-group" role="table" aria-label={title}>
       <div className="task-group-head">
+        {selectAll && (
+          <>
+            <input
+              type="checkbox"
+              className="task-check"
+              aria-label="Select all tasks"
+              checked={selectAll.checked}
+              ref={(el) => {
+                if (el) el.indeterminate = selectAll.indeterminate;
+              }}
+              onChange={(e) => selectAll.onChange(e.target.checked)}
+            />
+            <button
+              type="button"
+              className="group-toggle"
+              aria-expanded={open}
+              aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+              onClick={() => setOpen(!open)}
+            >
+              {open ? '⌄' : '›'}
+            </button>
+          </>
+        )}
         <strong>{title}</strong>
         <span>
           {count} {countLabel}
         </span>
+        {action && <div className="task-group-action">{action}</div>}
       </div>
-      {count === 0 && empty ? <div className="task-group-empty">{empty}</div> : children}
+      {!open ? null : count === 0 && empty ? <div className="task-group-empty">{empty}</div> : children}
     </section>
   );
 }

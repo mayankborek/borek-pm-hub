@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
-import { useProjects } from '@/features/projects/projectsApi';
-import { TaskFilters, TaskGroup, TaskRow } from './TaskParts';
-import { emptyFilter, useAllTasks, type TaskFilter } from './tasksApi';
+import { TaskRow, TaskTableHead } from './TaskParts';
+import { emptyFilter, useAllTasks } from './tasksApi';
 import './tasks.css';
 
 export const MyWorkPage = () => (
@@ -13,42 +12,26 @@ export const MyWorkPage = () => (
 
 /** Sidebar "Task List": GET /tasks across every project the user can access (backend scopes by role). */
 export function TasksPage() {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const projectId = params.get('project_id') ?? '';
-  const [filter, setFilter] = useState<TaskFilter>(emptyFilter);
-  const projects = useProjects();
-  const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, filter);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, emptyFilter);
 
   const tasks = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
   const total = data?.pages[0]?.total ?? 0;
-  const filtered = !!(filter.q.trim() || filter.category || filter.priority || filter.assigneeId || projectId);
-
-  const projectFilter = (
-    <select
-      className="input"
-      aria-label="Filter by project"
-      value={projectId}
-      onChange={(e) => setParams(e.target.value ? { project_id: e.target.value } : {})}
-    >
-      <option value="">Project: All</option>
-      {projects.data?.items.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
-  );
+  const filtered = !!projectId;
 
   return (
     <section className="page-body">
       <div className="page-header">
         <div>
-          <p className="page-desc">All accessible projects</p>
-          <h1 className="page-title">All project tasks</h1>
+          <p className="page-crumb">Workspace / All accessible projects</p>
+          <h1 className="page-title">All tasks</h1>
         </div>
+        <button type="button" className="btn">
+          Add Task
+        </button>
       </div>
-
-      <TaskFilters filter={filter} onChange={setFilter} tasks={tasks} extra={projectFilter} />
 
       {isPending ? (
         <LoadingState title="Loading tasks" text="Fetching tasks across your projects." />
@@ -61,11 +44,25 @@ export function TasksPage() {
         />
       ) : (
         <>
-          <TaskGroup title="All tasks" count={total}>
+          <section className="task-group table" role="table" aria-label="All tasks">
+            <TaskTableHead />
             {tasks.map((t) => (
-              <TaskRow key={t.id} task={t} showProject />
+              <TaskRow
+                key={t.id}
+                task={t}
+                showProject
+                selected={selected.has(t.id)}
+                onSelect={(on) =>
+                  setSelected((prev) => {
+                    const next = new Set(prev);
+                    if (on) next.add(t.id);
+                    else next.delete(t.id);
+                    return next;
+                  })
+                }
+              />
             ))}
-          </TaskGroup>
+          </section>
           <p className="task-foot">
             Showing {tasks.length} of {total} tasks
             {hasNextPage && (

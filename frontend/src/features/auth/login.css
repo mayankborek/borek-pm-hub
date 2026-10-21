@@ -13,7 +13,7 @@
   .hero{position:relative;background:var(--l-navy);color:#fff;display:flex;flex-direction:column;padding:76px clamp(40px,6.1vw,88px) 93px;overflow:hidden}
   .art{position:absolute;inset:0 0 auto 0;height:523px;background:#070a3a center/cover no-repeat}
   .hero::before{content:"";position:absolute;left:0;right:0;top:390px;height:190px;z-index:1;
-    background:linear-gradient(180deg,rgba(13,18,64,0) 0%,rgba(13,18,64,.18) 48%,rgba(13,18,64,.72) 78%,#0d1240 100%)}
+    background:rgba(13,18,64,.82)}
   .hero>*:not(.art){position:relative;z-index:2}
   .art{z-index:0;background-size:cover}
   .logo{display:block;width:184px;height:auto}
@@ -28,7 +28,7 @@
   .form-wrap{width:100%;max-width:448px}
   h2{font-size:40px;line-height:48px;font-weight:300;margin:0 0 10px;color:var(--l-navy)}
   .sub{font-size:16px;line-height:19px;color:var(--l-text-secondary);margin:0 0 40px;max-width:420px}
-  .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:52px;border:1px solid var(--l-border);border-radius:8px;background:var(--l-navy);color:#fff;font:500 15px Inter,sans-serif;cursor:pointer}
+  .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:52px;border:1px solid var(--l-border);border-radius:0;background:var(--l-navy);color:#fff;font:500 15px Inter,sans-serif;cursor:pointer}
   .btn:hover{background:#171b6b}
   .btn:focus-visible,input:focus-visible,a:focus-visible,.check input:focus-visible{outline:2px solid var(--l-action);outline-offset:2px}
   .btn[disabled]{background:var(--disabled);cursor:not-allowed}
@@ -37,7 +37,7 @@
   .field{margin-top:16px}
   .field:first-of-type{margin-top:20px}
   label{display:block;font-size:12px;line-height:16px;font-weight:600;margin-bottom:4px;color:var(--l-navy)}
-  input[type=email],input[type=password]{width:100%;height:40px;border:1px solid var(--l-border);border-radius:6px;padding:0 16px;font:400 14px Inter,sans-serif;color:var(--l-navy);background:#fff}
+  input[type=email],input[type=password]{width:100%;height:40px;border:1px solid var(--l-border);border-radius:0;padding:0 16px;font:400 14px Inter,sans-serif;color:var(--l-navy);background:#fff}
   input::placeholder{color:var(--l-navy)}
   input[aria-invalid=true]{border-color:#e8a3a6}
   .field-err{font-size:12px;line-height:14px;color:var(--err);margin:4px 0 0}
@@ -48,8 +48,8 @@
   .status strong{display:block;font-size:14px;line-height:20px;font-weight:700;color:var(--l-navy)}
   .status.error strong{color:var(--err);font-weight:600}
   .status span{display:block;font-size:12px;line-height:18px;color:var(--l-text-secondary);margin-top:8px}
-  .progress{height:4px;background:#e6e7ee;border-radius:2px;margin-top:14px;overflow:hidden}
-  .progress span{display:block;height:100%;width:35%;background:var(--l-navy);border-radius:2px;animation:slide 1.2s ease-in-out infinite}
+  .progress{height:4px;background:#e6e7ee;border-radius:0;margin-top:14px;overflow:hidden}
+  .progress span{display:block;height:100%;width:35%;background:var(--l-navy);border-radius:0;animation:slide 1.2s ease-in-out infinite}
   hr{border:0;border-top:1px solid var(--l-border);margin:46px 0 33px}
   .lang h3{font-size:12px;line-height:24px;font-weight:600;color:var(--l-text-secondary);margin:0 0 8px}
   .lang a{font-size:14px;line-height:24px;font-weight:500;color:var(--l-action);text-decoration:none;margin-right:12px}

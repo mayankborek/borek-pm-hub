@@ -1,23 +1,36 @@
 /* Task list views (Figma 14 Project Task List, 15 PM Task List). */
 .task-filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 48px; padding: 6px 0; background: var(--surface-2); margin: 16px 0; }
-.task-filters .input, .task-filters select.input { height: 36px; max-width: none; border-color: #d6dee8; border-radius: 0; font-size: 13px; }
+.task-filters .input, .task-filters select.input { height: 36px; max-width: none; border-color: #d5dde9; border-radius:0; font-size: 13px; }
 .task-filters .search { width: 260px; }
 .task-filters select.input { width: auto; padding-right: 8px; }
 .avatar-filters { display: flex; align-items: center; padding: 0 4px; }
 .avatar-filters button { margin-right: -4px; padding: 0; cursor: pointer; }
 .avatar-filters button[aria-pressed='true'] { outline: 2px solid #124f94; outline-offset: 1px; position: relative; z-index: 1; }
 
-.task-group { border: 1px solid #e0e3eb; background: var(--surface); overflow-x: auto; margin-bottom: 16px; }
+.task-group { border: 1px solid #e2e4ec; background: var(--surface); overflow-x: auto; margin-bottom: 16px; }
 .task-group-head { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; background: var(--surface-2); min-width: 760px; }
 .task-group-head strong { font-size: 14px; color: var(--ink); }
 .task-group-head span { font-size: 12px; color: var(--muted); }
 .task-row {
   display: grid; grid-template-columns: minmax(260px, 1fr) 140px 140px 100px 180px; align-items: center;
-  min-height: 48px; min-width: 760px; border-top: 1px solid #e0e3eb; color: inherit; text-decoration: none; font-size: 13px;
+  min-height: 48px; min-width: 760px; border-top: 1px solid #e2e4ec; color: inherit; text-decoration: none; font-size: 13px;
 }
 .task-row:hover { background: var(--surface-2); }
 .task-row > * { padding: 0 8px 0 12px; min-width: 0; }
 .task-row .task-title { padding-left: 16px; font-size: 12px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-row .task-title { display: flex; align-items: center; gap: 12px; }
+.task-check { width: 16px; height: 16px; margin: 0; flex: none; cursor: pointer; accent-color: var(--ink); }
+.group-toggle { border: 0; background: none; padding: 0; font-size: 13px; color: var(--muted); cursor: pointer; }
+.task-title-stack { display: flex; flex-direction: column; min-width: 0; line-height: 15px; }
+.task-title-stack a { overflow: hidden; text-overflow: ellipsis; }
+.task-table-head { background: var(--surface-2); border-top: 0; border-bottom: 2px solid var(--navy); min-height: 40px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.task-table-head > div:first-child { padding-left: 16px; }
+.task-group.table .task-row:not(.task-table-head) { min-height: 48px; }
+.avatar.unassigned { background: #4f3db8; }
+.page-crumb { font-size: 12px; color: var(--muted); margin: 0; }
+.task-group-action { margin-left: auto; }
+.task-group-action button { height: 28px; padding: 0 10px; font-size: 12px; font-weight: 500; color: var(--muted); background: var(--surface-2); border: 1px solid #7d879c; border-radius:0; cursor: pointer; }
+.task-group-action button:disabled { cursor: not-allowed; }
 .task-row .task-title a { color: inherit; text-decoration: none; }
 .task-row .task-title a:hover { text-decoration: underline; }
 .task-row .proj-link { font-weight: 600; color: var(--ink); }
@@ -31,6 +44,6 @@
 .cell-assignee { display: flex; align-items: center; gap: 8px; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: none; color: #fff; font-size: 12px; font-weight: 600; }
 .avatar.round { border-radius: 50%; border: 2px solid #fff; box-sizing: content-box; width: 20px; height: 20px; }
-.task-group-empty { display: flex; align-items: center; justify-content: center; min-height: 48px; background: var(--surface-2); border-top: 1px solid #dce1e9; font-size: 12px; color: var(--muted); }
+.task-group-empty { display: flex; align-items: center; justify-content: center; min-height: 48px; background: var(--surface-2); border-top: 1px solid #e2e4ec; font-size: 12px; color: var(--muted); }
 .task-foot { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
 .task-foot button { border: 0; background: none; padding: 0; font: inherit; color: var(--link); cursor: pointer; text-decoration: underline; }
