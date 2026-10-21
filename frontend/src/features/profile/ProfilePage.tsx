@@ -176,7 +176,7 @@ export function ProfilePage() {
               <span className="pf-label">{t('Theme')}</span>
               <div className="pf-toggle-row">
                 <div>
-                  <strong>{t(dark ? 'Dark mode' : 'Light mode')}</strong>
+                  <strong>{t(dark ? 'Light mode' : 'Dark mode')}</strong>
                 </div>
                 <button
                   type="button"
