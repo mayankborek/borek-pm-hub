@@ -2,10 +2,8 @@ import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ApiError } from '@/shared/api/client';
-import { Pill } from '@/shared/ui/Pill';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProject } from './projectsApi';
-import { STATUS_LABEL, STATUS_TONE } from './projectUi';
 import type { Project } from './types';
 import './projects.css';
 
@@ -44,13 +42,13 @@ export function ProjectLayout() {
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to={paths.projects}>Projects</Link>
         <span aria-hidden="true"> / </span>
-        <span>{project.code}</span>
+        <span>{project.name}</span>
       </nav>
       <div className="project-head">
         <div className="page-header">
-          <div className="title-row">
+          <div>
             <h1 className="page-title">{project.name}</h1>
-            <Pill tone={STATUS_TONE[project.status]}>{STATUS_LABEL[project.status]}</Pill>
+            <p className="project-sub">Project overview, task status, and delivery summary.</p>
           </div>
           {user?.role === 'pm' && (
             <Link className="btn secondary" to={paths.projectEdit(project.id)}>

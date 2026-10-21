@@ -27,3 +27,45 @@
 .td-composer input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid #7d879c; background: var(--surface); font: 400 14px Inter, sans-serif; }
 .td-composer .btn { height: 44px; }
 @media (max-width: 900px) { .td-grid { grid-template-columns: 1fr; } }
+
+/* Status dropdown: options are the coloured status labels from the Figma filter popover. */
+.ss { position: relative; min-width: 0; }
+.ss-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); cursor: pointer; font: inherit; }
+.ss-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.ss-chev { color: var(--muted); font-size: 14px; }
+.ss-label { font: 500 12px Inter, sans-serif; padding: 0 1px; }
+.ss-list {
+  position: absolute; z-index: 5; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 4px; list-style: none;
+  display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+}
+.ss-list li { display: flex; align-items: center; height: 32px; padding: 0 8px; cursor: pointer; }
+.ss-list li.active { background: var(--surface-2); }
+.ss-list li[aria-selected='true'] { background: #e3edfc; }
+:root[data-theme=dark] .ss-list li[aria-selected='true'] { background: var(--line); }
+.ss-label.tone-backlog, .ss-label.tone-todo { color: var(--muted); }
+.ss-label.tone-in_progress { color: #124f94; }
+.ss-label.tone-review { color: #5b30a2; }
+.ss-label.tone-blocked { color: #ad1f1f; }
+.ss-label.tone-testing { color: #7c450f; }
+.ss-label.tone-done { color: #17735e; }
+:root[data-theme=dark] .ss-label.tone-in_progress { color: #8fb4ff; }
+:root[data-theme=dark] .ss-label.tone-review { color: #b79cf0; }
+:root[data-theme=dark] .ss-label.tone-blocked { color: #ff8a93; }
+:root[data-theme=dark] .ss-label.tone-testing { color: #e0a96a; }
+:root[data-theme=dark] .ss-label.tone-done { color: #6fd39b; }
+
+/* Priority dropdown (Figma "Priority selector · V1"). */
+.ps { position: relative; min-width: 0; }
+.ps-btn { display: flex; align-items: center; width: 100%; height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); cursor: pointer; font: inherit; color: var(--ink); text-align: left; }
+.ps-btn.open { border-width: 2px; padding: 0 7px; }
+.ps-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.ps-list {
+  position: absolute; z-index: 5; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 4px 0; list-style: none;
+  background: var(--surface); border: 1px solid #7d879c; box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+}
+.ps-list li { display: flex; align-items: center; height: 36px; padding: 0 12px; cursor: pointer; }
+.ps-list li.active { background: var(--surface-2); }
+.ps-list li[aria-selected='true'] { background: #e3edfc; }
+:root[data-theme=dark] .ps-list li[aria-selected='true'] { background: var(--line); }
+.pi { display: inline-flex; align-items: center; gap: 8px; font: 400 14px/20px Inter, sans-serif; color: var(--ink); white-space: nowrap; }
+.pi-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; }

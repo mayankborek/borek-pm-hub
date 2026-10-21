@@ -28,19 +28,35 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .row-link:hover { text-decoration: underline; }
 .table-foot { padding: 10px 16px; border-top: 1px solid var(--line); }
 
-.overview { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
-.big-progress { margin: 16px 0; }
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
-.stat { display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 1px solid var(--line); border-radius:0; }
-.stat-label { font-size: 12px; color: var(--muted); }
-.stat strong { font-size: 22px; }
-.stat strong.warn { color: #b86400; }
-.stat strong.err { color: #c94a32; }
-.link-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.details { display: grid; grid-template-columns: 110px 1fr; gap: 10px 12px; margin: 12px 0 0; font-size: 13px; }
-.details dt { color: var(--muted); }
-.details dd { margin: 0; }
-.pre { white-space: pre-wrap; }
+.ov { display: flex; flex-direction: column; gap: 16px; }
+.ov-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ov-metric { display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 14px; border: 1px solid var(--line); background: var(--surface); }
+.ov-metric-label { font-size: 13px; font-weight: 500; color: var(--muted); }
+.ov-metric strong { font-size: 24px; font-weight: 600; color: var(--navy); }
+.ov-metric-note { font-size: 12px; color: var(--muted); }
+.ov-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ov-card { display: flex; flex-direction: column; gap: 12px; padding: 24px; border: 1px solid var(--line); background: var(--surface); min-height: 364px; }
+.ov-card h3 { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; color: var(--navy); }
+.ov-desc { margin: 0; font-size: 13px; line-height: 19px; color: var(--muted); }
+.ov-status { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.donut { position: relative; width: 220px; height: 220px; flex: none; }
+.donut-total { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.donut-total strong { font-size: 30px; line-height: 36px; font-weight: 700; color: var(--navy); }
+.donut-total span { font-size: 12px; line-height: 18px; color: var(--muted); }
+.legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 12px; }
+.legend li { display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 19px; color: var(--muted); }
+.legend i { width: 10px; height: 10px; flex: none; }
+.legend span { flex: 1; }
+.legend strong { font-weight: 600; color: var(--navy); }
+.pchart { display: flex; }
+.pchart-axis { width: 24px; display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; line-height: 17px; color: var(--muted); }
+.pchart-cols { flex: 1; display: flex; gap: 10px; align-items: flex-end; }
+.pcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pcol-bar { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; }
+.pcol-bar strong { font-size: 14px; line-height: 18px; font-weight: 600; color: var(--navy); }
+.pcol-bar i { display: block; width: 42px; }
+.pcol-label { display: flex; align-items: center; gap: 3px; font-size: 11px; line-height: 18px; color: var(--muted); }
+:root[data-theme=dark] .pcol-label img { filter: brightness(1.3); }
 
 .narrow { max-width: 640px; }
 .form { display: flex; flex-direction: column; gap: 16px; padding: 24px; }
@@ -53,5 +69,9 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .form-alert { padding: 10px 12px; border: 1px solid #fbbfc7; background: #ffe3e8; color: #a21d30; border-radius:0; font-size: 13px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
-@media (max-width: 900px) { .overview { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .ov-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ov-charts { grid-template-columns: 1fr; } }
 .form .input { max-width: none; }
+
+.project-head .crumbs { margin-bottom: 8px; }
+.project-head .page-title { font-size: 26px; font-weight: 600; margin: 0; color: var(--navy); }
+.project-sub { margin: 8px 0 0; font-size: 14px; color: var(--muted); }

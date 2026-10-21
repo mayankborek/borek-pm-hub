@@ -5,10 +5,6 @@ import { TaskFilters, TaskGroup, TaskRow } from '@/features/tasks/TaskParts';
 import { emptyFilter, useProjectTasks, type TaskFilter } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
 
-export const ProjectBoardPage = () => (
-  <PagePlaceholder title="Board" description="Tasks grouped by status (GET /projects/{id}/tasks?view=board)." />
-);
-
 /** Backlog tab: GET /projects/{id}/tasks, planned work first, then tasks still in the Backlog category. */
 export function ProjectListPage() {
   const project = useProjectContext();

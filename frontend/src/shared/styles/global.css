@@ -115,8 +115,8 @@ select, input { color-scheme: inherit; }
   color: var(--muted); text-align: center; font-size: 13px;
 }
 .project-head { margin-bottom: 16px; }
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 12px; }
-.tab { padding: 8px 14px; font-size: 13px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
+.tabs { display: flex; gap: 24px; margin-top: 24px; }
+.tab { padding: 0 0 8px; font-size: 13px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
 .tab.active { color: var(--ink); border-bottom-color: var(--navy); font-weight: 600; }
 
 @media (max-width: 860px) {

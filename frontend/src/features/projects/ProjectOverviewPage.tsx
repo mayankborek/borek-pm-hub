@@ -1,64 +1,189 @@
-import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
-import { ProgressBar } from '@/shared/ui/Pill';
+import { useMemo } from 'react';
+import { emptyFilter, useProjectMembers, useProjectStatuses, useProjectTasks } from '@/features/tasks/tasksApi';
+import type { StatusCategory, Task, TaskPriority } from '@/features/tasks/tasksApi';
+import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProjectContext } from './ProjectLayout';
-import { completionOf, formatDate } from './projectUi';
+import highestIcon from './assets/priority-highest.svg';
+import highIcon from './assets/priority-high.svg';
+import mediumIcon from './assets/priority-medium.svg';
+import lowIcon from './assets/priority-low.svg';
 import './projects.css';
+
+const CATEGORY_COLOR: Record<StatusCategory, string> = {
+  backlog: 'var(--surface-2)',
+  todo: 'var(--surface-2)',
+  in_progress: '#4388ee',
+  blocked: '#d99a27',
+  done: '#64ad69',
+};
+/** Named workflow states keep the design's colours; anything else falls back to its category colour. */
+const NAME_COLOR: Record<string, string> = { 'code review': '#7c55ce', testing: '#24a49a' };
+
+const PRIORITIES: { key: TaskPriority; label: string; icon: string; color: string }[] = [
+  { key: 'critical', label: 'Critical', icon: highestIcon, color: '#c94a32' },
+  { key: 'high', label: 'High', icon: highIcon, color: '#c94a32' },
+  { key: 'medium', label: 'Medium', icon: mediumIcon, color: '#e07e00' },
+  { key: 'low', label: 'Low', icon: lowIcon, color: '#2e61d6' },
+];
+
+const DONUT_SIZE = 220;
+const DONUT_STROKE = 36;
+const BAR_AREA = 184;
+
+const colorOf = (name: string, category: StatusCategory) => NAME_COLOR[name.toLowerCase()] ?? CATEGORY_COLOR[category];
+
+function dueThisWeek(tasks: Task[]) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return tasks.filter((t) => {
+    if (!t.due_date || t.status.category === 'done') return false;
+    const d = new Date(`${t.due_date}T00:00:00`);
+    return d >= start && d < end;
+  }).length;
+}
+
+function Donut({ slices, total }: { slices: { name: string; color: string; count: number }[]; total: number }) {
+  const r = (DONUT_SIZE - DONUT_STROKE) / 2;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <div className="donut" role="img" aria-label={`${total} tasks by status`}>
+      <svg width={DONUT_SIZE} height={DONUT_SIZE} viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}>
+        <g transform={`rotate(-90 ${DONUT_SIZE / 2} ${DONUT_SIZE / 2})`} fill="none" strokeWidth={DONUT_STROKE}>
+          <circle cx={DONUT_SIZE / 2} cy={DONUT_SIZE / 2} r={r} stroke="var(--surface-2)" />
+          {total > 0 &&
+            slices
+              .filter((s) => s.count > 0)
+              .map((s) => {
+                const len = (s.count / total) * circ;
+                const el = (
+                  <circle
+                    key={s.name}
+                    cx={DONUT_SIZE / 2}
+                    cy={DONUT_SIZE / 2}
+                    r={r}
+                    stroke={s.color}
+                    strokeDasharray={`${len} ${circ - len}`}
+                    strokeDashoffset={-offset}
+                  />
+                );
+                offset += len;
+                return el;
+              })}
+        </g>
+      </svg>
+      <div className="donut-total">
+        <strong>{total}</strong>
+        <span>Total tasks</span>
+      </div>
+    </div>
+  );
+}
 
 export function ProjectOverviewPage() {
   const project = useProjectContext();
-  const s = project.task_summary;
+  const { data, isPending, isError, refetch } = useProjectTasks(project.id, emptyFilter);
+  const { data: statuses } = useProjectStatuses(project.id);
+  const { data: members } = useProjectMembers(project.id);
 
-  const stats = [
-    { label: 'Total tasks', value: s?.total },
-    { label: 'Completed', value: s?.completed },
-    { label: 'In progress', value: s?.in_progress },
-    { label: 'Blocked', value: s?.blocked, tone: s?.blocked ? 'err' : '' },
-    { label: 'Overdue', value: s?.overdue, tone: s?.overdue ? 'warn' : '' },
+  const stats = useMemo(() => {
+    const tasks = data?.items ?? [];
+    const total = data?.total ?? tasks.length;
+    const done = tasks.filter((t) => t.status.category === 'done').length;
+
+    // Workflow order from the project's statuses; any status seen on a task but missing from that list is appended.
+    const slices = new Map<string, { name: string; color: string; count: number }>();
+    (statuses ?? []).forEach((s) => slices.set(s.name, { name: s.name, color: colorOf(s.name, s.category), count: 0 }));
+    tasks.forEach((t) => {
+      const s = slices.get(t.status.name) ?? { name: t.status.name, color: colorOf(t.status.name, t.status.category), count: 0 };
+      s.count += 1;
+      slices.set(t.status.name, s);
+    });
+
+    const byPriority = PRIORITIES.map((p) => ({ ...p, count: tasks.filter((t) => t.priority === p.key).length }));
+    return {
+      total,
+      done,
+      open: total - done,
+      percent: total ? Math.round((done / total) * 100) : 0,
+      due: dueThisWeek(tasks),
+      slices: [...slices.values()],
+      byPriority,
+      maxPriority: Math.max(5, ...byPriority.map((p) => p.count)),
+    };
+  }, [data, statuses]);
+
+  if (isPending) return <LoadingState title="Loading overview" text="Fetching this project’s tasks." />;
+  if (isError)
+    return <ErrorState title="We couldn’t load the overview" text="Check your connection and try again." onRetry={() => void refetch()} />;
+
+  const metrics = [
+    { label: 'Open tasks', value: stats.open, note: `${stats.due} due this week` },
+    { label: 'Progress', value: `${stats.percent}%`, note: `${stats.done} of ${stats.total} tasks complete` },
+    { label: 'Done', value: stats.done, note: 'Completed tasks' },
+    { label: 'Team members', value: members?.length ?? '—', note: 'Assigned to this project' },
   ];
+  const axisMax = Math.ceil(stats.maxPriority / 5) * 5;
+  const ticks = [axisMax, (axisMax * 2) / 3, axisMax / 3, 0].map(Math.round);
 
   return (
-    <div className="overview">
-      <section className="card" aria-label="Task progress">
-        <h3>Progress</h3>
-        <p className="desc">Completed tasks out of all tasks, excluding cancelled.</p>
-        <div className="big-progress">
-          <ProgressBar percent={completionOf(project)} label="Project completion" />
-        </div>
-        <div className="stat-grid">
-          {stats.map((st) => (
-            <div className="stat" key={st.label}>
-              <span className="stat-label">{st.label}</span>
-              <strong className={st.tone ?? ''}>{st.value ?? '—'}</strong>
-            </div>
-          ))}
-        </div>
-        <div className="link-row">
-          <Link className="btn" to={paths.projectBoard(project.id)}>
-            View board
-          </Link>
-          <Link className="btn secondary" to={paths.projectList(project.id)}>
-            View backlog
-          </Link>
-          <Link className="btn secondary" to={`${paths.tasks}?project_id=${project.id}`}>
-            All tasks for this project
-          </Link>
-        </div>
-      </section>
+    <div className="ov">
+      <div className="ov-metrics">
+        {metrics.map((m) => (
+          <section className="ov-metric" key={m.label} aria-label={m.label}>
+            <span className="ov-metric-label">{m.label}</span>
+            <strong>{m.value}</strong>
+            <span className="ov-metric-note">{m.note}</span>
+          </section>
+        ))}
+      </div>
 
-      <section className="card" aria-label="Project details">
-        <h3>Details</h3>
-        <dl className="details">
-          <dt>Code</dt>
-          <dd>{project.code}</dd>
-          <dt>Start date</dt>
-          <dd>{formatDate(project.start_date)}</dd>
-          <dt>Target end</dt>
-          <dd>{formatDate(project.target_end_date)}</dd>
-          <dt>Description</dt>
-          <dd className="pre">{project.description || 'No description provided.'}</dd>
-        </dl>
-      </section>
+      <div className="ov-charts">
+        <section className="ov-card" aria-label="Status overview">
+          <h3>Status overview</h3>
+          <p className="ov-desc">A snapshot of all {stats.total} tasks in this project.</p>
+          <div className="ov-status">
+            <Donut slices={stats.slices} total={stats.total} />
+            <ul className="legend">
+              {stats.slices.map((s) => (
+                <li key={s.name}>
+                  <i style={{ background: s.color }} />
+                  <span>{s.name}</span>
+                  <strong>{s.count}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="ov-card" aria-label="Priority breakdown">
+          <h3>Priority breakdown</h3>
+          <p className="ov-desc">How the project’s {stats.total} tasks are prioritized.</p>
+          <div className="pchart">
+            <div className="pchart-axis" style={{ height: BAR_AREA }} aria-hidden="true">
+              {ticks.map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+            <div className="pchart-cols">
+              {stats.byPriority.map((p) => (
+                <div className="pcol" key={p.key}>
+                  <div className="pcol-bar" style={{ height: BAR_AREA }}>
+                    <strong>{p.count}</strong>
+                    <i style={{ height: p.count ? (p.count / axisMax) * (BAR_AREA - 24) : 1, background: p.count ? p.color : 'var(--line)' }} />
+                  </div>
+                  <span className="pcol-label">
+                    <img src={p.icon} alt="" width={16} height={16} />
+                    {p.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

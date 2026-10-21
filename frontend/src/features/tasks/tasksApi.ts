@@ -95,6 +95,8 @@ export interface TaskStatusOption {
   id: string;
   name: string;
   category: StatusCategory;
+  position?: number;
+  task_count?: number;
 }
 
 export interface ProjectMember {
@@ -139,4 +141,54 @@ export const useUpdateTask = (task?: TaskDetail) => {
       api<TaskDetail>(`/tasks/${task!.id}`, { method: 'PATCH', body: JSON.stringify({ ...patch, version: task!.version }) }),
     onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });
+};
+
+export interface TaskInput {
+  title: string;
+  status_id: string;
+  priority: TaskPriority;
+  due_date: string | null;
+  assignee_id: string | null;
+}
+
+/** POST /projects/{id}/tasks, used by the board's inline quick create. */
+export const useCreateTask = (projectId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TaskInput) =>
+      api<Task>(`/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
+  });
+};
+
+/** Status management for the Board (PM only): create, rename, reorder, delete. Every change refreshes statuses and tasks. */
+export const useStatusActions = (projectId: string) => {
+  const qc = useQueryClient();
+  const base = `/projects/${projectId}/statuses`;
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ['projects', 'statuses', projectId] });
+    void qc.invalidateQueries({ queryKey: taskKeys.all });
+  };
+  const opts = { onSuccess: refresh };
+  return {
+    create: useMutation({
+      mutationFn: (name: string) =>
+        api<TaskStatusOption>(base, { method: 'POST', body: JSON.stringify({ name, category: 'todo' }) }),
+      ...opts,
+    }),
+    rename: useMutation({
+      mutationFn: (v: { id: string; name: string }) =>
+        api<TaskStatusOption>(`${base}/${v.id}`, { method: 'PATCH', body: JSON.stringify({ name: v.name }) }),
+      ...opts,
+    }),
+    reorder: useMutation({
+      mutationFn: (ids: string[]) => api<TaskStatusOption[]>(`${base}/order`, { method: 'PUT', body: JSON.stringify({ status_ids: ids }) }),
+      ...opts,
+    }),
+    remove: useMutation({
+      mutationFn: (v: { id: string; moveTo?: string }) =>
+        api<void>(`${base}/${v.id}${v.moveTo ? `?move_to=${v.moveTo}` : ''}`, { method: 'DELETE' }),
+      ...opts,
+    }),
+  };
 };

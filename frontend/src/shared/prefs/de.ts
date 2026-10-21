@@ -5,6 +5,7 @@ export const DE: Record<string, string> = {
   'My Work': 'Meine Arbeit',
   'Task List': 'Aufgabenliste',
   Profile: 'Profil',
+  'Project Overview': 'Projektübersicht',
   'Borek Flow': 'Borek Flow',
   Language: 'Sprache',
   Main: 'Hauptnavigation',

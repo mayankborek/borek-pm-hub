@@ -9,16 +9,10 @@ import {
   useTask,
   useUpdateTask,
   type TaskDetail,
-  type TaskPriority,
 } from './tasksApi';
+import { PrioritySelect } from './PrioritySelect';
+import { StatusSelect } from './StatusSelect';
 import './taskDetail.css';
-
-const PRIORITIES: { value: TaskPriority; label: string }[] = [
-  { value: 'critical', label: 'Critical' },
-  { value: 'high', label: 'High' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'low', label: 'Low' },
-];
 
 const stamp = (iso: string) =>
   new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -129,26 +123,14 @@ export function TaskDetailPage() {
             <h3>Task details</h3>
             <p className="td-sub">Ownership, schedule, and priority</p>
             <Row label="Status">
-              <select value={task.status.id} aria-label="Status" onChange={(e) => save({ status_id: e.target.value })}>
-                {(statuses.data ?? [task.status]).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <StatusSelect
+                value={task.status.id}
+                options={statuses.data ?? [task.status]}
+                onChange={(status_id) => save({ status_id })}
+              />
             </Row>
             <Row label="Priority">
-              <select
-                value={task.priority}
-                aria-label="Priority"
-                onChange={(e) => save({ priority: e.target.value as TaskPriority })}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+              <PrioritySelect value={task.priority} onChange={(priority) => save({ priority })} />
             </Row>
             <Row label="Assignee">
               <select

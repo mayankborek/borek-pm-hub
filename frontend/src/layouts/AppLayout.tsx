@@ -19,7 +19,9 @@ export function AppLayout() {
   const title =
     pathname === paths.profile
       ? 'Profile'
-      : pathname.startsWith(`${paths.tasks}/`)
+      : /^\/projects\/(?!new$)[^/]+(\/board)?\/?$/.test(pathname)
+        ? 'Project Overview'
+        : pathname.startsWith(`${paths.tasks}/`)
         ? 'Task details'
         : navItems.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))?.label ?? 'Borek Flow';
 
