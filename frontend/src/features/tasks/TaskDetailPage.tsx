@@ -10,7 +10,6 @@ import {
   downloadAttachment,
   useAttachmentActions,
   useAttachments,
-  useProjectMembers,
   useProjectStatuses,
   useTask,
   useUpdateTask,
@@ -59,7 +58,6 @@ export function TaskDetailPage() {
   const { user } = useAuth();
   const { data: task, isPending, isError, refetch } = useTask(taskId);
   const statuses = useProjectStatuses(task?.project_id);
-  const members = useProjectMembers(task?.project_id);
   const toast = useToast();
   const update = useUpdateTask(task);
   const attachments = useAttachments(taskId);
@@ -260,7 +258,6 @@ export function TaskDetailPage() {
                 <AssigneeSelect
                   value={view.assignee_id}
                   current={task.assignee}
-                  members={members.data ?? []}
                   onChange={(assignee_id) => stage({ assignee_id })}
                 />
               ) : (
