@@ -3,6 +3,7 @@ import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
+import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { DevProjectsNav } from './DevProjectsNav';
 
 export function AppLayout() {
@@ -54,6 +55,7 @@ export function AppLayout() {
           <div className="topbar-row">
             <h1 className="topbar-title">{t(title)}</h1>
             <div className="topbar-actions">
+              <ThemeToggle />
               <div className="lang-switch" role="group" aria-label={t('Language')}>
                 <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
                 <i />

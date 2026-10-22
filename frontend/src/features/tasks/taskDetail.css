@@ -50,11 +50,11 @@
 .ss-label.tone-blocked { color: #ad1f1f; }
 .ss-label.tone-testing { color: #7c450f; }
 .ss-label.tone-done { color: #17735e; }
-:root[data-theme=dark] .ss-label.tone-in_progress { color: #8fb4ff; }
-:root[data-theme=dark] .ss-label.tone-review { color: #b79cf0; }
-:root[data-theme=dark] .ss-label.tone-blocked { color: #ff8a93; }
-:root[data-theme=dark] .ss-label.tone-testing { color: #e0a96a; }
-:root[data-theme=dark] .ss-label.tone-done { color: #6fd39b; }
+:root[data-theme=dark] .ss-label.tone-in_progress { color: #a9c9ff; }
+:root[data-theme=dark] .ss-label.tone-review { color: #cab1ff; }
+:root[data-theme=dark] .ss-label.tone-blocked { color: #ffa7a2; }
+:root[data-theme=dark] .ss-label.tone-testing { color: #8eddd5; }
+:root[data-theme=dark] .ss-label.tone-done { color: #8ce7b9; }
 
 /* Priority dropdown (Figma "Priority selector · V1"). */
 .ps { position: relative; min-width: 0; }

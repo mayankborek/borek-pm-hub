@@ -24,11 +24,11 @@
 .tone-blocked .kcol-head { color: #ad1f1f; }
 .tone-testing .kcol-head { color: #7c450f; }
 .tone-done .kcol-head { color: #17735e; }
-:root[data-theme=dark] .tone-in_progress .kcol-head { color: #8fb4ff; }
-:root[data-theme=dark] .tone-review .kcol-head { color: #b79cf0; }
-:root[data-theme=dark] .tone-blocked .kcol-head { color: #ff8a93; }
-:root[data-theme=dark] .tone-testing .kcol-head { color: #e0a96a; }
-:root[data-theme=dark] .tone-done .kcol-head { color: #6fd39b; }
+:root[data-theme=dark] .tone-in_progress .kcol-head { color: #a9c9ff; }
+:root[data-theme=dark] .tone-review .kcol-head { color: #cab1ff; }
+:root[data-theme=dark] .tone-blocked .kcol-head { color: #ffa7a2; }
+:root[data-theme=dark] .tone-testing .kcol-head { color: #8eddd5; }
+:root[data-theme=dark] .tone-done .kcol-head { color: #8ce7b9; }
 
 .kcol-list:not(:empty) { margin-bottom: 8px; }
 .kcol-link { display: block; height: 30px; padding: 0; border: 0; background: none; cursor: pointer; font: 600 12px Inter, sans-serif; color: #2e61d6; }
@@ -78,7 +78,7 @@
 .smenu-list button:hover:not(:disabled), .smenu-list button:focus-visible { background: var(--surface-2); outline: none; }
 .smenu-list button:disabled { color: var(--disabled); cursor: not-allowed; }
 .smenu-list button.danger { color: #ad1f1f; }
-:root[data-theme=dark] .smenu-list button.danger { color: #ff8a93; }
+:root[data-theme=dark] .smenu-list button.danger { color: #ffa7a2; }
 .smenu-list button.danger:disabled { color: var(--disabled); }
 
 .rename { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0 4px; }
@@ -101,7 +101,7 @@
 .screator input:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
 .screator span { font-size: 12px; color: var(--muted); }
 .screator span.screator-err { color: #ad1f1f; }
-:root[data-theme=dark] .screator span.screator-err { color: #ff8a93; }
+:root[data-theme=dark] .screator span.screator-err { color: #ffa7a2; }
 .screator-actions { display: flex; justify-content: space-between; height: 36px; }
 .screator-actions button { height: 36px; font: 500 12px Inter, sans-serif; cursor: pointer; }
 .screator-actions .cancel { width: 70px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
@@ -113,7 +113,7 @@
 .kcard-status.st-in_progress { color: #124f94; }
 .kcard-status.st-blocked { color: #ad1f1f; }
 .kcard-status.st-done { color: #17735e; }
-:root[data-theme=dark] .kcard-status.st-in_progress { color: #8fb4ff; }
-:root[data-theme=dark] .kcard-status.st-blocked { color: #ff8a93; }
-:root[data-theme=dark] .kcard-status.st-done { color: #6fd39b; }
+:root[data-theme=dark] .kcard-status.st-in_progress { color: #a9c9ff; }
+:root[data-theme=dark] .kcard-status.st-blocked { color: #ffa7a2; }
+:root[data-theme=dark] .kcard-status.st-done { color: #8ce7b9; }
 .kcard-key { font-size: 12px; line-height: 16px; color: var(--muted); }
