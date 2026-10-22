@@ -85,3 +85,13 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 :root[data-theme=dark] .warn { color: #ffc166; }
 :root[data-theme=dark] .err { color: #ff8b7e; }
 :root[data-theme=dark] .form-alert { background: #3f222a; border-color: #5c2f3a; color: #ffa7a2; }
+
+/* Developer My Projects grid: reuses the task-list row chrome with project columns. */
+.proj-row { grid-template-columns: minmax(240px, 1fr) 150px 200px 80px 90px 160px; min-width: 880px; min-height: 56px; column-gap: 8px; }
+.proj-row .warn { font-size: 13px; }
+.proj-code { margin-top: 4px; font-weight: 400; color: var(--muted); font-size: 12px; line-height: 16px; }
+.proj-row .task-title-stack { line-height: 18px; }
+.proj-row > :last-child { padding-right: 24px; }
+.task-filters.toolbar .input { width: 260px; }
+.proj-row .pill .dot { display: none; }
+.proj-row .pill { justify-content: center; min-width: 108px; padding: 0 12px; line-height: 1; }

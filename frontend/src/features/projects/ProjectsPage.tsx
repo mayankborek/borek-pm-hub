@@ -5,9 +5,57 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { Pill, ProgressBar } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProjects } from './projectsApi';
+import type { Project } from './types';
 import emptyIllustration from './assets/empty-projects.jpg';
 import { STATUS_LABEL, STATUS_TONE, completionOf, formatDate } from './projectUi';
 import './projects.css';
+import '@/features/tasks/tasks.css';
+
+/** Developer "My Projects" grid, styled like the PM Task List (Figma "01 PM Task List — Primary"). */
+function DevProjectGrid({ projects, total }: { projects: Project[]; total: number }) {
+  return (
+    <>
+      <section className="task-group table" role="table" aria-label="My projects">
+        <div className="task-row task-table-head proj-row" role="row">
+          <div role="columnheader">Project / Code</div>
+          <div role="columnheader">Status</div>
+          <div role="columnheader">Progress</div>
+          <div role="columnheader">Tasks</div>
+          <div role="columnheader">Overdue</div>
+          <div role="columnheader">Target end</div>
+        </div>
+        {projects.map((p) => (
+          <div className="task-row proj-row" role="row" key={p.id}>
+            <div className="task-title" role="cell">
+              <span className="task-title-stack">
+                <Link to={paths.project(p.id)}>{p.name}</Link>
+                <span className="proj-code">{p.code}</span>
+              </span>
+            </div>
+            <div role="cell">
+              <Pill tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
+            </div>
+            <div role="cell">
+              <ProgressBar percent={completionOf(p)} label={`${p.name} completion`} />
+            </div>
+            <div className="cell-muted" role="cell">
+              {p.task_summary?.total ?? '—'}
+            </div>
+            <div className={p.task_summary?.overdue ? 'warn' : 'cell-muted'} role="cell">
+              {p.task_summary?.overdue ?? '—'}
+            </div>
+            <div className="cell-muted" role="cell">
+              {formatDate(p.target_end_date)}
+            </div>
+          </div>
+        ))}
+      </section>
+      <p className="task-foot">
+        Showing {projects.length} of {total} {total === 1 ? 'project' : 'projects'}
+      </p>
+    </>
+  );
+}
 
 export function ProjectsPage() {
   const { user } = useAuth();
@@ -25,14 +73,14 @@ export function ProjectsPage() {
     <section className="page-body">
       <div className="page-header">
         <div>
-          {!isPm && <p className="page-crumb">Developer workspace / My projects</p>}
-          <h1 className="page-title">{isPm ? 'Projects' : 'My Projects'}</h1>
-          <p className="page-desc">Projects you can access. Open a project to see its overview and tasks.</p>
+          {!isPm && <p className="page-crumb">Workspace / Projects assigned to me</p>}
+          <h1 className="page-title">{isPm ? 'Projects' : 'My projects'}</h1>
+          {isPm && <p className="page-desc">Projects you can access. Open a project to see its overview and tasks.</p>}
         </div>
         {newButton}
       </div>
 
-      <div className="toolbar" hidden={!isPm && data?.total === 0 && !search.trim()}>
+      <div className={isPm ? 'toolbar' : 'toolbar task-filters'} hidden={!isPm && data?.total === 0 && !search.trim()}>
         <input
           type="search"
           className="input"
@@ -64,6 +112,8 @@ export function ProjectsPage() {
             action={newButton || undefined}
           />
         )
+      ) : !isPm ? (
+        <DevProjectGrid projects={data.items} total={data.total} />
       ) : (
         <div className="table-wrap">
           <table className="table">
