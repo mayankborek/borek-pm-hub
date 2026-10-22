@@ -3,13 +3,14 @@ import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
+import borekLogoDark from '@/assets/borek-logo.png';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { DevProjectsNav } from './DevProjectsNav';
 
 export function AppLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const { lang, setLang, t } = usePrefs();
+  const { lang, setLang, t, theme } = usePrefs();
   if (!user) return null;
 
   const initials = user.name
@@ -37,7 +38,7 @@ export function AppLayout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <img src={borekLogo} alt="BOREK Solutions Group" width={112} height={26} />
+          <img src={theme === 'dark' ? borekLogoDark : borekLogo} alt="BOREK Solutions Group" width={112} height={26} />
           <span>Borek Flow</span>
         </div>
         <nav aria-label={t('Main')}>
