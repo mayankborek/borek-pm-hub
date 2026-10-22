@@ -1,15 +1,16 @@
 :root {
-  --navy: #0b0e45;
-  --ink: #14164f;
-  --muted: #6b7080;
-  --line: #e3e5ea;
-  --link: #1f4fb5;
+  --navy: #0d1240; /* Indigo */
+  --ink: #0d1240;
+  --muted: #5c6178; /* Slate */
+  --line: #e2e4ec; /* Hairline */
+  --link: #124f94; /* Spirit */
   --err: #c4161c;
   --disabled: #5f6278;
   --bg: #fff;
   --surface: #fff;
-  --surface-2: #f3f4f8;
+  --surface-2: #f3f4f8; /* Mist */
   --accent: #124f94;
+  --field: #8a90a5;
   color-scheme: light;
 }
 
@@ -25,6 +26,7 @@
   --surface: #171f2f;
   --surface-2: #121a29;
   --accent: #a9c9ff;
+  --field: #64748b;
   color-scheme: dark;
 }
 :root[data-theme=dark] .btn:not(.secondary),

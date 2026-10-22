@@ -10,35 +10,50 @@
 .td-error { margin: 0 0 16px; font-size: 13px; color: var(--err); }
 .td-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .td-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.td-card { border: 1px solid var(--line); background: var(--surface); padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; }
+.td-card { border: 1px solid var(--line); background: var(--surface-2); padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; }
 .td-card h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; color: var(--ink); }
 .td-card-head { display: flex; align-items: center; justify-content: space-between; }
 .td-sub { margin: 0; font-size: 13px; line-height: 18px; color: var(--muted); }
 .td-hint { margin: 0; font-size: 12px; color: var(--muted); }
 .td-empty { margin: 0; font-size: 14px; color: var(--muted); }
 .td-desc { width: 100%; resize: vertical; padding: 8px; border: 1px solid transparent; background: none; font: 400 14px/20px Inter, sans-serif; color: var(--ink); }
-.td-desc:hover, .td-desc:focus { border-color: #7d879c; background: var(--surface); }
+.td-desc:hover, .td-desc:focus { border-color: var(--field); background: var(--surface); }
 .td-attach { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; border: 1px solid var(--line); padding: 12px; font-size: 13px; color: var(--ink); }
 .td-outline { height: 32px; padding: 0 16px; border: 1px solid var(--navy); background: var(--surface); color: var(--ink); font: 500 14px Inter, sans-serif; cursor: pointer; }
 .td-outline:disabled { opacity: .45; cursor: not-allowed; }
 .td-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: center; min-height: 32px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .td-row label { color: var(--muted); }
-.td-row select, .td-row input { height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); color: var(--ink); font: 600 13px Inter, sans-serif; min-width: 0; }
+.td-row select, .td-row input { height: 28px; padding: 0 8px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font: 600 13px Inter, sans-serif; min-width: 0; }
 .td-static { font-weight: 600; color: var(--ink); padding: 0 8px; }
 .td-composer { display: flex; gap: 12px; }
-.td-composer input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid #7d879c; background: var(--surface); font: 400 14px Inter, sans-serif; }
+.td-composer input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid var(--field); background: var(--surface); font: 400 14px Inter, sans-serif; }
 .td-composer .btn { height: 44px; }
+.td-composer .btn:disabled { opacity: .45; cursor: not-allowed; }
+.td-none { margin: 0; font: 600 13px/18px Inter, sans-serif; color: var(--ink); }
+
+/* Developer task details (Figma "Developer · Task Details"): rounded cards, bordered read-only fields. */
+.td-dev .td-card { border-radius: 0; }
+.td-dev .td-attach { border-radius: 0; }
+.td-dev .td-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 266px; max-width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--field); box-sizing: border-box; font: 600 13px/18px Inter, sans-serif; color: var(--ink); overflow: hidden; }
+.td-dev .td-field > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-dev .td-field .pi { font: inherit; }
+.td-dev .td-field img { flex: none; }
+.td-dev .td-row { grid-template-columns: 256px 1fr; }
+.td-dev .td-row > .ss { justify-self: end; width: 140px; }
+.td-dev .td-sub + .td-row { min-height: 36px; border-bottom: 0; }
+.td-dev .td-card-head .td-relate { width: 128px; height: 36px; }
+
 @media (max-width: 900px) { .td-grid { grid-template-columns: 1fr; } }
 
 /* Status dropdown: options are the coloured status labels from the Figma filter popover. */
 .ss { position: relative; min-width: 0; }
-.ss-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); cursor: pointer; font: inherit; }
+.ss-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--field); background: var(--surface); cursor: pointer; font: inherit; }
 .ss-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
 .ss-chev { color: var(--muted); font-size: 14px; }
 .ss-label { font: 500 12px Inter, sans-serif; padding: 0 1px; }
 .ss-list {
   position: absolute; z-index: 5; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 4px; list-style: none;
-  display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+  display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line);
 }
 .ss-list li { display: flex; align-items: center; height: 32px; padding: 0 8px; cursor: pointer; }
 .ss-list li.active { background: var(--surface-2); }
@@ -58,12 +73,12 @@
 
 /* Priority dropdown (Figma "Priority selector · V1"). */
 .ps { position: relative; min-width: 0; }
-.ps-btn { display: flex; align-items: center; width: 100%; height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); cursor: pointer; font: inherit; color: var(--ink); text-align: left; }
+.ps-btn { display: flex; align-items: center; width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--field); background: var(--surface); cursor: pointer; font: inherit; color: var(--ink); text-align: left; }
 .ps-btn.open { border-width: 2px; padding: 0 7px; }
 .ps-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
 .ps-list {
   position: absolute; z-index: 5; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 4px 0; list-style: none;
-  background: var(--surface); border: 1px solid #7d879c; box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+  background: var(--surface); border: 1px solid var(--field);
 }
 .ps-list li { display: flex; align-items: center; height: 36px; padding: 0 12px; cursor: pointer; }
 .ps-list li.active { background: var(--surface-2); }
@@ -83,8 +98,8 @@
 .rd-rule { width: 100%; height: 1px; margin: 0; border: 0; background: var(--line); }
 .rd-field { position: relative; display: flex; flex-direction: column; gap: 8px; }
 .rd-field label { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--ink); }
-.rd-field select, .rd-field input { height: 44px; padding: 0 12px; border: 1px solid #7d879c; background: var(--surface); color: var(--ink); font: 400 14px Inter, sans-serif; }
-.rd-results { margin: 0; padding: 4px 0; list-style: none; border: 1px solid #7d879c; background: var(--surface); max-height: 320px; overflow-y: auto; }
+.rd-field select, .rd-field input { height: 44px; padding: 0 12px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font: 400 14px Inter, sans-serif; }
+.rd-results { margin: 0; padding: 4px 0; list-style: none; border: 1px solid var(--field); background: var(--surface); max-height: 320px; overflow-y: auto; }
 .rd-results li { padding: 8px 12px; font-size: 14px; color: var(--ink); cursor: pointer; }
 .rd-results li:hover, .rd-results li:focus { background: var(--surface-2); outline: none; }
 .rd-results .rd-note { color: var(--muted); cursor: default; }
@@ -102,10 +117,10 @@
 
 /* Date picker (Figma "Field picker · PM · Start date · October 2026"). */
 .dp { position: relative; min-width: 0; }
-.dp-btn { width: 100%; height: 28px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); color: var(--ink); font: 600 13px Inter, sans-serif; text-align: left; cursor: pointer; }
+.dp-btn { width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font: 600 13px Inter, sans-serif; text-align: left; cursor: pointer; }
 .dp-btn.open { border-width: 2px; padding: 0 7px; }
 .dp-btn:focus-visible, .dp-pop button:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
-.dp-pop { position: absolute; z-index: 6; top: 100%; right: 0; width: 288px; margin-top: 2px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid #7d879c; box-shadow: 0 4px 16px rgba(13, 18, 64, .13); }
+.dp-pop { position: absolute; z-index: 6; top: 100%; right: 0; width: 288px; margin-top: 2px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--field); }
 .dp-pop button { border: 0; background: none; color: var(--ink); font: 400 13px/18px Inter, sans-serif; cursor: pointer; }
 .dp-head { display: flex; align-items: center; gap: 8px; height: 32px; }
 .dp-head span { flex: 1; text-align: center; font: 500 14px/20px Inter, sans-serif; color: var(--ink); }
@@ -125,8 +140,8 @@
 
 /* Assignee picker (Figma "Field picker · PM · Assignee options"). */
 .as { position: relative; min-width: 0; }
-.as-pop { position: absolute; z-index: 6; top: 100%; right: 0; width: 288px; margin-top: 2px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid #7d879c; box-shadow: 0 4px 16px rgba(13, 18, 64, .13); }
-.as-search { height: 36px; padding: 0 8px; border: 1px solid #7d879c; background: var(--surface); color: var(--ink); font: 400 13px/18px Inter, sans-serif; }
+.as-pop { position: absolute; z-index: 6; top: 100%; right: 0; width: 288px; margin-top: 2px; padding: 8px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--field); }
+.as-search { height: 36px; padding: 0 8px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font: 400 13px/18px Inter, sans-serif; }
 .as-pop li.as-empty { color: var(--muted); cursor: default; }
 .as-title { margin: 0; font: 600 12px/16px Inter, sans-serif; color: var(--muted); }
 .as-pop ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
@@ -137,3 +152,10 @@
 
 .td-desc-static { margin: 0; padding: 8px 0; white-space: pre-wrap; font: 400 14px/20px Inter, sans-serif; color: var(--muted); }
 .td-static .pi { font-weight: 600; }
+
+/* Developer pickers share the read-only field box and add the design's chevron / calendar icon. */
+.td-dev .td-row > .ps, .td-dev .td-row > .as, .td-dev .td-row > .dp { width: 266px; max-width: 100%; }
+.td-dev .ps-btn, .td-dev .dp-btn { padding-right: 32px; font-weight: 600; font-size: 13px; background: var(--surface) url(./assets/select-chevron.svg) no-repeat right 8px center; }
+.td-dev .dp-btn { background-image: url(./assets/select-calendar.svg); }
+.td-dev .ps-btn .pi { font: inherit; }
+.td-dev .td-desc { border-color: var(--field); background: var(--surface); box-sizing: border-box; padding: 12px; }

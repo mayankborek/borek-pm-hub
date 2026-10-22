@@ -5,7 +5,7 @@ import { formatDate } from '@/features/projects/projectUi';
 import type { StatusCategory, Task, TaskFilter, TaskPriority, UserBrief } from './tasksApi';
 import './tasks.css';
 
-const AVATAR_COLORS = ['#4f3db8', '#218c6e', '#f59421', '#c94a32', '#1d6fa5'];
+const AVATAR_COLORS = ['#0d1240', '#124f94', '#5c6178'];
 const PRIORITY_LABEL: Record<TaskPriority, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
 const CATEGORY_LABEL: Record<StatusCategory, string> = {
   backlog: 'Backlog',

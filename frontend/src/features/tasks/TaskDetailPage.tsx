@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
-import { formatDate } from '@/features/projects/projectUi';
 import { ApiError } from '@/shared/api/client';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
@@ -19,8 +18,9 @@ import {
 import { RelatedTaskDrawer, relationLabels, type Relationship } from './RelatedTaskDrawer';
 import { AssigneeSelect } from './AssigneeSelect';
 import { DatePicker } from './DatePicker';
-import { PriorityIndicator, PrioritySelect } from './PrioritySelect';
+import { PrioritySelect } from './PrioritySelect';
 import { StatusSelect } from './StatusSelect';
+import chevronIcon from './assets/select-chevron.svg';
 import './taskDetail.css';
 
 const fileSize = (n: number | null) =>
@@ -38,8 +38,18 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/** Read-only value in the select styling of the developer design (Figma "Select · Priority" etc.). */
+function Field({ children, icon = chevronIcon }: { children: ReactNode; icon?: string }) {
+  return (
+    <span className="td-field">
+      <span>{children}</span>
+      <img src={icon} alt="" width={16} height={16} />
+    </span>
+  );
+}
+
 function Description({ value, onChange, readOnly }: { value: string; onChange: (d: string) => void; readOnly?: boolean }) {
-  if (readOnly) return <p className="td-desc-static">{value || 'No description.'}</p>;
+  if (readOnly) return <p className="td-desc-static">{value || 'No description added.'}</p>;
   return (
     <textarea
       className="td-desc"
@@ -142,13 +152,16 @@ export function TaskDetailPage() {
   // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
   const isPm = user?.role === 'pm';
   const canStatus = isPm || task.assignee?.id === user?.id;
+  // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
+  const edit = (patch: TaskPatch) =>
+    isPm ? stage(patch) : update.mutate(patch, { onError: () => toast.error('Could not save your change.') });
   const conflict = update.error instanceof ApiError && update.error.status === 409;
 
   return (
-    <section className="page-body task-detail">
+    <section className={isPm ? 'page-body task-detail' : 'page-body task-detail td-dev'}>
       <p className="td-crumb">
         <Link to={paths.project(task.project_id)}>{task.project_name}</Link> /{' '}
-        {isPm ? <Link to={paths.tasks}>Task List</Link> : <Link to={paths.myWork}>My Task</Link>} / {task.key}
+        {isPm ? <Link to={paths.tasks}>Task List</Link> : <Link to={paths.projectBoard(task.project_id)}>Board</Link>} / {task.key}
       </p>
       <div className="td-head">
         <h2 className="td-title">{task.title}</h2>
@@ -156,12 +169,14 @@ export function TaskDetailPage() {
           {update.isPending ? 'Saving…' : 'Save'}
         </button>
       </div>
-      <p className="td-meta">
-        {task.key} · Updated {stamp(task.updated_at)}
-        {update.isPending && ' · Saving…'}
-        {!dirty && update.isSuccess && ' · ✓ Saved'}
-        {dirty && ' · Unsaved changes'}
-      </p>
+      {isPm && (
+        <p className="td-meta">
+          {task.key} · Updated {stamp(task.updated_at)}
+          {update.isPending && ' · Saving…'}
+          {!dirty && update.isSuccess && ' · ✓ Saved'}
+          {dirty && ' · Unsaved changes'}
+        </p>
+      )}
       {update.isError && (
         <p className="td-error" role="alert">
           {conflict ? 'Someone else changed this task. The latest version has been loaded; try again.' : 'Could not save your change.'}
@@ -173,8 +188,8 @@ export function TaskDetailPage() {
           <section className="td-card">
             <h3>Description</h3>
             <p className="td-sub">Task context and acceptance criteria</p>
-            {isPm && <p className="td-hint">Click the text to edit · press Save to apply your changes</p>}
-            <Description value={view.description} onChange={(description) => stage({ description })} readOnly={!isPm} />
+            <p className="td-hint">Click the text to edit · press Save to apply your changes</p>
+            <Description value={view.description} onChange={(description) => stage({ description })} />
             <div className="td-attach">
               <strong>
                 Attachments · {attachments.data?.length ?? 0} {attachments.data?.length === 1 ? 'file' : 'files'}
@@ -230,7 +245,7 @@ export function TaskDetailPage() {
           <section className="td-card">
             <h3>Activity &amp; audit log</h3>
             <p className="td-sub">Comments and updates</p>
-            <p className="td-empty">No activity recorded yet.</p>
+            {isPm ? <p className="td-empty">No activity recorded yet.</p> : <p className="td-none">No comments yet.</p>}
             <div className="td-composer">
               <input aria-label="Add a comment" placeholder="Add a comment…" disabled />
               <button type="button" className="btn" disabled>
@@ -243,13 +258,18 @@ export function TaskDetailPage() {
         <div className="td-col">
           <section className="td-card">
             <h3>Task details</h3>
-            <p className="td-sub">Ownership, schedule, and priority</p>
+            <p className="td-sub">{isPm ? 'Ownership, schedule, and priority' : update.isPending ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved'}</p>
             <Row label="Status">
               {canStatus ? (
                 <StatusSelect
                   value={view.status_id}
                   options={statuses.data ?? [task.status]}
-                  onChange={(status_id) => stage({ status_id })}
+                  onChange={(status_id) => {
+                    // Developers apply a status straight away; a blocked status first needs its reason, which Save sends.
+                    const next = (statuses.data ?? []).find((s) => s.id === status_id);
+                    if (isPm || next?.category === 'blocked') return stage({ status_id });
+                    update.mutate({ status_id }, { onError: () => toast.error('Could not save your change.') });
+                  }}
                 />
               ) : (
                 <span className="td-static">{task.status.name}</span>
@@ -270,6 +290,7 @@ export function TaskDetailPage() {
                 )}
               </Row>
             )}
+            {isPm && (
             <Row label="Progress">
               {canStatus ? (
                 <input
@@ -284,60 +305,44 @@ export function TaskDetailPage() {
                 <span className="td-static">{task.progress}%</span>
               )}
             </Row>
+            )}
             <Row label="Priority">
-              {isPm ? (
-                <PrioritySelect value={view.priority} onChange={(priority) => stage({ priority })} />
-              ) : (
-                <span className="td-static">
-                  <PriorityIndicator priority={task.priority} />
-                </span>
-              )}
+              <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
             </Row>
             <Row label="Assignee">
-              {isPm ? (
-                <AssigneeSelect
-                  value={view.assignee_id}
-                  current={task.assignee}
-                  onChange={(assignee_id) => stage({ assignee_id })}
-                />
-              ) : (
-                <span className="td-static">{task.assignee?.name ?? 'Unassigned'}</span>
-              )}
+              <AssigneeSelect value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
             </Row>
             <Row label="Reporter">
-              <span className="td-static">{task.reporter.name}</span>
+              {isPm ? <span className="td-static">{task.reporter.name}</span> : <Field>{task.reporter.name || '—'}</Field>}
             </Row>
             <Row label="Start date">
-              {isPm ? (
-                <DatePicker
-                  label="Start date"
-                  value={view.start_date}
-                  max={view.due_date}
-                  hint="Start date must be on or before due date."
-                  error="Pick a date on or before the due date."
-                  onChange={(start_date) => stage({ start_date })}
-                />
-              ) : (
-                <span className="td-static">{formatDate(task.start_date)}</span>
-              )}
+              <DatePicker
+                label="Start date"
+                value={view.start_date}
+                max={view.due_date}
+                hint="Start date must be on or before due date."
+                error="Pick a date on or before the due date."
+                onChange={(start_date) => edit({ start_date })}
+              />
             </Row>
             <Row label="Due date">
-              {isPm ? (
-                <DatePicker
-                  label="Due date"
-                  value={view.due_date}
-                  min={view.start_date}
-                  hint="Due date must be on or after start date."
-                  error="Pick a date on or after the start date."
-                  onChange={(due_date) => stage({ due_date })}
-                />
-              ) : (
-                <span className="td-static">{formatDate(task.due_date)}</span>
-              )}
+              <DatePicker
+                label="Due date"
+                value={view.due_date}
+                min={view.start_date}
+                hint="Due date must be on or after start date."
+                error="Pick a date on or after the start date."
+                onChange={(due_date) => edit({ due_date })}
+              />
             </Row>
+            {!isPm && (
+              <Row label="Estimate">
+                <Field>—</Field>
+              </Row>
+            )}
             <Row label="Labels">
               {!isPm ? (
-                <span className="td-static">{task.labels.join(' · ') || '—'}</span>
+                <Field>{task.labels.join(' · ') || '—'}</Field>
               ) : (
               <input
                 aria-label="Labels"
@@ -352,13 +357,17 @@ export function TaskDetailPage() {
           <section className="td-card">
             <div className="td-card-head">
               <h3>Related tasks</h3>
-              {isPm && (
+              {isPm ? (
                 <button type="button" className="td-outline" onClick={() => setDrawer(true)}>
                   Related Task
                 </button>
+              ) : (
+                <button type="button" className="btn td-relate" onClick={() => setDrawer(true)}>
+                  Relate Task
+                </button>
               )}
             </div>
-            {related.length === 0 && <p className="td-empty">No related tasks.</p>}
+            {isPm && related.length === 0 && <p className="td-empty">No related tasks.</p>}
             {related.map((r) => (
               <div key={`${r.relation}-${r.task.id}`} className="td-related">
                 <Link to={paths.task(r.task.id)}>

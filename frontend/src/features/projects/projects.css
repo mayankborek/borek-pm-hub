@@ -2,8 +2,8 @@
 .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
-.warn { color: #b86400; font-weight: 600; }
-.err { color: #c94a32; }
+.warn { color: var(--ink); font-weight: 600; }
+.err { color: #a21d30; }
 
 .crumbs { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 .crumbs a { text-decoration: none; }
@@ -82,7 +82,7 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .empty-art h3 { font-size: 20px; color: var(--muted); }
 .empty-art p { max-width: 640px; }
 
-:root[data-theme=dark] .warn { color: #ffc166; }
+:root[data-theme=dark] .warn { color: var(--ink); }
 :root[data-theme=dark] .err { color: #ff8b7e; }
 :root[data-theme=dark] .form-alert { background: #3f222a; border-color: #5c2f3a; color: #ffa7a2; }
 

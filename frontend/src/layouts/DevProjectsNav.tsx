@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useMyDashboard } from '@/features/tasks/myWorkApi';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -8,13 +8,16 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 export function DevProjectsNav() {
   const { t } = usePrefs();
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+  // Task details sit under Projects in the Figma navigation, so the group stays highlighted there.
+  const onTask = pathname.startsWith(`${paths.tasks}/`);
   const { data } = useMyDashboard();
   const projects = data?.projects ?? [];
 
   return (
     <div className="nav-group">
       <div className="nav-group-head">
-        <NavLink to={paths.projects} end onClick={() => setOpen((o) => !o)} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+        <NavLink to={paths.projects} end onClick={() => setOpen((o) => !o)} className={({ isActive }) => (isActive || onTask ? 'nav-link active' : 'nav-link')}>
           {t('Projects')}
         </NavLink>
         <button
