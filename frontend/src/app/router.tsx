@@ -9,6 +9,7 @@ import { ProjectOverviewPage } from '@/features/projects/ProjectOverviewPage';
 import { ProjectBoardPage } from '@/features/projects/ProjectBoardPage';
 import { ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
 import { TasksPage } from '@/features/tasks/TaskPages';
+import { TaskCreatePage } from '@/features/tasks/TaskCreatePage';
 import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
           },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'tasks', element: <TasksPage /> },
+          { path: 'tasks/new', element: <TaskCreatePage /> },
           { path: 'tasks/:taskId', element: <TaskDetailPage /> },
 
           { path: 'forbidden', element: <ForbiddenPage /> },

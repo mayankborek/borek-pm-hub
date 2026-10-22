@@ -159,13 +159,13 @@ export const useUpdateTask = (task?: TaskDetail) => {
 
 export interface TaskInput {
   title: string;
-  status_id: string;
-  priority: TaskPriority;
-  due_date: string | null;
+  status_id?: string;
+  priority?: TaskPriority;
+  due_date?: string | null;
   assignee_id: string | null;
 }
 
-/** POST /projects/{id}/tasks, used by the board's inline quick create. */
+/** POST /projects/{id}/tasks, used by the board's inline quick create and the Add Task page. */
 export const useCreateTask = (projectId: string) => {
   const qc = useQueryClient();
   return useMutation({

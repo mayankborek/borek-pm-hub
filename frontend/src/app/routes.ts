@@ -14,6 +14,7 @@ export const paths = {
   projectMembers: (id: string) => `/projects/${id}/members`,
   profile: '/profile',
   tasks: '/tasks',
+  taskNew: '/tasks/new',
   task: (id: string) => `/tasks/${id}`,
   forbidden: '/forbidden',
 } as const;

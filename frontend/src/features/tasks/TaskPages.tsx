@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { paths } from '@/app/routes';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { TaskRow, TaskTableHead } from './TaskParts';
 import { TaskFilters } from './TaskParts';
@@ -26,9 +27,9 @@ export function TasksPage() {
           <p className="page-crumb">Workspace / All accessible projects</p>
           <h1 className="page-title">All tasks</h1>
         </div>
-        <button type="button" className="btn">
+        <Link className="btn" to={projectId ? `${paths.taskNew}?project_id=${projectId}` : paths.taskNew}>
           Add Task
-        </button>
+        </Link>
       </div>
 
       <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={tasks} />
