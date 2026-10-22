@@ -7,7 +7,8 @@ import { Pill } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import '@/features/dashboard/dashboard.css';
 import { useMyDashboard, useMyTasks, type MyDashboard } from './myWorkApi';
-import { MyTaskList } from './MyTaskList';
+import { PriorityIndicator } from './PrioritySelect';
+import { toneOf } from './StatusSelect';
 import type { Task } from './tasksApi';
 import './taskDetail.css';
 
@@ -92,11 +93,37 @@ function MyWorkBody({ dashboard, tasks }: { dashboard: MyDashboard; tasks: Task[
       </section>
 
       <div className="split">
-        <MyTaskList tasks={tasks} />
+        <AssignedTasks tasks={tasks} projectCount={projects.length} />
 
         <AttentionAreas dashboard={dashboard} today={today} />
       </div>
     </>
+  );
+}
+
+function AssignedTasks({ tasks, projectCount }: { tasks: Task[]; projectCount: number }) {
+  const { t } = usePrefs();
+  return (
+    <section className="card" aria-label={t('All Assigned Tasks')}>
+      <h3>{t('All Assigned Tasks')}</h3>
+      <p className="desc">{t(tasks.length === 1 ? '{n} task assigned to you across {p} projects' : '{n} tasks assigned to you across {p} projects', { n: tasks.length, p: projectCount })}</p>
+      <div className="mw-head" aria-hidden="true">
+        <span>{t('Task')}</span>
+        <span>{t('Status')}</span>
+        <span>{t('Priority')}</span>
+      </div>
+      <ul className="mw-list">
+        {tasks.map((task) => (
+          <li key={task.id}>
+            <Link to={paths.task(task.id)}>
+              {task.key} · {task.title} →
+            </Link>
+            <span className={`ss-label tone-${toneOf(task.status)}`}>{task.status.name}</span>
+            <PriorityIndicator priority={task.priority} />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

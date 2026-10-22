@@ -7,14 +7,14 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 /** Developer sidebar group (Figma "Navigation / Borek Flow · Developer"): Projects plus the projects I am assigned to. */
 export function DevProjectsNav() {
   const { t } = usePrefs();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const { data } = useMyDashboard();
   const projects = data?.projects ?? [];
 
   return (
     <div className="nav-group">
       <div className="nav-group-head">
-        <NavLink to={paths.projects} end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+        <NavLink to={paths.projects} end onClick={() => setOpen((o) => !o)} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
           {t('Projects')}
         </NavLink>
         <button
