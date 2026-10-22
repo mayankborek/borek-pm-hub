@@ -153,6 +153,34 @@ copy backend\.env.example backend\.env
 docker compose up --build
 ```
 
+## Sign-in modes and accounts
+
+`AUTH_MODE` in `backend/.env`:
+
+| Mode | What it is | Where |
+|---|---|---|
+| `dev` | Pick a seeded user; no password (header `X-Dev-User-Id`). | Local only. The app refuses to start with it when `ENVIRONMENT=production`. |
+| `local` | Email + password. `POST /auth/login` returns a bearer token (Argon2 hashes, 5 wrong passwords lock the account for 15 minutes). Needs `SECRET_KEY` (32+ characters). | Staging, pilot, and for people outside the Microsoft tenant. |
+| `entra` | Microsoft Entra ID. Not built yet (returns 501). | Later. |
+
+**QA accounts (one PM, one developer).** Set `BOOTSTRAP_PM_PASSWORD` and `BOOTSTRAP_DEV_PASSWORD`
+(12+ characters, your own choice) in `backend/.env`. `docker compose up` then creates
+`qa.pm@borek.test` and `qa.dev@borek.test` on every start if they are missing
+(`python -m scripts.bootstrap_users`; add `--reset-passwords` to overwrite). On a server run the same
+command after `alembic upgrade head`, with the variables set in that environment.
+
+**Any other account** is created with plain SQL. Get a hash with `python -m scripts.hash_password`, then:
+
+```sql
+INSERT INTO users (name, email, global_role, password_hash)
+VALUES ('Full Name', 'name@example.com', 'developer', '<hash>');
+-- later password change:
+UPDATE users SET password_hash = '<hash>', failed_login_count = 0, locked_until = NULL
+WHERE email = 'name@example.com';
+```
+
+`global_role` is `pm` or `developer`. To switch someone off: `UPDATE users SET is_active = false ...`.
+
 ## Checks (the same ones CI runs)
 
 ```

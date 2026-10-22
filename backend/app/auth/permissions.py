@@ -31,6 +31,7 @@ class Action(StrEnum):
     TASK_ARCHIVE = "task:archive"
     MY_TASKS = "task:my_tasks"
     DASHBOARD_VIEW = "dashboard:view"
+    USER_LIST = "user:list"  # search users for the assignee picker
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ _PM_ONLY = frozenset(
         Action.TASK_ASSIGN,
         Action.TASK_ARCHIVE,
         Action.DASHBOARD_VIEW,
+        Action.USER_LIST,
     }
 )
 # Developers need project membership for these.

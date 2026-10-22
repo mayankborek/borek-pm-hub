@@ -187,7 +187,6 @@ async def test_invalid_create_is_rejected_without_saving(
         {"title": "x", "labels": ["l" * 31]},
         {"title": "x", "labels": [f"l{i}" for i in range(11)]},
         {"title": "x", "unknown": 1},
-        {"title": "x", "assignee_id": str(world.outsider.id)},  # not a member
         {"title": "x", "assignee_id": str(uuid.uuid4())},
         {"title": "x", "status_id": str(foreign_status.id)},  # status of another project
     ]
@@ -508,7 +507,7 @@ async def test_invalid_updates_are_rejected_and_nothing_changes(
         {"progress": 101},
         {"due_date": "2026-05-01"},
         {"code": "X"},
-        {"assignee_id": str(world.outsider.id)},
+        {"assignee_id": str(uuid.uuid4())},
         {"status_id": str(foreign.id)},
     ]
     for payload in cases:
@@ -710,25 +709,87 @@ async def test_pm_assigns_reassigns_and_unassigns(
     assert cleared.json()["assignee"] is None and cleared.json()["version"] == 4
 
 
-async def test_assignee_must_be_an_active_member(
+async def test_assignee_must_be_an_active_user(
     client: httpx.AsyncClient, session: AsyncSession, world: World
 ) -> None:
     task = await make_task(session, world.project, world.pm.id)
     inactive = await make_user(session)
-    await join(session, world.project, inactive)
     inactive.is_active = False
     await session.flush()
 
-    for bad in (world.outsider.id, inactive.id, uuid.uuid4()):
+    for bad in (inactive.id, uuid.uuid4()):
         response = await client.put(
             assignee_url(task),
             headers=as_user(world.pm),
             json={"version": 1, "assignee_id": str(bad)},
         )
         assert response.status_code == 422
-        assert response.json()["error"]["details"][0]["issue"] == "not_a_member"
+        assert response.json()["error"]["details"][0]["issue"] == "unknown_user"
     await session.refresh(task)
     assert task.assignee_id is None and task.version == 1
+    assert await member_ids(session, world.project) == {world.dev.id, world.other_dev.id}
+
+
+async def member_ids(session: AsyncSession, project: Project) -> set[uuid.UUID]:
+    rows = await session.scalars(
+        select(ProjectMember.user_id).where(ProjectMember.project_id == project.id)
+    )
+    return set(rows)
+
+
+async def test_assigning_a_non_member_adds_them_to_the_project(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    headers = as_user(world.pm)
+    newcomer = await make_user(session)
+    other = await make_user(session)
+    third = await make_user(session)
+
+    # PUT /tasks/{id}/assignee
+    task = await make_task(session, world.project, world.pm.id)
+    put = await client.put(
+        assignee_url(task), headers=headers, json={"version": 1, "assignee_id": str(newcomer.id)}
+    )
+    # POST /projects/{id}/tasks
+    created = await client.post(
+        tasks_url(world.project), headers=headers, json={"title": "x", "assignee_id": str(other.id)}
+    )
+    # PATCH /tasks/{id}
+    patched = await client.patch(
+        f"/api/v1/tasks/{task.id}",
+        headers=headers,
+        json={"version": 2, "assignee_id": str(third.id)},
+    )
+
+    assert (put.status_code, created.status_code, patched.status_code) == (200, 201, 200)
+    assert {newcomer.id, other.id, third.id} <= await member_ids(session, world.project)
+    row = await session.scalar(
+        select(ProjectMember).where(
+            ProjectMember.project_id == world.project.id, ProjectMember.user_id == newcomer.id
+        )
+    )
+    assert row is not None
+    assert (row.source, row.project_role, row.granted_by) == (
+        "task_assignment",
+        "developer",
+        world.pm.id,
+    )
+    # the new member can now see the project's tasks
+    seen = await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(third))
+    assert seen.status_code == 200
+
+
+async def test_assigning_an_existing_member_does_not_add_a_second_row(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    task = await make_task(session, world.project, world.pm.id)
+    response = await client.put(
+        assignee_url(task),
+        headers=as_user(world.pm),
+        json={"version": 1, "assignee_id": str(world.dev.id)},
+    )
+    assert response.status_code == 200
+    assert await member_ids(session, world.project) == {world.dev.id, world.other_dev.id}
 
 
 async def test_assignment_needs_pm_and_current_version(

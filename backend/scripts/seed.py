@@ -251,9 +251,9 @@ async def reset(session: AsyncSession) -> None:
 
 
 async def seed(session: AsyncSession, today: date | None = None) -> None:
-    """Insert the demo data. Fails if users already exist (use reset first)."""
+    """Insert the demo data. Fails if projects already exist (use reset first)."""
     today = today or datetime.now(UTC).date()
-    if (await session.execute(select(User.id).limit(1))).first() is not None:
+    if (await session.execute(select(Project.id).limit(1))).first() is not None:
         raise SystemExit("The database already has data. Use --reset to replace it.")
 
     session.add_all(

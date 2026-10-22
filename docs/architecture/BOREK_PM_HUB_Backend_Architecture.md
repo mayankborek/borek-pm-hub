@@ -122,10 +122,12 @@ borek-pm-hub/
 │   │   │   ├── pagination.py      # Shared pagination schema/helpers
 │   │   │   └── middleware.py      # Request ID, timing, CORS
 │   │   ├── auth/                  # WHO the user is (swappable)
-│   │   │   ├── router.py          # /auth/dev-users, /auth/me
+│   │   │   ├── router.py          # /auth/dev-users, /auth/login, /auth/me
+│   │   │   ├── security.py        # Argon2 password hashing, JWT access tokens
 │   │   │   ├── dependencies.py    # get_current_user()
 │   │   │   ├── providers/
 │   │   │   │   ├── dev.py         # Phase 1: user picked from seed accounts
+│   │   │   │   ├── local.py       # Email + password, bearer token (AUTH_MODE=local)
 │   │   │   │   └── entra.py       # Later: Entra ID token validation (stub)
 │   │   │   └── permissions.py     # WHAT the user may do: can(user, action, resource)
 │   │   ├── users/                 # User model, schemas, service, router
@@ -188,6 +190,16 @@ You asked for no authentication in Phase 1: the login button just opens the main
 >
 > This means Ticket 2 changes from "integrate the authentication provider" to "build the identity-and-permissions layer with a dev provider". Tell the PM so the ticket wording matches reality.
 
+### 6.1 Update 22.10.2026: three sign-in modes (`AUTH_MODE`)
+
+| Mode | Use | How |
+|---|---|---|
+| `dev` | Local development only | `X-Dev-User-Id` header, no password. The app refuses to start with it when `ENVIRONMENT=production`. |
+| `local` | Staging, pilot, and people **outside** the Microsoft tenant (later: clients), plus the QA accounts | `POST /auth/login` `{email, password}` returns `{access_token, token_type, expires_in, user}`. The frontend sends `Authorization: Bearer <token>`. Argon2 hashes, HS256 JWT (8 h, `SECRET_KEY` of 32+ characters is required), one generic error for every failure, lockout after repeated failures. |
+| `entra` | Staff, later | Microsoft Entra ID. Not built (501). |
+
+Accounts are created by hand with SQL (hash from `python -m scripts.hash_password`); there is no sign-up, email, password-reset flow or admin UI in Phase 1. `python -m scripts.bootstrap_users` creates one QA PM and one QA developer from environment variables (`BOOTSTRAP_*`), and `docker compose up` runs it on every start. Tokens cannot be revoked before they expire, but deactivating a user (`is_active = false`) blocks them at once. A later change can allow `entra` and `local` side by side (try the bearer token issuer, then fall back); routers, services and `can()` do not change. **Scope addition: tell the PM.**
+
 ---
 
 ## 7. Data model (Phase 1)
@@ -217,6 +229,8 @@ users 1 ──── * project_members * ──── 1 projects
 | id, name, email (unique) | |
 | global_role | `pm` / `developer` (same role names as the feature specs; extensible: `admin`, `client`, `viewer` later) |
 | external_id | nullable now; will hold the Entra object ID later |
+| password_hash | nullable; Argon2 hash for `AUTH_MODE=local` accounts (people outside the Microsoft tenant, QA accounts). Empty for Entra accounts. Added 22.10.2026 (migration 0004) |
+| failed_login_count, locked_until | login lockout: 5 wrong passwords in a row lock the account for 15 minutes (`MAX_FAILED_LOGINS`, `LOCKOUT_MINUTES`) |
 | is_active | |
 
 **projects**
@@ -324,7 +338,8 @@ Enforced in one function `can(user, action, resource)`, called from every endpoi
 | Create task | Yes | Yes, in projects they are a member of, **assigned to themselves only** |
 | Add / rename / reorder / delete statuses | Yes | Only the project lead of that project |
 | Edit task details (title, description, priority, due date) | Yes | No |
-| Assign / reassign task | Yes | No |
+| Assign / reassign task | Yes, to any active user (non-members are added to the project) | No |
+| List users (assignee picker) | Yes | No |
 | Change task status, progress, blocked reason | Any status | Only on tasks assigned to them, any status of the project |
 | View tasks in a project | Yes | Yes, **all tasks** of projects they are a member of (like Jira) |
 | "My tasks" | Own assigned | Own assigned |
@@ -402,7 +417,9 @@ Updates (`PATCH`) include the record's current `version`. If another person chan
 |---|---|---|
 | `GET /health`, `GET /ready` | Liveness and readiness (DB check) | 1 |
 | `GET /api/v1/auth/dev-users` | Seeded users for the login screen (dev mode only) | 2 |
+| `POST /api/v1/auth/login` | Email + password sign-in (`AUTH_MODE=local` only, otherwise 404). Added 22.10.2026, no ticket | 2 |
 | `GET /api/v1/auth/me` | Current user, role, memberships | 2 |
+| `GET /api/v1/users` | PM only. Active users for the assignee picker: `q` (name or email, case-insensitive), `role` (`pm`/`developer`), `page`, `page_size` (max 200); sorted by name. Added 22.10.2026 | 5 |
 | `POST /api/v1/projects` | Create project | 3 |
 | `GET /api/v1/projects` | List (scoped by role/membership), searchable with `q`, includes task progress summary per project | 3 |
 | `GET /api/v1/projects/{id}` | Details | 3 |
@@ -430,7 +447,7 @@ Updates (`PATCH`) include the record's current `version`. If another person chan
 | `POST /api/v1/tasks/{id}/attachments/link` | Attach a link `{url, name?}` (http/https only) | F08 |
 | `GET /api/v1/tasks/{id}/attachments/{aid}/download` | Download a stored file (same auth as the API; send as attachment) | F08 |
 | `DELETE /api/v1/tasks/{id}/attachments/{aid}` | Archive (uploader or PM); the stored file is kept | F08 |
-| `PUT /api/v1/tasks/{id}/assignee` | PM only. Body `{version, assignee_id}`; `null` unassigns. Assignee must be an active project member (422 `not_a_member`); same assignee is a no-op; 409 on stale version or archived task. Developers cannot self-assign existing tasks | 5 |
+| `PUT /api/v1/tasks/{id}/assignee` | PM only. Body `{version, assignee_id}`; `null` unassigns. Assignee must be an active user (422 `unknown_user`); if they are not a member yet they are **added to the project automatically** (`source=task_assignment`, role `developer`); same assignee is a no-op; 409 on stale version or archived task. Developers cannot self-assign existing tasks | 5 |
 | `POST /api/v1/tasks/{id}/status` | **Not built.** Status changes go through `PATCH /tasks/{id}` (`status_id`, `blocked_reason`); free movement, so no transition table | 5 |
 | `GET /api/v1/me/tasks` | My Work (F07): the caller's own tasks across their active projects, default sort `due_date`. Same filters as `GET /tasks`; `assignee_id` and `unassigned` are ignored | 5 |
 
