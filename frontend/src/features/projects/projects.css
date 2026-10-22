@@ -81,3 +81,7 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .empty-art img { width: 254px; height: 254px; object-fit: cover; }
 .empty-art h3 { font-size: 20px; color: var(--muted); }
 .empty-art p { max-width: 640px; }
+
+:root[data-theme=dark] .warn { color: #ffc166; }
+:root[data-theme=dark] .err { color: #ff8b7e; }
+:root[data-theme=dark] .form-alert { background: #3f222a; border-color: #5c2f3a; color: #ffa7a2; }

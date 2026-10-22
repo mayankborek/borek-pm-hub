@@ -8,3 +8,5 @@
 .toast.error { border-left-color: var(--err); }
 .toast button { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 20px; cursor: pointer; padding: 0; }
 .toast button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+:root[data-theme=dark] .toast { box-shadow: 0 4px 12px rgba(0, 0, 0, .5); }
+:root[data-theme=dark] .toast.success { border-left-color: #8ce7b9; }
