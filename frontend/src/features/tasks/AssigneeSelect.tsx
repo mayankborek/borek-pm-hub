@@ -1,23 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ProjectMember } from './tasksApi';
+import { useAssignableUsers } from './tasksApi';
 
 interface Props {
   value: string | null;
-  /** Current assignee, shown even while the member list is still loading. */
+  /** Current assignee, shown even while the list is still loading. */
   current: { id: string; name: string } | null;
-  members: ProjectMember[];
   onChange: (id: string | null) => void;
 }
 
-/** Assignee picker (Figma "Field picker · PM · Assignee options"): label, "Unassigned", then the project members. */
-export function AssigneeSelect({ value, current, members, onChange }: Props) {
-  const options: { id: string | null; name: string }[] = [
-    { id: null, name: 'Unassigned' },
-    ...members.map((m) => ({ id: m.user_id, name: m.name })),
-  ];
+/**
+ * Assignee picker (Figma "Field picker · PM · Assignee options"): label, search, "Unassigned", then every
+ * developer (GET /users). Assigning someone who is not in the project yet adds them as a member.
+ */
+export function AssigneeSelect({ value, current, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [search, setSearch] = useState('');
+  const [term, setTerm] = useState('');
   const root = useRef<HTMLDivElement>(null);
+  const users = useAssignableUsers(term, open);
+  const options: { id: string | null; name: string }[] = [
+    ...(term ? [] : [{ id: null, name: 'Unassigned' }]),
+    ...(users.data?.items ?? []).map((u) => ({ id: u.id, name: u.name })),
+  ];
+
+  useEffect(() => {
+    const id = setTimeout(() => setTerm(search), 250);
+    return () => clearTimeout(id);
+  }, [search]);
+  useEffect(() => setActive(0), [term]);
 
   useEffect(() => {
     if (!open) return;
@@ -27,7 +38,9 @@ export function AssigneeSelect({ value, current, members, onChange }: Props) {
   }, [open]);
 
   const openList = () => {
-    setActive(Math.max(0, options.findIndex((o) => o.id === value)));
+    setSearch('');
+    setTerm('');
+    setActive(0);
     setOpen(true);
   };
   const choose = (id: string | null) => {
@@ -44,7 +57,7 @@ export function AssigneeSelect({ value, current, members, onChange }: Props) {
       e.preventDefault();
       if (!open) return openList();
       setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + n) % n);
-    } else if ((e.key === 'Enter' || e.key === ' ') && open) {
+    } else if ((e.key === 'Enter' || (e.key === ' ' && (e.target as HTMLElement).tagName !== 'INPUT')) && open && n > 0) {
       e.preventDefault();
       choose(options[active].id);
     }
@@ -60,7 +73,17 @@ export function AssigneeSelect({ value, current, members, onChange }: Props) {
       {open && (
         <div className="as-pop">
           <p className="as-title" id="as-title">Assignee</p>
+          <input
+            className="as-search"
+            type="search"
+            autoFocus
+            placeholder="Search people"
+            aria-label="Search people"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <ul role="listbox" aria-labelledby="as-title">
+            {options.length === 0 && <li className="as-empty">{users.isPending ? 'Loading…' : 'No people found'}</li>}
             {options.map((o, i) => (
               <li
                 key={o.id ?? 'none'}

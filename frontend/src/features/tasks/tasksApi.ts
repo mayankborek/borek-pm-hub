@@ -2,6 +2,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import { api, ApiError, getApiUser } from '@/shared/api/client';
 import { env } from '@/shared/config/env';
 import { qs } from '@/features/projects/projectsApi';
+import type { Page } from '@/features/projects/types';
 
 export type StatusCategory = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
 export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
@@ -129,6 +130,23 @@ export const useProjectStatuses = (projectId?: string) =>
     enabled: !!projectId,
   });
 
+export interface AssignableUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+/** GET /users (PM only): active developers for the assignee pickers, searchable by name or email. */
+export const useAssignableUsers = (search: string, enabled = true) =>
+  useQuery({
+    queryKey: ['users', 'assignable', search.trim()],
+    queryFn: () => api<Page<AssignableUser>>(`/users${qs({ role: 'developer', q: search.trim(), page_size: 200 })}`),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+
 export const useProjectMembers = (projectId?: string) =>
   useQuery({
     queryKey: ['projects', 'members', projectId],
@@ -153,7 +171,10 @@ export const useUpdateTask = (task?: TaskDetail) => {
       const cached = qc.getQueryData<TaskDetail>(detailKey);
       if (!cached || saved.version >= cached.version) qc.setQueryData(detailKey, saved);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['projects', 'members'] }); // assigning adds the person to the project
+      return qc.invalidateQueries({ queryKey: taskKeys.all });
+    },
   });
 };
 
@@ -171,7 +192,10 @@ export const useCreateTask = (projectId: string) => {
   return useMutation({
     mutationFn: (input: TaskInput) =>
       api<Task>(`/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(input) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['projects', 'members'] }); // a new assignee joins the project
+      return qc.invalidateQueries({ queryKey: taskKeys.all });
+    },
   });
 };
 

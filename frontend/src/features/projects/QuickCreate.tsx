@@ -1,7 +1,8 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { ApiError } from '@/shared/api/client';
+import { useAuth } from '@/features/auth/AuthContext';
 import { Avatar } from '@/features/tasks/TaskParts';
-import { useCreateTask, useProjectMembers, type TaskPriority } from '@/features/tasks/tasksApi';
+import { useAssignableUsers, useCreateTask, useProjectMembers, type TaskPriority } from '@/features/tasks/tasksApi';
 import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
@@ -21,10 +22,16 @@ export function QuickCreate({ projectId, statusId, onClose }: { projectId: strin
   const [due, setDue] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const dueRef = useRef<HTMLInputElement>(null);
-  const { data: members } = useProjectMembers(projectId);
+  const isPm = useAuth().user?.role === 'pm';
+  // A PM can pick any developer (they join the project when assigned); a developer only gets themselves.
+  const projectMembers = useProjectMembers(projectId);
+  const developers = useAssignableUsers('', isPm);
+  const people = isPm
+    ? (developers.data?.items ?? []).map((u) => ({ user_id: u.id, name: u.name, email: u.email }))
+    : (projectMembers.data ?? []);
   const create = useCreateTask(projectId);
 
-  const assignee = members?.find((m) => m.user_id === assigneeId);
+  const assignee = people.find((m) => m.user_id === assigneeId);
   const canCreate = title.trim().length > 0 && !create.isPending;
   const priorityIcon = PRIORITIES.find((p) => p.key === priority)!.icon;
 
@@ -84,7 +91,7 @@ export function QuickCreate({ projectId, statusId, onClose }: { projectId: strin
             )}
             <select aria-label="Assignee" value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
               <option value="">Unassigned</option>
-              {(members ?? []).map((m) => (
+              {people.map((m) => (
                 <option key={m.user_id} value={m.user_id}>
                   {m.name}
                 </option>

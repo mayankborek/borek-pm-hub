@@ -15,8 +15,15 @@ class Settings(BaseSettings):
     )
 
     environment: Literal["local", "test", "staging", "production"] = "local"
-    # "dev" = pick a seeded user (Phase 1). "entra" = Microsoft Entra ID (later).
-    auth_mode: Literal["dev", "entra"] = "dev"
+    # "dev" = pick a seeded user (local only). "local" = email + password, signed bearer token.
+    # "entra" = Microsoft Entra ID (later).
+    auth_mode: Literal["dev", "local", "entra"] = "dev"
+    # Signs the access tokens of AUTH_MODE=local. At least 32 characters; keep it secret.
+    secret_key: str = ""
+    access_token_minutes: int = 480
+    # Sign-in is blocked for `lockout_minutes` after `max_failed_logins` wrong passwords in a row.
+    max_failed_logins: int = 5
+    lockout_minutes: int = 15
 
     database_url: str = "postgresql+asyncpg://pmhub:change-me@localhost:5432/pmhub"
     db_pool_size: int = 10
@@ -40,6 +47,12 @@ class Settings(BaseSettings):
     def _forbid_dev_auth_in_production(self) -> Self:
         if self.environment == "production" and self.auth_mode == "dev":
             raise ValueError("AUTH_MODE=dev is not allowed when ENVIRONMENT=production")
+        return self
+
+    @model_validator(mode="after")
+    def _require_secret_for_local_auth(self) -> Self:
+        if self.auth_mode == "local" and len(self.secret_key) < 32:
+            raise ValueError("AUTH_MODE=local needs SECRET_KEY with at least 32 characters")
         return self
 
 
