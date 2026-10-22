@@ -7,8 +7,7 @@ import { Pill } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import '@/features/dashboard/dashboard.css';
 import { useMyDashboard, useMyTasks, type MyDashboard } from './myWorkApi';
-import { PriorityIndicator } from './PrioritySelect';
-import { toneOf } from './StatusSelect';
+import { MyTaskList } from './MyTaskList';
 import type { Task } from './tasksApi';
 import './taskDetail.css';
 
@@ -55,13 +54,13 @@ export function MyWorkPage() {
       ) : tasks.data.total === 0 ? (
         <EmptyState title={t('No tasks assigned')} text={t('Tasks assigned to you will appear here. Ask your Project Manager if you expected some.')} />
       ) : (
-        <MyWorkBody dashboard={dashboard.data} tasks={tasks.data.items} total={tasks.data.total} />
+        <MyWorkBody dashboard={dashboard.data} tasks={tasks.data.items} />
       )}
     </section>
   );
 }
 
-function MyWorkBody({ dashboard, tasks, total }: { dashboard: MyDashboard; tasks: Task[]; total: number }) {
+function MyWorkBody({ dashboard, tasks }: { dashboard: MyDashboard; tasks: Task[] }) {
   const { t } = usePrefs();
   const today = todayIso();
   const weekEnd = addDaysIso(7);
@@ -93,31 +92,7 @@ function MyWorkBody({ dashboard, tasks, total }: { dashboard: MyDashboard; tasks
       </section>
 
       <div className="split">
-        <section className="card" aria-label={t('All Assigned Tasks')}>
-          <h3>{t('All Assigned Tasks')}</h3>
-          <p className="desc">
-            {t(total === 1 ? '{n} task assigned to you across {p} projects' : '{n} tasks assigned to you across {p} projects', {
-              n: total,
-              p: projects.length,
-            })}
-          </p>
-          <div className="mw-head" aria-hidden="true">
-            <span>{t('Task')}</span>
-            <span>{t('Status')}</span>
-            <span>{t('Priority')}</span>
-          </div>
-          <ul className="mw-list">
-            {tasks.map((task) => (
-              <li key={task.id}>
-                <Link to={paths.task(task.id)}>
-                  {task.key} · {task.title} →
-                </Link>
-                <span className={`ss-label tone-${toneOf(task.status)}`}>{task.status.name}</span>
-                <PriorityIndicator priority={task.priority} />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <MyTaskList tasks={tasks} />
 
         <AttentionAreas dashboard={dashboard} today={today} />
       </div>

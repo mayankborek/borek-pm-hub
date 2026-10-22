@@ -1,0 +1,31 @@
+.mw-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.mw-chip { height: 32px; padding: 0 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 13px Inter, sans-serif; cursor: pointer; }
+.mw-chip strong { margin-left: 4px; }
+.mw-chip.blocked strong { color: #c94a32; }
+.mw-chip.overdue strong { color: #e07e00; }
+.mw-chip[aria-pressed='true'] { border-color: var(--link); background: var(--surface-2); }
+.mw-chip:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+.mw-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 8px; }
+.mw-filters .input { height: 36px; max-width: none; width: auto; border-color: var(--line); border-radius: 0; font-size: 13px; }
+.mw-filters .search { width: 220px; }
+
+.mw-group { margin-top: 16px; }
+.mw-group-title { margin: 0 0 4px; font-size: 14px; }
+.mw-group-title span { margin-left: 6px; font-weight: 400; color: var(--muted); }
+.mw-table-head, .mw-rows li { display: grid; grid-template-columns: minmax(0, 1fr) 110px 110px 150px; gap: 16px; align-items: center; }
+.mw-table-head { padding-bottom: 6px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); text-transform: uppercase; }
+.mw-rows { list-style: none; margin: 0; padding: 0; }
+.mw-rows li { min-height: 44px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.mw-title { display: flex; flex-direction: column; min-width: 0; }
+.mw-title a { font-weight: 600; color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mw-title a:hover { text-decoration: underline; }
+.mw-sub { font-size: 12px; color: var(--muted); }
+.mw-due { display: flex; flex-direction: column; }
+.mw-due.late { color: #c94a32; font-weight: 600; }
+.mw-due em { font-style: normal; font-size: 12px; font-weight: 400; }
+
+@media (max-width: 800px) {
+  .mw-table-head, .mw-rows li { grid-template-columns: minmax(0, 1fr) 90px 90px; }
+  .mw-table-head span:last-child, .mw-rows li > .mw-due { display: none; }
+}

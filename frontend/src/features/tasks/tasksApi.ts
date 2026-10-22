@@ -91,6 +91,7 @@ export interface TaskDetail extends Task {
   description: string | null;
   start_date: string | null;
   reporter: UserBrief;
+  blocked_reason: string | null;
   updated_at: string;
 }
 
@@ -118,6 +119,8 @@ export type TaskPatch = Partial<{
   start_date: string | null;
   due_date: string | null;
   assignee_id: string | null;
+  progress: number;
+  blocked_reason: string | null;
 }>;
 
 export const useTask = (id: string) =>

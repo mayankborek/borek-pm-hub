@@ -24,6 +24,7 @@
 .pill.risk { background: #fff2d4; border-color: #c27a0a; color: #7a4a05; }
 .pill.blocked { background: #ffe3e8; border-color: #fbbfc7; color: #a21d30; }
 .pill.overdue { background: var(--surface-2); border-color: var(--line); color: var(--ink); font-weight: 600; }
+.pill.overdue .dot { display: none; }
 
 .progress { display: flex; align-items: center; gap: 8px; min-width: 120px; }
 .progress-track { flex: 1; height: 8px; border-radius:0; background: var(--surface-2); overflow: hidden; }

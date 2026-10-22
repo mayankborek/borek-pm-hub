@@ -106,20 +106,31 @@ export function TaskDetailPage() {
     assignee_id: task.assignee?.id ?? null,
     start_date: task.start_date,
     due_date: task.due_date,
+    progress: task.progress,
+    blocked_reason: task.blocked_reason,
   };
   const changes: TaskPatch = {};
   for (const key of Object.keys(draft) as (keyof TaskPatch)[]) {
-    const next = key === 'description' ? draft.description?.trim() || null : draft[key];
+    const next =
+      key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
     if (next !== saved[key]) Object.assign(changes, { [key]: next });
   }
   if (parsedLabels.join('|') !== task.labels.join('|')) changes.labels = parsedLabels;
   const dirty = Object.keys(changes).length > 0;
-  const save = () =>
+  // A blocked status needs a reason (the backend rejects it otherwise).
+  const targetStatus = (statuses.data ?? [task.status]).find((s) => s.id === (draft.status_id ?? task.status.id)) ?? task.status;
+  const blocking = targetStatus.category === 'blocked';
+  const reason = (draft.blocked_reason !== undefined ? draft.blocked_reason : task.blocked_reason) ?? '';
+  const missingReason = blocking && !reason.trim();
+  const save = () => {
+    // The reason travels with the status change that needs it, even when the task already had one.
+    if (blocking && changes.status_id && !('blocked_reason' in changes)) changes.blocked_reason = reason.trim();
     update.mutate(changes, {
       onSuccess: () => setDraft({}),
       onError: (e) =>
         toast.error(e instanceof ApiError && e.status === 409 ? 'Someone else changed this task. Your edit was not saved.' : 'Could not save your change.'),
     });
+  };
   const view = {
     description: draft.description !== undefined ? (draft.description ?? '') : (task.description ?? ''),
     priority: draft.priority ?? task.priority,
@@ -137,11 +148,11 @@ export function TaskDetailPage() {
     <section className="page-body task-detail">
       <p className="td-crumb">
         <Link to={paths.project(task.project_id)}>{task.project_name}</Link> /{' '}
-        {isPm ? <Link to={paths.tasks}>Task List</Link> : <Link to={paths.projectBoard(task.project_id)}>Board</Link>} / {task.key}
+        {isPm ? <Link to={paths.tasks}>Task List</Link> : <Link to={paths.myWork}>My Task</Link>} / {task.key}
       </p>
       <div className="td-head">
         <h2 className="td-title">{task.title}</h2>
-        <button type="button" className="btn" disabled={!dirty || update.isPending} onClick={save}>
+        <button type="button" className="btn" disabled={!dirty || missingReason || update.isPending} onClick={save}>
           {update.isPending ? 'Saving…' : 'Save'}
         </button>
       </div>
@@ -244,6 +255,35 @@ export function TaskDetailPage() {
                 <span className="td-static">{task.status.name}</span>
               )}
             </Row>
+            {blocking && (
+              <Row label="Blocked reason">
+                {canStatus ? (
+                  <input
+                    aria-label="Blocked reason"
+                    aria-invalid={missingReason}
+                    placeholder="Why is this blocked?"
+                    value={reason}
+                    onChange={(e) => stage({ blocked_reason: e.target.value })}
+                  />
+                ) : (
+                  <span className="td-static">{task.blocked_reason || '—'}</span>
+                )}
+              </Row>
+            )}
+            <Row label="Progress">
+              {canStatus ? (
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  aria-label="Progress (%)"
+                  value={draft.progress ?? task.progress}
+                  onChange={(e) => stage({ progress: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) })}
+                />
+              ) : (
+                <span className="td-static">{task.progress}%</span>
+              )}
+            </Row>
             <Row label="Priority">
               {isPm ? (
                 <PrioritySelect value={view.priority} onChange={(priority) => stage({ priority })} />
@@ -312,9 +352,11 @@ export function TaskDetailPage() {
           <section className="td-card">
             <div className="td-card-head">
               <h3>Related tasks</h3>
-              <button type="button" className="td-outline" onClick={() => setDrawer(true)}>
-                Related Task
-              </button>
+              {isPm && (
+                <button type="button" className="td-outline" onClick={() => setDrawer(true)}>
+                  Related Task
+                </button>
+              )}
             </div>
             {related.length === 0 && <p className="td-empty">No related tasks.</p>}
             {related.map((r) => (
