@@ -34,7 +34,6 @@ export function ProjectLayout() {
     { label: 'Overview', to: paths.project(projectId), end: true },
     { label: 'Backlog', to: paths.projectList(projectId) },
     { label: 'Board', to: paths.projectBoard(projectId) },
-    { label: 'Members', to: paths.projectMembers(projectId) },
   ];
 
   return (

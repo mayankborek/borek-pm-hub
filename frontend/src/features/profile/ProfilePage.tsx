@@ -5,7 +5,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import avatarImg from './assets/avatar.png';
 import chevronIcon from './assets/chevron-down.svg';
-import toggleOffIcon from './assets/toggle-off.svg';
+import themeSwitchLight from './assets/theme-switch-light.svg';
+import themeSwitchDark from './assets/theme-switch-dark.svg';
 import './profile.css';
 
 type Mode = 'view' | 'edit' | 'saved';
@@ -176,7 +177,7 @@ export function ProfilePage() {
               <span className="pf-label">{t('Theme')}</span>
               <div className="pf-toggle-row">
                 <div>
-                  <strong>{t(dark ? 'Dark mode' : 'Dark mode')}</strong>
+                  <strong>{t('Dark mode')}</strong>
                 </div>
                 <button
                   type="button"
@@ -186,7 +187,7 @@ export function ProfilePage() {
                   aria-label={t('Dark mode')}
                   onClick={() => setTheme(dark ? 'light' : 'dark')}
                 >
-                  <img src={toggleOffIcon} alt="" />
+                  <img src={dark ? themeSwitchDark : themeSwitchLight} alt="" />
                 </button>
               </div>
             </div>
