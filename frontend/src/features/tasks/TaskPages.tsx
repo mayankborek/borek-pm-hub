@@ -2,9 +2,12 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
+import { useAuth } from '@/features/auth/AuthContext';
+import { describeApiError } from '@/shared/api/client';
+import { useToast } from '@/shared/ui/Toast';
 import { TaskRow, TaskTableHead } from './TaskParts';
 import { TaskFilters } from './TaskParts';
-import { useAllTasks } from './tasksApi';
+import { useAllTasks, useDeleteTask } from './tasksApi';
 import { isFiltered, useUrlFilter } from './useUrlFilter';
 import './tasks.css';
 
@@ -14,6 +17,9 @@ export function TasksPage() {
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const projectId = params.get('project_id') ?? '';
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const isPm = useAuth().user?.role === 'pm';
+  const toast = useToast();
+  const deleteTask = useDeleteTask();
   const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, applied);
 
   const tasks = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
@@ -46,12 +52,30 @@ export function TasksPage() {
       ) : (
         <>
           <section className="task-group table" role="table" aria-label="All tasks">
-            <TaskTableHead />
+            <TaskTableHead withActions={isPm} />
             {tasks.map((t) => (
               <TaskRow
                 key={t.id}
                 task={t}
                 showProject
+                onDelete={
+                  isPm
+                    ? () => {
+                        if (!window.confirm(`Delete ${t.key} · ${t.title}?`)) return;
+                        deleteTask.mutate(t.id, {
+                          onSuccess: () => {
+                            setSelected((prev) => {
+                              const next = new Set(prev);
+                              next.delete(t.id);
+                              return next;
+                            });
+                            toast.success(`${t.key} deleted.`);
+                          },
+                          onError: (e) => toast.error(describeApiError(e, 'Could not delete the task.')),
+                        });
+                      }
+                    : undefined
+                }
                 selected={selected.has(t.id)}
                 onSelect={(on) =>
                   setSelected((prev) => {

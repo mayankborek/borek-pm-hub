@@ -204,6 +204,15 @@ export const useCreateTask = (projectId: string) => {
   });
 };
 
+/** DELETE /tasks/{id} (PM only): archives the task and refreshes every task list. */
+export const useDeleteTask = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/tasks/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
+  });
+};
+
 /** Status management for the Board (PM only): create, rename, reorder, delete. Every change refreshes statuses and tasks. */
 export const useStatusActions = (projectId: string) => {
   const qc = useQueryClient();

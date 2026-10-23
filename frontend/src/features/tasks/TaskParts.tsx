@@ -37,14 +37,17 @@ export function TaskRow({
   showProject,
   selected,
   onSelect,
+  onDelete,
 }: {
   task: Task;
   showProject?: boolean;
   selected?: boolean;
   onSelect?: (checked: boolean) => void;
+  /** Adds a trailing Delete button (PM only). */
+  onDelete?: () => void;
 }) {
   return (
-    <div className="task-row" role="row">
+    <div className={onDelete ? 'task-row has-actions' : 'task-row'} role="row">
       <div className="task-title" role="cell">
         {onSelect && (
           <input
@@ -95,19 +98,27 @@ export function TaskRow({
           </>
         )}
       </div>
+      {onDelete && (
+        <div className="cell-actions" role="cell">
+          <button type="button" className="link-btn task-delete" aria-label={`Delete ${task.key}`} onClick={onDelete}>
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 /** Column header row of the all-projects task table (Figma "01 PM Task List — Primary"). */
-export function TaskTableHead() {
+export function TaskTableHead({ withActions }: { withActions?: boolean }) {
   return (
-    <div className="task-row task-table-head" role="row">
+    <div className={withActions ? 'task-row task-table-head has-actions' : 'task-row task-table-head'} role="row">
       <div role="columnheader">Task / Project</div>
       <div role="columnheader">Status</div>
       <div role="columnheader">Due date</div>
       <div role="columnheader">Priority</div>
       <div role="columnheader">Assignee</div>
+      {withActions && <div role="columnheader" aria-label="Actions" />}
     </div>
   );
 }
