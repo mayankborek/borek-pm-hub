@@ -4,7 +4,7 @@ import { paths } from '@/app/routes';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import type { AssignableUser } from '@/features/tasks/tasksApi';
 import { MemberPicker } from './MemberPicker';
-import { addProjectMember, parseApiError, useCreateProject, useProject, useUpdateProject, type FieldErrors } from './projectsApi';
+import { parseApiError, useCreateProject, useProject, useUpdateProject, type FieldErrors } from './projectsApi';
 import { STATUS_LABEL } from './projectUi';
 import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './projects.css';
@@ -99,8 +99,7 @@ function ProjectForm({ project }: { project?: Project }) {
         await update.mutateAsync({ input: rest, version: project.version });
         navigate(paths.project(project.id));
       } else {
-        const created = await create.mutateAsync(input);
-        await Promise.allSettled(members.map((m) => addProjectMember(created.id, m.id)));
+        const created = await create.mutateAsync({ ...input, members: members.map((m) => ({ user_id: m.id })) });
         navigate(paths.project(created.id));
       }
     } catch (err) {

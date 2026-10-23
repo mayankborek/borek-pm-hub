@@ -33,14 +33,10 @@ export const useProject = (id: string) =>
 export const useCreateProject = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ProjectInput) => api<Project>('/projects', { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: (input: ProjectInput & { members?: { user_id: string }[] }) => api<Project>('/projects', { method: 'POST', body: JSON.stringify(input) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.all }),
   });
 };
-
-/** POST /projects/{id}/members: the create endpoint takes no members, so the form adds them after the project exists. */
-export const addProjectMember = (projectId: string, userId: string) =>
-  api(`/projects/${projectId}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
 
 /** `code` is immutable after creation, so it is not sent. */
 export const useUpdateProject = (id: string) => {
