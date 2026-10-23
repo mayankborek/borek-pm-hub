@@ -31,7 +31,16 @@ BOARD_LIMIT = 1000  # a board is never paginated; this keeps one request bounded
 
 # Fields only a PM may change vs. the ones a developer may change on an own task.
 DETAIL_FIELDS = frozenset(
-    {"title", "description", "priority", "labels", "start_date", "due_date", "estimate", "assignee_id"}
+    {
+        "title",
+        "description",
+        "priority",
+        "labels",
+        "start_date",
+        "due_date",
+        "estimate",
+        "assignee_id",
+    }
 )
 STATUS_FIELDS = frozenset({"status_id", "progress", "blocked_reason"})
 _NOT_NULL_FIELDS = ("title", "priority", "labels", "progress", "status_id")

@@ -76,7 +76,7 @@ class Task(IdMixin, TimestampMixin, Base):
         ARRAY(String(30)), nullable=False, default=list, server_default=text("'{}'")
     )
     start_date: Mapped[date | None] = mapped_column(Date)
-    # Also the "estimate" of the Figma designs: the date the task should be completed.
+    # The date the task should be completed (not the "estimate" field, which is separate).
     due_date: Mapped[date | None] = mapped_column(Date)
     # Free text size of the work, e.g. "5 points".
     estimate: Mapped[str | None] = mapped_column(String(50))

@@ -269,7 +269,8 @@ Every project starts with 7 statuses: Backlog, To do, In progress, Code review, 
 | status_id | FK to `project_statuses` through the composite key `(status_id, project_id)`: a task cannot use another project's status |
 | priority | `critical`, `high`, `medium`, `low` |
 | labels | text array, max 10 labels of max 30 characters, no duplicates (case-insensitive) |
-| start_date, due_date | nullable; due_date must not be before start_date. `due_date` is also the "estimate" of the designs: the date the task should be completed |
+| start_date, due_date | nullable; due_date must not be before start_date. `due_date` is the date the task should be completed. It is **not** the "estimate" shown in the designs (corrected 23.10.2026) |
+| estimate | nullable free text, max 50 characters (e.g. "5 points"), trimmed, empty becomes null. Set by PMs only, visible to everyone in the project. Added 23.10.2026 (migration 0005) **without a ticket or product-owner decision**; whether it stays, and its values (PDDP: planned effort in person-days), is open with the product owner |
 | progress | integer 0 to 100, default 0, stored **independently of status** (F03, F08) |
 | assignee_id | nullable FK users (unassigned tasks are allowed, F09) |
 | blocked_reason, blocked_at | both set while the status is in the `blocked` category (reason required; checked in the service because the status is in another table) |
