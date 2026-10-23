@@ -1,0 +1,61 @@
+# Production-style stack: PostgreSQL + API (gunicorn). No source mounts, no auto-reload, the
+# database port is not published, secrets come from the env file (never committed).
+#
+#   1. cp deploy.env.example .env.prod   and fill in every value (the file is git-ignored)
+#   2. docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#   3. check:  curl http://localhost:8000/ready
+# On every start the API container applies migrations, loads the demo data once (only when the
+# database is empty) and creates the QA accounts. Sign in with the @borek.test emails and the
+# passwords from .env.prod. Remove the demo data and accounts when the system goes live.
+name: borek-pm-hub-prod
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pmhub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: pmhub
+    volumes:
+      - pmhub_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pmhub -d pmhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      AUTH_MODE: local
+      DATABASE_URL: postgresql+asyncpg://pmhub:${POSTGRES_PASSWORD}@db:5432/pmhub
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY (32+ chars) in .env.prod}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS (frontend address) in .env.prod}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:?set SEED_USER_PASSWORD (12+ chars) in .env.prod}
+      BOOTSTRAP_PM_EMAIL: ${BOOTSTRAP_PM_EMAIL:-qa.pm@borek.test}
+      BOOTSTRAP_PM_PASSWORD: ${BOOTSTRAP_PM_PASSWORD:-}
+      BOOTSTRAP_DEV_EMAIL: ${BOOTSTRAP_DEV_EMAIL:-qa.dev@borek.test}
+      BOOTSTRAP_DEV_PASSWORD: ${BOOTSTRAP_DEV_PASSWORD:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - pmhub_uploads:/app/uploads   # task attachment files
+    command: >
+      sh -c "alembic upgrade head
+      && python -m scripts.seed --if-empty --allow-production
+      && python -m scripts.bootstrap_users
+      && exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pmhub_pgdata:
+  pmhub_uploads:

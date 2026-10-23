@@ -57,3 +57,35 @@ def test_seed_refuses_production(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(seed_module, "get_settings", lambda: settings)
     with pytest.raises(SystemExit):
         seed_module.check_environment()
+
+
+def test_seed_in_production_needs_the_flag_and_never_resets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(_env_file=None, environment="production", auth_mode="entra")
+    monkeypatch.setattr(seed_module, "get_settings", lambda: settings)
+    seed_module.check_environment(allow_production=True)  # allowed with the flag
+    with pytest.raises(SystemExit):
+        seed_module.check_environment(allow_production=True, do_reset=True)
+
+
+def test_seed_password_comes_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SEED_USER_PASSWORD", raising=False)
+    assert seed_module.read_seed_password() is None
+    monkeypatch.setenv("SEED_USER_PASSWORD", "short")
+    with pytest.raises(SystemExit):
+        seed_module.read_seed_password()
+    monkeypatch.setenv("SEED_USER_PASSWORD", "a-long-enough-password")
+    assert seed_module.read_seed_password() == "a-long-enough-password"
+
+
+async def test_seed_users_can_sign_in_when_a_password_is_given(session: AsyncSession) -> None:
+    from app.auth.security import verify_password
+
+    await seed(session, password="a-long-enough-password")
+    users = (await session.execute(select(User))).scalars().all()
+    assert len(users) == 4
+    assert all(
+        u.password_hash and verify_password("a-long-enough-password", u.password_hash)
+        for u in users
+    )

@@ -2,16 +2,23 @@
 
 Run from the backend folder:  python -m scripts.seed          (adds data to an empty database)
                               python -m scripts.seed --reset  (wipes the data tables first)
+
+Production-like hosts (AUTH_MODE=local) have no user picker, so the seed users need a password:
+set SEED_USER_PASSWORD (12+ characters, shared by the seed users) and the users can sign in with
+their @borek.test email. Seeding is refused when ENVIRONMENT=production unless --allow-production
+is given, and --reset is never allowed there. --if-empty makes it safe to run on every start.
 """
 
 import argparse
 import asyncio
+import os
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.security import hash_password
 from app.common.enums import (
     GlobalRole,
     MembershipSource,
@@ -236,9 +243,28 @@ LABELS = {
 ARCHIVED_TITLES = {"Old prototype cleanup"}
 
 
-def check_environment() -> None:
-    if get_settings().environment == "production":
-        raise SystemExit("Refusing to seed demo data when ENVIRONMENT=production.")
+MIN_PASSWORD_LENGTH = 12
+
+
+def check_environment(allow_production: bool = False, do_reset: bool = False) -> None:
+    if get_settings().environment != "production":
+        return
+    if do_reset:
+        raise SystemExit("Refusing to wipe data when ENVIRONMENT=production.")
+    if not allow_production:
+        raise SystemExit(
+            "Refusing to seed demo data when ENVIRONMENT=production (use --allow-production)."
+        )
+
+
+def read_seed_password() -> str | None:
+    """The shared password of the seed users (None = no password, dev picker only)."""
+    password = os.environ.get("SEED_USER_PASSWORD", "")
+    if not password:
+        return None
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise SystemExit(f"SEED_USER_PASSWORD needs at least {MIN_PASSWORD_LENGTH} characters.")
+    return password
 
 
 async def reset(session: AsyncSession) -> None:
@@ -250,14 +276,17 @@ async def reset(session: AsyncSession) -> None:
     )
 
 
-async def seed(session: AsyncSession, today: date | None = None) -> None:
+async def seed(
+    session: AsyncSession, today: date | None = None, password: str | None = None
+) -> None:
     """Insert the demo data. Fails if projects already exist (use reset first)."""
     today = today or datetime.now(UTC).date()
     if (await session.execute(select(Project.id).limit(1))).first() is not None:
         raise SystemExit("The database already has data. Use --reset to replace it.")
 
+    password_hash = hash_password(password) if password else None
     session.add_all(
-        User(id=uid, name=name, email=email, global_role=role.value)
+        User(id=uid, name=name, email=email, global_role=role.value, password_hash=password_hash)
         for uid, name, email, role in USERS
     )
     await session.flush()
@@ -316,12 +345,19 @@ async def seed(session: AsyncSession, today: date | None = None) -> None:
     await session.flush()
 
 
-async def main(do_reset: bool) -> None:
-    check_environment()
+async def main(do_reset: bool, allow_production: bool, if_empty: bool) -> None:
+    check_environment(allow_production, do_reset)
+    password = read_seed_password()
+    if get_settings().environment == "production" and password is None:
+        raise SystemExit("SEED_USER_PASSWORD is required in production (no user picker there).")
     async with get_sessionmaker()() as session, session.begin():
         if do_reset:
             await reset(session)
-        await seed(session)
+        elif if_empty and (await session.execute(select(Project.id).limit(1))).first():
+            print("Database already has data; seed skipped.")
+            await get_engine().dispose()
+            return
+        await seed(session, password=password)
     await get_engine().dispose()
     print(f"Seeded {len(USERS)} users, {len(PROJECTS)} projects, {len(TASKS)} tasks.")
 
@@ -329,4 +365,11 @@ async def main(do_reset: bool) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Seed demo data.")
     parser.add_argument("--reset", action="store_true", help="wipe all data tables first")
-    asyncio.run(main(parser.parse_args().reset))
+    parser.add_argument(
+        "--allow-production", action="store_true", help="allow seeding when ENVIRONMENT=production"
+    )
+    parser.add_argument(
+        "--if-empty", action="store_true", help="do nothing (success) when data already exists"
+    )
+    args = parser.parse_args()
+    asyncio.run(main(args.reset, args.allow_production, args.if_empty))
