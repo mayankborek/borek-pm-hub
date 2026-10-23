@@ -22,13 +22,12 @@ import { AssigneeSelect } from './AssigneeSelect';
 import { DatePicker } from './DatePicker';
 import { PrioritySelect } from './PrioritySelect';
 import { StatusSelect } from './StatusSelect';
-import chevronIcon from './assets/select-chevron.svg';
 import './taskDetail.css';
 
 const fileSize = (n: number | null) =>
   n == null ? '' : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
-const stamp = (iso: string) =>
+const stamp =(iso: string) =>
   new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -37,16 +36,6 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <label>{label}</label>
       {children}
     </div>
-  );
-}
-
-/** Read-only value in the select styling of the developer design (Figma "Select · Priority" etc.). */
-function Field({ children, icon = chevronIcon }: { children: ReactNode; icon?: string }) {
-  return (
-    <span className="td-field">
-      <span>{children}</span>
-      <img src={icon} alt="" width={16} height={16} />
-    </span>
   );
 }
 
@@ -357,10 +346,14 @@ export function TaskDetailPage() {
               <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
             </Row>
             <Row label="Assignee">
-              <AssigneeSelect value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
+              {isPm ? (
+                <AssigneeSelect value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
+              ) : (
+                <span className="td-static">{task.assignee?.name || 'Unassigned'}</span>
+              )}
             </Row>
             <Row label="Reporter">
-              {isPm ? <span className="td-static">{task.reporter.name}</span> : <Field>{task.reporter.name || '—'}</Field>}
+              <span className="td-static">{task.reporter.name || '—'}</span>
             </Row>
             <Row label="Start date">
               <DatePicker
