@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -75,15 +75,8 @@ export function TaskDetailPage() {
   const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
   // Unsaved edits, sent together by the Save button.
   const [draft, setDraft] = useState<TaskPatch>({});
-  const [labels, setLabels] = useState('');
-  // No estimate field on the backend yet: kept in page state with a sample value.
-  const [estimate, setEstimate] = useState('5 points');
-  const confirmedLabels = useRef('');
-  useEffect(() => {
-    const next = task?.labels.join(' · ') ?? '';
-    setLabels((draft) => (draft === confirmedLabels.current ? next : draft));
-    confirmedLabels.current = next;
-  }, [task?.labels]);
+  // No estimate field on the backend yet: sample value shown read-only.
+  const estimate = '5 points';
 
   if (isPending)
     return (
@@ -103,10 +96,6 @@ export function TaskDetailPage() {
     );
 
   const stage = (patch: TaskPatch) => setDraft((d) => ({ ...d, ...patch }));
-  const parsedLabels = labels
-    .split(/[,·]/)
-    .map((l) => l.trim())
-    .filter(Boolean);
   const saved: TaskPatch = {
     description: task.description,
     priority: task.priority,
@@ -127,7 +116,6 @@ export function TaskDetailPage() {
       key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
     if (next !== saved[key]) Object.assign(changes, { [key]: next });
   }
-  if (isPm && parsedLabels.join('|') !== task.labels.join('|')) changes.labels = parsedLabels;
   const dirty = Object.keys(changes).length > 0;
   // A blocked status needs a reason (the backend rejects it otherwise).
   const targetStatus = (statuses.data ?? [task.status]).find((s) => s.id === (draft.status_id ?? task.status.id)) ?? task.status;
@@ -181,7 +169,6 @@ export function TaskDetailPage() {
           {task.key} · Updated {stamp(task.updated_at)}
           {update.isPending && ' · Saving…'}
           {!dirty && update.isSuccess && ' · ✓ Saved'}
-          {dirty && ' · Unsaved changes'}
         </p>
       )}
       {update.isError && (
@@ -386,23 +373,10 @@ export function TaskDetailPage() {
             </Row>
             {/* No estimate field on the backend yet: placeholder value until one is added. */}
             <Row label="Estimate">
-              {isPm ? (
-                <input aria-label="Estimate" placeholder="e.g. 5 points" value={estimate} onChange={(e) => setEstimate(e.target.value)} />
-              ) : (
-                <span className="td-static">{estimate}</span>
-              )}
+              <span className="td-static">{estimate}</span>
             </Row>
             <Row label="Labels">
-              {!isPm ? (
-                <span className="td-static">{task.labels.join(' · ') || '—'}</span>
-              ) : (
-              <input
-                aria-label="Labels"
-                placeholder="e.g. Homepage · Sprint 4"
-                value={labels}
-                onChange={(e) => setLabels(e.target.value)}
-              />
-              )}
+              <span className="td-static">{task.labels.join(' · ') || '—'}</span>
             </Row>
           </section>
 
