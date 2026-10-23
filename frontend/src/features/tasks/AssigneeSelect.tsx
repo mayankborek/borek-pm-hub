@@ -17,6 +17,7 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
   const [active, setActive] = useState(0);
   const [search, setSearch] = useState('');
   const [term, setTerm] = useState('');
+  const [picked, setPicked] = useState<{ id: string | null; name: string } | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const users = useAssignableUsers(term, open);
   const options: { id: string | null; name: string }[] = [
@@ -45,6 +46,7 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
   };
   const choose = (id: string | null) => {
     setOpen(false);
+    setPicked(id ? (options.find((o) => o.id === id) ?? null) : null);
     if (id !== value) onChange(id);
     root.current?.querySelector('button')?.focus();
   };
@@ -63,7 +65,9 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
     }
   };
 
-  const label = current?.name ?? 'Unassigned';
+  // `value` may be a staged choice that differs from the saved assignee in `current`.
+  const label =
+    value === null ? 'Unassigned' : value === current?.id ? current.name : picked?.id === value ? picked.name : 'Unassigned';
 
   return (
     <div className="as" ref={root} onKeyDown={onKeyDown}>

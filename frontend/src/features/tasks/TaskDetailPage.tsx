@@ -117,13 +117,17 @@ export function TaskDetailPage() {
     progress: task.progress,
     blocked_reason: task.blocked_reason,
   };
+  // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
+  const isPm = user?.role === 'pm';
   const changes: TaskPatch = {};
   for (const key of Object.keys(draft) as (keyof TaskPatch)[]) {
+    // The backend rejects a developer's PATCH that carries PM-only fields, so Save sends just status fields for them.
+    if (!isPm && key !== 'status_id' && key !== 'blocked_reason') continue;
     const next =
       key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
     if (next !== saved[key]) Object.assign(changes, { [key]: next });
   }
-  if (parsedLabels.join('|') !== task.labels.join('|')) changes.labels = parsedLabels;
+  if (isPm && parsedLabels.join('|') !== task.labels.join('|')) changes.labels = parsedLabels;
   const dirty = Object.keys(changes).length > 0;
   // A blocked status needs a reason (the backend rejects it otherwise).
   const targetStatus = (statuses.data ?? [task.status]).find((s) => s.id === (draft.status_id ?? task.status.id)) ?? task.status;
@@ -154,8 +158,6 @@ export function TaskDetailPage() {
     start_date: draft.start_date !== undefined ? draft.start_date : task.start_date,
     due_date: draft.due_date !== undefined ? draft.due_date : task.due_date,
   };
-  // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
-  const isPm = user?.role === 'pm';
   const canStatus = isPm || task.assignee?.id === user?.id;
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
   const edit = (patch: TaskPatch) =>
@@ -193,8 +195,8 @@ export function TaskDetailPage() {
           <section className="td-card">
             <h3>Description</h3>
             <p className="td-sub">Task context and acceptance criteria</p>
-            <p className="td-hint">Click the text to edit · press Save to apply your changes</p>
-            <Description value={view.description} onChange={(description) => stage({ description })} />
+            {isPm && <p className="td-hint">Click the text to edit · press Save to apply your changes</p>}
+            <Description value={view.description} readOnly={!isPm} onChange={(description) => stage({ description })} />
             <div className="td-attach">
               <strong>
                 Attachments · {attachments.data?.length ?? 0} {attachments.data?.length === 1 ? 'file' : 'files'}
@@ -304,7 +306,14 @@ export function TaskDetailPage() {
                     // Developers apply a status straight away; a blocked status first needs its reason, which Save sends.
                     const next = (statuses.data ?? []).find((s) => s.id === status_id);
                     if (isPm || next?.category === 'blocked') return stage({ status_id });
-                    update.mutate({ status_id }, { onError: () => toast.error('Could not save your change.') });
+                    update.mutate(
+                      { status_id },
+                      {
+                        // Drop any staged blocked choice so the dropdown shows the saved status.
+                        onSuccess: () => setDraft((d) => ({ ...d, status_id: undefined, blocked_reason: undefined })),
+                        onError: () => toast.error('Could not save your change.'),
+                      },
+                    );
                   }}
                 />
               ) : (
