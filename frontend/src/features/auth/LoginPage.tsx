@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useLayoutEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { homeFor } from '@/app/routes';
 import { useAuth } from './AuthContext';
@@ -37,6 +37,16 @@ export function LoginPage() {
     localStorage.setItem('lang', l);
     document.documentElement.lang = l;
   };
+
+  // The login screen is always light, whatever theme is selected; restore it on leave.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previous = root.dataset.theme;
+    root.dataset.theme = 'light';
+    return () => {
+      if (previous) root.dataset.theme = previous;
+    };
+  }, []);
 
   const busy = view === 'signing-in';
 
