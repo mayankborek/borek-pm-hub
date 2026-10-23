@@ -1,0 +1,68 @@
+name: Repo rules
+
+# Checks the NEW commits of every push to dev/main and every pull request. No database needed.
+#  1. Every commit message starts with the Jira key:  PT-<n>: summary   (merge commits are exempt).
+#  2. Only the backend owner changes backend/ or docker-compose.yml. Others ask first.
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    env:
+      EVENT: ${{ github.event_name }}
+      PR_BASE: ${{ github.event.pull_request.base.sha }}
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      PUSH_BEFORE: ${{ github.event.before }}
+      SHA: ${{ github.sha }}
+      # Commit author names allowed to change the protected paths.
+      BACKEND_OWNERS: "Mayank Somwani|mayankborek"
+      PROTECTED_PATHS: '^(backend/|docker-compose\.yml$)'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find the new commits
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            range="$SHA^!"
+          else
+            range="$PUSH_BEFORE..$SHA"
+          fi
+          echo "RANGE=$range" >> "$GITHUB_ENV"
+          echo "Checking: $range"
+          git log --no-merges --format='%h %an: %s' "$range"
+
+      - name: Commit messages start with PT-<n>
+        run: |
+          bad=$(git log --no-merges --format='%h %s' "$RANGE" | grep -Ev '^[0-9a-f]+ PT-[0-9]+: ' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Commit messages must start with the Jira key, e.g. 'PT-19: add login form'."
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Backend files are changed by the backend owner only
+        run: |
+          failed=0
+          for c in $(git log --no-merges --format=%H "$RANGE"); do
+            author=$(git log -1 --format=%an "$c")
+            if echo "$author" | grep -Eq "^($BACKEND_OWNERS)$"; then continue; fi
+            files=$(git diff-tree --root --no-commit-id --name-only -r "$c" | grep -E "$PROTECTED_PATHS" || true)
+            if [ -n "$files" ]; then
+              failed=1
+              echo "::error::$(git log -1 --format='%h by %an') changes the backend. Ask Mayank before touching these files:"
+              echo "$files"
+            fi
+          done
+          exit $failed
