@@ -80,9 +80,11 @@ export function TaskDetailPage() {
   // Unsaved edits, sent together by the Save button.
   const [draft, setDraft] = useState<TaskPatch>({});
   const [labels, setLabels] = useState('');
+  // No estimate field on the backend yet: kept in page state with a sample value.
+  const [estimate, setEstimate] = useState('5 points');
   const confirmedLabels = useRef('');
   useEffect(() => {
-    const next = task?.labels.join(', ') ?? '';
+    const next = task?.labels.join(' · ') ?? '';
     setLabels((draft) => (draft === confirmedLabels.current ? next : draft));
     confirmedLabels.current = next;
   }, [task?.labels]);
@@ -106,7 +108,7 @@ export function TaskDetailPage() {
 
   const stage = (patch: TaskPatch) => setDraft((d) => ({ ...d, ...patch }));
   const parsedLabels = labels
-    .split(',')
+    .split(/[,·]/)
     .map((l) => l.trim())
     .filter(Boolean);
   const saved: TaskPatch = {
@@ -335,18 +337,21 @@ export function TaskDetailPage() {
                 onChange={(due_date) => edit({ due_date })}
               />
             </Row>
-            {!isPm && (
-              <Row label="Estimate">
-                <Field>—</Field>
-              </Row>
-            )}
+            {/* No estimate field on the backend yet: placeholder value until one is added. */}
+            <Row label="Estimate">
+              {isPm ? (
+                <input aria-label="Estimate" placeholder="e.g. 5 points" value={estimate} onChange={(e) => setEstimate(e.target.value)} />
+              ) : (
+                <span className="td-static">{estimate}</span>
+              )}
+            </Row>
             <Row label="Labels">
               {!isPm ? (
-                <Field>{task.labels.join(' · ') || '—'}</Field>
+                <span className="td-static">{task.labels.join(' · ') || '—'}</span>
               ) : (
               <input
                 aria-label="Labels"
-                placeholder="Comma-separated"
+                placeholder="e.g. Homepage · Sprint 4"
                 value={labels}
                 onChange={(e) => setLabels(e.target.value)}
               />
@@ -358,7 +363,7 @@ export function TaskDetailPage() {
             <div className="td-card-head">
               <h3>Related tasks</h3>
               {isPm ? (
-                <button type="button" className="td-outline" onClick={() => setDrawer(true)}>
+                <button type="button" className="btn td-relate" onClick={() => setDrawer(true)}>
                   Related Task
                 </button>
               ) : (

@@ -41,7 +41,8 @@
 .td-dev .td-row { grid-template-columns: 256px 1fr; }
 .td-dev .td-row > .ss { justify-self: end; width: 140px; }
 .td-dev .td-sub + .td-row { min-height: 36px; border-bottom: 0; }
-.td-dev .td-card-head .td-relate { width: 128px; height: 36px; }
+.td-card-head .td-relate { height: 36px; }
+.td-dev .td-card-head .td-relate { width: 128px; }
 
 @media (max-width: 900px) { .td-grid { grid-template-columns: 1fr; } }
 
