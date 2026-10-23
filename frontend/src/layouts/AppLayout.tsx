@@ -24,7 +24,9 @@ export function AppLayout() {
       ? 'Profile'
       : pathname === paths.myWork
         ? 'My Work'
-        : pathname === paths.projects && user.role === 'developer'
+        : pathname === paths.projectNew
+          ? 'Create Project'
+          : pathname === paths.projects && user.role === 'developer'
           ? 'My Projects'
           :/^\/projects\/(?!new$)[^/]+(\/board)?\/?$/.test(pathname)
         ? 'Project Overview'

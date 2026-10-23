@@ -2,10 +2,15 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
-import { parseApiError, useCreateProject, useProject, useUpdateProject, type FieldErrors } from './projectsApi';
+import type { AssignableUser } from '@/features/tasks/tasksApi';
+import { MemberPicker } from './MemberPicker';
+import { addProjectMember, parseApiError, useCreateProject, useProject, useUpdateProject, type FieldErrors } from './projectsApi';
 import { STATUS_LABEL } from './projectUi';
 import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './projects.css';
+
+/** The Figma form names the first status "Planning"; other screens keep "Planned". */
+const FORM_STATUS_LABEL: Record<ProjectStatus, string> = { ...STATUS_LABEL, planned: 'Planning' };
 
 interface FormState {
   code: string;
@@ -71,6 +76,7 @@ function ProjectForm({ project }: { project?: Project }) {
   const [form, setForm] = useState<FormState>(project ? fromProject(project) : EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
+  const [members, setMembers] = useState<AssignableUser[]>([]);
   const saving = create.isPending || update.isPending;
   const back = project ? paths.project(project.id) : paths.projects;
 
@@ -94,6 +100,7 @@ function ProjectForm({ project }: { project?: Project }) {
         navigate(paths.project(project.id));
       } else {
         const created = await create.mutateAsync(input);
+        await Promise.allSettled(members.map((m) => addProjectMember(created.id, m.id)));
         navigate(paths.project(created.id));
       }
     } catch (err) {
@@ -118,64 +125,90 @@ function ProjectForm({ project }: { project?: Project }) {
 
   const aria = (id: keyof FormState) => ({ 'aria-invalid': !!errors[id], 'aria-describedby': errors[id] ? `${id}-error` : undefined });
 
-  return (
-    <section className="page-body narrow">
-      <h1 className="page-title">{isEdit ? 'Edit project' : 'New project'}</h1>
-      <p className="page-desc">{isEdit ? `Update the details of ${project.name}.` : 'Set up a project so tasks and team members can be added.'}</p>
+  const title = isEdit ? 'Edit Project' : 'Create Project';
 
-      <form className="card form" onSubmit={(e) => void onSubmit(e)} noValidate>
+  return (
+    <section className="pform">
+      <div className="pform-head">
+        <p className="pform-crumb">Projects  /  All Projects</p>
+        <h2>{title}</h2>
+      </div>
+
+      <form className="pform-body" onSubmit={(e) => void onSubmit(e)} noValidate>
         {formError && (
           <div className="form-alert" role="alert">
             {formError}
           </div>
         )}
 
-        {field(
-          'code',
-          'Project code',
-          <input
-            id="code"
-            className="input"
-            value={form.code}
-            maxLength={20}
-            disabled={isEdit}
-            onChange={(e) => set('code', e.target.value.toUpperCase())}
-            {...aria('code')}
-          />,
-          isEdit ? 'The code cannot be changed after creation.' : 'Short unique identifier, e.g. WEB. Cannot be changed later.',
-        )}
-        {field('name', 'Project name', <input id="name" className="input" value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} {...aria('name')} />)}
+        <div className="pform-section">
+          <span className="pform-icon" aria-hidden="true">
+            <i /><i /><i /><i />
+          </span>
+          <div>
+            <h3>Project Details</h3>
+            <p>Give your team a clear starting point.</p>
+          </div>
+        </div>
+
+        <div className="pform-row two">
+          {field('name', 'Project Name *', <input id="name" className="input" placeholder="e.g. Website redesign" value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} {...aria('name')} />)}
+          {field(
+            'code',
+            'Unique Code',
+            <input
+              id="code"
+              className="input"
+              placeholder="e.g. BFL-WEB"
+              value={form.code}
+              maxLength={20}
+              disabled={isEdit}
+              onChange={(e) => set('code', e.target.value.toUpperCase())}
+              {...aria('code')}
+            />,
+            isEdit ? 'The code cannot be changed after creation.' : undefined,
+          )}
+        </div>
+
         {field(
           'description',
           'Description',
-          <textarea id="description" className="input" rows={4} value={form.description} onChange={(e) => set('description', e.target.value)} />,
+          <textarea id="description" className="input" placeholder="Describe the outcome, scope, or goal for this project." value={form.description} onChange={(e) => set('description', e.target.value)} />,
         )}
-        {field(
-          'status',
-          'Status',
-          <select id="status" className="input" value={form.status} onChange={(e) => set('status', e.target.value as ProjectStatus)}>
-            {PROJECT_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>,
-        )}
-        <div className="field-row">
-          {field('start_date', 'Start date', <input id="start_date" type="date" className="input" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} />)}
+
+        <div className="pform-row sched">
+          {field(
+            'status',
+            'Status',
+            <select id="status" className="input" value={form.status} onChange={(e) => set('status', e.target.value as ProjectStatus)}>
+              {PROJECT_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {FORM_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>,
+          )}
+          {field('start_date', 'Start Date', <input id="start_date" type="date" className="input" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} />)}
           {field(
             'target_end_date',
-            'Target end date',
+            'Target End Date',
             <input id="target_end_date" type="date" className="input" value={form.target_end_date} min={form.start_date || undefined} onChange={(e) => set('target_end_date', e.target.value)} {...aria('target_end_date')} />,
           )}
         </div>
 
-        <div className="form-actions">
-          <Link className="btn secondary" to={back}>
+        {!isEdit && (
+          <div className="field">
+            <label htmlFor="members">Add Members</label>
+            <MemberPicker selected={members} onChange={setMembers} />
+          </div>
+        )}
+
+        <div className="pform-actions">
+          <Link className="pform-btn" to={back}>
             Cancel
           </Link>
-          <button type="submit" className="btn" disabled={saving}>
-            {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create project'}
+          <button type="submit" className="pform-btn primary" disabled={saving}>
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Project'}
           </button>
         </div>
       </form>

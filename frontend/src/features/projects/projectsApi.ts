@@ -38,6 +38,10 @@ export const useCreateProject = () => {
   });
 };
 
+/** POST /projects/{id}/members: the create endpoint takes no members, so the form adds them after the project exists. */
+export const addProjectMember = (projectId: string, userId: string) =>
+  api(`/projects/${projectId}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+
 /** `code` is immutable after creation, so it is not sent. */
 export const useUpdateProject = (id: string) => {
   const qc = useQueryClient();
