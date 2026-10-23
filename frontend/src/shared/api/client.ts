@@ -10,6 +10,14 @@ export class ApiError extends Error {
   }
 }
 
+/** The API's message plus its request_id ({ error: { message }, request_id }), so a failure can be traced in the backend logs. */
+export function describeApiError(err: unknown, fallback: string): string {
+  if (!(err instanceof ApiError)) return fallback;
+  const body = err.body as { error?: { message?: string }; request_id?: string } | undefined;
+  const message = body?.error?.message ?? `${fallback} (${err.status})`;
+  return body?.request_id ? `${message} (request ${body.request_id})` : message;
+}
+
 // Phase 1 auth: the selected seeded user id is sent on every request
 // (X-Dev-User-Id). Replaced by a bearer token when Entra ID is added.
 let devUserId: string | null = null;

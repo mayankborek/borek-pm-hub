@@ -275,6 +275,22 @@ export const useAttachmentActions = (taskId: string) => {
   };
 };
 
+export interface TaskActivity {
+  id: string;
+  action: string;
+  actor: UserBrief;
+  changes: Record<string, [unknown, unknown]>;
+  created_at: string;
+}
+
+/** GET /tasks/{id}/activity: who changed what, newest first. */
+export const useActivity = (taskId: string) =>
+  useQuery({
+    queryKey: [...taskKeys.all, 'activity', taskId],
+    queryFn: () => api<Page<TaskActivity>>(`/tasks/${taskId}/activity`),
+    enabled: !!taskId,
+  });
+
 export interface TaskComment {
   id: string;
   task_id: string;

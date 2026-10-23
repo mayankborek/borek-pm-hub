@@ -2,11 +2,12 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
-import { ApiError } from '@/shared/api/client';
+import { ApiError, describeApiError } from '@/shared/api/client';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
 import {
   downloadAttachment,
+  useActivity,
   useAddComment,
   useAttachmentActions,
   useComments,
@@ -27,8 +28,15 @@ import './taskDetail.css';
 const fileSize = (n: number | null) =>
   n == null ? '' : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
-const stamp =(iso: string) =>
+const stamp = (iso: string) =>
   new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+const show = (v: unknown) => (v == null || v === '' ? '—' : Array.isArray(v) ? v.join(', ') || '—' : String(v));
+
+const changeText = (field: string, [from, to]: [unknown, unknown]) =>
+  `${field.replace(/_/g, ' ')}: ${show(from)} → ${show(to)}`;
+
+const parseLabels = (text: string) => [...new Set(text.split(',').map((l) => l.trim()).filter(Boolean))];
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -64,6 +72,7 @@ export function TaskDetailPage() {
   const attachments = useAttachments(taskId);
   const files = useAttachmentActions(taskId);
   const comments = useComments(taskId);
+  const activity = useActivity(taskId);
   const addComment = useAddComment(taskId);
   const [comment, setComment] = useState('');
   const picker = useRef<HTMLInputElement>(null);
@@ -75,8 +84,8 @@ export function TaskDetailPage() {
   const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
   // Unsaved edits, sent together by the Save button.
   const [draft, setDraft] = useState<TaskPatch>({});
-  // No estimate field on the backend yet: sample value shown read-only.
-  const estimate = '5 points';
+  // Raw text of the labels input while a PM edits it; null shows the saved labels.
+  const [labelText, setLabelText] = useState<string | null>(null);
 
   if (isPending)
     return (
@@ -105,6 +114,7 @@ export function TaskDetailPage() {
     due_date: task.due_date,
     progress: task.progress,
     blocked_reason: task.blocked_reason,
+    labels: task.labels,
   };
   // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
   const isPm = user?.role === 'pm';
@@ -114,7 +124,7 @@ export function TaskDetailPage() {
     if (!isPm && key !== 'status_id' && key !== 'blocked_reason') continue;
     const next =
       key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
-    if (next !== saved[key]) Object.assign(changes, { [key]: next });
+    if (JSON.stringify(next) !== JSON.stringify(saved[key])) Object.assign(changes, { [key]: next });
   }
   const dirty = Object.keys(changes).length > 0;
   // A blocked status needs a reason (the backend rejects it otherwise).
@@ -132,10 +142,10 @@ export function TaskDetailPage() {
     update.mutate(changes, {
       onSuccess: () => {
         setDraft({});
+        setLabelText(null);
         setFilesChanged(false);
       },
-      onError: (e) =>
-        toast.error(e instanceof ApiError && e.status === 409 ? 'Someone else changed this task. Your edit was not saved.' : 'Could not save your change.'),
+      onError: (e) => toast.error(describeApiError(e, 'Could not save your change.')),
     });
   };
   const view = {
@@ -149,7 +159,7 @@ export function TaskDetailPage() {
   const canStatus = isPm || task.assignee?.id === user?.id;
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
   const edit = (patch: TaskPatch) =>
-    isPm ? stage(patch) : update.mutate(patch, { onError: () => toast.error('Could not save your change.') });
+    isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, 'Could not save your change.')) });
   const conflict = update.error instanceof ApiError && update.error.status === 409;
 
   return (
@@ -173,7 +183,7 @@ export function TaskDetailPage() {
       )}
       {update.isError && (
         <p className="td-error" role="alert">
-          {conflict ? 'Someone else changed this task. The latest version has been loaded; try again.' : 'Could not save your change.'}
+          {conflict ? 'Someone else changed this task. The latest version has been loaded; try again.' : describeApiError(update.error, 'Could not save your change.')}
         </p>
       )}
 
@@ -198,15 +208,23 @@ export function TaskDetailPage() {
                     </button>
                   )}
                   <span>{fileSize(a.size_bytes)}</span>
-                  <button
-                    type="button"
-                    className="td-link"
-                    aria-label={`Remove ${a.name}`}
-                    disabled={files.remove.isPending}
-                    onClick={() => files.remove.mutate(a.id, { onSuccess: () => setFilesChanged(true), onError: () => setFileError('Could not remove the file.') })}
-                  >
-                    Remove
-                  </button>
+                  {/* The backend only lets the uploader or a PM delete an attachment. */}
+                  {(isPm || a.uploaded_by.id === user?.id) && (
+                    <button
+                      type="button"
+                      className="td-link"
+                      aria-label={`Remove ${a.name}`}
+                      disabled={files.remove.isPending}
+                      onClick={() =>
+                        files.remove.mutate(a.id, {
+                          onSuccess: () => setFilesChanged(true),
+                          onError: (e) => setFileError(describeApiError(e, 'Could not remove the file.')),
+                        })
+                      }
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               ))}
               <input
@@ -249,10 +267,24 @@ export function TaskDetailPage() {
                   </li>
                 ))}
               </ul>
-            ) : isPm ? (
-              <p className="td-empty">No activity recorded yet.</p>
             ) : (
-              <p className="td-none">No comments yet.</p>
+              !activity.data?.items.length && <p className="td-none">No comments yet.</p>
+            )}
+            {activity.data?.items.length ? (
+              <ul className="td-comments td-history">
+                {activity.data.items.map((a) => (
+                  <li key={a.id}>
+                    <strong>{a.actor.name}</strong> {a.action.replace(/_/g, ' ')} <span>{stamp(a.created_at)}</span>
+                    {Object.entries(a.changes).map(([field, change]) => (
+                      <p key={field}>{changeText(field, change)}</p>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            ) : activity.isError ? (
+              <p className="td-empty">History could not be loaded.</p>
+            ) : (
+              isPm && !comments.data?.length && !activity.isPending && <p className="td-empty">No activity recorded yet.</p>
             )}
             <form
               className="td-composer"
@@ -298,7 +330,7 @@ export function TaskDetailPage() {
                       {
                         // Drop any staged blocked choice so the dropdown shows the saved status.
                         onSuccess: () => setDraft((d) => ({ ...d, status_id: undefined, blocked_reason: undefined })),
-                        onError: () => toast.error('Could not save your change.'),
+                        onError: (e) => toast.error(describeApiError(e, 'Could not save your change.')),
                       },
                     );
                   }}
@@ -371,12 +403,20 @@ export function TaskDetailPage() {
                 onChange={(due_date) => edit({ due_date })}
               />
             </Row>
-            {/* No estimate field on the backend yet: placeholder value until one is added. */}
-            <Row label="Estimate">
-              <span className="td-static">{estimate}</span>
-            </Row>
             <Row label="Labels">
-              <span className="td-static">{task.labels.join(' · ') || '—'}</span>
+              {isPm ? (
+                <input
+                  aria-label="Labels"
+                  placeholder="Comma-separated labels"
+                  value={labelText ?? task.labels.join(', ')}
+                  onChange={(e) => {
+                    setLabelText(e.target.value);
+                    stage({ labels: parseLabels(e.target.value) });
+                  }}
+                />
+              ) : (
+                <span className="td-static">{task.labels.join(' · ') || '—'}</span>
+              )}
             </Row>
           </section>
 
