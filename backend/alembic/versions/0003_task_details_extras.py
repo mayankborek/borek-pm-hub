@@ -6,6 +6,7 @@ Create Date: 2026-10-21
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -18,11 +19,11 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-def _id() -> sa.Column[object]:
+def _id() -> sa.Column[Any]:
     return sa.Column("id", sa.Uuid(), server_default=sa.text("gen_random_uuid()"), nullable=False)
 
 
-def _stamp(name: str) -> sa.Column[object]:
+def _stamp(name: str) -> sa.Column[Any]:
     return sa.Column(
         name, sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
     )
