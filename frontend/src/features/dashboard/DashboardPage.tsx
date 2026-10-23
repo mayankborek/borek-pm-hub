@@ -131,9 +131,8 @@ function AttentionAreas({ data }: { data: PmDashboard }) {
   ].slice(0, 6);
 
   return (
-    <section className="card" aria-label={t('Attention Areas')}>
+    <section className="card attn" aria-label={t('Attention Areas')}>
       <h3>{t('Attention Areas')}</h3>
-      <p className="desc">{t('Blocked or overdue work needing attention')}</p>
       {items.length === 0 ? (
         <p className="muted attn-note">{t('Nothing is blocked or overdue. Nice work.')}</p>
       ) : (
