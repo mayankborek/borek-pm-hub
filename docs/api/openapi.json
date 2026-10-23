@@ -1385,6 +1385,19 @@
             "description": "Date the task should be completed.",
             "title": "Due Date"
           },
+          "estimate": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "e.g. '5 points'.",
+            "title": "Estimate"
+          },
           "labels": {
             "items": {
               "type": "string"
@@ -1559,6 +1572,17 @@
             ],
             "title": "Due Date"
           },
+          "estimate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1641,6 +1665,7 @@
           "labels",
           "start_date",
           "due_date",
+          "estimate",
           "progress",
           "assignee",
           "reporter",
@@ -1751,6 +1776,18 @@
               }
             ],
             "title": "Due Date"
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate"
           },
           "labels": {
             "anyOf": [
