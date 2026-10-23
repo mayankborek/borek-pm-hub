@@ -28,6 +28,7 @@ def snapshot(task: Task, status_name: str, assignee_name: str | None) -> dict[st
         "labels": list(task.labels),
         "start_date": task.start_date,
         "due_date": task.due_date,
+        "estimate": task.estimate,
         "progress": task.progress,
         "status": status_name,
         "assignee": assignee_name,

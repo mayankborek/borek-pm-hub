@@ -112,6 +112,7 @@ export function TaskDetailPage() {
     assignee_id: task.assignee?.id ?? null,
     start_date: task.start_date,
     due_date: task.due_date,
+    estimate: task.estimate ?? null,
     progress: task.progress,
     blocked_reason: task.blocked_reason,
     labels: task.labels,
@@ -123,7 +124,7 @@ export function TaskDetailPage() {
     // The backend rejects a developer's PATCH that carries PM-only fields, so Save sends just status fields for them.
     if (!isPm && key !== 'status_id' && key !== 'blocked_reason') continue;
     const next =
-      key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
+      key === 'estimate' ? draft.estimate?.trim() || null : key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
     if (JSON.stringify(next) !== JSON.stringify(saved[key])) Object.assign(changes, { [key]: next });
   }
   const dirty = Object.keys(changes).length > 0;
@@ -402,6 +403,19 @@ export function TaskDetailPage() {
                 error="Pick a date on or after the start date."
                 onChange={(due_date) => edit({ due_date })}
               />
+            </Row>
+            <Row label="Estimate">
+              {isPm ? (
+                <input
+                  aria-label="Estimate"
+                  placeholder="e.g. 5 points"
+                  maxLength={50}
+                  value={draft.estimate !== undefined ? (draft.estimate ?? '') : (task.estimate ?? '')}
+                  onChange={(e) => stage({ estimate: e.target.value })}
+                />
+              ) : (
+                <span className="td-static">{task.estimate || '—'}</span>
+              )}
             </Row>
             <Row label="Labels">
               {isPm ? (

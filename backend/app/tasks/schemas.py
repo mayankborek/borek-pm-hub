@@ -100,6 +100,7 @@ class TaskCreate(BaseModel):
     labels: list[str] = Field(default_factory=list)
     start_date: date | None = None
     due_date: date | None = Field(default=None, description="Date the task should be completed.")
+    estimate: str | None = Field(default=None, max_length=50, description="e.g. '5 points'.")
     progress: int = Field(default=0, ge=0, le=100)
     assignee_id: uuid.UUID | None = Field(
         default=None, description="Developers can only assign tasks to themselves."
@@ -133,6 +134,7 @@ class TaskUpdate(BaseModel):
     labels: list[str] | None = None
     start_date: date | None = None
     due_date: date | None = None
+    estimate: str | None = Field(default=None, max_length=50)
     progress: int | None = Field(default=None, ge=0, le=100)
     assignee_id: uuid.UUID | None = None
     blocked_reason: str | None = None
@@ -176,6 +178,7 @@ class TaskOut(BaseModel):
     labels: list[str]
     start_date: date | None
     due_date: date | None
+    estimate: str | None
     progress: int
     assignee: UserBrief | None
     reporter: UserBrief

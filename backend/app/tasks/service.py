@@ -31,7 +31,7 @@ BOARD_LIMIT = 1000  # a board is never paginated; this keeps one request bounded
 
 # Fields only a PM may change vs. the ones a developer may change on an own task.
 DETAIL_FIELDS = frozenset(
-    {"title", "description", "priority", "labels", "start_date", "due_date", "assignee_id"}
+    {"title", "description", "priority", "labels", "start_date", "due_date", "estimate", "assignee_id"}
 )
 STATUS_FIELDS = frozenset({"status_id", "progress", "blocked_reason"})
 _NOT_NULL_FIELDS = ("title", "priority", "labels", "progress", "status_id")
@@ -93,6 +93,7 @@ def _to_out(
         labels=list(task.labels),
         start_date=task.start_date,
         due_date=task.due_date,
+        estimate=task.estimate,
         progress=task.progress,
         assignee=_brief(assignee) if assignee else None,
         reporter=_brief(reporter),
@@ -356,6 +357,7 @@ async def create_task(
         labels=data.labels,
         start_date=data.start_date,
         due_date=data.due_date,
+        estimate=(data.estimate or "").strip() or None,
         progress=data.progress,
         assignee_id=assignee_id,
         created_by=user.id,
@@ -442,6 +444,8 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
         _apply_status(task, new_status, reason)
     for field in DETAIL_FIELDS & changes.keys():
         value = changes[field]
+        if field == "estimate":
+            value = (value or "").strip() or None
         setattr(task, field, value.value if field == "priority" else value)
     if "progress" in changes:
         task.progress = changes["progress"]

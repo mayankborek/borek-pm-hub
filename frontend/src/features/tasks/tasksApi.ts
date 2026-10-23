@@ -25,6 +25,7 @@ export interface Task {
   priority: TaskPriority;
   labels: string[];
   due_date: string | null;
+  estimate?: string | null;
   progress: number;
   assignee: UserBrief | null;
   blocked_at?: string | null;
@@ -118,6 +119,7 @@ export type TaskPatch = Partial<{
   labels: string[];
   start_date: string | null;
   due_date: string | null;
+  estimate: string | null;
   assignee_id: string | null;
   progress: number;
   blocked_reason: string | null;

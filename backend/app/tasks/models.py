@@ -78,6 +78,8 @@ class Task(IdMixin, TimestampMixin, Base):
     start_date: Mapped[date | None] = mapped_column(Date)
     # Also the "estimate" of the Figma designs: the date the task should be completed.
     due_date: Mapped[date | None] = mapped_column(Date)
+    # Free text size of the work, e.g. "5 points".
+    estimate: Mapped[str | None] = mapped_column(String(50))
     # Independent of status (F03, F08).
     progress: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0")
