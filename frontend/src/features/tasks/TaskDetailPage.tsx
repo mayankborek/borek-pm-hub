@@ -7,7 +7,9 @@ import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
 import {
   downloadAttachment,
+  useAddComment,
   useAttachmentActions,
+  useComments,
   useAttachments,
   useProjectStatuses,
   useTask,
@@ -72,8 +74,13 @@ export function TaskDetailPage() {
   const update = useUpdateTask(task);
   const attachments = useAttachments(taskId);
   const files = useAttachmentActions(taskId);
+  const comments = useComments(taskId);
+  const addComment = useAddComment(taskId);
+  const [comment, setComment] = useState('');
   const picker = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState('');
+  // Attachments save as soon as they are picked, but the Save button stays active so the page can be confirmed.
+  const [filesChanged, setFilesChanged] = useState(false);
   const [drawer, setDrawer] = useState(false);
   // No relations endpoint yet: kept in page state until the backend adds one.
   const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
@@ -135,10 +142,17 @@ export function TaskDetailPage() {
   const reason = (draft.blocked_reason !== undefined ? draft.blocked_reason : task.blocked_reason) ?? '';
   const missingReason = blocking && !reason.trim();
   const save = () => {
+    if (!dirty) {
+      setFilesChanged(false);
+      return;
+    }
     // The reason travels with the status change that needs it, even when the task already had one.
     if (blocking && changes.status_id && !('blocked_reason' in changes)) changes.blocked_reason = reason.trim();
     update.mutate(changes, {
-      onSuccess: () => setDraft({}),
+      onSuccess: () => {
+        setDraft({});
+        setFilesChanged(false);
+      },
       onError: (e) =>
         toast.error(e instanceof ApiError && e.status === 409 ? 'Someone else changed this task. Your edit was not saved.' : 'Could not save your change.'),
     });
@@ -167,7 +181,7 @@ export function TaskDetailPage() {
       </p>
       <div className="td-head">
         <h2 className="td-title">{task.title}</h2>
-        <button type="button" className="btn" disabled={!dirty || missingReason || update.isPending} onClick={save}>
+        <button type="button" className="btn" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
           {update.isPending ? 'Saving…' : 'Save'}
         </button>
       </div>
@@ -211,7 +225,7 @@ export function TaskDetailPage() {
                     className="td-link"
                     aria-label={`Remove ${a.name}`}
                     disabled={files.remove.isPending}
-                    onClick={() => files.remove.mutate(a.id, { onError: () => setFileError('Could not remove the file.') })}
+                    onClick={() => files.remove.mutate(a.id, { onSuccess: () => setFilesChanged(true), onError: () => setFileError('Could not remove the file.') })}
                   >
                     Remove
                   </button>
@@ -228,6 +242,7 @@ export function TaskDetailPage() {
                   if (!picked.length) return;
                   setFileError('');
                   files.upload.mutate(picked, {
+                    onSuccess: () => setFilesChanged(true),
                     onError: (err) =>
                       setFileError(err instanceof ApiError && err.status === 413 ? 'That file is too large.' : 'Could not upload the file.'),
                   });
@@ -247,13 +262,43 @@ export function TaskDetailPage() {
           <section className="td-card">
             <h3>Activity &amp; audit log</h3>
             <p className="td-sub">Comments and updates</p>
-            {isPm ? <p className="td-empty">No activity recorded yet.</p> : <p className="td-none">No comments yet.</p>}
-            <div className="td-composer">
-              <input aria-label="Add a comment" placeholder="Add a comment…" disabled />
-              <button type="button" className="btn" disabled>
-                Send
+            {comments.data?.length ? (
+              <ul className="td-comments">
+                {comments.data.map((c) => (
+                  <li key={c.id}>
+                    <strong>{c.author.name}</strong> <span>{stamp(c.created_at)}</span>
+                    <p>{c.body}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : isPm ? (
+              <p className="td-empty">No activity recorded yet.</p>
+            ) : (
+              <p className="td-none">No comments yet.</p>
+            )}
+            <form
+              className="td-composer"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const body = comment.trim();
+                if (!body) return;
+                addComment.mutate(body, {
+                  onSuccess: () => setComment(''),
+                  onError: () => toast.error('Could not post your comment.'),
+                });
+              }}
+            >
+              <input
+                aria-label="Add a comment"
+                placeholder="Add a comment…"
+                maxLength={5000}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+              <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
+                {addComment.isPending ? 'Sending…' : 'Send'}
               </button>
-            </div>
+            </form>
           </section>
         </div>
 

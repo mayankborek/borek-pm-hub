@@ -275,6 +275,29 @@ export const useAttachmentActions = (taskId: string) => {
   };
 };
 
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  author: UserBrief;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+}
+
+const commentsKey = (taskId: string) => [...taskKeys.all, 'comments', taskId] as const;
+
+export const useComments = (taskId: string) =>
+  useQuery({ queryKey: commentsKey(taskId), queryFn: () => api<TaskComment[]>(`/tasks/${taskId}/comments`), enabled: !!taskId });
+
+/** POST /tasks/{id}/comments */
+export const useAddComment = (taskId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) => api<TaskComment>(`/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ body }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: commentsKey(taskId) }),
+  });
+};
+
 /** Downloads need the auth header, so fetch the file as a blob and save it. */
 export async function downloadAttachment(a: Attachment) {
   const headers = new Headers();

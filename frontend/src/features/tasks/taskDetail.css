@@ -25,6 +25,9 @@
 .td-row label { color: var(--muted); }
 .td-row select, .td-row input { height: 28px; padding: 0 8px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font: 600 13px Inter, sans-serif; min-width: 0; }
 .td-static { font-weight: 600; color: var(--ink); padding: 0 8px; }
+.td-comments { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--ink); }
+.td-comments span { color: var(--muted); }
+.td-comments p { margin: 2px 0 0; white-space: pre-wrap; }
 .td-composer { display: flex; gap: 12px; }
 .td-composer input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid var(--field); background: var(--surface); font: 400 14px Inter, sans-serif; }
 .td-composer .btn { height: 44px; }
