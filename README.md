@@ -54,11 +54,17 @@ borek-pm-hub/
 cp deploy.env.example .env.prod        # fill in every value; .env.prod is git-ignored
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 curl http://localhost:8000/ready
+# frontend: http://localhost:3000 (WEB_PORT)
 ```
 
 The API runs with `ENVIRONMENT=production` and `AUTH_MODE=local` (email + password; the dev user
 picker is refused in production). On start it applies migrations, loads the demo data once (only
 into an empty database) and creates the QA accounts. The demo users `pm@`, `dev1@`, `dev2@`,
 `dev3@borek.test` sign in with `SEED_USER_PASSWORD`. **Before real go-live** remove the demo data and
-these accounts, and replace local login with Entra ID. The frontend is not part of this compose
-file: serve it separately and put its address in `CORS_ORIGINS`.
+these accounts, and replace local login with Entra ID. The frontend is the `web` service
+(`frontend/Dockerfile`): Vite builds the bundle, nginx serves it and proxies `/api` to the `api`
+container, so the browser uses one origin. Set `CORS_ORIGINS` to the address users open (for example
+`http://<server-host>:3000`, or the `https://` hostname if a TLS proxy sits in front; terminate TLS
+there and forward to `WEB_PORT`). To point the bundle at a separately hosted API instead, build with
+`--build-arg VITE_API_BASE_URL=https://api.example.com/api/v1`; `CORS_ORIGINS` must still list the
+frontend address.

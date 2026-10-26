@@ -1,9 +1,10 @@
-# Production-style stack: PostgreSQL + API (gunicorn). No source mounts, no auto-reload, the
+# Production-style stack: PostgreSQL + API (gunicorn) + web (nginx serving the built frontend and
+# proxying /api to the API, so the browser sees one origin). No source mounts, no auto-reload, the
 # database port is not published, secrets come from the env file (never committed).
 #
 #   1. cp deploy.env.example .env.prod   and fill in every value (the file is git-ignored)
 #   2. docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-#   3. check:  curl http://localhost:8000/ready
+#   3. check:  curl http://localhost:8000/ready   and open http://localhost:3000 (WEB_PORT)
 # On every start the API container applies migrations, loads the demo data once (only when the
 # database is empty) and creates the QA accounts. Sign in with the @borek.test emails and the
 # passwords from .env.prod. Remove the demo data and accounts when the system goes live.
@@ -55,6 +56,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    depends_on:
+      - api
 
 volumes:
   pmhub_pgdata:
