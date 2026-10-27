@@ -91,7 +91,7 @@ async def test_history_records_who_changed_what(client: httpx.AsyncClient, world
     await client.patch(
         task_url,
         headers=dev,
-        json={"version": 2, "status_id": in_progress["id"], "progress": 30},
+        json={"version": 2, "status_id": in_progress["id"]},
     )
     await client.patch(
         task_url, headers=pm, json={"version": 3, "title": "Renamed", "priority": "high"}
@@ -115,7 +115,7 @@ async def test_history_records_who_changed_what(client: httpx.AsyncClient, world
     assert made["actor"]["name"] == "Pia PM" and made["changes"] == {}
     assert assigned["changes"] == {"assignee": [None, "Dana Dev"]}
     assert started["actor"]["name"] == "Dana Dev"
-    assert started["changes"] == {"status": ["To do", "In progress"], "progress": [0, 30]}
+    assert started["changes"] == {"status": ["To do", "In progress"]}
     assert renamed["changes"] == {"title": ["Tracked", "Renamed"], "priority": ["medium", "high"]}
     assert archived["actor"]["name"] == "Pia PM"
 
@@ -306,24 +306,38 @@ async def test_upload_limits_and_file_names(
     too_big = await client.post(
         url(world, "attachments"),
         headers=dev,
-        files={"file": ("big.bin", b"x" * (1024 * 1024 + 1))},
+        files={"file": ("big.pdf", b"x" * (1024 * 1024 + 1))},
     )
     empty = await client.post(
         url(world, "attachments"), headers=dev, files={"file": ("e.txt", b"")}
     )
     missing = await client.post(url(world, "attachments"), headers=dev)
     sneaky = await client.post(
-        url(world, "attachments"), headers=dev, files={"file": ("../../etc/passwd", b"data")}
+        url(world, "attachments"), headers=dev, files={"file": ("../../etc/passwd.txt", b"data")}
     )
     exact = await client.post(
-        url(world, "attachments"), headers=dev, files={"file": ("max.bin", b"x" * 1024 * 1024)}
+        url(world, "attachments"), headers=dev, files={"file": ("max.pdf", b"x" * 1024 * 1024)}
     )
+
+    refused = [
+        await client.post(url(world, "attachments"), headers=dev, files={"file": (name, b"x")})
+        for name in ("run.exe", "tool.py", "x.sh", "page.html", "archive.zip", "noext")
+    ]
+    allowed = [
+        await client.post(url(world, "attachments"), headers=dev, files={"file": (name, b"x")})
+        for name in ("a.DOCX", "b.xlsx", "c.png", "voice.m4a", "n.txt")
+    ]
+    assert {r.status_code for r in refused} == {415}
+    assert refused[0].json()["error"]["code"] == "UNSUPPORTED_FILE_TYPE"
+    assert {r.status_code for r in allowed} == {201}
 
     assert too_big.status_code == 413 and too_big.json()["error"]["code"] == "FILE_TOO_LARGE"
     assert empty.status_code == 422 and missing.status_code == 422
-    assert sneaky.json()["name"] == "passwd"  # only the base name is kept
+    assert sneaky.json()["name"] == "passwd.txt"  # only the base name is kept
     assert exact.status_code == 201
-    assert len(list(upload_dir.iterdir())) == 2  # the rejected uploads left nothing behind
+    assert len(list(upload_dir.iterdir())) == 2 + len(
+        allowed
+    )  # the rejected uploads left nothing behind
     assert all(p.parent == upload_dir for p in upload_dir.iterdir())
 
 

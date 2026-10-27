@@ -88,10 +88,11 @@ async def test_pm_creates_and_assigns_a_task(
     assert body["title"] == "Build login"
     assert body["labels"] == ["Frontend", "ui"]  # trimmed, duplicates (any case) removed
     assert body["status"]["name"] == "To do" and body["status"]["category"] == "todo"
-    assert body["priority"] == "high" and body["progress"] == 0 and body["version"] == 1
+    assert body["priority"] == "high" and body["version"] == 1
     assert body["assignee"]["id"] == str(world.dev.id)
     assert body["reporter"]["id"] == str(world.pm.id)
-    assert (body["project_code"], body["project_name"]) == ("BFL", "Test project")
+    assert body["project_name"] == "Test project" and "project_code" not in body
+    assert "progress" not in body and body["estimate_value"] is None
     assert response.headers["location"] == f"/api/v1/tasks/{body['id']}"
 
 
@@ -180,8 +181,11 @@ async def test_invalid_create_is_rejected_without_saving(
         {"title": "   "},
         {},
         {"title": "x", "priority": "urgent"},
-        {"title": "x", "progress": 101},
-        {"title": "x", "progress": -1},
+        {"title": "x", "progress": 10},  # field was removed
+        {"title": "x", "estimate_value": 5},
+        {"title": "x", "estimate_unit": "hours"},
+        {"title": "x", "estimate_value": 0, "estimate_unit": "hours"},
+        {"title": "x", "estimate_value": 5, "estimate_unit": "days"},
         {"title": "x", "start_date": "2026-05-10", "due_date": "2026-05-01"},
         {"title": "x", "labels": [""]},
         {"title": "x", "labels": ["l" * 31]},
@@ -437,7 +441,8 @@ async def test_pm_edits_every_field(
             "labels": ["a", "b"],
             "start_date": "2026-11-01",
             "due_date": "2026-11-09",
-            "progress": 40,
+            "estimate_value": 4,
+            "estimate_unit": "hours",
             "assignee_id": str(world.dev.id),
             "status_id": str(review.id),
         },
@@ -445,12 +450,12 @@ async def test_pm_edits_every_field(
 
     assert response.status_code == 200, response.text
     body = response.json()
-    assert (body["title"], body["priority"], body["labels"], body["progress"]) == (
+    assert (body["title"], body["priority"], body["labels"]) == (
         "New title",
         "critical",
         ["a", "b"],
-        40,
     )
+    assert (body["estimate_value"], body["estimate_unit"]) == (4, "hours")
     assert body["status"]["name"] == "Code review" and body["assignee"]["id"] == str(world.dev.id)
     assert body["version"] == 2
     assert body["updated_at"] >= body["created_at"]
@@ -502,9 +507,11 @@ async def test_invalid_updates_are_rejected_and_nothing_changes(
         {"title": " "},
         {"priority": None},
         {"labels": None},
-        {"progress": None},
         {"status_id": None},
-        {"progress": 101},
+        {"progress": 10},  # field was removed
+        {"estimate_value": 5},  # amount without a unit
+        {"estimate_unit": "hours"},
+        {"estimate_value": 5, "estimate_unit": "days"},
         {"due_date": "2026-05-01"},
         {"code": "X"},
         {"assignee_id": str(uuid.uuid4())},
@@ -583,18 +590,18 @@ async def test_completed_at_follows_done_statuses(
     assert reopened.json()["completed_at"] is None
 
 
-async def test_developer_updates_status_and_progress_on_own_task_only(
+async def test_developer_updates_status_on_own_task_only(
     client: httpx.AsyncClient, session: AsyncSession, world: World
 ) -> None:
     mine = await make_task(session, world.project, world.pm.id, assignee_id=world.dev.id)
     theirs = await make_task(session, world.project, world.pm.id, assignee_id=world.other_dev.id)
     nobody = await make_task(session, world.project, world.pm.id)
     review = await status_by_name(session, world.project.id, "Code review")
-    payload = {"version": 1, "status_id": str(review.id), "progress": 80}
+    payload = {"version": 1, "status_id": str(review.id)}
     headers = as_user(world.dev)
 
     ok = await client.patch(f"/api/v1/tasks/{mine.id}", headers=headers, json=payload)
-    assert ok.status_code == 200 and ok.json()["progress"] == 80
+    assert ok.status_code == 200 and ok.json()["status"]["name"] == "Code review"
     for other in (theirs, nobody):
         denied = await client.patch(f"/api/v1/tasks/{other.id}", headers=headers, json=payload)
         assert denied.status_code == 403
@@ -615,11 +622,10 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
         {"description": "x"},
         {"priority": "low"},
         {"labels": ["x"]},
-        {"due_date": "2026-12-01"},
-        {"start_date": "2026-12-01"},
+        {"estimate_value": 5, "estimate_unit": "hours"},
         {"assignee_id": str(world.other_dev.id)},
         {"assignee_id": None},
-        {"title": "x", "progress": 10},  # mixed: the PM-only part is enough to refuse
+        {"title": "x", "estimate_value": 5, "estimate_unit": "hours"},  # mixed: PM-only part
     ):
         response = await client.patch(
             f"/api/v1/tasks/{own.id}", headers=headers, json={"version": 1, **payload}
@@ -628,6 +634,33 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
     assert (await client.delete(f"/api/v1/tasks/{own.id}", headers=headers)).status_code == 403
     await session.refresh(own)
     assert own.version == 1 and own.archived_at is None
+
+
+async def test_developer_edits_dates_only_of_tasks_created_for_themselves(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    mine = await make_task(session, world.project, world.dev.id, assignee_id=world.dev.id)
+    by_pm = await make_task(session, world.project, world.pm.id, assignee_id=world.dev.id)
+    unassigned = await make_task(session, world.project, world.dev.id)
+    headers = as_user(world.dev)
+    dates = {"start_date": "2026-12-01", "due_date": "2026-12-31"}
+
+    ok = await client.patch(
+        f"/api/v1/tasks/{mine.id}", headers=headers, json={"version": 1, **dates}
+    )
+    assert ok.status_code == 200 and ok.json()["due_date"] == "2026-12-31"
+
+    for task in (by_pm, unassigned):
+        response = await client.patch(
+            f"/api/v1/tasks/{task.id}", headers=headers, json={"version": 1, **dates}
+        )
+        assert response.status_code == 403
+    mixed = await client.patch(
+        f"/api/v1/tasks/{mine.id}",
+        headers=headers,
+        json={"version": 2, "due_date": "2026-12-30", "title": "x"},
+    )
+    assert mixed.status_code == 403  # the title is still PM-only
 
 
 async def test_archived_task_cannot_be_edited(
@@ -937,10 +970,12 @@ async def test_reassignment_shows_up_in_my_tasks_and_for_the_pm(
     assert await titles(client, url, as_user(world.dev)) == []
     assert await titles(client, url, as_user(world.other_dev)) == ["Moving"]
 
+    review = await status_by_name(session, world.project.id, "Code review")
     await client.patch(
         f"/api/v1/tasks/{task.id}",
         headers=as_user(world.other_dev),
-        json={"version": 2, "progress": 40},
+        json={"version": 2, "status_id": str(review.id)},
     )
     seen = (await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(world.pm))).json()
-    assert seen["progress"] == 40 and seen["assignee"]["id"] == str(world.other_dev.id)
+    assert seen["status"]["name"] == "Code review"
+    assert seen["assignee"]["id"] == str(world.other_dev.id)

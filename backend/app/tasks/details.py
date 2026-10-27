@@ -185,6 +185,17 @@ async def add_link(session: AsyncSession, task: Task, user: User, data: LinkIn) 
     return _attachment_out(item, user)
 
 
+# Documents, images, spreadsheets and voice notes. Checked on the file name, never on the
+# content type the client sends. Scripts, executables and archives are refused.
+ALLOWED_EXTENSIONS = frozenset(
+    {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".ppt", ".pptx", ".txt", ".md", ".rtf",
+        ".odt", ".ods", ".png", ".jpg", ".jpeg", ".gif", ".webp",
+        ".mp3", ".m4a", ".wav", ".ogg", ".opus", ".aac", ".weba",
+    }
+)  # fmt: skip
+
+
 def _clean_file_name(raw: str | None) -> str:
     name = PurePath((raw or "").replace("\\", "/")).name.strip()
     return (name or "file")[:255]
@@ -193,6 +204,14 @@ def _clean_file_name(raw: str | None) -> str:
 async def add_file(
     session: AsyncSession, task: Task, user: User, upload: UploadFile
 ) -> AttachmentOut:
+    name = _clean_file_name(upload.filename)
+    if PurePath(name).suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise AppError(
+            415,
+            "UNSUPPORTED_FILE_TYPE",
+            "This file type is not allowed. Use documents, spreadsheets, images, PDFs, "
+            "text files or audio recordings.",
+        )
     limit = get_settings().max_upload_mb * 1024 * 1024
     data = bytearray()
     while chunk := await upload.read(CHUNK):
@@ -208,7 +227,6 @@ async def add_file(
             "The request is not valid.",
             [{"field": "file", "issue": "empty", "message": "The file is empty."}],
         )
-    name = _clean_file_name(upload.filename)
     item = TaskAttachment(
         task_id=task.id,
         kind=AttachmentKind.FILE.value,

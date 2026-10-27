@@ -43,12 +43,12 @@ async def test_refused_edit_on_a_teammates_task_changes_nothing(
     denied = await client.patch(
         f"/api/v1/tasks/{theirs.id}",
         headers=as_user(world.dev),
-        json={"version": 1, "status_id": str(review.id), "progress": 50},
+        json={"version": 1, "status_id": str(review.id)},
     )
     assert denied.status_code == 403
 
     task = (await client.get(f"/api/v1/tasks/{theirs.id}", headers=pm)).json()
-    assert task["version"] == 1 and task["progress"] == 0
+    assert task["version"] == 1 and "progress" not in task
     assert task["status"]["name"] == "To do"
     history_after = (await client.get(f"/api/v1/tasks/{theirs.id}/activity", headers=pm)).json()
     assert history_after["total"] == history_before["total"]
@@ -71,13 +71,13 @@ async def test_developer_status_change_shows_the_same_in_every_view(
     changed = await client.patch(
         f"/api/v1/tasks/{mine.id}",
         headers=dev,
-        json={"version": 1, "status_id": str(done.id), "progress": 100},
+        json={"version": 1, "status_id": str(done.id)},
     )
     assert changed.status_code == 200
 
     # PM: task detail, filtered list, board column, dashboard, history
     detail = (await client.get(f"/api/v1/tasks/{mine.id}", headers=pm)).json()
-    assert detail["status"]["name"] == "Done" and detail["progress"] == 100
+    assert detail["status"]["name"] == "Done"
     assert detail["version"] == 2 and detail["completed_at"] is not None
 
     listed = (await client.get(base, headers=pm, params={"category": "done"})).json()
@@ -144,7 +144,7 @@ async def test_deactivated_user_is_refused_everywhere(
         assert response.status_code == 401, path
 
 
-async def test_estimate_is_free_text_set_by_the_pm_and_read_by_everyone(
+async def test_estimate_is_an_amount_and_unit_set_by_the_pm_and_read_by_everyone(
     client: httpx.AsyncClient,
     session: AsyncSession,
     world: World,  # noqa: F811
@@ -153,35 +153,71 @@ async def test_estimate_is_free_text_set_by_the_pm_and_read_by_everyone(
     created = await client.post(
         f"/api/v1/projects/{world.project.id}/tasks",
         headers=pm,
-        json={"title": "Sized", "estimate": "  5 points  ", "assignee_id": str(world.dev.id)},
+        json={
+            "title": "Sized",
+            "estimate_value": 90,
+            "estimate_unit": "minutes",
+            "assignee_id": str(world.dev.id),
+        },
     )
-    assert created.status_code == 201 and created.json()["estimate"] == "5 points"
+    assert created.status_code == 201
+    assert (created.json()["estimate_value"], created.json()["estimate_unit"]) == (90, "minutes")
     task_id, version = created.json()["id"], created.json()["version"]
 
-    assert (await client.get(f"/api/v1/tasks/{task_id}", headers=dev)).json()[
-        "estimate"
-    ] == "5 points"
+    seen = (await client.get(f"/api/v1/tasks/{task_id}", headers=dev)).json()
+    assert (seen["estimate_value"], seen["estimate_unit"]) == (90, "minutes")
 
+    url = f"/api/v1/tasks/{task_id}"
     denied = await client.patch(
-        f"/api/v1/tasks/{task_id}", headers=dev, json={"version": version, "estimate": "1 point"}
+        url, headers=dev, json={"version": version, "estimate_value": 1, "estimate_unit": "hours"}
     )
     assert denied.status_code == 403
 
-    too_long = await client.patch(
-        f"/api/v1/tasks/{task_id}", headers=pm, json={"version": version, "estimate": "x" * 51}
-    )
-    assert too_long.status_code == 422
+    for payload in (
+        {"estimate_value": 0, "estimate_unit": "hours"},
+        {"estimate_value": -3, "estimate_unit": "hours"},
+        {"estimate_value": 2, "estimate_unit": "days"},
+        {"estimate_value": None},  # clearing only one half
+        {"estimate_unit": None},
+    ):
+        rejected = await client.patch(url, headers=pm, json={"version": version, **payload})
+        assert rejected.status_code == 422, payload
 
     changed = await client.patch(
-        f"/api/v1/tasks/{task_id}", headers=pm, json={"version": version, "estimate": "8 points"}
+        url, headers=pm, json={"version": version, "estimate_value": 2, "estimate_unit": "weeks"}
     )
-    assert changed.status_code == 200 and changed.json()["estimate"] == "8 points"
+    assert changed.status_code == 200
+    assert (changed.json()["estimate_value"], changed.json()["estimate_unit"]) == (2, "weeks")
     history = (await client.get(f"/api/v1/tasks/{task_id}/activity", headers=pm)).json()
-    assert "estimate" in history["items"][0]["changes"]
+    assert history["items"][0]["changes"]["estimate"] == ["90 minutes", "2 weeks"]
+
+    # an amount alone is fine when the unit stays
+    amount_only = await client.patch(
+        url, headers=pm, json={"version": changed.json()["version"], "estimate_value": 3}
+    )
+    assert amount_only.status_code == 200 and amount_only.json()["estimate_unit"] == "weeks"
 
     cleared = await client.patch(
-        f"/api/v1/tasks/{task_id}",
+        url,
         headers=pm,
-        json={"version": changed.json()["version"], "estimate": "  "},
+        json={
+            "version": amount_only.json()["version"],
+            "estimate_value": None,
+            "estimate_unit": None,
+        },
     )
-    assert cleared.status_code == 200 and cleared.json()["estimate"] is None
+    assert cleared.status_code == 200
+    assert cleared.json()["estimate_value"] is None and cleared.json()["estimate_unit"] is None
+
+
+async def test_estimate_needs_both_amount_and_unit_on_create(
+    client: httpx.AsyncClient,
+    world: World,  # noqa: F811
+) -> None:
+    for payload in ({"estimate_value": 5}, {"estimate_unit": "hours"}):
+        response = await client.post(
+            f"/api/v1/projects/{world.project.id}/tasks",
+            headers=as_user(world.pm),
+            json={"title": "x", **payload},
+        )
+        assert response.status_code == 422, payload

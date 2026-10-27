@@ -48,6 +48,12 @@ class TaskPriority(StrEnum):
     LOW = "low"
 
 
+class EstimateUnit(StrEnum):
+    MINUTES = "minutes"
+    HOURS = "hours"
+    WEEKS = "weeks"
+
+
 def sql_in(column: str, enum: type[StrEnum]) -> str:
     """Build the text of a CHECK constraint: column IN ('a', 'b', ...)."""
     values = ", ".join(f"'{member.value}'" for member in enum)

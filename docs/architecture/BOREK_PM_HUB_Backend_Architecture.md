@@ -270,8 +270,8 @@ Every project starts with 7 statuses: Backlog, To do, In progress, Code review, 
 | priority | `critical`, `high`, `medium`, `low` |
 | labels | text array, max 10 labels of max 30 characters, no duplicates (case-insensitive) |
 | start_date, due_date | nullable; due_date must not be before start_date. `due_date` is the date the task should be completed. It is **not** the "estimate" shown in the designs (corrected 23.10.2026) |
-| estimate | nullable free text, max 50 characters (e.g. "5 points"), trimmed, empty becomes null. Set by PMs only, visible to everyone in the project. Added 23.10.2026 (migration 0005) **without a ticket or product-owner decision**; whether it stays, and its values (PDDP: planned effort in person-days), is open with the product owner |
-| progress | integer 0 to 100, default 0, stored **independently of status** (F03, F08) |
+| estimate_value, estimate_unit | time estimate: a whole amount greater than 0 plus a unit (`minutes`, `hours` or `weeks`); both set or both null (DB constraints). Set by PMs only, visible to everyone in the project. Changed by PT-23 (migration 0006, 27.10.2026): replaces the free-text `estimate`; old free-text values were dropped |
+| progress | **removed** by PT-23 (migration 0006, 27.10.2026); no replacement |
 | assignee_id | nullable FK users (unassigned tasks are allowed, F09) |
 | blocked_reason, blocked_at | both set while the status is in the `blocked` category (reason required; checked in the service because the status is in another table) |
 | position | integer/rank for Kanban order (add when the board needs it) |
@@ -341,7 +341,7 @@ Enforced in one function `can(user, action, resource)`, called from every endpoi
 | Edit task details (title, description, priority, due date) | Yes | No |
 | Assign / reassign task | Yes, to any active user (non-members are added to the project) | No |
 | List users (assignee picker) | Yes | No |
-| Change task status, progress, blocked reason | Any status | Only on tasks assigned to them, any status of the project |
+| Change task status, blocked reason | Any status | Only on tasks assigned to them, any status of the project |
 | View tasks in a project | Yes | Yes, **all tasks** of projects they are a member of (like Jira) |
 | "My tasks" | Own assigned | Own assigned |
 | Archive task | Yes | No |
@@ -363,7 +363,7 @@ The same rules are applied to every task of a status when the PM changes that st
 
 ### Validation rules (from F02, F03, F08, F09)
 - Project `code` unique; `name` required; `target_end_date` not before `start_date`.
-- Task `title` and `project_id` required; `due_date` not before `start_date`; `progress` between 0 and 100.
+- Task `title` and `project_id` required; `due_date` not before `start_date`; `estimate_value` and `estimate_unit` set together, amount above 0.
 - Assignee must be an active member of the task's project (or the task stays unassigned).
 - Invalid requests are rejected whole: **no partial records are saved** (F01 Sprint Review check).
 - Reassigning a task removes it from the previous assignee's "My Work" automatically (it is the same `assignee_id`).
@@ -438,7 +438,7 @@ Updates (`PATCH`) include the record's current `version`. If another person chan
 | `GET /api/v1/dashboard` | PM only. `active_projects`, `projects_total`, `summary` (total, completed, in_progress, blocked, overdue, completion_percent = completed / non-archived tasks), `projects[]` cards (status, dates, task counts), `blocked` and `overdue` lists (`{total, items}`, `limit` 1-50, default 10). **Built 21.10.2026, no ticket number** | F06 |
 | `GET /api/v1/dashboard/me` | Any user: counts of my assigned tasks, my projects with per-member counts, my blocked and overdue tasks | F06, F07 |
 | `GET /api/v1/tasks/{id}` | Task detail | 4 |
-| `PATCH /api/v1/tasks/{id}` | Edit task (body carries `version`). PM: any field. Developer: only `status_id`, `progress`, `blocked_reason` on own tasks | 4 |
+| `PATCH /api/v1/tasks/{id}` | Edit task (body carries `version`). PM: any field. Developer: only `status_id`, `blocked_reason` on own tasks | 4 |
 | `DELETE /api/v1/tasks/{id}` | Archive task | 4 |
 | `GET /api/v1/tasks/{id}/activity` | History: who changed what and when, newest first (`changes` = `{field: [old, new]}` with readable values); paginated | F08 |
 | `GET/POST /api/v1/tasks/{id}/comments` | List / add a comment (project members and PMs) | F08 |
