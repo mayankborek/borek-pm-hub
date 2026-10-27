@@ -19,7 +19,7 @@ export const STATUS_TONE: Record<ProjectStatus, Tone> = {
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /** Today as YYYY-MM-DD in the browser's local time. */

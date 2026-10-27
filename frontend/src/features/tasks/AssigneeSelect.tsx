@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useAssignableUsers } from './tasksApi';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
  * developer (GET /users). Assigning someone who is not in the project yet adds them as a member.
  */
 export function AssigneeSelect({ value, current, onChange }: Props) {
+  const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [search, setSearch] = useState('');
@@ -71,23 +73,23 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
 
   return (
     <div className="as" ref={root} onKeyDown={onKeyDown}>
-      <button type="button" className={open ? 'ps-btn open' : 'ps-btn'} aria-haspopup="listbox" aria-expanded={open} aria-label="Assignee" onClick={() => (open ? setOpen(false) : openList())}>
-        {label}
+      <button type="button" className={open ? 'ps-btn open' : 'ps-btn'} aria-haspopup="listbox" aria-expanded={open} aria-label={t('Assignee')} onClick={() => (open ? setOpen(false) : openList())}>
+        {t(label)}
       </button>
       {open && (
         <div className="as-pop">
-          <p className="as-title" id="as-title">Assignee</p>
+          <p className="as-title" id="as-title">{t('Assignee')}</p>
           <input
             className="as-search"
             type="search"
             autoFocus
-            placeholder="Search people"
-            aria-label="Search people"
+            placeholder={t('Search people')}
+            aria-label={t('Search people')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <ul role="listbox" aria-labelledby="as-title">
-            {options.length === 0 && <li className="as-empty">{users.isPending ? 'Loading…' : 'No people found'}</li>}
+            {options.length === 0 && <li className="as-empty">{t(users.isPending ? 'Loading…' : 'No people found')}</li>}
             {options.map((o, i) => (
               <li
                 key={o.id ?? 'none'}
@@ -97,7 +99,7 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
                 onMouseEnter={() => setActive(i)}
                 onClick={() => choose(o.id)}
               >
-                {o.name}
+                {t(o.name)}
               </li>
             ))}
           </ul>

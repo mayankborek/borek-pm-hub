@@ -2,12 +2,14 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { ApiError } from '@/shared/api/client';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useProjects } from '@/features/projects/projectsApi';
 import { useCreateTask, useProjectMembers, useProjectStatuses } from './tasksApi';
 import '@/features/projects/projects.css';
 
 /** Add Task (Figma "Workflow · Create task · Ready"): POST /projects/{id}/tasks, then opens the new task. */
 export function TaskCreatePage() {
+  const { t } = usePrefs();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [title, setTitle] = useState('');
@@ -33,7 +35,7 @@ export function TaskCreatePage() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return setTitleError('Task title is required.');
+    if (!title.trim()) return setTitleError(t('Task title is required.'));
     if (!projectId) return;
     create.mutate(
       { title: title.trim(), status_id: status || undefined, assignee_id: assigneeId || null },
@@ -44,21 +46,21 @@ export function TaskCreatePage() {
   return (
     <section className="page-body narrow">
       <form className="card form" onSubmit={onSubmit} noValidate>
-        <h1 className="page-title">Create task</h1>
+        <h1 className="page-title">{t('Create task')}</h1>
         {create.isError && (
           <div className="form-alert" role="alert">
-            {create.error instanceof ApiError ? create.error.message : 'Could not create the task. Try again.'}
+            {create.error instanceof ApiError ? create.error.message : t('Could not create the task. Try again.')}
           </div>
         )}
 
         <div className="field">
-          <label htmlFor="task-title">Task title *</label>
+          <label htmlFor="task-title">{t('Task title *')}</label>
           <input
             id="task-title"
             className="input"
             autoFocus
             maxLength={300}
-            placeholder="Draft release checklist"
+            placeholder={t('Draft release checklist')}
             value={title}
             aria-invalid={!!titleError}
             aria-describedby={titleError ? 'task-title-error' : undefined}
@@ -75,10 +77,10 @@ export function TaskCreatePage() {
         </div>
 
         <div className="field">
-          <label htmlFor="task-project">Project</label>
+          <label htmlFor="task-project">{t('Project')}</label>
           <select id="task-project" className="input" value={projectId} onChange={(e) => onProject(e.target.value)}>
             <option value="" disabled>
-              Select a project
+              {t('Select a project')}
             </option>
             {projectList.map((p) => (
               <option key={p.id} value={p.id}>
@@ -89,9 +91,9 @@ export function TaskCreatePage() {
         </div>
 
         <div className="field">
-          <label htmlFor="task-assignee">Assignee</label>
+          <label htmlFor="task-assignee">{t('Assignee')}</label>
           <select id="task-assignee" className="input" value={assigneeId} disabled={!projectId} onChange={(e) => setAssigneeId(e.target.value)}>
-            <option value="">Unassigned</option>
+            <option value="">{t('Unassigned')}</option>
             {(members.data ?? []).map((m) => (
               <option key={m.user_id} value={m.user_id}>
                 {m.name}
@@ -101,12 +103,12 @@ export function TaskCreatePage() {
         </div>
 
         <div className="field">
-          <label htmlFor="task-status">Status</label>
+          <label htmlFor="task-status">{t('Status')}</label>
           <select id="task-status" className="input" value={status} disabled={!projectId} onChange={(e) => setStatusId(e.target.value)}>
-            {!status && <option value="">To do</option>}
+            {!status && <option value="">{t('To do')}</option>}
             {(statuses.data ?? []).map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {t(s.name)}
               </option>
             ))}
           </select>
@@ -114,10 +116,10 @@ export function TaskCreatePage() {
 
         <div className="form-actions">
           <Link className="btn secondary" to={paths.tasks}>
-            Cancel
+            {t('Cancel')}
           </Link>
           <button type="submit" className="btn" disabled={!projectId || create.isPending}>
-            {create.isPending ? 'Creating…' : 'Create task'}
+            {t(create.isPending ? 'Creating…' : 'Create task')}
           </button>
         </div>
       </form>

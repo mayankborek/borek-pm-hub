@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { describeApiError } from '@/shared/api/client';
 import { useToast } from '@/shared/ui/Toast';
 import { TaskRow, TaskTableHead } from './TaskParts';
@@ -13,6 +14,7 @@ import './tasks.css';
 
 /** Sidebar "Task List": GET /tasks across every project the user can access (backend scopes by role). */
 export function TasksPage() {
+  const { t: tr } = usePrefs();
   const [params] = useSearchParams();
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const projectId = params.get('project_id') ?? '';
@@ -30,11 +32,11 @@ export function TasksPage() {
     <section className="page-body">
       <div className="page-header">
         <div>
-          <p className="page-crumb">Workspace / All accessible projects</p>
-          <h1 className="page-title">All tasks</h1>
+          <p className="page-crumb">{tr('Workspace / All accessible projects')}</p>
+          <h1 className="page-title">{tr('All tasks')}</h1>
         </div>
         <Link className="btn" to={projectId ? `${paths.taskNew}?project_id=${projectId}` : paths.taskNew}>
-          Add Task
+          {tr('Add Task')}
         </Link>
       </div>
 
@@ -51,7 +53,7 @@ export function TasksPage() {
         />
       ) : (
         <>
-          <section className="task-group table" role="table" aria-label="All tasks">
+          <section className="task-group table" role="table" aria-label={tr('All tasks')}>
             <TaskTableHead withActions={isPm} />
             {tasks.map((t) => (
               <TaskRow
@@ -61,7 +63,7 @@ export function TasksPage() {
                 onDelete={
                   isPm
                     ? () => {
-                        if (!window.confirm(`Delete ${t.key} · ${t.title}?`)) return;
+                        if (!window.confirm(tr('Delete {key} · {title}?', { key: t.key, title: t.title }))) return;
                         deleteTask.mutate(t.id, {
                           onSuccess: () => {
                             setSelected((prev) => {
@@ -69,9 +71,9 @@ export function TasksPage() {
                               next.delete(t.id);
                               return next;
                             });
-                            toast.success(`${t.key} deleted.`);
+                            toast.success(tr('{key} deleted.', { key: t.key }));
                           },
-                          onError: (e) => toast.error(describeApiError(e, 'Could not delete the task.')),
+                          onError: (e) => toast.error(describeApiError(e, tr('Could not delete the task.'))),
                         });
                       }
                     : undefined
@@ -89,12 +91,12 @@ export function TasksPage() {
             ))}
           </section>
           <p className="task-foot">
-            Showing {tasks.length} of {total} tasks
+            {tr('Showing {n} of {total} tasks', { n: tasks.length, total })}
             {hasNextPage && (
               <>
                 {' · '}
                 <button type="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                  {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                  {tr(isFetchingNextPage ? 'Loading…' : 'Load more')}
                 </button>
               </>
             )}

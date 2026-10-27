@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { homeFor, paths } from '@/app/routes';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 
 function ErrorPage({ title, text }: { title: string; text: string }) {
   const { user } = useAuth();
+  const { t } = usePrefs();
   return (
     <section className="page-body">
-      <h1 className="page-title">{title}</h1>
-      <p className="page-desc">{text}</p>
-      <Link to={user ? homeFor(user.role) : paths.login}>Back to home</Link>
+      <h1 className="page-title">{t(title)}</h1>
+      <p className="page-desc">{t(text)}</p>
+      <Link to={user ? homeFor(user.role) : paths.login}>{t('Back to home')}</Link>
     </section>
   );
 }

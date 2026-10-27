@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import type { StatusCategory } from './tasksApi';
 
 interface Option {
@@ -13,6 +14,7 @@ export const toneOf = (o: Option) => NAME_TONE[o.name.toLowerCase()] ?? o.catego
 
 /** Single-select status dropdown whose options are the coloured status labels from the Board filter popover. */
 export function StatusSelect({ value, options, onChange }: { value: string; options: Option[]; onChange: (id: string) => void }) {
+  const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
@@ -54,17 +56,17 @@ export function StatusSelect({ value, options, onChange }: { value: string; opti
   if (!current) return null;
   return (
     <div className="ss" ref={root} onKeyDown={onKeyDown}>
-      <button type="button" className="ss-btn" aria-haspopup="listbox" aria-expanded={open} aria-label={`Status: ${current.name}`} onClick={() => (open ? setOpen(false) : openList())}>
-        <span className={`ss-label tone-${toneOf(current)}`}>{current.name}</span>
+      <button type="button" className="ss-btn" aria-haspopup="listbox" aria-expanded={open} aria-label={`${t('Status')}: ${t(current.name)}`} onClick={() => (open ? setOpen(false) : openList())}>
+        <span className={`ss-label tone-${toneOf(current)}`}>{t(current.name)}</span>
         <span aria-hidden="true" className="ss-chev">
           ⌄
         </span>
       </button>
       {open && (
-        <ul className="ss-list" role="listbox" aria-label="Status">
+        <ul className="ss-list" role="listbox" aria-label={t('Status')}>
           {options.map((o, i) => (
             <li key={o.id} role="option" aria-selected={o.id === value} className={i === active ? 'active' : undefined} onMouseEnter={() => setActive(i)} onClick={() => choose(o)}>
-              <span className={`ss-label tone-${toneOf(o)}`}>{o.name}</span>
+              <span className={`ss-label tone-${toneOf(o)}`}>{t(o.name)}</span>
             </li>
           ))}
         </ul>

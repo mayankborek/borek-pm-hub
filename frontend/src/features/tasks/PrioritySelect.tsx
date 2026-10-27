@@ -3,6 +3,7 @@ import highestIcon from '@/features/projects/assets/priority-highest.svg';
 import highIcon from '@/features/projects/assets/priority-high.svg';
 import mediumIcon from '@/features/projects/assets/priority-medium.svg';
 import lowIcon from '@/features/projects/assets/priority-low.svg';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import type { TaskPriority } from './tasksApi';
 
 /** The app has four levels; Critical takes the design's "Highest" icon. */
@@ -15,19 +16,21 @@ export const PRIORITY_OPTIONS: { value: TaskPriority; label: string; icon: strin
 
 /** Icon + label (Figma "PriorityIndicator · V1"), for menus and forms. */
 export function PriorityIndicator({ priority }: { priority: TaskPriority }) {
+  const { t } = usePrefs();
   const p = PRIORITY_OPTIONS.find((o) => o.value === priority) ?? PRIORITY_OPTIONS[2];
   return (
     <span className="pi">
       <span className="pi-icon">
         <img src={p.icon} alt="" width={16} height={16} />
       </span>
-      {p.label}
+      {t(p.label)}
     </span>
   );
 }
 
 /** Priority dropdown (Figma "Priority selector · V1"): selected priority on top, options listed below with the current one highlighted. */
 export function PrioritySelect({ value, onChange }: { value: TaskPriority; onChange: (p: TaskPriority) => void }) {
+  const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
@@ -67,11 +70,11 @@ export function PrioritySelect({ value, onChange }: { value: TaskPriority; onCha
 
   return (
     <div className="ps" ref={root} onKeyDown={onKeyDown}>
-      <button type="button" className={open ? 'ps-btn open' : 'ps-btn'} aria-haspopup="listbox" aria-expanded={open} aria-label="Priority" onClick={() => (open ? setOpen(false) : openList())}>
+      <button type="button" className={open ? 'ps-btn open' : 'ps-btn'} aria-haspopup="listbox" aria-expanded={open} aria-label={t('Priority')} onClick={() => (open ? setOpen(false) : openList())}>
         <PriorityIndicator priority={value} />
       </button>
       {open && (
-        <ul className="ps-list" role="listbox" aria-label="Priority">
+        <ul className="ps-list" role="listbox" aria-label={t('Priority')}>
           {PRIORITY_OPTIONS.map((o, i) => (
             <li key={o.value} role="option" aria-selected={o.value === value} className={i === active ? 'active' : undefined} onMouseEnter={() => setActive(i)} onClick={() => choose(o.value)}>
               <PriorityIndicator priority={o.value} />

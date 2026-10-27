@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useAssignableUsers, type AssignableUser } from '@/features/tasks/tasksApi';
 
 interface Props {
@@ -21,6 +22,7 @@ const colorOf = (id: string) => AVATAR_COLORS[[...id].reduce((n, c) => n + c.cha
 
 /** Figma "Field · Assign members": search-and-add combobox with removable teammate chips underneath (GET /users). */
 export function MemberPicker({ selected, onChange }: Props) {
+  const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [search, setSearch] = useState('');
@@ -74,7 +76,7 @@ export function MemberPicker({ selected, onChange }: Props) {
           aria-controls="members-list"
           aria-autocomplete="list"
           autoComplete="off"
-          placeholder="Search people and add members"
+          placeholder={t('Search people and add members')}
           value={search}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -83,8 +85,8 @@ export function MemberPicker({ selected, onChange }: Props) {
           }}
         />
         {open && (
-          <ul className="mp-pop" id="members-list" role="listbox" aria-label="People">
-            {options.length === 0 && <li className="mp-empty">{users.isPending ? 'Loading…' : 'No people found'}</li>}
+          <ul className="mp-pop" id="members-list" role="listbox" aria-label={t('People')}>
+            {options.length === 0 && <li className="mp-empty">{t(users.isPending ? 'Loading…' : 'No people found')}</li>}
             {options.map((u, i) => (
               <li
                 key={u.id}
@@ -102,14 +104,14 @@ export function MemberPicker({ selected, onChange }: Props) {
         )}
       </div>
       {selected.length > 0 && (
-        <ul className="chips" aria-label="Selected members">
+        <ul className="chips" aria-label={t('Selected members')}>
           {selected.map((u) => (
             <li className="chip" key={u.id}>
               <span className="chip-av" style={{ background: colorOf(u.id) }} aria-hidden="true">
                 {initialsOf(u.name)}
               </span>
               <span className="chip-name">{u.name}</span>
-              <button type="button" aria-label={`Remove ${u.name}`} onClick={() => onChange(selected.filter((s) => s.id !== u.id))}>
+              <button type="button" aria-label={t('Remove {name}', { name: u.name })} onClick={() => onChange(selected.filter((s) => s.id !== u.id))}>
                 ×
               </button>
             </li>

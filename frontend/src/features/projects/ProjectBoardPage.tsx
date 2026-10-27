@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { Avatar, TaskFilters } from '@/features/tasks/TaskParts';
 import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
@@ -36,7 +37,7 @@ const NAME_TONE: Record<string, string> = { 'code review': 'review', testing: 't
 
 const shortDate = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(y, m - 1, d).toLocaleDateString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'short' });
 };
 
 interface Column {
@@ -48,6 +49,7 @@ interface Column {
 
 /** Board tab: one column per project status, planned work only (Backlog-category tasks stay in the Backlog tab). */
 export function ProjectBoardPage() {
+  const { t: tr } = usePrefs();
   const project = useProjectContext();
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const [composing, setComposing] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export function ProjectBoardPage() {
 
   const all = statuses ?? [];
   const taken = (name: string) => all.some((s) => s.name.toLowerCase() === name.toLowerCase());
-  const fail = (err: unknown) => setActionError(errorText(err, 'That change could not be saved. Try again.'));
+  const fail = (err: unknown) => setActionError(errorText(err, tr('That change could not be saved. Try again.')));
 
   /**
    * Moves a column to a new place among the visible ones. The project-wide order also holds Backlog statuses,
@@ -105,7 +107,7 @@ export function ProjectBoardPage() {
     if (task.status.id === col.id || !canMove(task)) return;
     let reason: string | undefined;
     if (col.category === 'blocked') {
-      reason = window.prompt(`Why is ${task.key} blocked?`)?.trim();
+      reason = window.prompt(tr('Why is {key} blocked?', { key: task.key }))?.trim();
       if (!reason) return;
     }
     setActionError('');
@@ -118,8 +120,12 @@ export function ProjectBoardPage() {
     const target = columns[index - 1] ?? columns[index + 1];
     const count = all.find((s) => s.id === col.id)?.task_count ?? col.tasks.length;
     const msg = count
-      ? `Delete “${col.name}”? Its ${count} task${count === 1 ? '' : 's'} will move to “${target?.name}”.`
-      : `Delete “${col.name}”?`;
+      ? tr(count === 1 ? 'Delete “{name}”? Its {n} task will move to “{target}”.' : 'Delete “{name}”? Its {n} tasks will move to “{target}”.', {
+          name: col.name,
+          n: count,
+          target: target?.name ?? '',
+        })
+      : tr('Delete “{name}”?', { name: col.name });
     if (!window.confirm(msg)) return;
     setActionError('');
     actions.remove.mutate({ id: col.id, moveTo: count ? target?.id : undefined }, { onError: fail });
@@ -140,7 +146,7 @@ export function ProjectBoardPage() {
         />
       ) : (
         <>
-          <div className="kanban" aria-label="Board">
+          <div className="kanban" aria-label={tr('Board')}>
             {columns.map((col, i) => (
               <section
                 key={col.id}
@@ -165,7 +171,7 @@ export function ProjectBoardPage() {
                     <span
                       className="grip"
                       draggable
-                      title="Drag to reorder"
+                      title={tr('Drag to reorder')}
                       aria-hidden="true"
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move';
@@ -194,7 +200,7 @@ export function ProjectBoardPage() {
                       }}
                     />
                   ) : (
-                    <h3 className="kcol-head">{col.name}</h3>
+                    <h3 className="kcol-head">{tr(col.name)}</h3>
                   )}
                   {isPm && renaming !== col.id && (
                     <StatusMenu
@@ -231,19 +237,19 @@ export function ProjectBoardPage() {
                           {t.assignee ? (
                             <Avatar user={t.assignee} round />
                           ) : (
-                            <span className="avatar round unassigned" title="Unassigned" aria-label="Unassigned">
+                            <span className="avatar round unassigned" title={tr('Unassigned')} aria-label={tr('Unassigned')}>
                               ?
                             </span>
                           )}
                           <img
                             src={PRIORITY[t.priority].icon}
-                            alt={PRIORITY[t.priority].label}
-                            title={PRIORITY[t.priority].label}
+                            alt={tr(PRIORITY[t.priority].label)}
+                            title={tr(PRIORITY[t.priority].label)}
                             width={16}
                             height={16}
                           />
                         </span>
-                        <span className="kcard-due">{t.due_date ? `Due ${shortDate(t.due_date)}` : 'No due date'}</span>
+                        <span className="kcard-due">{t.due_date ? tr('Due {date}', { date: shortDate(t.due_date) }) : tr('No due date')}</span>
                       </Link>
                     </li>
                   ))}
@@ -252,7 +258,7 @@ export function ProjectBoardPage() {
                   <QuickCreate projectId={project.id} statusId={col.id} onClose={() => setComposing(null)} />
                 ) : (
                   <button type="button" className="kcol-link" onClick={() => setComposing(col.id)}>
-                    + Add task
+                    {tr('+ Add task')}
                   </button>
                 )}
               </section>
@@ -265,7 +271,7 @@ export function ProjectBoardPage() {
             </p>
           )}
           <p className="kanban-count">
-            Showing {shown} of {data.total} tasks
+            {tr('Showing {n} of {total} tasks', { n: shown, total: data.total })}
           </p>
         </>
       )}

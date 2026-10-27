@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { ApiError, describeApiError } from '@/shared/api/client';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import {
   downloadAttachment,
   useActivity,
@@ -32,31 +33,33 @@ const fileSize = (n: number | null) =>
   n == null ? '' : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 const stamp = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  new Date(iso).toLocaleString(document.documentElement.lang === 'de' ? 'de-DE' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 const show = (v: unknown) => (v == null || v === '' ? '—' : Array.isArray(v) ? v.join(', ') || '—' : String(v));
 
-const changeText = (field: string, [from, to]: [unknown, unknown]) =>
-  `${field.replace(/_/g, ' ')}: ${show(from)} → ${show(to)}`;
+const changeText = (field: string, [from, to]: [unknown, unknown], t: (s: string) => string) =>
+  `${t(field.replace(/_/g, ' '))}: ${show(from)} → ${show(to)}`;
 
 const parseLabels = (text: string) => [...new Set(text.split(',').map((l) => l.trim()).filter(Boolean))];
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
+  const { t } = usePrefs();
   return (
     <div className="td-row">
-      <label>{label}</label>
+      <label>{t(label)}</label>
       {children}
     </div>
   );
 }
 
 function Description({ value, onChange, readOnly }: { value: string; onChange: (d: string) => void; readOnly?: boolean }) {
-  if (readOnly) return <p className="td-desc-static">{value || 'No description added.'}</p>;
+  const { t } = usePrefs();
+  if (readOnly) return <p className="td-desc-static">{value || t('No description added.')}</p>;
   return (
     <textarea
       className="td-desc"
-      aria-label="Description"
-      placeholder="Add a description and acceptance criteria"
+      aria-label={t('Description')}
+      placeholder={t('Add a description and acceptance criteria')}
       rows={6}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -66,6 +69,7 @@ function Description({ value, onChange, readOnly }: { value: string; onChange: (
 
 /** Opens from the Task List (Figma "PM · Related Task · Added"). Edits are staged and sent together by the Save button via PATCH /tasks/{id}. */
 export function TaskDetailPage() {
+  const { t } = usePrefs();
   const { taskId = '' } = useParams();
   const { user } = useAuth();
   const { data: task, isPending, isError, refetch } = useTask(taskId);
@@ -151,7 +155,7 @@ export function TaskDetailPage() {
         setLabelText(null);
         setFilesChanged(false);
       },
-      onError: (e) => toast.error(describeApiError(e, 'Could not save your change.')),
+      onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
     });
   };
   const view = {
@@ -169,51 +173,51 @@ export function TaskDetailPage() {
   const canStatus = isPm || task.assignee?.id === user?.id;
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
   const edit = (patch: TaskPatch) =>
-    isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, 'Could not save your change.')) });
+    isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))) });
   const conflict = update.error instanceof ApiError && update.error.status === 409;
 
   return (
     <section className={isPm ? 'page-body task-detail' : 'page-body task-detail td-dev'}>
       <p className="td-crumb">
         <Link to={paths.project(task.project_id)}>{task.project_name}</Link> /{' '}
-        {isPm ? <Link to={paths.tasks}>Task List</Link> : <Link to={paths.projectBoard(task.project_id)}>Board</Link>} / {task.key}
+        {isPm ? <Link to={paths.tasks}>{t('Task List')}</Link> : <Link to={paths.projectBoard(task.project_id)}>{t('Board')}</Link>} / {task.key}
       </p>
       <div className="td-head">
         <h2 className="td-title">{task.title}</h2>
         <button type="button" className="btn" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
-          {update.isPending ? 'Saving…' : 'Save'}
+          {t(update.isPending ? 'Saving…' : 'Save')}
         </button>
       </div>
       {isPm && (
         <p className="td-meta">
-          {task.key} · Updated {stamp(task.updated_at)}
-          {update.isPending && ' · Saving…'}
-          {!dirty && update.isSuccess && ' · ✓ Saved'}
+          {task.key} · {t('Updated')} {stamp(task.updated_at)}
+          {update.isPending && ` · ${t('Saving…')}`}
+          {!dirty && update.isSuccess && ` · ✓ ${t('Saved')}`}
         </p>
       )}
       {update.isError && (
         <p className="td-error" role="alert">
-          {conflict ? 'Someone else changed this task. The latest version has been loaded; try again.' : describeApiError(update.error, 'Could not save your change.')}
+          {conflict ? t('Someone else changed this task. The latest version has been loaded; try again.') : describeApiError(update.error, t('Could not save your change.'))}
         </p>
       )}
 
       <div className="td-grid">
         <div className="td-col">
           <section className="td-card">
-            <h3>Description</h3>
-            <p className="td-sub">Task context and acceptance criteria</p>
-            {isPm && <p className="td-hint">Click the text to edit · press Save to apply your changes</p>}
+            <h3>{t('Description')}</h3>
+            <p className="td-sub">{t('Task context and acceptance criteria')}</p>
+            {isPm && <p className="td-hint">{t('Click the text to edit · press Save to apply your changes')}</p>}
             <Description value={view.description} readOnly={!isPm} onChange={(description) => stage({ description })} />
             <div className="td-attach">
               <strong>
-                Attachments · {attachments.data?.length ?? 0} {attachments.data?.length === 1 ? 'file' : 'files'}
+                {t('Attachments')} · {attachments.data?.length ?? 0} {t(attachments.data?.length === 1 ? 'file' : 'files')}
               </strong>
               {(attachments.data ?? []).map((a) => (
                 <div key={a.id} className="td-file">
                   {a.kind === 'link' ? (
                     <a href={a.url ?? '#'} target="_blank" rel="noreferrer noopener">{a.name}</a>
                   ) : (
-                    <button type="button" className="td-link" onClick={() => downloadAttachment(a).catch(() => setFileError('Could not download the file.'))}>
+                    <button type="button" className="td-link" onClick={() => downloadAttachment(a).catch(() => setFileError(t('Could not download the file.')))}>
                       {a.name}
                     </button>
                   )}
@@ -223,16 +227,16 @@ export function TaskDetailPage() {
                     <button
                       type="button"
                       className="td-link"
-                      aria-label={`Remove ${a.name}`}
+                      aria-label={t('Remove {name}', { name: a.name })}
                       disabled={files.remove.isPending}
                       onClick={() =>
                         files.remove.mutate(a.id, {
                           onSuccess: () => setFilesChanged(true),
-                          onError: (e) => setFileError(describeApiError(e, 'Could not remove the file.')),
+                          onError: (e) => setFileError(describeApiError(e, t('Could not remove the file.'))),
                         })
                       }
                     >
-                      Remove
+                      {t('Remove')}
                     </button>
                   )}
                 </div>
@@ -251,12 +255,12 @@ export function TaskDetailPage() {
                   files.upload.mutate(picked, {
                     onSuccess: () => setFilesChanged(true),
                     onError: (err) =>
-                      setFileError(err instanceof ApiError && err.status === 413 ? 'That file is too large (25 MB max).' : describeApiError(err, 'Could not upload the file.')),
+                      setFileError(err instanceof ApiError && err.status === 413 ? t('That file is too large (25 MB max).') : describeApiError(err, t('Could not upload the file.'))),
                   });
                 }}
               />
               <button type="button" className="td-outline" disabled={files.upload.isPending} onClick={() => picker.current?.click()}>
-                {files.upload.isPending ? 'Uploading…' : '+ Attach files'}
+                {t(files.upload.isPending ? 'Uploading…' : '+ Attach files')}
               </button>
               {fileError && (
                 <p className="td-error" role="alert">
@@ -267,8 +271,8 @@ export function TaskDetailPage() {
           </section>
 
           <section className="td-card">
-            <h3>Activity &amp; audit log</h3>
-            <p className="td-sub">Comments and updates</p>
+            <h3>{t('Activity & audit log')}</h3>
+            <p className="td-sub">{t('Comments and updates')}</p>
             {comments.data?.length ? (
               <ul className="td-comments">
                 {comments.data.map((c) => (
@@ -279,23 +283,23 @@ export function TaskDetailPage() {
                 ))}
               </ul>
             ) : (
-              !activity.data?.items.length && <p className="td-none">No comments yet.</p>
+              !activity.data?.items.length && <p className="td-none">{t('No comments yet.')}</p>
             )}
             {activity.data?.items.length ? (
               <ul className="td-comments td-history">
                 {activity.data.items.map((a) => (
                   <li key={a.id}>
-                    <strong>{a.actor.name}</strong> {a.action.replace(/_/g, ' ')} <span>{stamp(a.created_at)}</span>
+                    <strong>{a.actor.name}</strong> {t(a.action.replace(/_/g, ' '))} <span>{stamp(a.created_at)}</span>
                     {Object.entries(a.changes).map(([field, change]) => (
-                      <p key={field}>{changeText(field, change)}</p>
+                      <p key={field}>{changeText(field, change, t)}</p>
                     ))}
                   </li>
                 ))}
               </ul>
             ) : activity.isError ? (
-              <p className="td-empty">History could not be loaded.</p>
+              <p className="td-empty">{t('History could not be loaded.')}</p>
             ) : (
-              isPm && !comments.data?.length && !activity.isPending && <p className="td-empty">No activity recorded yet.</p>
+              isPm && !comments.data?.length && !activity.isPending && <p className="td-empty">{t('No activity recorded yet.')}</p>
             )}
             <form
               className="td-composer"
@@ -305,19 +309,19 @@ export function TaskDetailPage() {
                 if (!body) return;
                 addComment.mutate(body, {
                   onSuccess: () => setComment(''),
-                  onError: () => toast.error('Could not post your comment.'),
+                  onError: () => toast.error(t('Could not post your comment.')),
                 });
               }}
             >
               <input
-                aria-label="Add a comment"
-                placeholder="Add a comment…"
+                aria-label={t('Add a comment')}
+                placeholder={t('Add a comment…')}
                 maxLength={5000}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
               />
               <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
-                {addComment.isPending ? 'Sending…' : 'Send'}
+                {t(addComment.isPending ? 'Sending…' : 'Send')}
               </button>
             </form>
           </section>
@@ -325,9 +329,9 @@ export function TaskDetailPage() {
 
         <div className="td-col">
           <section className="td-card">
-            <h3>Task details</h3>
-            <p className="td-sub">{isPm ? 'Ownership, schedule, and priority' : update.isPending ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved'}</p>
-            <Row label="Status">
+            <h3>{t('Task details')}</h3>
+            <p className="td-sub">{t(isPm ? 'Ownership, schedule, and priority' : update.isPending ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved')}</p>
+            <Row label="Task status">
               {canStatus ? (
                 <StatusSelect
                   value={view.status_id}
@@ -341,22 +345,22 @@ export function TaskDetailPage() {
                       {
                         // Drop any staged blocked choice so the dropdown shows the saved status.
                         onSuccess: () => setDraft((d) => ({ ...d, status_id: undefined, blocked_reason: undefined })),
-                        onError: (e) => toast.error(describeApiError(e, 'Could not save your change.')),
+                        onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
                       },
                     );
                   }}
                 />
               ) : (
-                <span className="td-static">{task.status.name}</span>
+                <span className="td-static">{t(task.status.name)}</span>
               )}
             </Row>
             {blocking && (
               <Row label="Blocked reason">
                 {canStatus ? (
                   <input
-                    aria-label="Blocked reason"
+                    aria-label={t('Blocked reason')}
                     aria-invalid={missingReason}
-                    placeholder="Why is this blocked?"
+                    placeholder={t('Why is this blocked?')}
                     value={reason}
                     onChange={(e) => stage({ blocked_reason: e.target.value })}
                   />
@@ -372,7 +376,7 @@ export function TaskDetailPage() {
               {isPm ? (
                 <AssigneeSelect value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
               ) : (
-                <span className="td-static">{task.assignee?.name || 'Unassigned'}</span>
+                <span className="td-static">{task.assignee?.name || t('Unassigned')}</span>
               )}
             </Row>
             <Row label="Reporter">
@@ -413,7 +417,7 @@ export function TaskDetailPage() {
                     type="number"
                     min={1}
                     step={1}
-                    aria-label="Estimate amount"
+                    aria-label={t('Estimate amount')}
                     value={estimate.value ?? ''}
                     onChange={(e) => {
                       const n = Math.floor(Number(e.target.value));
@@ -422,27 +426,27 @@ export function TaskDetailPage() {
                     }}
                   />
                   <select
-                    aria-label="Estimate unit"
+                    aria-label={t('Estimate unit')}
                     value={estimate.unit ?? 'hours'}
                     disabled={estimate.value == null}
                     onChange={(e) => stage({ estimate_unit: e.target.value as EstimateUnit })}
                   >
                     {ESTIMATE_UNITS.map((u) => (
                       <option key={u} value={u}>
-                        {u}
+                        {t(u)}
                       </option>
                     ))}
                   </select>
                 </span>
               ) : (
-                <span className="td-static">{task.estimate_value != null ? `${task.estimate_value} ${task.estimate_unit}` : '—'}</span>
+                <span className="td-static">{task.estimate_value != null ? `${task.estimate_value} ${t(task.estimate_unit ?? '')}` : '—'}</span>
               )}
             </Row>
             <Row label="Labels">
               {isPm ? (
                 <input
-                  aria-label="Labels"
-                  placeholder="Comma-separated labels"
+                  aria-label={t('Labels')}
+                  placeholder={t('Comma-separated labels')}
                   value={labelText ?? task.labels.join(', ')}
                   onChange={(e) => {
                     setLabelText(e.target.value);
@@ -457,25 +461,25 @@ export function TaskDetailPage() {
 
           <section className="td-card">
             <div className="td-card-head">
-              <h3>Related tasks</h3>
+              <h3>{t('Related tasks')}</h3>
               {isPm ? (
                 <button type="button" className="btn td-relate" onClick={() => setDrawer(true)}>
-                  Related Task
+                  {t('Related Task')}
                 </button>
               ) : (
                 <button type="button" className="btn td-relate" onClick={() => setDrawer(true)}>
-                  Relate Task
+                  {t('Relate Task')}
                 </button>
               )}
             </div>
-            {isPm && related.length === 0 && <p className="td-empty">No related tasks.</p>}
+            {isPm && related.length === 0 && <p className="td-empty">{t('No related tasks.')}</p>}
             {related.map((r) => (
               <div key={`${r.relation}-${r.task.id}`} className="td-related">
                 <Link to={paths.task(r.task.id)}>
                   {r.task.key} · {r.task.title}
                 </Link>
                 <span>
-                  {relationLabels[r.relation]} · {r.task.status.name}
+                  {t(relationLabels[r.relation])} · {t(r.task.status.name)}
                 </span>
               </div>
             ))}

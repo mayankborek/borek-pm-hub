@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { formatDate } from '@/features/projects/projectUi';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import type { StatusCategory, Task, TaskFilter, TaskPriority, UserBrief } from './tasksApi';
 import './tasks.css';
 
@@ -46,6 +47,7 @@ export function TaskRow({
   /** Adds a trailing Delete button (PM only). */
   onDelete?: () => void;
 }) {
+  const { t } = usePrefs();
   return (
     <div className={onDelete ? 'task-row has-actions' : 'task-row'} role="row">
       <div className="task-title" role="cell">
@@ -53,7 +55,7 @@ export function TaskRow({
           <input
             type="checkbox"
             className="task-check"
-            aria-label={`Select ${task.key}`}
+            aria-label={t('Select {key}', { key: task.key })}
             checked={!!selected}
             onChange={(e) => onSelect(e.target.checked)}
           />
@@ -75,13 +77,13 @@ export function TaskRow({
         )}
       </div>
       <div className={`cell-status cat-${task.status.category}`} role="cell">
-        {task.status.name}
+        {t(task.status.name)}
       </div>
       <div className="cell-muted" role="cell">
         {task.due_date ? formatDate(task.due_date) : '—'}
       </div>
       <div className="cell-muted" role="cell">
-        {PRIORITY_LABEL[task.priority]}
+        {t(PRIORITY_LABEL[task.priority])}
       </div>
       <div className="cell-assignee cell-muted" role="cell">
         {task.assignee ? (
@@ -94,14 +96,14 @@ export function TaskRow({
             <span className="avatar unassigned" aria-hidden="true">
               —
             </span>
-            Unassigned
+            {t('Unassigned')}
           </>
         )}
       </div>
       {onDelete && (
         <div className="cell-actions" role="cell">
-          <button type="button" className="link-btn task-delete" aria-label={`Delete ${task.key}`} onClick={onDelete}>
-            Delete
+          <button type="button" className="link-btn task-delete" aria-label={t('Delete {key}', { key: task.key })} onClick={onDelete}>
+            {t('Delete')}
           </button>
         </div>
       )}
@@ -111,14 +113,15 @@ export function TaskRow({
 
 /** Column header row of the all-projects task table (Figma "01 PM Task List — Primary"). */
 export function TaskTableHead({ withActions }: { withActions?: boolean }) {
+  const { t } = usePrefs();
   return (
     <div className={withActions ? 'task-row task-table-head has-actions' : 'task-row task-table-head'} role="row">
-      <div role="columnheader">Task / Project</div>
-      <div role="columnheader">Status</div>
-      <div role="columnheader">Due date</div>
-      <div role="columnheader">Priority</div>
-      <div role="columnheader">Assignee</div>
-      {withActions && <div role="columnheader" aria-label="Actions" />}
+      <div role="columnheader">{t('Task / Project')}</div>
+      <div role="columnheader">{t('Status')}</div>
+      <div role="columnheader">{t('Due date')}</div>
+      <div role="columnheader">{t('Priority')}</div>
+      <div role="columnheader">{t('Assignee')}</div>
+      {withActions && <div role="columnheader" aria-label={t('Actions')} />}
     </div>
   );
 }
@@ -141,16 +144,17 @@ export function TaskGroup({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = usePrefs();
   const [open, setOpen] = useState(true);
   return (
-    <section className="task-group" role="table" aria-label={title}>
+    <section className="task-group" role="table" aria-label={t(title)}>
       <div className="task-group-head">
         {selectAll && (
           <>
             <input
               type="checkbox"
               className="task-check"
-              aria-label="Select all tasks"
+              aria-label={t('Select all tasks')}
               checked={selectAll.checked}
               ref={(el) => {
                 if (el) el.indeterminate = selectAll.indeterminate;
@@ -161,20 +165,20 @@ export function TaskGroup({
               type="button"
               className="group-toggle"
               aria-expanded={open}
-              aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+              aria-label={t(open ? 'Collapse {title}' : 'Expand {title}', { title: t(title) })}
               onClick={() => setOpen(!open)}
             >
               {open ? '⌄' : '›'}
             </button>
           </>
         )}
-        <strong>{title}</strong>
+        <strong>{t(title)}</strong>
         <span>
-          {count} {countLabel}
+          {count} {t(countLabel)}
         </span>
         {action && <div className="task-group-action">{action}</div>}
       </div>
-      {!open ? null : count === 0 && empty ? <div className="task-group-empty">{empty}</div> : children}
+      {!open ? null : count === 0 && empty ? <div className="task-group-empty">{t(empty)}</div> : children}
     </section>
   );
 }
@@ -205,20 +209,21 @@ export function TaskFilters({
   extra?: ReactNode;
   onClear?: () => void;
 }) {
+  const { t } = usePrefs();
   const assignees = useSeenAssignees(tasks);
   return (
     <div className="task-filters" role="search">
       <input
         type="search"
         className="input search"
-        placeholder="Search tasks"
-        aria-label="Search tasks"
+        placeholder={t('Search tasks')}
+        aria-label={t('Search tasks')}
         value={filter.q}
         onChange={(e) => onChange({ ...filter, q: e.target.value })}
       />
       {extra}
       {assignees.length > 0 && (
-        <div className="avatar-filters" role="group" aria-label="Filter by assignee">
+        <div className="avatar-filters" role="group" aria-label={t('Filter by assignee')}>
           {assignees.map((u) => (
             <button
               key={u.id}
@@ -226,7 +231,7 @@ export function TaskFilters({
               className="avatar round"
               style={{ background: colorFor(u.id) }}
               title={u.name}
-              aria-label={`Assignee ${u.name}`}
+              aria-label={t('Assignee {name}', { name: u.name })}
               aria-pressed={filter.assigneeId === u.id}
               onClick={() => onChange({ ...filter, assigneeId: filter.assigneeId === u.id ? '' : u.id })}
             >
@@ -237,33 +242,33 @@ export function TaskFilters({
       )}
       <select
         className="input"
-        aria-label="Filter by status"
+        aria-label={t('Filter by status')}
         value={filter.category}
         onChange={(e) => onChange({ ...filter, category: e.target.value as TaskFilter['category'] })}
       >
-        <option value="">Status: All</option>
+        <option value="">{t('Status: All')}</option>
         {(Object.keys(CATEGORY_LABEL) as StatusCategory[]).map((c) => (
           <option key={c} value={c}>
-            {CATEGORY_LABEL[c]}
+            {t(CATEGORY_LABEL[c])}
           </option>
         ))}
       </select>
       <select
         className="input"
-        aria-label="Filter by priority"
+        aria-label={t('Filter by priority')}
         value={filter.priority}
         onChange={(e) => onChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
       >
-        <option value="">Priority: All</option>
+        <option value="">{t('Priority: All')}</option>
         {(Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((p) => (
           <option key={p} value={p}>
-            {PRIORITY_LABEL[p]}
+            {t(PRIORITY_LABEL[p])}
           </option>
         ))}
       </select>
       {onClear && (filter.q.trim() || filter.category || filter.priority || filter.assigneeId) && (
         <button type="button" className="link-btn" onClick={onClear}>
-          Clear all
+          {t('Clear all')}
         </button>
       )}
     </div>
