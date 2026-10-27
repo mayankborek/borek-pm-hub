@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.common.enums import AttachmentKind, StatusCategory, TaskPriority, sql_in
+from app.common.enums import AttachmentKind, EstimateUnit, StatusCategory, TaskPriority, sql_in
 from app.core.database import Base, IdMixin, TimestampMixin
 
 
@@ -52,7 +52,9 @@ class Task(IdMixin, TimestampMixin, Base):
             name="fk_tasks_status_id_project_statuses",
         ),
         CheckConstraint(sql_in("priority", TaskPriority), name="priority"),
-        CheckConstraint("progress BETWEEN 0 AND 100", name="progress_range"),
+        CheckConstraint(sql_in("estimate_unit", EstimateUnit), name="estimate_unit"),
+        CheckConstraint("estimate_value IS NULL OR estimate_value > 0", name="estimate_positive"),
+        CheckConstraint("(estimate_value IS NULL) = (estimate_unit IS NULL)", name="estimate_pair"),
         CheckConstraint(
             "due_date IS NULL OR start_date IS NULL OR due_date >= start_date",
             name="dates_order",
@@ -78,12 +80,9 @@ class Task(IdMixin, TimestampMixin, Base):
     start_date: Mapped[date | None] = mapped_column(Date)
     # The date the task should be completed (not the "estimate" field, which is separate).
     due_date: Mapped[date | None] = mapped_column(Date)
-    # Free text size of the work, e.g. "5 points".
-    estimate: Mapped[str | None] = mapped_column(String(50))
-    # Independent of status (F03, F08).
-    progress: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0, server_default=text("0")
-    )
+    # Time estimate: a whole amount plus a unit (minutes, hours or weeks); both set or both null.
+    estimate_value: Mapped[int | None] = mapped_column(Integer)
+    estimate_unit: Mapped[str | None] = mapped_column(String(10))
     # Nullable: unassigned tasks are allowed. Membership is checked in the service layer.
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"))
     # Required while the status is in the blocked category (service layer; the status lives in

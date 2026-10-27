@@ -91,7 +91,7 @@ async def test_history_records_who_changed_what(client: httpx.AsyncClient, world
     await client.patch(
         task_url,
         headers=dev,
-        json={"version": 2, "status_id": in_progress["id"], "progress": 30},
+        json={"version": 2, "status_id": in_progress["id"]},
     )
     await client.patch(
         task_url, headers=pm, json={"version": 3, "title": "Renamed", "priority": "high"}
@@ -115,7 +115,7 @@ async def test_history_records_who_changed_what(client: httpx.AsyncClient, world
     assert made["actor"]["name"] == "Pia PM" and made["changes"] == {}
     assert assigned["changes"] == {"assignee": [None, "Dana Dev"]}
     assert started["actor"]["name"] == "Dana Dev"
-    assert started["changes"] == {"status": ["To do", "In progress"], "progress": [0, 30]}
+    assert started["changes"] == {"status": ["To do", "In progress"]}
     assert renamed["changes"] == {"title": ["Tracked", "Renamed"], "priority": ["medium", "high"]}
     assert archived["actor"]["name"] == "Pia PM"
 

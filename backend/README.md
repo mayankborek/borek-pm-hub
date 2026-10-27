@@ -101,7 +101,7 @@ erDiagram
     }
 ```
 
-Key constraints: unique `projects.code`, unique `(project_id, user_id)` per membership, unique `(project_id, key)` per task, `progress` between 0 and 100, a task can only use a status of its own project, unique status name per project. A task in a blocked-category status needs a reason (checked in the service).
+Key constraints: unique `projects.code`, unique `(project_id, user_id)` per membership, unique `(project_id, key)` per task, an estimate needs both amount and unit (amount above 0), a task can only use a status of its own project, unique status name per project. A task in a blocked-category status needs a reason (checked in the service).
 A `version` column on projects and tasks gives optimistic locking: a stale update gets `409`.
 
 ### Data flow of one request

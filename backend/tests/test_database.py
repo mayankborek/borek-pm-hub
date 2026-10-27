@@ -40,7 +40,7 @@ async def test_defaults_are_applied(session: AsyncSession) -> None:
     assert (await session.get(WorkflowStatus, task.status_id)).name == "To do"  # type: ignore[union-attr]
     assert task.labels == []
     assert task.priority == "medium"
-    assert task.progress == 0
+    assert task.estimate_value is None and task.estimate_unit is None
     assert task.version == 1
     assert task.assignee_id is None  # unassigned tasks are allowed
     assert task.archived_at is None
@@ -51,8 +51,10 @@ async def test_defaults_are_applied(session: AsyncSession) -> None:
     "overrides",
     [
         {"priority": "urgent"},
-        {"progress": 101},
-        {"progress": -1},
+        {"estimate_value": 5},  # amount without a unit
+        {"estimate_unit": "hours"},  # unit without an amount
+        {"estimate_value": 0, "estimate_unit": "hours"},
+        {"estimate_value": 3, "estimate_unit": "days"},
         {"start_date": date(2026, 5, 10), "due_date": date(2026, 5, 1)},
     ],
 )

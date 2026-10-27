@@ -26,7 +26,7 @@ class Action(StrEnum):
     TASK_EDIT_DETAILS = "task:edit_details"  # title, description, priority, labels, estimate
     TASK_EDIT_SCHEDULE = "task:edit_schedule"  # start and due date
     TASK_ASSIGN = "task:assign"
-    TASK_CHANGE_STATUS = "task:change_status"  # also covers progress and blocked_reason
+    TASK_CHANGE_STATUS = "task:change_status"  # also covers blocked_reason
     TASK_VIEW = "task:view"
     TASK_COMMENT = "task:comment"  # comments and attachments
     TASK_ARCHIVE = "task:archive"
