@@ -23,8 +23,8 @@ export function TaskCreatePage() {
   const create = useCreateTask(projectId);
 
   const projectList = projects.data?.items ?? [];
-  // Status falls back to the project's first "To do" status, the same default the backend applies.
-  const defaultStatus = statuses.data?.find((s) => s.category === 'todo') ?? statuses.data?.[0];
+  // New tasks default to the project's Backlog status.
+  const defaultStatus = statuses.data?.find((s) => s.category === 'backlog') ?? statuses.data?.find((s) => s.category === 'todo') ?? statuses.data?.[0];
   const status = statuses.data?.some((s) => s.id === statusId) ? statusId : (defaultStatus?.id ?? '');
 
   const onProject = (id: string) => {

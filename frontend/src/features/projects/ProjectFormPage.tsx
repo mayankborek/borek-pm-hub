@@ -3,9 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import type { AssignableUser } from '@/features/tasks/tasksApi';
+import { useProjectMembers, type AssignableUser } from '@/features/tasks/tasksApi';
 import { MemberPicker } from './MemberPicker';
-import { parseApiError, useCreateProject, useProject, useUpdateProject, type FieldErrors } from './projectsApi';
+import { parseApiError, useCreateProject, useProject, useSyncMembers, useUpdateProject, type FieldErrors } from './projectsApi';
 import { STATUS_LABEL } from './projectUi';
 import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './projects.css';
@@ -64,12 +64,14 @@ export function ProjectCreatePage() {
 export function ProjectEditPage() {
   const { projectId = '' } = useParams();
   const { data, isPending, isError, refetch } = useProject(projectId);
-  if (isPending) return <LoadingState title="Loading project" />;
-  if (isError) return <ErrorState title="We couldn’t load this project" onRetry={() => void refetch()} />;
-  return <ProjectForm project={data} />;
+  const members = useProjectMembers(projectId);
+  if (isPending || members.isPending) return <LoadingState title="Loading project" />;
+  if (isError || members.isError) return <ErrorState title="We couldn’t load this project" onRetry={() => void refetch()} />;
+  const current: AssignableUser[] = members.data.map((m) => ({ id: m.user_id, name: m.name, email: m.email, role: 'developer' }));
+  return <ProjectForm project={data} currentMembers={current} />;
 }
 
-function ProjectForm({ project }: { project?: Project }) {
+function ProjectForm({ project, currentMembers = [] }: { project?: Project; currentMembers?: AssignableUser[] }) {
   const { t } = usePrefs();
   const isEdit = !!project;
   const navigate = useNavigate();
@@ -78,8 +80,9 @@ function ProjectForm({ project }: { project?: Project }) {
   const [form, setForm] = useState<FormState>(project ? fromProject(project) : EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
-  const [members, setMembers] = useState<AssignableUser[]>([]);
-  const saving = create.isPending || update.isPending;
+  const [members, setMembers] = useState<AssignableUser[]>(currentMembers);
+  const syncMembers = useSyncMembers(project?.id ?? '');
+  const saving = create.isPending || update.isPending || syncMembers.isPending;
   const back = project ? paths.project(project.id) : paths.projects;
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -99,6 +102,11 @@ function ProjectForm({ project }: { project?: Project }) {
       if (project) {
         const { code: _code, ...rest } = input;
         await update.mutateAsync({ input: rest, version: project.version });
+        const before = new Set(currentMembers.map((m) => m.id));
+        const after = new Set(members.map((m) => m.id));
+        const add = [...after].filter((id) => !before.has(id));
+        const remove = [...before].filter((id) => !after.has(id));
+        if (add.length || remove.length) await syncMembers.mutateAsync({ add, remove });
         navigate(paths.project(project.id));
       } else {
         const created = await create.mutateAsync({ ...input, members: members.map((m) => ({ user_id: m.id })) });
@@ -197,12 +205,10 @@ function ProjectForm({ project }: { project?: Project }) {
           )}
         </div>
 
-        {!isEdit && (
-          <div className="field">
-            <label htmlFor="members">{t('Add Members')}</label>
-            <MemberPicker selected={members} onChange={setMembers} />
-          </div>
-        )}
+        <div className="field">
+          <label htmlFor="members">{t('Add Members')}</label>
+          <MemberPicker selected={members} onChange={setMembers} />
+        </div>
 
         <div className="pform-actions">
           <Link className="pform-btn" to={back}>

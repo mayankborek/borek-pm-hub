@@ -97,6 +97,7 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .pform .field-error { margin-top: 0; }
 
 .mp { position: relative; }
+.pform .mp .input { padding-right: 32px; background: var(--surface) url(../tasks/assets/select-chevron.svg) no-repeat right 12px center; }
 .mp-pop { position: absolute; z-index: 6; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 8px; list-style: none; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; background: var(--surface); border: 1px solid var(--field); }
 .mp-pop li { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 36px; padding: 0 8px; font-size: 13px; color: var(--ink); cursor: pointer; }
 .mp-pop li.active { background: var(--surface-2); }
