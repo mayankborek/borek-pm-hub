@@ -199,13 +199,14 @@ class TaskFilters:
 
 _PRIORITY_RANK = case(
     {
-        TaskPriority.CRITICAL.value: 0,
+        TaskPriority.HIGHEST.value: 0,
         TaskPriority.HIGH.value: 1,
         TaskPriority.MEDIUM.value: 2,
         TaskPriority.LOW.value: 3,
+        TaskPriority.LOWEST.value: 4,
     },
     value=Task.priority,
-    else_=4,
+    else_=5,
 )
 
 

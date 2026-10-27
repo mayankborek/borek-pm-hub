@@ -42,10 +42,11 @@ class AttachmentKind(StrEnum):
 
 
 class TaskPriority(StrEnum):
-    CRITICAL = "critical"
+    HIGHEST = "highest"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
+    LOWEST = "lowest"
 
 
 class EstimateUnit(StrEnum):
