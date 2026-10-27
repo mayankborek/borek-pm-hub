@@ -57,7 +57,17 @@ jobs:
               -v caddy_config:/config \
               caddy:2-alpine
           fi
-          docker compose -f docker-compose.prod.yml --env-file /etc/borek-flow/env.prod up -d --build --remove-orphans > /var/log/borek-flow-deploy.log 2>&1
+          if [ ! -f /etc/borek-flow/compose.dev-instance.yml ]; then
+            echo "Missing /etc/borek-flow/compose.dev-instance.yml on the dev instance" >&2
+            exit 1
+          fi
+          # The dev-branch UI signs in through AUTH_MODE=dev. The second compose file
+          # keeps this instance in staging mode. Application source is not modified.
+          docker compose \
+            -f docker-compose.prod.yml \
+            -f /etc/borek-flow/compose.dev-instance.yml \
+            --env-file /etc/borek-flow/env.prod \
+            up -d --build --remove-orphans > /var/log/borek-flow-deploy.log 2>&1
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8000/ready >/dev/null; then
               curl -fsS -o /dev/null http://127.0.0.1:3000/
