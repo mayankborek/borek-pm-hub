@@ -1,5 +1,4 @@
 import type { Role } from '@/features/auth/types';
-
 /** Single source of truth for URLs. Never hardcode paths in components. */
 export const paths = {
   login: '/login',
