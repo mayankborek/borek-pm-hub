@@ -224,6 +224,7 @@ export function ProjectBoardPage() {
                         draggable={canMove(t)}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', t.key); // Firefox only starts a drag when data is set
                           setDragTask(t);
                         }}
                         onDragEnd={() => {
