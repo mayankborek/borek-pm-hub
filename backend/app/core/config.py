@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # Task attachments (files) are stored in this folder; a Docker volume keeps them.
     upload_dir: str = "uploads"
-    max_upload_mb: int = 10
+    max_upload_mb: int = 25
 
     # Comma-separated list of allowed frontend origins.
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
