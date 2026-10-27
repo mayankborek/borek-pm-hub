@@ -1698,10 +1698,11 @@
       },
       "TaskPriority": {
         "enum": [
-          "critical",
+          "highest",
           "high",
           "medium",
-          "low"
+          "low",
+          "lowest"
         ],
         "title": "TaskPriority",
         "type": "string"

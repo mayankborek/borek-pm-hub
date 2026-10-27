@@ -267,7 +267,7 @@ Every project starts with 7 statuses: Backlog, To do, In progress, Code review, 
 | key | `<project code>-<n>` (e.g. `BFL-27`), unique per project, never reused |
 | title (required), description | |
 | status_id | FK to `project_statuses` through the composite key `(status_id, project_id)`: a task cannot use another project's status |
-| priority | `critical`, `high`, `medium`, `low` |
+| priority | `highest`, `high`, `medium`, `low`, `lowest` (like Jira; `critical` was renamed to `highest`, migration 0007) |
 | labels | text array, max 10 labels of max 30 characters, no duplicates (case-insensitive) |
 | start_date, due_date | nullable; due_date must not be before start_date. `due_date` is the date the task should be completed. It is **not** the "estimate" shown in the designs (corrected 23.10.2026) |
 | estimate_value, estimate_unit | time estimate: a whole amount greater than 0 plus a unit (`minutes`, `hours` or `weeks`); both set or both null (DB constraints). Set by PMs only, visible to everyone in the project. Changed by PT-23 (migration 0006, 27.10.2026): replaces the free-text `estimate`; old free-text values were dropped |

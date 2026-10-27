@@ -274,7 +274,7 @@ async def seed_tasks(session: AsyncSession, w: World) -> None:
         w.project,
         w.pm.id,
         title="Fix bug",
-        priority="critical",
+        priority="highest",
         status="Blocked",
         blocked_reason="waiting",
         blocked_at=datetime.now(UTC),
@@ -314,7 +314,7 @@ async def test_list_filters_search_and_sort(
         "Fix bug",
         "Login page",
     ]
-    assert await titles(client, url, headers, priority=["critical", "high"], sort="priority") == [
+    assert await titles(client, url, headers, priority=["highest", "high"], sort="priority") == [
         "Fix bug",
         "Login page",
     ]
@@ -437,7 +437,7 @@ async def test_pm_edits_every_field(
             "version": 1,
             "title": "New title",
             "description": "More",
-            "priority": "critical",
+            "priority": "highest",
             "labels": ["a", "b"],
             "start_date": "2026-11-01",
             "due_date": "2026-11-09",
@@ -452,7 +452,7 @@ async def test_pm_edits_every_field(
     body = response.json()
     assert (body["title"], body["priority"], body["labels"]) == (
         "New title",
-        "critical",
+        "highest",
         ["a", "b"],
     )
     assert (body["estimate_value"], body["estimate_unit"]) == (4, "hours")
@@ -919,7 +919,7 @@ async def test_my_tasks_filters_and_sorting(
         world.project,
         world.pm.id,
         title="Soon",
-        priority="critical",
+        priority="highest",
         status="In progress",
         due_date=today + timedelta(days=2),
         assignee_id=world.dev.id,
@@ -979,3 +979,27 @@ async def test_reassignment_shows_up_in_my_tasks_and_for_the_pm(
     seen = (await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(world.pm))).json()
     assert seen["status"]["name"] == "Code review"
     assert seen["assignee"]["id"] == str(world.other_dev.id)
+
+
+async def test_five_priority_levels_sort_from_highest_to_lowest(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    for title, priority in (
+        ("L", "low"),
+        ("LL", "lowest"),
+        ("M", "medium"),
+        ("HH", "highest"),
+        ("H", "high"),
+    ):
+        await make_task(session, world.project, world.pm.id, title=title, priority=priority)
+    url, headers = tasks_url(world.project), as_user(world.pm)
+
+    assert await titles(client, url, headers, sort="priority") == ["HH", "H", "M", "L", "LL"]
+    assert await titles(client, url, headers, priority=["lowest"]) == ["LL"]
+
+    created = await client.post(url, headers=headers, json={"title": "New", "priority": "lowest"})
+    assert created.status_code == 201 and created.json()["priority"] == "lowest"
+    old_name = await client.post(
+        url, headers=headers, json={"title": "Old", "priority": "critical"}
+    )
+    assert old_name.status_code == 422
