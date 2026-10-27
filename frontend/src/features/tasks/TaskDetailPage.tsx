@@ -15,9 +15,12 @@ import {
   useProjectStatuses,
   useTask,
   useUpdateTask,
+  ESTIMATE_UNITS,
+  type EstimateUnit,
   type Task,
   type TaskPatch,
 } from './tasksApi';
+import { formatDate } from '@/features/projects/projectUi';
 import { RelatedTaskDrawer, relationLabels, type Relationship } from './RelatedTaskDrawer';
 import { AssigneeSelect } from './AssigneeSelect';
 import { DatePicker } from './DatePicker';
@@ -112,19 +115,21 @@ export function TaskDetailPage() {
     assignee_id: task.assignee?.id ?? null,
     start_date: task.start_date,
     due_date: task.due_date,
-    estimate: task.estimate ?? null,
-    progress: task.progress,
+    estimate_value: task.estimate_value,
+    estimate_unit: task.estimate_unit,
     blocked_reason: task.blocked_reason,
     labels: task.labels,
   };
   // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
   const isPm = user?.role === 'pm';
+  // A developer may also move the dates of a task they created for themselves.
+  const canSchedule = isPm || (task.assignee?.id === user?.id && task.reporter.id === user?.id);
   const changes: TaskPatch = {};
   for (const key of Object.keys(draft) as (keyof TaskPatch)[]) {
     // The backend rejects a developer's PATCH that carries PM-only fields, so Save sends just status fields for them.
-    if (!isPm && key !== 'status_id' && key !== 'blocked_reason') continue;
+    if (!isPm && key !== 'status_id' && key !== 'blocked_reason' && !(canSchedule && (key === 'start_date' || key === 'due_date'))) continue;
     const next =
-      key === 'estimate' ? draft.estimate?.trim() || null : key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
+      key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
     if (JSON.stringify(next) !== JSON.stringify(saved[key])) Object.assign(changes, { [key]: next });
   }
   const dirty = Object.keys(changes).length > 0;
@@ -156,6 +161,10 @@ export function TaskDetailPage() {
     assignee_id: draft.assignee_id !== undefined ? draft.assignee_id : (task.assignee?.id ?? null),
     start_date: draft.start_date !== undefined ? draft.start_date : task.start_date,
     due_date: draft.due_date !== undefined ? draft.due_date : task.due_date,
+  };
+  const estimate = {
+    value: draft.estimate_value !== undefined ? draft.estimate_value : task.estimate_value,
+    unit: draft.estimate_unit !== undefined ? draft.estimate_unit : task.estimate_unit,
   };
   const canStatus = isPm || task.assignee?.id === user?.id;
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
@@ -231,6 +240,7 @@ export function TaskDetailPage() {
               <input
                 ref={picker}
                 type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.md,.rtf,.odt,.ods,.png,.jpg,.jpeg,.gif,.webp,.mp3,.m4a,.wav,.ogg,.opus,.aac,.weba"
                 multiple
                 hidden
                 onChange={(e) => {
@@ -241,7 +251,7 @@ export function TaskDetailPage() {
                   files.upload.mutate(picked, {
                     onSuccess: () => setFilesChanged(true),
                     onError: (err) =>
-                      setFileError(err instanceof ApiError && err.status === 413 ? 'That file is too large.' : 'Could not upload the file.'),
+                      setFileError(err instanceof ApiError && err.status === 413 ? 'That file is too large (25 MB max).' : describeApiError(err, 'Could not upload the file.')),
                   });
                 }}
               />
@@ -355,22 +365,6 @@ export function TaskDetailPage() {
                 )}
               </Row>
             )}
-            {isPm && (
-            <Row label="Progress">
-              {canStatus ? (
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  aria-label="Progress (%)"
-                  value={draft.progress ?? task.progress}
-                  onChange={(e) => stage({ progress: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) })}
-                />
-              ) : (
-                <span className="td-static">{task.progress}%</span>
-              )}
-            </Row>
-            )}
             <Row label="Priority">
               <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
             </Row>
@@ -385,36 +379,63 @@ export function TaskDetailPage() {
               <span className="td-static">{task.reporter.name || '—'}</span>
             </Row>
             <Row label="Start date">
-              <DatePicker
-                label="Start date"
-                value={view.start_date}
-                max={view.due_date}
-                hint="Start date must be on or before due date."
-                error="Pick a date on or before the due date."
-                onChange={(start_date) => edit({ start_date })}
-              />
+              {canSchedule ? (              <DatePicker
+                  label="Start date"
+                  value={view.start_date}
+                  max={view.due_date}
+                  hint="Start date must be on or before due date."
+                  error="Pick a date on or before the due date."
+                  onChange={(start_date) => edit({ start_date })}
+                />
+              
+              ) : (
+                <span className="td-static">{view.start_date ? formatDate(view.start_date) : '—'}</span>
+              )}
             </Row>
             <Row label="Due date">
-              <DatePicker
-                label="Due date"
-                value={view.due_date}
-                min={view.start_date}
-                hint="Due date must be on or after start date."
-                error="Pick a date on or after the start date."
-                onChange={(due_date) => edit({ due_date })}
-              />
+              {canSchedule ? (              <DatePicker
+                  label="Due date"
+                  value={view.due_date}
+                  min={view.start_date}
+                  hint="Due date must be on or after start date."
+                  error="Pick a date on or after the start date."
+                  onChange={(due_date) => edit({ due_date })}
+                />
+              
+              ) : (
+                <span className="td-static">{view.due_date ? formatDate(view.due_date) : '—'}</span>
+              )}
             </Row>
             <Row label="Estimate">
               {isPm ? (
-                <input
-                  aria-label="Estimate"
-                  placeholder="e.g. 5 points"
-                  maxLength={50}
-                  value={draft.estimate !== undefined ? (draft.estimate ?? '') : (task.estimate ?? '')}
-                  onChange={(e) => stage({ estimate: e.target.value })}
-                />
+                <span className="td-estimate">
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    aria-label="Estimate amount"
+                    value={estimate.value ?? ''}
+                    onChange={(e) => {
+                      const n = Math.floor(Number(e.target.value));
+                      // Amount and unit travel together: clearing one clears the other.
+                      stage(e.target.value === '' || n < 1 ? { estimate_value: null, estimate_unit: null } : { estimate_value: n, estimate_unit: estimate.unit ?? 'hours' });
+                    }}
+                  />
+                  <select
+                    aria-label="Estimate unit"
+                    value={estimate.unit ?? 'hours'}
+                    disabled={estimate.value == null}
+                    onChange={(e) => stage({ estimate_unit: e.target.value as EstimateUnit })}
+                  >
+                    {ESTIMATE_UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </span>
               ) : (
-                <span className="td-static">{task.estimate || '—'}</span>
+                <span className="td-static">{task.estimate_value != null ? `${task.estimate_value} ${task.estimate_unit}` : '—'}</span>
               )}
             </Row>
             <Row label="Labels">

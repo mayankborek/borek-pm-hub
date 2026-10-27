@@ -4,6 +4,9 @@ import { env } from '@/shared/config/env';
 import { qs } from '@/features/projects/projectsApi';
 import type { Page } from '@/features/projects/types';
 
+/** Mirrors backend EstimateUnit (app/common/enums.py). */
+export const ESTIMATE_UNITS = ['minutes', 'hours', 'weeks'] as const;
+export type EstimateUnit = (typeof ESTIMATE_UNITS)[number];
 export type StatusCategory = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
 export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
 
@@ -18,15 +21,14 @@ export interface Task {
   id: string;
   key: string;
   project_id: string;
-  project_code: string;
   project_name: string;
   title: string;
   status: { id: string; name: string; category: StatusCategory };
   priority: TaskPriority;
   labels: string[];
   due_date: string | null;
-  estimate?: string | null;
-  progress: number;
+  estimate_value: number | null;
+  estimate_unit: EstimateUnit | null;
   assignee: UserBrief | null;
   blocked_at?: string | null;
   version: number;
@@ -119,9 +121,9 @@ export type TaskPatch = Partial<{
   labels: string[];
   start_date: string | null;
   due_date: string | null;
-  estimate: string | null;
+  estimate_value: number | null;
+  estimate_unit: EstimateUnit | null;
   assignee_id: string | null;
-  progress: number;
   blocked_reason: string | null;
 }>;
 
@@ -180,6 +182,19 @@ export const useUpdateTask = (task?: TaskDetail) => {
       void qc.invalidateQueries({ queryKey: ['projects', 'members'] }); // assigning adds the person to the project
       return qc.invalidateQueries({ queryKey: taskKeys.all });
     },
+  });
+};
+
+/** Moves a board card to another status (PATCH status_id with the card's version); a blocked status needs a reason. */
+export const useMoveTask = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ task, statusId, reason }: { task: Task; statusId: string; reason?: string }) =>
+      api<TaskDetail>(`/tasks/${task.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status_id: statusId, version: task.version, ...(reason ? { blocked_reason: reason } : {}) }),
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });
 };
 

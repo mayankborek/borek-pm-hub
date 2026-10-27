@@ -8,6 +8,7 @@ import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
 import {
   useProjectStatuses,
   useStatusActions,
+  useMoveTask,
   useProjectTasks,
   type StatusCategory,
   type Task,
@@ -33,7 +34,6 @@ const PRIORITY: Record<TaskPriority, { label: string; icon: string }> = {
 /** Named workflow states keep the design's heading colours; other statuses use their category colour. */
 const NAME_TONE: Record<string, string> = { 'code review': 'review', testing: 'testing' };
 
-const STATUS_GLYPH: Record<StatusCategory, string> = { backlog: '○', todo: '○', in_progress: '◐', blocked: '⊘', done: '●' };
 const shortDate = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -55,8 +55,12 @@ export function ProjectBoardPage() {
   const [actionError, setActionError] = useState('');
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [dragTask, setDragTask] = useState<Task | null>(null);
   const { user } = useAuth();
   const isPm = user?.role === 'pm';
+  const moveTask = useMoveTask();
+  // Mirrors the backend: a PM moves any card, a developer only the tasks assigned to them.
+  const canMove = (t: Task) => isPm || t.assignee?.id === user?.id;
   const actions = useStatusActions(project.id);
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
   const { data: statuses } = useProjectStatuses(project.id);
@@ -96,6 +100,18 @@ export function ProjectBoardPage() {
   };
   const move = (index: number, dir: -1 | 1) => reorder(index, index + dir);
 
+  /** Moves a card into a column; a blocked column asks for the reason the backend requires. */
+  const moveCard = (task: Task, col: Column) => {
+    if (task.status.id === col.id || !canMove(task)) return;
+    let reason: string | undefined;
+    if (col.category === 'blocked') {
+      reason = window.prompt(`Why is ${task.key} blocked?`)?.trim();
+      if (!reason) return;
+    }
+    setActionError('');
+    moveTask.mutate({ task, statusId: col.id, reason }, { onError: fail });
+  };
+
   /** Tasks of a deleted status move to the neighbouring column (previous one, or next for the first). */
   const remove = (index: number) => {
     const col = columns[index];
@@ -128,16 +144,18 @@ export function ProjectBoardPage() {
             {columns.map((col, i) => (
               <section
                 key={col.id}
-                className={`kcol tone-${NAME_TONE[col.name.toLowerCase()] ?? col.category}${dragOver === i && dragFrom !== i ? ' drop' : ''}`}
+                className={`kcol tone-${NAME_TONE[col.name.toLowerCase()] ?? col.category}${dragOver === i && dragFrom !== i && (dragFrom !== null || dragTask?.status.id !== col.id) ? ' drop' : ''}`}
                 aria-label={col.name}
                 onDragOver={(e) => {
-                  if (dragFrom === null) return;
+                  if (dragFrom === null && !dragTask) return;
                   e.preventDefault();
                   setDragOver(i);
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
                   if (dragFrom !== null) reorder(dragFrom, i);
+                  else if (dragTask) moveCard(dragTask, col);
+                  setDragTask(null);
                   setDragFrom(null);
                   setDragOver(null);
                 }}
@@ -193,10 +211,20 @@ export function ProjectBoardPage() {
                 <ul className="kcol-list">
                   {col.tasks.map((t) => (
                     <li key={t.id}>
-                      <Link className="kcard" to={paths.task(t.id)} aria-label={`${t.key} · ${t.title}`}>
-                        <span className={`kcard-status st-${t.status.category}`} role="img" aria-label={`Status: ${t.status.name}`} title={t.status.name}>
-                          {STATUS_GLYPH[t.status.category]}
-                        </span>
+                      <Link
+                        className="kcard"
+                        to={paths.task(t.id)}
+                        aria-label={`${t.key} · ${t.title}`}
+                        draggable={canMove(t)}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDragTask(t);
+                        }}
+                        onDragEnd={() => {
+                          setDragTask(null);
+                          setDragOver(null);
+                        }}
+                      >
                         <span className="kcard-title">{t.title}</span>
                         <span className="kcard-key">{t.key}</span>
                         <span className="kcard-meta">

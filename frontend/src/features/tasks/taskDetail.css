@@ -163,3 +163,5 @@
 .td-dev .dp-btn { background-image: url(./assets/select-calendar.svg); }
 .td-dev .ps-btn .pi { font: inherit; }
 .td-dev .td-desc { border-color: var(--field); background: var(--surface); box-sizing: border-box; padding: 12px; }
+.td-estimate { display: flex; gap: 8px; align-items: center; }
+.td-estimate input { width: 90px; }
