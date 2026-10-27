@@ -45,6 +45,7 @@ async def _project_for(
     action: Action,
     *,
     assignee_id: uuid.UUID | None = None,
+    creator_id: uuid.UUID | None = None,
     writable: bool = False,
 ) -> Project:
     """Load the project and apply `action`: developers who are not members get 404."""
@@ -58,6 +59,7 @@ async def _project_for(
             is_member=role is not None,
             is_project_lead=role == ProjectRole.PROJECT_LEAD.value,
             assignee_id=assignee_id,
+            creator_id=creator_id,
         ),
     )
     if project.archived_at is not None:
@@ -73,7 +75,13 @@ async def _task_for(
 ) -> Task:
     task = await service.get_task(session, task_id)
     await _project_for(
-        session, user, task.project_id, action, assignee_id=task.assignee_id, writable=writable
+        session,
+        user,
+        task.project_id,
+        action,
+        assignee_id=task.assignee_id,
+        creator_id=task.created_by,
+        writable=writable,
     )
     if task.archived_at is not None:
         if user.global_role != GlobalRole.PM:
@@ -273,8 +281,10 @@ async def update_task(
 ) -> TaskOut:
     task = await _task_for(session, user, task_id, Action.TASK_VIEW, writable=True)
     changed = body.model_fields_set - {"version"}
-    if changed & service.DETAIL_FIELDS:
+    if changed & (service.DETAIL_FIELDS - service.SCHEDULE_FIELDS):
         await _task_for(session, user, task_id, Action.TASK_EDIT_DETAILS, writable=True)
+    if changed & service.SCHEDULE_FIELDS:
+        await _task_for(session, user, task_id, Action.TASK_EDIT_SCHEDULE, writable=True)
     if changed & service.STATUS_FIELDS:
         await _task_for(session, user, task_id, Action.TASK_CHANGE_STATUS, writable=True)
     return await service.update_task(session, task, body, user)

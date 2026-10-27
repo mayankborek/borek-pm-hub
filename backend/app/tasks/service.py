@@ -42,6 +42,8 @@ DETAIL_FIELDS = frozenset(
         "assignee_id",
     }
 )
+# Part of DETAIL_FIELDS, but also editable by a developer on a task they created for themselves.
+SCHEDULE_FIELDS = frozenset({"start_date", "due_date"})
 STATUS_FIELDS = frozenset({"status_id", "progress", "blocked_reason"})
 _NOT_NULL_FIELDS = ("title", "priority", "labels", "progress", "status_id")
 

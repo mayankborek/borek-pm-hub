@@ -101,7 +101,7 @@ async def upload_file(
     session: SessionDep,
     file: Annotated[UploadFile, File(description="multipart/form-data field 'file'")],
 ) -> AttachmentOut:
-    """Upload a file (size limit MAX_UPLOAD_MB, default 10 MB)."""
+    """Upload a file (size limit MAX_UPLOAD_MB, default 25 MB)."""
     task = await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
     return await details.add_file(session, task, user, file)
 

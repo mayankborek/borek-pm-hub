@@ -615,8 +615,7 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
         {"description": "x"},
         {"priority": "low"},
         {"labels": ["x"]},
-        {"due_date": "2026-12-01"},
-        {"start_date": "2026-12-01"},
+        {"estimate": "5 points"},
         {"assignee_id": str(world.other_dev.id)},
         {"assignee_id": None},
         {"title": "x", "progress": 10},  # mixed: the PM-only part is enough to refuse
@@ -628,6 +627,33 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
     assert (await client.delete(f"/api/v1/tasks/{own.id}", headers=headers)).status_code == 403
     await session.refresh(own)
     assert own.version == 1 and own.archived_at is None
+
+
+async def test_developer_edits_dates_only_of_tasks_created_for_themselves(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    mine = await make_task(session, world.project, world.dev.id, assignee_id=world.dev.id)
+    by_pm = await make_task(session, world.project, world.pm.id, assignee_id=world.dev.id)
+    unassigned = await make_task(session, world.project, world.dev.id)
+    headers = as_user(world.dev)
+    dates = {"start_date": "2026-12-01", "due_date": "2026-12-31"}
+
+    ok = await client.patch(
+        f"/api/v1/tasks/{mine.id}", headers=headers, json={"version": 1, **dates}
+    )
+    assert ok.status_code == 200 and ok.json()["due_date"] == "2026-12-31"
+
+    for task in (by_pm, unassigned):
+        response = await client.patch(
+            f"/api/v1/tasks/{task.id}", headers=headers, json={"version": 1, **dates}
+        )
+        assert response.status_code == 403
+    mixed = await client.patch(
+        f"/api/v1/tasks/{mine.id}",
+        headers=headers,
+        json={"version": 2, "due_date": "2026-12-30", "title": "x"},
+    )
+    assert mixed.status_code == 403  # the title is still PM-only
 
 
 async def test_archived_task_cannot_be_edited(

@@ -23,7 +23,8 @@ class Action(StrEnum):
     MEMBER_MANAGE = "member:manage"
     STATUS_MANAGE = "status:manage"  # add, rename, reorder, delete a project's statuses
     TASK_CREATE = "task:create"
-    TASK_EDIT_DETAILS = "task:edit_details"  # title, description, priority, due date
+    TASK_EDIT_DETAILS = "task:edit_details"  # title, description, priority, labels, estimate
+    TASK_EDIT_SCHEDULE = "task:edit_schedule"  # start and due date
     TASK_ASSIGN = "task:assign"
     TASK_CHANGE_STATUS = "task:change_status"  # also covers progress and blocked_reason
     TASK_VIEW = "task:view"
@@ -42,6 +43,7 @@ class Resource:
     is_member: bool = False
     is_project_lead: bool = False
     assignee_id: uuid.UUID | None = None
+    creator_id: uuid.UUID | None = None
 
 
 _PM_ONLY = frozenset(
@@ -81,6 +83,13 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
     if action is Action.TASK_CHANGE_STATUS:
         # Only on tasks assigned to them (the allowed transitions are checked by the workflow).
         return resource.is_member and resource.assignee_id == user.id
+    if action is Action.TASK_EDIT_SCHEDULE:
+        # Dates of a task the developer created for themselves (they are creator and assignee).
+        return (
+            resource.is_member
+            and resource.assignee_id == user.id
+            and resource.creator_id == user.id
+        )
     return False  # everything in _PM_ONLY and anything unknown
 
 
