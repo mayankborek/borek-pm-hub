@@ -251,6 +251,9 @@ function FilterMenu({
   return (
     <div className="filter-menu" ref={ref}>
       <button type="button" className="input filter-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+          <path d="M2 4h12M4.5 8h7M7 12h2" />
+        </svg>
         {t('Filter')}
         {active > 0 && <span className="filter-count">{active}</span>}
         <span aria-hidden="true">▾</span>

@@ -140,7 +140,7 @@ export function ProjectBoardPage() {
 
   return (
     <>
-      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} />
+      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
       {columns.length === 0 && !isPm ? (
         <EmptyState
           title={filtered ? 'No matching tasks' : 'No tasks on the board'}
