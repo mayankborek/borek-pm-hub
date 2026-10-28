@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { formatDate } from '@/features/projects/projectUi';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import type { StatusCategory, Task, TaskFilter, TaskPriority, UserBrief } from './tasksApi';
+import type { StatusCategory, Task, TaskFilter, TaskPriority, TaskStatusOption, UserBrief } from './tasksApi';
 import { PRIORITY_OPTIONS } from './PrioritySelect';
 import './tasks.css';
 
@@ -213,11 +213,28 @@ const CATEGORY_COLOR: Record<StatusCategory, string> = {
 };
 
 /** "Filter" button and popover (Figma 603:8883): Priority and Status checkbox groups; picking an option again clears it. */
-function FilterMenu({ filter, onChange, onClear }: { filter: TaskFilter; onChange: (f: TaskFilter) => void; onClear?: () => void }) {
+const STATUS_ORDER = ['to do', 'in progress', 'code review', 'blocked', 'testing', 'done'];
+
+function FilterMenu({
+  filter,
+  onChange,
+  onClear,
+  statuses,
+}: {
+  filter: TaskFilter;
+  onChange: (f: TaskFilter) => void;
+  onClear?: () => void;
+  statuses: TaskStatusOption[];
+}) {
   const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const active = (filter.priority ? 1 : 0) + (filter.category ? 1 : 0);
+  const active = (filter.priority ? 1 : 0) + (filter.statusId ? 1 : 0);
+  const rank = (name: string) => {
+    const i = STATUS_ORDER.indexOf(name.trim().toLowerCase());
+    return i < 0 ? STATUS_ORDER.length : i;
+  };
+  const options = statuses.filter((s) => s.category !== 'backlog').sort((a, b) => rank(a.name) - rank(b.name));
 
   useEffect(() => {
     if (!open) return;
@@ -243,7 +260,7 @@ function FilterMenu({ filter, onChange, onClear }: { filter: TaskFilter; onChang
           <div className="filter-head">
             <strong>{t('Filters')}</strong>
             {onClear && active > 0 && (
-              <button type="button" className="link-btn" onClick={() => onChange({ ...filter, category: '', priority: '' })}>
+              <button type="button" className="link-btn" onClick={() => onChange({ ...filter, statusId: '', priority: '' })}>
                 {t('Clear all')}
               </button>
             )}
@@ -263,10 +280,10 @@ function FilterMenu({ filter, onChange, onClear }: { filter: TaskFilter; onChang
           </div>
           <div className="filter-group" role="group" aria-label={t('Status')}>
             <h4>{t('Status')}</h4>
-            {(Object.keys(CATEGORY_LABEL) as StatusCategory[]).map((c) => (
-              <label key={c} className="filter-opt" style={{ color: CATEGORY_COLOR[c] }}>
-                <input type="checkbox" checked={filter.category === c} onChange={() => onChange({ ...filter, category: filter.category === c ? '' : c })} />
-                {t(CATEGORY_LABEL[c])}
+            {options.map((s) => (
+              <label key={s.id} className="filter-opt" style={{ color: CATEGORY_COLOR[s.category] }}>
+                <input type="checkbox" checked={filter.statusId === s.id} onChange={() => onChange({ ...filter, statusId: filter.statusId === s.id ? '' : s.id })} />
+                {t(s.name)}
               </label>
             ))}
           </div>
@@ -283,6 +300,7 @@ export function TaskFilters({
   extra,
   onClear,
   combined,
+  statuses,
 }: {
   filter: TaskFilter;
   onChange: (f: TaskFilter) => void;
@@ -291,6 +309,8 @@ export function TaskFilters({
   onClear?: () => void;
   /** One "Filter" dropdown holding Priority and Status, instead of two selects. */
   combined?: boolean;
+  /** The project's statuses, listed in the combined Filter menu. */
+  statuses?: TaskStatusOption[];
 }) {
   const { t } = usePrefs();
   const assignees = useSeenAssignees(tasks);
@@ -324,7 +344,7 @@ export function TaskFilters({
         </div>
       )}
       {combined ? (
-        <FilterMenu filter={filter} onChange={onChange} onClear={onClear} />
+        <FilterMenu filter={filter} onChange={onChange} onClear={onClear} statuses={statuses ?? []} />
       ) : (
         <>
         <select
@@ -355,7 +375,7 @@ export function TaskFilters({
         </select>
         </>
       )}
-      {onClear && (filter.q.trim() || filter.category || filter.priority || filter.assigneeId) && (
+      {onClear && (filter.q.trim() || filter.category || filter.statusId || filter.priority || filter.assigneeId) && (
         <button type="button" className="link-btn" onClick={onClear}>
           {t('Clear all')}
         </button>
