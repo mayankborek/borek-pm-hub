@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError, getApiUser } from '@/shared/api/client';
+import { api, ApiError, applyAuth } from '@/shared/api/client';
 import { env } from '@/shared/config/env';
 import { qs } from '@/features/projects/projectsApi';
 import type { Page } from '@/features/projects/types';
@@ -346,8 +346,7 @@ export const useAddComment = (taskId: string) => {
 /** Downloads need the auth header, so fetch the file as a blob and save it. */
 export async function downloadAttachment(a: Attachment) {
   const headers = new Headers();
-  const id = getApiUser();
-  if (id) headers.set('X-Dev-User-Id', id);
+  applyAuth(headers);
   const res = await fetch(`${env.apiBaseUrl}/tasks/${a.task_id}/attachments/${a.id}/download`, { headers });
   if (!res.ok) throw new ApiError(res.status, res.statusText);
   const url = URL.createObjectURL(await res.blob());

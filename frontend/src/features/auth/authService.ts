@@ -1,4 +1,4 @@
-import { api } from '@/shared/api/client';
+import { api, ApiError, setApiToken } from '@/shared/api/client';
 import type { Role, User } from './types';
 
 export class NoAccessError extends Error {}
@@ -14,11 +14,25 @@ interface UserOut {
 
 const toUser = (u: UserOut): User => ({ id: u.id, name: u.name, email: u.email, role: u.role as Role });
 
+interface LoginOut {
+  access_token: string;
+  user: UserOut;
+}
+
 /**
- * Phase 1 (AUTH_MODE=dev): the backend lists seeded users and trusts X-Dev-User-Id.
- * The password is not checked in this mode. Entra ID sign-in plugs in behind the same two functions.
+ * AUTH_MODE=local: POST /auth/login returns a bearer token.
+ * AUTH_MODE=dev (login answers 404): the backend lists seeded users and trusts X-Dev-User-Id;
+ * the password is not checked. Entra ID sign-in plugs in behind the same two functions.
  */
-export async function signInWithPassword(email: string, _password: string): Promise<User> {
+export async function signInWithPassword(email: string, password: string): Promise<User> {
+  try {
+    const res = await api<LoginOut>('/auth/login', { method: 'POST', body: JSON.stringify({ email: email.trim(), password }) });
+    setApiToken(res.access_token);
+    return toUser(res.user);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) throw new InvalidCredentialsError();
+    if (!(e instanceof ApiError) || e.status !== 404) throw e;
+  }
   const users = await api<UserOut[]>('/auth/dev-users');
   const found = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
   if (!found) throw new NoAccessError();

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ApiError, setApiUser, setUnauthorizedHandler } from '@/shared/api/client';
+import { ApiError, setApiToken, setApiUser, setUnauthorizedHandler } from '@/shared/api/client';
 import { fetchMe } from './authService';
 import type { User } from './types';
 
@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
     setApiUser(null);
+    setApiToken(null);
     setUser(null);
     qc.clear();
   }, [qc]);

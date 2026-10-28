@@ -100,8 +100,11 @@ export function ProjectOverviewPage() {
 
     // Workflow order from the project's statuses; any status seen on a task but missing from that list is appended.
     const slices = new Map<string, { name: string; color: string; count: number }>();
-    (statuses ?? []).forEach((s) => slices.set(s.name, { name: s.name, color: colorOf(s.name, s.category), count: 0 }));
-    tasks.forEach((t) => {
+    // Backlog tasks are not part of the status overview.
+    (statuses ?? [])
+      .filter((s) => s.category !== 'backlog')
+      .forEach((s) => slices.set(s.name, { name: s.name, color: colorOf(s.name, s.category), count: 0 }));
+    tasks.filter((t) => t.status.category !== 'backlog').forEach((t) => {
       const s = slices.get(t.status.name) ?? { name: t.status.name, color: colorOf(t.status.name, t.status.category), count: 0 };
       s.count += 1;
       slices.set(t.status.name, s);
@@ -115,6 +118,7 @@ export function ProjectOverviewPage() {
       percent: total ? Math.round((done / total) * 100) : 0,
       due: dueThisWeek(tasks),
       slices: [...slices.values()],
+      statusTotal: [...slices.values()].reduce((n, s) => n + s.count, 0),
       byPriority,
       maxPriority: Math.max(5, ...byPriority.map((p) => p.count)),
     };
@@ -148,9 +152,9 @@ export function ProjectOverviewPage() {
       <div className="ov-charts">
         <section className="ov-card" aria-label={t('Status overview')}>
           <h3>{t('Status overview')}</h3>
-          <p className="ov-desc">{t('A snapshot of all {n} tasks in this project.', { n: stats.total })}</p>
+          <p className="ov-desc">{t('A snapshot of all {n} tasks in this project.', { n: stats.statusTotal })}</p>
           <div className="ov-status">
-            <Donut slices={stats.slices} total={stats.total} />
+            <Donut slices={stats.slices} total={stats.statusTotal} />
             <ul className="legend">
               {stats.slices.map((s) => (
                 <li key={s.name}>

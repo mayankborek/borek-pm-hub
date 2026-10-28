@@ -235,7 +235,6 @@ export function ProjectBoardPage() {
                         }}
                       >
                         <span className="kcard-title">{t.title}</span>
-                        <span className="kcard-key">{t.key}</span>
                         <span className="kcard-meta">
                           {t.assignee ? (
                             <Avatar user={t.assignee} round />
