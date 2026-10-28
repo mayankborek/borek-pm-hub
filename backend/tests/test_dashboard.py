@@ -201,3 +201,78 @@ async def test_developer_never_sees_other_projects_in_the_dashboard(
     other = (await client.get("/api/v1/dashboard/me", headers=as_user(world.other_dev))).json()
     assert [p["code"] for p in other["projects"]] == ["ALP", "BET"]
     assert other["summary"]["total"] == 2
+
+
+async def test_cancelled_projects_are_left_out_of_dashboards_and_cross_project_lists(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    world.beta.status = "cancelled"
+    await session.flush()
+    pm = as_user(world.pm)
+
+    body = (await client.get("/api/v1/dashboard", headers=pm)).json()
+    assert [p["code"] for p in body["projects"]] == ["ALP"]
+    assert body["projects_total"] == 1 and body["summary"]["total"] == 4
+
+    mine = (await client.get("/api/v1/dashboard/me", headers=as_user(world.other_dev))).json()
+    assert [p["code"] for p in mine["projects"]] == ["ALP"]
+    assert mine["summary"]["total"] == 1  # "Not started"; the Beta task is hidden
+
+    titles = [t["title"] for t in (await client.get("/api/v1/tasks", headers=pm)).json()["items"]]
+    assert "Beta work" not in titles
+    my_tasks = await client.get("/api/v1/me/tasks", headers=as_user(world.other_dev))
+    assert [t["title"] for t in my_tasks.json()["items"]] == ["Not started"]
+
+    inside = await client.get(f"/api/v1/projects/{world.beta.id}/tasks", headers=pm)
+    assert [t["title"] for t in inside.json()["items"]] == ["Beta work"]
+    listed = await client.get("/api/v1/projects", headers=pm)
+    assert "BET" in [p["code"] for p in listed.json()["items"]]
+
+
+async def test_reopened_project_returns_to_the_dashboard(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    world.beta.status = "cancelled"
+    await session.flush()
+    world.beta.status = "active"
+    await session.flush()
+    body = (await client.get("/api/v1/dashboard", headers=as_user(world.pm))).json()
+    assert [p["code"] for p in body["projects"]] == ["ALP", "BET"]
+    assert body["summary"]["total"] == 5
+
+
+async def test_developer_with_only_completed_tasks_still_sees_their_history(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    finisher = await make_user(session)
+    await join(session, world.alpha, finisher)
+    for title in ("Shipped login", "Shipped search"):
+        await make_task(
+            session, world.alpha, world.pm.id, title=title, status="Done",
+            completed_at=datetime.now(UTC), assignee_id=finisher.id,
+        )  # fmt: skip
+    dev = as_user(finisher)
+
+    dash = (await client.get("/api/v1/dashboard/me", headers=dev)).json()
+    assert dash["summary"] == {
+        "total": 2,
+        "completed": 2,
+        "in_progress": 0,
+        "blocked": 0,
+        "overdue": 0,
+        "completion_percent": 100,
+    }
+    assert dash["blocked"]["items"] == [] and dash["overdue"]["items"] == []
+
+    everything = (await client.get("/api/v1/me/tasks", headers=dev)).json()
+    assert everything["total"] == 2
+    assert {t["title"] for t in everything["items"]} == {"Shipped login", "Shipped search"}
+
+    done = await client.get("/api/v1/me/tasks", headers=dev, params={"category": "done"})
+    assert done.json()["total"] == 2
+    pending = await client.get(
+        "/api/v1/me/tasks",
+        headers=dev,
+        params=[("category", "todo"), ("category", "in_progress"), ("category", "blocked")],
+    )
+    assert pending.status_code == 200 and pending.json()["total"] == 0

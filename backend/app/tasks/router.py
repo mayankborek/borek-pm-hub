@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import CurrentUser
 from app.auth.permissions import Action, Resource, require
 from app.common.enums import GlobalRole, ProjectRole, StatusCategory, TaskPriority
+from app.common.validation import PageParam, PageSizeParam
 from app.core.database import SessionDep
 from app.core.errors import AppError
 from app.projects import service as project_service
@@ -94,9 +95,9 @@ async def _task_for(
 def task_filters(
     user: CurrentUser,
     q: Annotated[str | None, Query(max_length=100, description="Search title or key")] = None,
-    status_id: Annotated[list[uuid.UUID] | None, Query()] = None,
-    category: Annotated[list[StatusCategory] | None, Query()] = None,
-    priority: Annotated[list[TaskPriority] | None, Query()] = None,
+    status_id: Annotated[list[uuid.UUID] | None, Query(max_length=50)] = None,
+    category: Annotated[list[StatusCategory] | None, Query(max_length=10)] = None,
+    priority: Annotated[list[TaskPriority] | None, Query(max_length=10)] = None,
     assignee_id: uuid.UUID | None = None,
     unassigned: bool = False,
     label: Annotated[str | None, Query(max_length=30)] = None,
@@ -105,6 +106,19 @@ def task_filters(
     overdue: Annotated[bool, Query(description="Past due and not in a done status")] = False,
     include_archived: Annotated[bool, Query(description="PM only; ignored for developers")] = False,
 ) -> service.TaskFilters:
+    if due_before and due_after and due_after >= due_before:
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "The request is not valid.",
+            [
+                {
+                    "field": "due_after",
+                    "issue": "after_due_before",
+                    "message": "due_after must be before due_before.",
+                }
+            ],
+        )
     return service.TaskFilters(
         q=q,
         status_ids=status_id,
@@ -112,7 +126,7 @@ def task_filters(
         priorities=priority,
         assignee_id=assignee_id,
         unassigned=unassigned,
-        label=label,
+        label=label.strip() if label else None,
         due_before=due_before,
         due_after=due_after,
         overdue=overdue,
@@ -209,8 +223,8 @@ async def list_project_tasks(
         Literal["list", "board"], Query(description="board = grouped by status")
     ] = "list",
     sort: TaskSort = "-created_at",
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    page: PageParam = 1,
+    page_size: PageSizeParam = 50,
 ) -> TaskListOut | BoardOut:
     await _project_for(session, user, project_id, Action.TASK_VIEW)
     filters.project_id = project_id
@@ -232,8 +246,8 @@ async def list_tasks(
     filters: Filters,
     project_id: uuid.UUID | None = None,
     sort: TaskSort = "-created_at",
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    page: PageParam = 1,
+    page_size: PageSizeParam = 50,
 ) -> TaskListOut:
     """PMs see tasks of every active project, developers those of their projects."""
     filters.project_id = project_id
@@ -251,8 +265,8 @@ async def my_tasks(
     filters: Filters,
     project_id: uuid.UUID | None = None,
     sort: TaskSort = "due_date",
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    page: PageParam = 1,
+    page_size: PageSizeParam = 50,
 ) -> TaskListOut:
     """My Work (F07): tasks assigned to the signed-in user across their active projects."""
     require(user, Action.MY_TASKS)
@@ -281,8 +295,11 @@ async def update_task(
 ) -> TaskOut:
     task = await _task_for(session, user, task_id, Action.TASK_VIEW, writable=True)
     changed = body.model_fields_set - {"version"}
-    if changed & (service.DETAIL_FIELDS - service.SCHEDULE_FIELDS):
+    pm_only = service.DETAIL_FIELDS - service.SCHEDULE_FIELDS - service.PRIORITY_FIELDS
+    if changed & pm_only:
         await _task_for(session, user, task_id, Action.TASK_EDIT_DETAILS, writable=True)
+    if changed & service.PRIORITY_FIELDS:
+        await _task_for(session, user, task_id, Action.TASK_EDIT_PRIORITY, writable=True)
     if changed & service.SCHEDULE_FIELDS:
         await _task_for(session, user, task_id, Action.TASK_EDIT_SCHEDULE, writable=True)
     if changed & service.STATUS_FIELDS:

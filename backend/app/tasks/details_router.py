@@ -3,12 +3,13 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import FileResponse
 
 from app.auth.dependencies import CurrentUser
 from app.auth.permissions import Action
 from app.common.enums import AttachmentKind
+from app.common.validation import PageParam, PageSizeParam
 from app.core import storage
 from app.core.database import SessionDep
 from app.core.errors import AppError
@@ -33,8 +34,8 @@ async def list_activity(
     task_id: uuid.UUID,
     user: CurrentUser,
     session: SessionDep,
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    page: PageParam = 1,
+    page_size: PageSizeParam = 50,
 ) -> ActivityListOut:
     """Who changed what and when, newest first."""
     await _task_for(session, user, task_id, Action.TASK_VIEW)

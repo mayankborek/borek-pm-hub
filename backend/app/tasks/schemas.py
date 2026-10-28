@@ -7,19 +7,25 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.common.enums import EstimateUnit, StatusCategory, TaskPriority
+from app.common.validation import check_date, clean_optional_text, clean_text
 
 MAX_LABELS = 10
+MAX_LABEL_INPUT = 50  # raw list size accepted before de-duplication
 MAX_ESTIMATE = 1_000_000
+MAX_DESCRIPTION = 20_000
+MAX_BLOCKED_REASON = 1_000
+MAX_ESTIMATE_BY_UNIT = {
+    EstimateUnit.MINUTES: 100_000,
+    EstimateUnit.HOURS: 10_000,
+    EstimateUnit.WEEKS: 520,
+}
 
 
 # --- statuses ---------------------------------------------------------------------------------
 
 
 def _clean_name(value: str) -> str:
-    value = value.strip()
-    if not value:
-        raise ValueError("Name is required.")
-    return value
+    return clean_text(value, label="Name")
 
 
 class StatusCreate(BaseModel):
@@ -54,7 +60,7 @@ class StatusOrder(BaseModel):
 class StatusBrief(BaseModel):
     id: uuid.UUID
     name: str
-    category: str
+    category: StatusCategory
 
 
 class StatusOut(StatusBrief):
@@ -66,10 +72,12 @@ class StatusOut(StatusBrief):
 
 
 def _clean_labels(values: list[str]) -> list[str]:
+    if len(values) > MAX_LABEL_INPUT:
+        raise ValueError(f"A task can have at most {MAX_LABELS} labels.")
     cleaned: list[str] = []
     seen: set[str] = set()
     for value in values:
-        label = value.strip()
+        label = clean_text(value, label="A label") if value.strip() else ""
         if not label:
             raise ValueError("Labels must not be empty.")
         if len(label) > 30:
@@ -83,10 +91,32 @@ def _clean_labels(values: list[str]) -> list[str]:
 
 
 def _clean_title(value: str) -> str:
-    value = value.strip()
-    if not value:
-        raise ValueError("Title is required.")
-    return value
+    return clean_text(value, label="Title")
+
+
+def _clean_description(value: str | None) -> str | None:
+    return clean_optional_text(value, max_length=MAX_DESCRIPTION, label="Description")
+
+
+def _clean_reason(value: str | None) -> str | None:
+    return clean_optional_text(value, max_length=MAX_BLOCKED_REASON, label="Blocked reason")
+
+
+def _check_estimate(value: int | None, unit: EstimateUnit | None) -> None:
+    if (value is None) != (unit is None):
+        raise ValueError("estimate_value and estimate_unit must be sent together.")
+    if value is not None and unit is not None and value > MAX_ESTIMATE_BY_UNIT[unit]:
+        raise ValueError(
+            f"estimate_value can be at most {MAX_ESTIMATE_BY_UNIT[unit]} {unit.value}."
+        )
+
+
+def _check_start(value: date | None) -> date | None:
+    return check_date(value, "start_date")
+
+
+def _check_due(value: date | None) -> date | None:
+    return check_date(value, "due_date")
 
 
 class TaskCreate(BaseModel):
@@ -114,13 +144,16 @@ class TaskCreate(BaseModel):
 
     _strip_title = field_validator("title")(_clean_title)
     _clean = field_validator("labels")(_clean_labels)
+    _clean_desc = field_validator("description")(_clean_description)
+    _clean_blocked = field_validator("blocked_reason")(_clean_reason)
+    _range_start = field_validator("start_date")(_check_start)
+    _range_due = field_validator("due_date")(_check_due)
 
     @model_validator(mode="after")
     def _check_dates(self) -> Self:
         if self.start_date and self.due_date and self.due_date < self.start_date:
             raise ValueError("due_date must not be before start_date.")
-        if (self.estimate_value is None) != (self.estimate_unit is None):
-            raise ValueError("estimate_value and estimate_unit must be sent together.")
+        _check_estimate(self.estimate_value, self.estimate_unit)
         return self
 
 
@@ -156,6 +189,26 @@ class TaskUpdate(BaseModel):
     def _clean(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else _clean_labels(value)
 
+    @field_validator("title", "priority", "labels", "status_id", mode="before")
+    @classmethod
+    def _not_null(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("This field cannot be empty.")
+        return value
+
+    _clean_desc = field_validator("description")(_clean_description)
+    _clean_blocked = field_validator("blocked_reason")(_clean_reason)
+    _range_start = field_validator("start_date")(_check_start)
+    _range_due = field_validator("due_date")(_check_due)
+
+    @model_validator(mode="after")
+    def _check_pair(self) -> Self:
+        if self.start_date and self.due_date and self.due_date < self.start_date:
+            raise ValueError("due_date must not be before start_date.")
+        if self.estimate_value is not None and self.estimate_unit is not None:
+            _check_estimate(self.estimate_value, self.estimate_unit)
+        return self
+
 
 class AssigneeUpdate(BaseModel):
     """PUT body for assigning a task. `assignee_id: null` unassigns it."""
@@ -180,7 +233,7 @@ class TaskOut(BaseModel):
     title: str
     description: str | None
     status: StatusBrief
-    priority: str
+    priority: TaskPriority
     labels: list[str]
     start_date: date | None
     due_date: date | None

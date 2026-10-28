@@ -568,8 +568,7 @@
             "type": "string"
           },
           "project_role": {
-            "title": "Project Role",
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectRole"
           },
           "user_id": {
             "format": "uuid",
@@ -775,6 +774,7 @@
         "properties": {
           "code": {
             "description": "Unique short identifier, 2-20 chars (A-Z, 0-9, _ -). Immutable.",
+            "maxLength": 40,
             "title": "Code",
             "type": "string"
           },
@@ -793,6 +793,7 @@
             "items": {
               "$ref": "#/components/schemas/MemberIn"
             },
+            "maxItems": 200,
             "title": "Members",
             "type": "array"
           },
@@ -906,8 +907,7 @@
             "title": "Start Date"
           },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectStatus"
           },
           "target_end_date": {
             "anyOf": [
@@ -1045,8 +1045,7 @@
             "title": "Start Date"
           },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectStatus"
           },
           "target_end_date": {
             "anyOf": [
@@ -1104,7 +1103,8 @@
           "planned",
           "active",
           "on_hold",
-          "completed"
+          "completed",
+          "cancelled"
         ],
         "title": "ProjectStatus",
         "type": "string"
@@ -1205,8 +1205,7 @@
       "StatusBrief": {
         "properties": {
           "category": {
-            "title": "Category",
-            "type": "string"
+            "$ref": "#/components/schemas/StatusCategory"
           },
           "id": {
             "format": "uuid",
@@ -1280,8 +1279,7 @@
       "StatusOut": {
         "properties": {
           "category": {
-            "title": "Category",
-            "type": "string"
+            "$ref": "#/components/schemas/StatusCategory"
           },
           "id": {
             "format": "uuid",
@@ -1625,8 +1623,7 @@
             "type": "array"
           },
           "priority": {
-            "title": "Priority",
-            "type": "string"
+            "$ref": "#/components/schemas/TaskPriority"
           },
           "project_id": {
             "format": "uuid",
@@ -2279,6 +2276,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
@@ -2326,6 +2324,7 @@
                     "format": "uuid",
                     "type": "string"
                   },
+                  "maxItems": 50,
                   "type": "array"
                 },
                 {
@@ -2345,6 +2344,7 @@
                   "items": {
                     "$ref": "#/components/schemas/StatusCategory"
                   },
+                  "maxItems": 10,
                   "type": "array"
                 },
                 {
@@ -2364,6 +2364,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TaskPriority"
                   },
+                  "maxItems": 10,
                   "type": "array"
                 },
                 {
@@ -2565,6 +2566,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
@@ -3323,6 +3325,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
@@ -3370,6 +3373,7 @@
                     "format": "uuid",
                     "type": "string"
                   },
+                  "maxItems": 50,
                   "type": "array"
                 },
                 {
@@ -3389,6 +3393,7 @@
                   "items": {
                     "$ref": "#/components/schemas/StatusCategory"
                   },
+                  "maxItems": 10,
                   "type": "array"
                 },
                 {
@@ -3408,6 +3413,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TaskPriority"
                   },
+                  "maxItems": 10,
                   "type": "array"
                 },
                 {
@@ -3659,6 +3665,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
@@ -3706,6 +3713,7 @@
                     "format": "uuid",
                     "type": "string"
                   },
+                  "maxItems": 50,
                   "type": "array"
                 },
                 {
@@ -3725,6 +3733,7 @@
                   "items": {
                     "$ref": "#/components/schemas/StatusCategory"
                   },
+                  "maxItems": 10,
                   "type": "array"
                 },
                 {
@@ -3744,6 +3753,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TaskPriority"
                   },
+                  "maxItems": 10,
                   "type": "array"
                 },
                 {
@@ -4038,6 +4048,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
@@ -4645,6 +4656,7 @@
             "required": false,
             "schema": {
               "default": 1,
+              "maximum": 100000,
               "minimum": 1,
               "title": "Page",
               "type": "integer"
