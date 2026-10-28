@@ -73,15 +73,16 @@ async def _attention(
 async def pm_dashboard(session: AsyncSession, limit: int) -> PmDashboard:
     projects = list(
         await session.scalars(
-            select(Project)
-            .where(Project.archived_at.is_(None), Project.status != ProjectStatus.CANCELLED.value)
-            .order_by(Project.code)
+            select(Project).where(Project.archived_at.is_(None)).order_by(Project.code)
         )
     )
-    summaries = await project_service.task_summaries(session, [p.id for p in projects])
+    # Cancelled projects keep their card (so the PM can find and reopen them) but count for
+    # nothing: not in the totals, not in the task numbers.
+    live = [p for p in projects if p.status != ProjectStatus.CANCELLED.value]
+    summaries = await project_service.task_summaries(session, [p.id for p in live])
     return PmDashboard(
-        active_projects=sum(p.status == ProjectStatus.ACTIVE.value for p in projects),
-        projects_total=len(projects),
+        active_projects=sum(p.status == ProjectStatus.ACTIVE.value for p in live),
+        projects_total=len(live),
         summary=_total(list(summaries.values())),
         projects=[_card(p, summaries.get(p.id)) for p in projects],
         blocked=await _attention(session, limit, category=StatusCategory.BLOCKED),

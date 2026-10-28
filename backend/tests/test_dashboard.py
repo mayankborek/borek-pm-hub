@@ -211,8 +211,12 @@ async def test_cancelled_projects_are_left_out_of_dashboards_and_cross_project_l
     pm = as_user(world.pm)
 
     body = (await client.get("/api/v1/dashboard", headers=pm)).json()
-    assert [p["code"] for p in body["projects"]] == ["ALP"]
+    # the card stays (status "cancelled", no task numbers) but nothing counts it
+    assert [p["code"] for p in body["projects"]] == ["ALP", "BET"]
+    beta = body["projects"][1]
+    assert beta["status"] == "cancelled" and beta["tasks"]["total"] == 0
     assert body["projects_total"] == 1 and body["summary"]["total"] == 4
+    assert body["active_projects"] == 1
 
     mine = (await client.get("/api/v1/dashboard/me", headers=as_user(world.other_dev))).json()
     assert [p["code"] for p in mine["projects"]] == ["ALP"]
