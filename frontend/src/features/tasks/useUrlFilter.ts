@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { emptyFilter, type TaskFilter } from './tasksApi';
 
-const KEYS = { q: 'q', category: 'status', priority: 'priority', assigneeId: 'person' } as const;
+const KEYS = { q: 'q', category: 'status', statusId: 'status_id', priority: 'priority', assigneeId: 'person' } as const;
 const DEBOUNCE_MS = 250;
 
-export const isFiltered = (f: TaskFilter) => !!(f.q.trim() || f.category || f.priority || f.assigneeId);
+export const isFiltered = (f: TaskFilter) => !!(f.q.trim() || f.category || f.statusId || f.priority || f.assigneeId);
 
 /**
  * Task filter state held in the URL, so refresh, back and shared links keep it.
@@ -19,6 +19,7 @@ export function useUrlFilter() {
     () => ({
       q: params.get(KEYS.q) ?? '',
       category: (params.get(KEYS.category) ?? '') as TaskFilter['category'],
+      statusId: params.get(KEYS.statusId) ?? '',
       priority: (params.get(KEYS.priority) ?? '') as TaskFilter['priority'],
       assigneeId: params.get(KEYS.assigneeId) ?? '',
     }),

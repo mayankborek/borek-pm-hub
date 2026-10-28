@@ -1,7 +1,7 @@
-export type ProjectStatus = 'planned' | 'active' | 'on_hold' | 'completed';
+export type ProjectStatus = 'planned' | 'active' | 'on_hold' | 'completed' | 'cancelled';
 export type TaskStatus = 'open' | 'in_progress' | 'blocked' | 'in_review' | 'completed' | 'cancelled';
 
-export const PROJECT_STATUSES: ProjectStatus[] = ['planned', 'active', 'on_hold', 'completed'];
+export const PROJECT_STATUSES: ProjectStatus[] = ['planned', 'active', 'on_hold', 'completed', 'cancelled'];
 
 /** Shared list envelope (architecture doc, section 9). */
 export interface Page<T> {

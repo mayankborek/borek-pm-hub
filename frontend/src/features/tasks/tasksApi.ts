@@ -44,11 +44,13 @@ export interface TaskPage {
 export interface TaskFilter {
   q: string;
   category: StatusCategory | '';
+  /** A single project status; only set from the backlog Filter menu. */
+  statusId: string;
   priority: TaskPriority | '';
   assigneeId: string;
 }
 
-export const emptyFilter: TaskFilter = { q: '', category: '', priority: '', assigneeId: '' };
+export const emptyFilter: TaskFilter = { q: '', category: '', statusId: '', priority: '', assigneeId: '' };
 
 export const taskKeys = {
   all: ['tasks'] as const,
@@ -59,6 +61,7 @@ export const taskKeys = {
 const filterParams = (f: TaskFilter) => ({
   q: f.q.trim(),
   category: f.category,
+  status_id: f.statusId,
   priority: f.priority,
   assignee_id: f.assigneeId,
 });

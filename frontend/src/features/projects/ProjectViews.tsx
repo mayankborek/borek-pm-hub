@@ -5,13 +5,14 @@ import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { TaskFilters, TaskGroup, TaskRow } from '@/features/tasks/TaskParts';
 import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
-import { useProjectTasks } from '@/features/tasks/tasksApi';
+import { useProjectStatuses, useProjectTasks } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
 
 /** Backlog tab: GET /projects/{id}/tasks, only tasks in the Backlog category; new tasks land here by default. */
 export function ProjectListPage() {
   const project = useProjectContext();
   const { filter, applied, setFilter, clear } = useUrlFilter();
+  const { data: statuses } = useProjectStatuses(project.id);
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
 
   const backlog = useMemo(() => (data?.items ?? []).filter((t) => t.status.category === 'backlog'), [data]);
@@ -23,7 +24,7 @@ export function ProjectListPage() {
 
   return (
     <>
-      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} />
+      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
       <TaskGroup
         title="Backlog"
         count={backlog.length}

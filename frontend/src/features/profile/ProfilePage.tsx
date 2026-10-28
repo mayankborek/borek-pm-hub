@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import avatarImg from './assets/avatar.png';
 import chevronIcon from './assets/chevron-down.svg';
 import themeSwitchLight from './assets/theme-switch-light.svg';
 import themeSwitchDark from './assets/theme-switch-dark.svg';
@@ -66,17 +65,13 @@ export function ProfilePage() {
     <div className="pf">
       <section className="pf-card pf-identity">
         <div className="pf-avatar">
-          {editing ? <img src={avatarImg} alt={user.name} /> : <span aria-hidden="true">{initials}</span>}
+          <span aria-hidden="true">{initials}</span>
         </div>
         <div className="pf-who">
           <h2>{user.name}</h2>
           <p>{roleLabel}</p>
         </div>
-        {editing ? (
-          <button type="button" className="pf-btn">
-            {t('Change photo')}
-          </button>
-        ) : (
+        {!editing && (
           <button type="button" className="pf-btn primary" onClick={startEdit}>
             {t('Edit profile')}
           </button>
@@ -213,10 +208,6 @@ export function ProfilePage() {
               >
                 {t('Sign out')}
               </button>
-              <div className="pf-deactivate">
-                <button type="button" className="pf-link danger">{t('Deactivate account')}</button>
-                <small>{t('Requires confirmation')}</small>
-              </div>
             </div>
           </section>
         </aside>
