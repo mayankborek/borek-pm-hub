@@ -306,6 +306,8 @@ export const DE: Record<string, string> = {
   'Remove {name}': '{name} entfernen',
   'Workspace / All accessible projects': 'Arbeitsbereich / Alle zugänglichen Projekte',
   'All tasks': 'Alle Aufgaben',
+  'All accessible projects': 'Alle zugänglichen Projekte',
+  'All project tasks': 'Alle Projektaufgaben',
   'Add Task': 'Aufgabe hinzufügen',
   'Fetching tasks across your projects.': 'Aufgaben aus all Ihren Projekten werden abgerufen.',
   'Tasks from your projects will appear here.': 'Aufgaben aus Ihren Projekten erscheinen hier.',

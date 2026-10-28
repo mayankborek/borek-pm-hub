@@ -74,3 +74,18 @@
 .qc-card p { margin: -8px 0 0; font-size: 13px; line-height: 18px; color: var(--muted); }
 .qc-card .input { height: 40px; border: 2px solid var(--accent); }
 .qc-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* All-projects task list (index.html / styles.css reference): one-line titles, tinted heading row. */
+.task-list-page .page-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.15; color: var(--navy); margin: 0; }
+.task-list-page .page-crumb { margin-bottom: 3px; font-size: 14px; }
+.task-list-page .task-filters { min-height: 53px; margin: 18px 0 17px; }
+.task-list-page .task-filters .input { height: 39px; }
+.task-list-page .task-group { border-top: 0; }
+.task-list-page .task-group-head { height: 44px; padding: 0 17px; gap: 12px; }
+.task-list-page .task-group-head span { font-size: 14px; }
+.task-list-page .task-row { min-height: 53px; }
+.task-list-page .task-row .task-title { padding-left: 17px; font-size: 13.5px; font-weight: 700; }
+.task-title-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-title-line .proj-link { font-weight: 700; }
+.task-list-page .cell-status, .task-list-page .cell-muted { font-size: 14px; }
+.task-list-page .task-foot { margin-top: 18px; font-size: 14px; }

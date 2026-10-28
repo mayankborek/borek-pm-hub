@@ -68,11 +68,12 @@ export function TaskRow({
           />
         )}
         {showProject ? (
-          <span className="task-title-stack">
+          <span className="task-title-line">
             <Link to={paths.task(task.id)}>
               {task.key} · {task.title}
             </Link>
             {/* A project opens on its Overview first; Backlog and Board are one tab away. */}
+            {' · '}
             <Link className="proj-link" to={paths.project(task.project_id)}>
               {task.project_name}
             </Link>
@@ -114,21 +115,6 @@ export function TaskRow({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-/** Column header row of the all-projects task table (Figma "01 PM Task List — Primary"). */
-export function TaskTableHead({ withActions }: { withActions?: boolean }) {
-  const { t } = usePrefs();
-  return (
-    <div className={withActions ? 'task-row task-table-head has-actions' : 'task-row task-table-head'} role="row">
-      <div role="columnheader">{t('Task / Project')}</div>
-      <div role="columnheader">{t('Status')}</div>
-      <div role="columnheader">{t('Due date')}</div>
-      <div role="columnheader">{t('Priority')}</div>
-      <div role="columnheader">{t('Assignee')}</div>
-      {withActions && <div role="columnheader" aria-label={t('Actions')} />}
     </div>
   );
 }
@@ -229,7 +215,8 @@ function FilterMenu({
   const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const active = (filter.priority ? 1 : 0) + (filter.statusId ? 1 : 0);
+  const byCategory = statuses.length === 0; // all-projects view: status ids differ per project, so filter by category
+  const active = (filter.priority ? 1 : 0) + (filter.statusId || filter.category ? 1 : 0);
   const rank = (name: string) => {
     const i = STATUS_ORDER.indexOf(name.trim().toLowerCase());
     return i < 0 ? STATUS_ORDER.length : i;
@@ -263,7 +250,7 @@ function FilterMenu({
           <div className="filter-head">
             <strong>{t('Filters')}</strong>
             {onClear && active > 0 && (
-              <button type="button" className="link-btn" onClick={() => onChange({ ...filter, statusId: '', priority: '' })}>
+              <button type="button" className="link-btn" onClick={() => onChange({ ...filter, statusId: '', category: '', priority: '' })}>
                 {t('Clear all')}
               </button>
             )}
@@ -283,12 +270,21 @@ function FilterMenu({
           </div>
           <div className="filter-group" role="group" aria-label={t('Status')}>
             <h4>{t('Status')}</h4>
-            {options.map((s) => (
-              <label key={s.id} className="filter-opt" style={{ color: CATEGORY_COLOR[s.category] }}>
-                <input type="checkbox" checked={filter.statusId === s.id} onChange={() => onChange({ ...filter, statusId: filter.statusId === s.id ? '' : s.id })} />
-                {t(s.name)}
-              </label>
-            ))}
+            {byCategory
+              ? (Object.keys(CATEGORY_LABEL) as StatusCategory[])
+                  .filter((c) => c !== 'backlog')
+                  .map((c) => (
+                    <label key={c} className="filter-opt" style={{ color: CATEGORY_COLOR[c] }}>
+                      <input type="checkbox" checked={filter.category === c} onChange={() => onChange({ ...filter, category: filter.category === c ? '' : c })} />
+                      {t(CATEGORY_LABEL[c])}
+                    </label>
+                  ))
+              : options.map((s) => (
+                  <label key={s.id} className="filter-opt" style={{ color: CATEGORY_COLOR[s.category] }}>
+                    <input type="checkbox" checked={filter.statusId === s.id} onChange={() => onChange({ ...filter, statusId: filter.statusId === s.id ? '' : s.id })} />
+                    {t(s.name)}
+                  </label>
+                ))}
           </div>
         </div>
       )}
