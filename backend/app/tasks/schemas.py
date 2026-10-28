@@ -6,9 +6,10 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.common.enums import StatusCategory, TaskPriority
+from app.common.enums import EstimateUnit, StatusCategory, TaskPriority
 
 MAX_LABELS = 10
+MAX_ESTIMATE = 1_000_000
 
 
 # --- statuses ---------------------------------------------------------------------------------
@@ -100,8 +101,12 @@ class TaskCreate(BaseModel):
     labels: list[str] = Field(default_factory=list)
     start_date: date | None = None
     due_date: date | None = Field(default=None, description="Date the task should be completed.")
-    estimate: str | None = Field(default=None, max_length=50, description="e.g. '5 points'.")
-    progress: int = Field(default=0, ge=0, le=100)
+    estimate_value: int | None = Field(
+        default=None, gt=0, le=MAX_ESTIMATE, description="Whole amount; needs estimate_unit."
+    )
+    estimate_unit: EstimateUnit | None = Field(
+        default=None, description="minutes, hours or weeks; needs estimate_value."
+    )
     assignee_id: uuid.UUID | None = Field(
         default=None, description="Developers can only assign tasks to themselves."
     )
@@ -114,13 +119,15 @@ class TaskCreate(BaseModel):
     def _check_dates(self) -> Self:
         if self.start_date and self.due_date and self.due_date < self.start_date:
             raise ValueError("due_date must not be before start_date.")
+        if (self.estimate_value is None) != (self.estimate_unit is None):
+            raise ValueError("estimate_value and estimate_unit must be sent together.")
         return self
 
 
 class TaskUpdate(BaseModel):
     """PATCH body. Send `version` plus only the fields that change.
 
-    PMs may change everything. Developers may change `status_id`, `progress` and
+    PMs may change everything. Developers may change `status_id` and
     `blocked_reason` on tasks assigned to them, nothing else.
     """
 
@@ -134,8 +141,8 @@ class TaskUpdate(BaseModel):
     labels: list[str] | None = None
     start_date: date | None = None
     due_date: date | None = None
-    estimate: str | None = Field(default=None, max_length=50)
-    progress: int | None = Field(default=None, ge=0, le=100)
+    estimate_value: int | None = Field(default=None, gt=0, le=MAX_ESTIMATE)
+    estimate_unit: EstimateUnit | None = None
     assignee_id: uuid.UUID | None = None
     blocked_reason: str | None = None
 
@@ -169,7 +176,6 @@ class TaskOut(BaseModel):
     id: uuid.UUID
     key: str
     project_id: uuid.UUID
-    project_code: str
     project_name: str
     title: str
     description: str | None
@@ -178,8 +184,8 @@ class TaskOut(BaseModel):
     labels: list[str]
     start_date: date | None
     due_date: date | None
-    estimate: str | None
-    progress: int
+    estimate_value: int | None
+    estimate_unit: str | None
     assignee: UserBrief | None
     reporter: UserBrief
     blocked_reason: str | None

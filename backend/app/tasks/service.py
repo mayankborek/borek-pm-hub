@@ -38,14 +38,15 @@ DETAIL_FIELDS = frozenset(
         "labels",
         "start_date",
         "due_date",
-        "estimate",
+        "estimate_value",
+        "estimate_unit",
         "assignee_id",
     }
 )
 # Part of DETAIL_FIELDS, but also editable by a developer on a task they created for themselves.
 SCHEDULE_FIELDS = frozenset({"start_date", "due_date"})
-STATUS_FIELDS = frozenset({"status_id", "progress", "blocked_reason"})
-_NOT_NULL_FIELDS = ("title", "priority", "labels", "progress", "status_id")
+STATUS_FIELDS = frozenset({"status_id", "blocked_reason"})
+_NOT_NULL_FIELDS = ("title", "priority", "labels", "status_id")
 
 Assignee = aliased(User)
 Reporter = aliased(User)
@@ -95,7 +96,6 @@ def _to_out(
         id=task.id,
         key=task.key,
         project_id=task.project_id,
-        project_code=project.code,
         project_name=project.name,
         title=task.title,
         description=task.description,
@@ -104,8 +104,8 @@ def _to_out(
         labels=list(task.labels),
         start_date=task.start_date,
         due_date=task.due_date,
-        estimate=task.estimate,
-        progress=task.progress,
+        estimate_value=task.estimate_value,
+        estimate_unit=task.estimate_unit,
         assignee=_brief(assignee) if assignee else None,
         reporter=_brief(reporter),
         blocked_reason=task.blocked_reason,
@@ -199,13 +199,14 @@ class TaskFilters:
 
 _PRIORITY_RANK = case(
     {
-        TaskPriority.CRITICAL.value: 0,
+        TaskPriority.HIGHEST.value: 0,
         TaskPriority.HIGH.value: 1,
         TaskPriority.MEDIUM.value: 2,
         TaskPriority.LOW.value: 3,
+        TaskPriority.LOWEST.value: 4,
     },
     value=Task.priority,
-    else_=4,
+    else_=5,
 )
 
 
@@ -368,8 +369,8 @@ async def create_task(
         labels=data.labels,
         start_date=data.start_date,
         due_date=data.due_date,
-        estimate=(data.estimate or "").strip() or None,
-        progress=data.progress,
+        estimate_value=data.estimate_value,
+        estimate_unit=data.estimate_unit.value if data.estimate_unit else None,
         assignee_id=assignee_id,
         created_by=user.id,
     )
@@ -429,6 +430,14 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
     due = changes.get("due_date", task.due_date)
     if start and due and due < start:
         raise _invalid("due_date", "before_start", "due_date must not be before start_date.")
+    estimate_value = changes.get("estimate_value", task.estimate_value)
+    estimate_unit = changes.get("estimate_unit", task.estimate_unit)
+    if (estimate_value is None) != (estimate_unit is None):
+        raise _invalid(
+            "estimate_unit",
+            "pair_required",
+            "estimate_value and estimate_unit must be set or cleared together.",
+        )
     new_assignee_id = changes.get("assignee_id")
     new_member = new_assignee_id is not None and await _check_assignee(
         session, task.project_id, new_assignee_id
@@ -455,11 +464,9 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
         _apply_status(task, new_status, reason)
     for field in DETAIL_FIELDS & changes.keys():
         value = changes[field]
-        if field == "estimate":
-            value = (value or "").strip() or None
-        setattr(task, field, value.value if field == "priority" else value)
-    if "progress" in changes:
-        task.progress = changes["progress"]
+        if field in ("priority", "estimate_unit") and value is not None:
+            value = value.value
+        setattr(task, field, value)
     changed = activity.diff(
         before, activity.snapshot(task, (new_status or old_status).name, new_assignee)
     )

@@ -2,9 +2,10 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
-import type { AssignableUser } from '@/features/tasks/tasksApi';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
+import { useProjectMembers, type AssignableUser } from '@/features/tasks/tasksApi';
 import { MemberPicker } from './MemberPicker';
-import { parseApiError, useCreateProject, useProject, useUpdateProject, type FieldErrors } from './projectsApi';
+import { parseApiError, useCreateProject, useProject, useSyncMembers, useUpdateProject, type FieldErrors } from './projectsApi';
 import { STATUS_LABEL } from './projectUi';
 import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './projects.css';
@@ -33,16 +34,16 @@ const fromProject = (p: Project): FormState => ({
 });
 
 /** Mirrors the backend rules so most mistakes are caught before the request. The server stays the authority. */
-function validate(f: FormState, isEdit: boolean): FieldErrors {
+function validate(f: FormState, isEdit: boolean, t: (s: string) => string): FieldErrors {
   const e: FieldErrors = {};
   if (!isEdit) {
-    if (!f.code.trim()) e.code = 'Project code is required.';
-    else if (f.code.trim().length > 20) e.code = 'Use 20 characters or fewer.';
+    if (!f.code.trim()) e.code = t('Project code is required.');
+    else if (f.code.trim().length > 20) e.code = t('Use 20 characters or fewer.');
   }
-  if (!f.name.trim()) e.name = 'Project name is required.';
-  else if (f.name.trim().length > 200) e.name = 'Use 200 characters or fewer.';
+  if (!f.name.trim()) e.name = t('Project name is required.');
+  else if (f.name.trim().length > 200) e.name = t('Use 200 characters or fewer.');
   if (f.start_date && f.target_end_date && f.target_end_date < f.start_date) {
-    e.target_end_date = 'Target end date cannot be before the start date.';
+    e.target_end_date = t('Target end date cannot be before the start date.');
   }
   return e;
 }
@@ -63,12 +64,15 @@ export function ProjectCreatePage() {
 export function ProjectEditPage() {
   const { projectId = '' } = useParams();
   const { data, isPending, isError, refetch } = useProject(projectId);
-  if (isPending) return <LoadingState title="Loading project" />;
-  if (isError) return <ErrorState title="We couldn’t load this project" onRetry={() => void refetch()} />;
-  return <ProjectForm project={data} />;
+  const members = useProjectMembers(projectId);
+  if (isPending || members.isPending) return <LoadingState title="Loading project" />;
+  if (isError || members.isError) return <ErrorState title="We couldn’t load this project" onRetry={() => void refetch()} />;
+  const current: AssignableUser[] = members.data.map((m) => ({ id: m.user_id, name: m.name, email: m.email, role: 'developer' }));
+  return <ProjectForm project={data} currentMembers={current} />;
 }
 
-function ProjectForm({ project }: { project?: Project }) {
+function ProjectForm({ project, currentMembers = [] }: { project?: Project; currentMembers?: AssignableUser[] }) {
+  const { t } = usePrefs();
   const isEdit = !!project;
   const navigate = useNavigate();
   const create = useCreateProject();
@@ -76,8 +80,9 @@ function ProjectForm({ project }: { project?: Project }) {
   const [form, setForm] = useState<FormState>(project ? fromProject(project) : EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState('');
-  const [members, setMembers] = useState<AssignableUser[]>([]);
-  const saving = create.isPending || update.isPending;
+  const [members, setMembers] = useState<AssignableUser[]>(currentMembers);
+  const syncMembers = useSyncMembers(project?.id ?? '');
+  const saving = create.isPending || update.isPending || syncMembers.isPending;
   const back = project ? paths.project(project.id) : paths.projects;
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -88,7 +93,7 @@ function ProjectForm({ project }: { project?: Project }) {
   const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault();
     setFormError('');
-    const found = validate(form, isEdit);
+    const found = validate(form, isEdit, t);
     setErrors(found);
     if (Object.keys(found).length) return;
 
@@ -97,6 +102,11 @@ function ProjectForm({ project }: { project?: Project }) {
       if (project) {
         const { code: _code, ...rest } = input;
         await update.mutateAsync({ input: rest, version: project.version });
+        const before = new Set(currentMembers.map((m) => m.id));
+        const after = new Set(members.map((m) => m.id));
+        const add = [...after].filter((id) => !before.has(id));
+        const remove = [...before].filter((id) => !after.has(id));
+        if (add.length || remove.length) await syncMembers.mutateAsync({ add, remove });
         navigate(paths.project(project.id));
       } else {
         const created = await create.mutateAsync({ ...input, members: members.map((m) => ({ user_id: m.id })) });
@@ -111,12 +121,12 @@ function ProjectForm({ project }: { project?: Project }) {
 
   const field = (id: keyof FormState, label: string, input: ReactNode, hint?: string) => (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{t(label)}</label>
       {input}
-      {hint && !errors[id] && <span className="hint">{hint}</span>}
+      {hint && !errors[id] && <span className="hint">{t(hint)}</span>}
       {errors[id] && (
         <span className="field-error" id={`${id}-error`}>
-          {errors[id]}
+          {t(errors[id] ?? '')}
         </span>
       )}
     </div>
@@ -129,14 +139,14 @@ function ProjectForm({ project }: { project?: Project }) {
   return (
     <section className="pform">
       <div className="pform-head">
-        <p className="pform-crumb">Projects  /  All Projects</p>
-        <h2>{title}</h2>
+        <p className="pform-crumb">{t('Projects  /  All Projects')}</p>
+        <h2>{t(title)}</h2>
       </div>
 
       <form className="pform-body" onSubmit={(e) => void onSubmit(e)} noValidate>
         {formError && (
           <div className="form-alert" role="alert">
-            {formError}
+            {t(formError)}
           </div>
         )}
 
@@ -145,20 +155,20 @@ function ProjectForm({ project }: { project?: Project }) {
             <i /><i /><i /><i />
           </span>
           <div>
-            <h3>Project Details</h3>
-            <p>Give your team a clear starting point.</p>
+            <h3>{t('Project Details')}</h3>
+            <p>{t('Give your team a clear starting point.')}</p>
           </div>
         </div>
 
         <div className="pform-row two">
-          {field('name', 'Project Name *', <input id="name" className="input" placeholder="e.g. Website redesign" value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} {...aria('name')} />)}
+          {field('name', 'Project Name *', <input id="name" className="input" placeholder={t('e.g. Website redesign')} value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} {...aria('name')} />)}
           {field(
             'code',
             'Unique Code',
             <input
               id="code"
               className="input"
-              placeholder="e.g. BFL-WEB"
+              placeholder={t('e.g. BFL-WEB')}
               value={form.code}
               maxLength={20}
               disabled={isEdit}
@@ -172,7 +182,7 @@ function ProjectForm({ project }: { project?: Project }) {
         {field(
           'description',
           'Description',
-          <textarea id="description" className="input" placeholder="Describe the outcome, scope, or goal for this project." value={form.description} onChange={(e) => set('description', e.target.value)} />,
+          <textarea id="description" className="input" placeholder={t('Describe the outcome, scope, or goal for this project.')} value={form.description} onChange={(e) => set('description', e.target.value)} />,
         )}
 
         <div className="pform-row sched">
@@ -182,7 +192,7 @@ function ProjectForm({ project }: { project?: Project }) {
             <select id="status" className="input" value={form.status} onChange={(e) => set('status', e.target.value as ProjectStatus)}>
               {PROJECT_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {FORM_STATUS_LABEL[s]}
+                  {t(FORM_STATUS_LABEL[s])}
                 </option>
               ))}
             </select>,
@@ -195,19 +205,17 @@ function ProjectForm({ project }: { project?: Project }) {
           )}
         </div>
 
-        {!isEdit && (
-          <div className="field">
-            <label htmlFor="members">Add Members</label>
-            <MemberPicker selected={members} onChange={setMembers} />
-          </div>
-        )}
+        <div className="field">
+          <label htmlFor="members">{t('Add Members')}</label>
+          <MemberPicker selected={members} onChange={setMembers} />
+        </div>
 
         <div className="pform-actions">
           <Link className="pform-btn" to={back}>
-            Cancel
+            {t('Cancel')}
           </Link>
           <button type="submit" className="pform-btn primary" disabled={saving}>
-            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Project'}
+            {t(saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Project')}
           </button>
         </div>
       </form>

@@ -86,7 +86,7 @@ PROJECTS = [
     ),
 ]
 
-# (project code, title, status name, priority, assignee, due offset days, progress, blocked reason)
+# (project code, title, status name, priority, assignee, due offset days, blocked reason)
 TASKS = [
     (
         "ALPHA",
@@ -95,17 +95,15 @@ TASKS = [
         TaskPriority.HIGH,
         DEV1_ID,
         -20,
-        100,
         None,
     ),
     (
         "ALPHA",
         "Design database schema",
         "Done",
-        TaskPriority.CRITICAL,
+        TaskPriority.HIGHEST,
         DEV1_ID,
         -30,
-        100,
         None,
     ),
     (
@@ -115,7 +113,6 @@ TASKS = [
         TaskPriority.HIGH,
         DEV2_ID,
         7,
-        60,
         None,
     ),
     (
@@ -125,7 +122,6 @@ TASKS = [
         TaskPriority.MEDIUM,
         DEV2_ID,
         14,
-        0,
         None,
     ),
     (
@@ -135,17 +131,15 @@ TASKS = [
         TaskPriority.HIGH,
         DEV1_ID,
         -3,
-        40,
         None,
     ),  # overdue
     (
         "ALPHA",
         "Integrate payment API",
         "Blocked",
-        TaskPriority.CRITICAL,
+        TaskPriority.HIGHEST,
         DEV1_ID,
         5,
-        30,
         "Waiting for API credentials from the client",
     ),
     (
@@ -155,7 +149,6 @@ TASKS = [
         TaskPriority.LOW,
         None,
         30,
-        0,
         None,
     ),  # unassigned
     (
@@ -165,7 +158,6 @@ TASKS = [
         TaskPriority.MEDIUM,
         DEV2_ID,
         2,
-        90,
         None,
     ),
     (
@@ -175,7 +167,6 @@ TASKS = [
         TaskPriority.MEDIUM,
         DEV3_ID,
         10,
-        50,
         None,
     ),
     (
@@ -185,7 +176,6 @@ TASKS = [
         TaskPriority.HIGH,
         DEV2_ID,
         -7,
-        0,
         None,
     ),  # overdue
     (
@@ -195,7 +185,6 @@ TASKS = [
         TaskPriority.HIGH,
         DEV3_ID,
         12,
-        20,
         "Azure subscription not yet available",
     ),
     (
@@ -205,10 +194,9 @@ TASKS = [
         TaskPriority.LOW,
         None,
         None,
-        0,
         None,
     ),  # unassigned, no due date
-    ("BETA", "Old prototype cleanup", "Backlog", TaskPriority.LOW, None, -10, 0, None),  # archived
+    ("BETA", "Old prototype cleanup", "Backlog", TaskPriority.LOW, None, -10, None),  # archived
     (
         "BETA",
         "Finalize navigation",
@@ -216,7 +204,6 @@ TASKS = [
         TaskPriority.MEDIUM,
         DEV3_ID,
         -5,
-        100,
         None,
     ),
     (
@@ -226,10 +213,9 @@ TASKS = [
         TaskPriority.MEDIUM,
         DEV3_ID,
         20,
-        0,
         None,
     ),
-    ("GAMMA", "Draft migration plan", "To do", TaskPriority.HIGH, None, 25, 0, None),
+    ("GAMMA", "Draft migration plan", "To do", TaskPriority.HIGH, None, 25, None),
 ]
 
 
@@ -321,7 +307,7 @@ async def seed(
             )
 
     now = datetime.now(UTC)
-    for code, title, status_name, priority, assignee, due, progress, reason in TASKS:
+    for code, title, status_name, priority, assignee, due, reason in TASKS:
         project = projects[code]
         project.task_counter += 1
         session.add(
@@ -334,7 +320,6 @@ async def seed(
                 priority=priority.value,
                 assignee_id=assignee,
                 due_date=None if due is None else today + timedelta(days=due),
-                progress=progress,
                 blocked_reason=reason,
                 blocked_at=now if reason else None,
                 created_by=PM_ID,

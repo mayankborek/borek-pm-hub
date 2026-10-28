@@ -1,12 +1,14 @@
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import './ui.css';
 
 export type Tone = 'neutral' | 'progress' | 'track' | 'risk' | 'blocked' | 'overdue';
 
 export function Pill({ tone, children }: { tone: Tone; children: string }) {
+  const { t } = usePrefs();
   return (
     <span className={`pill ${tone}`}>
       <span className="dot" aria-hidden="true" />
-      {children}
+      {t(children)}
     </span>
   );
 }

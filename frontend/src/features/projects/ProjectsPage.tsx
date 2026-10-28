@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { Pill, ProgressBar } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProjects } from './projectsApi';
@@ -13,16 +14,17 @@ import '@/features/tasks/tasks.css';
 
 /** Developer "My Projects" grid, styled like the PM Task List (Figma "01 PM Task List — Primary"). */
 function DevProjectGrid({ projects, total }: { projects: Project[]; total: number }) {
+  const { t } = usePrefs();
   return (
     <>
-      <section className="task-group table" role="table" aria-label="My projects">
+      <section className="task-group table" role="table" aria-label={t('My projects')}>
         <div className="task-row task-table-head proj-row" role="row">
-          <div role="columnheader">Project / Code</div>
-          <div role="columnheader">Status</div>
-          <div role="columnheader">Progress</div>
-          <div role="columnheader">Tasks</div>
-          <div role="columnheader">Overdue</div>
-          <div role="columnheader">Target end</div>
+          <div role="columnheader">{t('Project / Code')}</div>
+          <div role="columnheader">{t('Status')}</div>
+          <div role="columnheader">{t('Progress')}</div>
+          <div role="columnheader">{t('Tasks')}</div>
+          <div role="columnheader">{t('Overdue')}</div>
+          <div role="columnheader">{t('Target end')}</div>
         </div>
         {projects.map((p) => (
           <div className="task-row proj-row" role="row" key={p.id}>
@@ -36,7 +38,7 @@ function DevProjectGrid({ projects, total }: { projects: Project[]; total: numbe
               <Pill tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
             </div>
             <div role="cell">
-              <ProgressBar percent={completionOf(p)} label={`${p.name} completion`} />
+              <ProgressBar percent={completionOf(p)} label={t('{name} completion', { name: p.name })} />
             </div>
             <div className="cell-muted" role="cell">
               {p.task_summary?.total ?? '—'}
@@ -51,7 +53,7 @@ function DevProjectGrid({ projects, total }: { projects: Project[]; total: numbe
         ))}
       </section>
       <p className="task-foot">
-        Showing {projects.length} of {total} {total === 1 ? 'project' : 'projects'}
+        {t(total === 1 ? 'Showing {n} of {total} project' : 'Showing {n} of {total} projects', { n: projects.length, total })}
       </p>
     </>
   );
@@ -59,13 +61,14 @@ function DevProjectGrid({ projects, total }: { projects: Project[]; total: numbe
 
 export function ProjectsPage() {
   const { user } = useAuth();
+  const { t } = usePrefs();
   const isPm = user?.role === 'pm';
   const [search, setSearch] = useState('');
   const { data, isPending, isError, refetch, isFetching } = useProjects(search);
 
   const newButton = isPm && (
     <Link className="btn" to={paths.projectNew}>
-      New Project
+      {t('New Project')}
     </Link>
   );
 
@@ -73,9 +76,9 @@ export function ProjectsPage() {
     <section className="page-body">
       <div className="page-header">
         <div>
-          {!isPm && <p className="page-crumb">Workspace / Projects assigned to me</p>}
-          <h1 className="page-title">{isPm ? 'Projects' : 'My projects'}</h1>
-          {isPm && <p className="page-desc">Projects you can access. Open a project to see its overview and tasks.</p>}
+          {!isPm && <p className="page-crumb">{t('Workspace / Projects assigned to me')}</p>}
+          <h1 className="page-title">{t(isPm ? 'Projects' : 'My projects')}</h1>
+          {isPm && <p className="page-desc">{t('Projects you can access. Open a project to see its overview and tasks.')}</p>}
         </div>
         {newButton}
       </div>
@@ -84,12 +87,12 @@ export function ProjectsPage() {
         <input
           type="search"
           className="input"
-          placeholder="Search by name or code"
-          aria-label="Search projects"
+          placeholder={t('Search by name or code')}
+          aria-label={t('Search projects')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {isFetching && !isPending && <span className="muted">Updating…</span>}
+        {isFetching && !isPending && <span className="muted">{t('Updating…')}</span>}
       </div>
 
       {isPending ? (
@@ -98,12 +101,12 @@ export function ProjectsPage() {
         <ErrorState title="We couldn’t load your projects" text="Check your connection and try again." onRetry={() => void refetch()} />
       ) : data.items.length === 0 ? (
         search.trim() ? (
-          <EmptyState title="No matching projects" text={`Nothing matches “${search.trim()}”. Try a different name or code.`} />
+          <EmptyState title="No matching projects" text={t('Nothing matches “{q}”. Try a different name or code.', { q: search.trim() })} />
         ) : !isPm ? (
           <section className="state center empty-art">
             <img src={emptyIllustration} alt="" width={254} height={254} />
-            <h3>No projects you can access yet</h3>
-            <p>When you’re added to a project, it will appear here. Create a project or ask a project manager to grant access.</p>
+            <h3>{t('No projects you can access yet')}</h3>
+            <p>{t('When you’re added to a project, it will appear here. Create a project or ask a project manager to grant access.')}</p>
           </section>
         ) : (
           <EmptyState
@@ -119,12 +122,12 @@ export function ProjectsPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Project</th>
-                <th>Status</th>
-                <th>Progress</th>
-                <th className="num">Tasks</th>
-                <th className="num">Overdue</th>
-                <th>Target end</th>
+                <th>{t('Project')}</th>
+                <th>{t('Status')}</th>
+                <th>{t('Progress')}</th>
+                <th className="num">{t('Tasks')}</th>
+                <th className="num">{t('Overdue')}</th>
+                <th>{t('Target end')}</th>
               </tr>
             </thead>
             <tbody>
@@ -140,7 +143,7 @@ export function ProjectsPage() {
                     <Pill tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
                   </td>
                   <td>
-                    <ProgressBar percent={completionOf(p)} label={`${p.name} completion`} />
+                    <ProgressBar percent={completionOf(p)} label={t('{name} completion', { name: p.name })} />
                   </td>
                   <td className="num">{p.task_summary?.total ?? '—'}</td>
                   <td className={p.task_summary?.overdue ? 'num warn' : 'num'}>{p.task_summary?.overdue ?? '—'}</td>
@@ -150,7 +153,7 @@ export function ProjectsPage() {
             </tbody>
           </table>
           <div className="table-foot muted small">
-            {data.total} {data.total === 1 ? 'project' : 'projects'}
+            {t(data.total === 1 ? '{n} project' : '{n} projects', { n: data.total })}
           </div>
         </div>
       )}

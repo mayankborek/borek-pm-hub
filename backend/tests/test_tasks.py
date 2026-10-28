@@ -88,10 +88,11 @@ async def test_pm_creates_and_assigns_a_task(
     assert body["title"] == "Build login"
     assert body["labels"] == ["Frontend", "ui"]  # trimmed, duplicates (any case) removed
     assert body["status"]["name"] == "To do" and body["status"]["category"] == "todo"
-    assert body["priority"] == "high" and body["progress"] == 0 and body["version"] == 1
+    assert body["priority"] == "high" and body["version"] == 1
     assert body["assignee"]["id"] == str(world.dev.id)
     assert body["reporter"]["id"] == str(world.pm.id)
-    assert (body["project_code"], body["project_name"]) == ("BFL", "Test project")
+    assert body["project_name"] == "Test project" and "project_code" not in body
+    assert "progress" not in body and body["estimate_value"] is None
     assert response.headers["location"] == f"/api/v1/tasks/{body['id']}"
 
 
@@ -180,8 +181,11 @@ async def test_invalid_create_is_rejected_without_saving(
         {"title": "   "},
         {},
         {"title": "x", "priority": "urgent"},
-        {"title": "x", "progress": 101},
-        {"title": "x", "progress": -1},
+        {"title": "x", "progress": 10},  # field was removed
+        {"title": "x", "estimate_value": 5},
+        {"title": "x", "estimate_unit": "hours"},
+        {"title": "x", "estimate_value": 0, "estimate_unit": "hours"},
+        {"title": "x", "estimate_value": 5, "estimate_unit": "days"},
         {"title": "x", "start_date": "2026-05-10", "due_date": "2026-05-01"},
         {"title": "x", "labels": [""]},
         {"title": "x", "labels": ["l" * 31]},
@@ -270,7 +274,7 @@ async def seed_tasks(session: AsyncSession, w: World) -> None:
         w.project,
         w.pm.id,
         title="Fix bug",
-        priority="critical",
+        priority="highest",
         status="Blocked",
         blocked_reason="waiting",
         blocked_at=datetime.now(UTC),
@@ -310,7 +314,7 @@ async def test_list_filters_search_and_sort(
         "Fix bug",
         "Login page",
     ]
-    assert await titles(client, url, headers, priority=["critical", "high"], sort="priority") == [
+    assert await titles(client, url, headers, priority=["highest", "high"], sort="priority") == [
         "Fix bug",
         "Login page",
     ]
@@ -433,11 +437,12 @@ async def test_pm_edits_every_field(
             "version": 1,
             "title": "New title",
             "description": "More",
-            "priority": "critical",
+            "priority": "highest",
             "labels": ["a", "b"],
             "start_date": "2026-11-01",
             "due_date": "2026-11-09",
-            "progress": 40,
+            "estimate_value": 4,
+            "estimate_unit": "hours",
             "assignee_id": str(world.dev.id),
             "status_id": str(review.id),
         },
@@ -445,12 +450,12 @@ async def test_pm_edits_every_field(
 
     assert response.status_code == 200, response.text
     body = response.json()
-    assert (body["title"], body["priority"], body["labels"], body["progress"]) == (
+    assert (body["title"], body["priority"], body["labels"]) == (
         "New title",
-        "critical",
+        "highest",
         ["a", "b"],
-        40,
     )
+    assert (body["estimate_value"], body["estimate_unit"]) == (4, "hours")
     assert body["status"]["name"] == "Code review" and body["assignee"]["id"] == str(world.dev.id)
     assert body["version"] == 2
     assert body["updated_at"] >= body["created_at"]
@@ -502,9 +507,11 @@ async def test_invalid_updates_are_rejected_and_nothing_changes(
         {"title": " "},
         {"priority": None},
         {"labels": None},
-        {"progress": None},
         {"status_id": None},
-        {"progress": 101},
+        {"progress": 10},  # field was removed
+        {"estimate_value": 5},  # amount without a unit
+        {"estimate_unit": "hours"},
+        {"estimate_value": 5, "estimate_unit": "days"},
         {"due_date": "2026-05-01"},
         {"code": "X"},
         {"assignee_id": str(uuid.uuid4())},
@@ -583,18 +590,18 @@ async def test_completed_at_follows_done_statuses(
     assert reopened.json()["completed_at"] is None
 
 
-async def test_developer_updates_status_and_progress_on_own_task_only(
+async def test_developer_updates_status_on_own_task_only(
     client: httpx.AsyncClient, session: AsyncSession, world: World
 ) -> None:
     mine = await make_task(session, world.project, world.pm.id, assignee_id=world.dev.id)
     theirs = await make_task(session, world.project, world.pm.id, assignee_id=world.other_dev.id)
     nobody = await make_task(session, world.project, world.pm.id)
     review = await status_by_name(session, world.project.id, "Code review")
-    payload = {"version": 1, "status_id": str(review.id), "progress": 80}
+    payload = {"version": 1, "status_id": str(review.id)}
     headers = as_user(world.dev)
 
     ok = await client.patch(f"/api/v1/tasks/{mine.id}", headers=headers, json=payload)
-    assert ok.status_code == 200 and ok.json()["progress"] == 80
+    assert ok.status_code == 200 and ok.json()["status"]["name"] == "Code review"
     for other in (theirs, nobody):
         denied = await client.patch(f"/api/v1/tasks/{other.id}", headers=headers, json=payload)
         assert denied.status_code == 403
@@ -615,10 +622,10 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
         {"description": "x"},
         {"priority": "low"},
         {"labels": ["x"]},
-        {"estimate": "5 points"},
+        {"estimate_value": 5, "estimate_unit": "hours"},
         {"assignee_id": str(world.other_dev.id)},
         {"assignee_id": None},
-        {"title": "x", "progress": 10},  # mixed: the PM-only part is enough to refuse
+        {"title": "x", "estimate_value": 5, "estimate_unit": "hours"},  # mixed: PM-only part
     ):
         response = await client.patch(
             f"/api/v1/tasks/{own.id}", headers=headers, json={"version": 1, **payload}
@@ -912,7 +919,7 @@ async def test_my_tasks_filters_and_sorting(
         world.project,
         world.pm.id,
         title="Soon",
-        priority="critical",
+        priority="highest",
         status="In progress",
         due_date=today + timedelta(days=2),
         assignee_id=world.dev.id,
@@ -963,10 +970,36 @@ async def test_reassignment_shows_up_in_my_tasks_and_for_the_pm(
     assert await titles(client, url, as_user(world.dev)) == []
     assert await titles(client, url, as_user(world.other_dev)) == ["Moving"]
 
+    review = await status_by_name(session, world.project.id, "Code review")
     await client.patch(
         f"/api/v1/tasks/{task.id}",
         headers=as_user(world.other_dev),
-        json={"version": 2, "progress": 40},
+        json={"version": 2, "status_id": str(review.id)},
     )
     seen = (await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(world.pm))).json()
-    assert seen["progress"] == 40 and seen["assignee"]["id"] == str(world.other_dev.id)
+    assert seen["status"]["name"] == "Code review"
+    assert seen["assignee"]["id"] == str(world.other_dev.id)
+
+
+async def test_five_priority_levels_sort_from_highest_to_lowest(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    for title, priority in (
+        ("L", "low"),
+        ("LL", "lowest"),
+        ("M", "medium"),
+        ("HH", "highest"),
+        ("H", "high"),
+    ):
+        await make_task(session, world.project, world.pm.id, title=title, priority=priority)
+    url, headers = tasks_url(world.project), as_user(world.pm)
+
+    assert await titles(client, url, headers, sort="priority") == ["HH", "H", "M", "L", "LL"]
+    assert await titles(client, url, headers, priority=["lowest"]) == ["LL"]
+
+    created = await client.post(url, headers=headers, json={"title": "New", "priority": "lowest"})
+    assert created.status_code == 201 and created.json()["priority"] == "lowest"
+    old_name = await client.post(
+        url, headers=headers, json={"title": "Old", "priority": "critical"}
+    )
+    assert old_name.status_code == 422

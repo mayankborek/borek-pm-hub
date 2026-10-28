@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import { emptyFilter, useProjectMembers, useProjectStatuses, useProjectTasks } from '@/features/tasks/tasksApi';
 import type { StatusCategory, Task, TaskPriority } from '@/features/tasks/tasksApi';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useProjectContext } from './ProjectLayout';
 import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
 import lowIcon from './assets/priority-low.svg';
+import lowestIcon from './assets/priority-lowest.svg';
 import './projects.css';
 
 const CATEGORY_COLOR: Record<StatusCategory, string> = {
@@ -20,10 +22,11 @@ const CATEGORY_COLOR: Record<StatusCategory, string> = {
 const NAME_COLOR: Record<string, string> = { 'code review': '#7c55ce', testing: '#24a49a' };
 
 const PRIORITIES: { key: TaskPriority; label: string; icon: string; color: string }[] = [
-  { key: 'critical', label: 'Critical', icon: highestIcon, color: '#c94a32' },
+  { key: 'highest', label: 'Highest', icon: highestIcon, color: '#c94a32' },
   { key: 'high', label: 'High', icon: highIcon, color: '#c94a32' },
   { key: 'medium', label: 'Medium', icon: mediumIcon, color: '#e07e00' },
   { key: 'low', label: 'Low', icon: lowIcon, color: '#2e61d6' },
+  { key: 'lowest', label: 'Lowest', icon: lowestIcon, color: '#7a8aa8' },
 ];
 
 const DONUT_SIZE = 220;
@@ -45,11 +48,12 @@ function dueThisWeek(tasks: Task[]) {
 }
 
 function Donut({ slices, total }: { slices: { name: string; color: string; count: number }[]; total: number }) {
+  const { t } = usePrefs();
   const r = (DONUT_SIZE - DONUT_STROKE) / 2;
   const circ = 2 * Math.PI * r;
   let offset = 0;
   return (
-    <div className="donut" role="img" aria-label={`${total} tasks by status`}>
+    <div className="donut" role="img" aria-label={t('{n} tasks by status', { n: total })}>
       <svg width={DONUT_SIZE} height={DONUT_SIZE} viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}>
         <g transform={`rotate(-90 ${DONUT_SIZE / 2} ${DONUT_SIZE / 2})`} fill="none" strokeWidth={DONUT_STROKE}>
           <circle cx={DONUT_SIZE / 2} cy={DONUT_SIZE / 2} r={r} stroke="var(--surface-2)" />
@@ -76,13 +80,14 @@ function Donut({ slices, total }: { slices: { name: string; color: string; count
       </svg>
       <div className="donut-total">
         <strong>{total}</strong>
-        <span>Total tasks</span>
+        <span>{t('Total tasks')}</span>
       </div>
     </div>
   );
 }
 
 export function ProjectOverviewPage() {
+  const { t } = usePrefs();
   const project = useProjectContext();
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, emptyFilter);
   const { data: statuses } = useProjectStatuses(project.id);
@@ -120,10 +125,10 @@ export function ProjectOverviewPage() {
     return <ErrorState title="We couldn’t load the overview" text="Check your connection and try again." onRetry={() => void refetch()} />;
 
   const metrics = [
-    { label: 'Open tasks', value: stats.open, note: `${stats.due} due this week` },
-    { label: 'Progress', value: `${stats.percent}%`, note: `${stats.done} of ${stats.total} tasks complete` },
-    { label: 'Done', value: stats.done, note: 'Completed tasks' },
-    { label: 'Team members', value: members?.length ?? '—', note: 'Assigned to this project' },
+    { label: t('Open tasks'), value: stats.open, note: t('{n} due this week', { n: stats.due }) },
+    { label: t('Progress'), value: `${stats.percent}%`, note: t('{done} of {total} tasks complete', { done: stats.done, total: stats.total }) },
+    { label: t('Done'), value: stats.done, note: t('Completed tasks') },
+    { label: t('Team members'), value: members?.length ?? '—', note: t('Assigned to this project') },
   ];
   const axisMax = Math.ceil(stats.maxPriority / 5) * 5;
   const ticks = [axisMax, (axisMax * 2) / 3, axisMax / 3, 0].map(Math.round);
@@ -141,16 +146,16 @@ export function ProjectOverviewPage() {
       </div>
 
       <div className="ov-charts">
-        <section className="ov-card" aria-label="Status overview">
-          <h3>Status overview</h3>
-          <p className="ov-desc">A snapshot of all {stats.total} tasks in this project.</p>
+        <section className="ov-card" aria-label={t('Status overview')}>
+          <h3>{t('Status overview')}</h3>
+          <p className="ov-desc">{t('A snapshot of all {n} tasks in this project.', { n: stats.total })}</p>
           <div className="ov-status">
             <Donut slices={stats.slices} total={stats.total} />
             <ul className="legend">
               {stats.slices.map((s) => (
                 <li key={s.name}>
                   <i style={{ background: s.color }} />
-                  <span>{s.name}</span>
+                  <span>{t(s.name)}</span>
                   <strong>{s.count}</strong>
                 </li>
               ))}
@@ -158,13 +163,13 @@ export function ProjectOverviewPage() {
           </div>
         </section>
 
-        <section className="ov-card" aria-label="Priority breakdown">
-          <h3>Priority breakdown</h3>
-          <p className="ov-desc">How the project’s {stats.total} tasks are prioritized.</p>
+        <section className="ov-card" aria-label={t('Priority breakdown')}>
+          <h3>{t('Priority breakdown')}</h3>
+          <p className="ov-desc">{t('How the project’s {n} tasks are prioritized.', { n: stats.total })}</p>
           <div className="pchart">
             <div className="pchart-axis" style={{ height: BAR_AREA }} aria-hidden="true">
-              {ticks.map((t) => (
-                <span key={t}>{t}</span>
+              {ticks.map((tick) => (
+                <span key={tick}>{tick}</span>
               ))}
             </div>
             <div className="pchart-cols">
@@ -176,7 +181,7 @@ export function ProjectOverviewPage() {
                   </div>
                   <span className="pcol-label">
                     <img src={p.icon} alt="" width={16} height={16} />
-                    {p.label}
+                    {t(p.label)}
                   </span>
                 </div>
               ))}

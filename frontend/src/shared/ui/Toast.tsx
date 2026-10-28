@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import './toast.css';
 
 type Variant = 'success' | 'error' | 'info';
@@ -21,6 +22,7 @@ const AUTO_DISMISS_MS = 4000;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
+  const { t: tr } = usePrefs();
 
   const dismiss = useCallback((id: number) => setItems((p) => p.filter((t) => t.id !== id)), []);
   const push = useCallback(
@@ -40,11 +42,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="toasts" role="region" aria-label="Notifications">
+      <div className="toasts" role="region" aria-label={tr('Notifications')}>
         {items.map((t) => (
           <div key={t.id} className={`toast ${t.variant}`} role={t.variant === 'error' ? 'alert' : 'status'}>
-            <span>{t.message}</span>
-            <button type="button" aria-label="Dismiss notification" onClick={() => dismiss(t.id)}>
+            <span>{tr(t.message)}</span>
+            <button type="button" aria-label={tr('Dismiss notification')} onClick={() => dismiss(t.id)}>
               ×
             </button>
           </div>

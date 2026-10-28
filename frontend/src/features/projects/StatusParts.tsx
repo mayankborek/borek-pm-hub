@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiError } from '@/shared/api/client';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 
 /** Best-effort message from an API error body ({detail: string}), else a generic fallback. */
 export function errorText(error: unknown, fallback: string) {
@@ -22,6 +23,7 @@ interface MenuProps {
 
 /** "⋯" trigger and Status actions menu (Figma "Board status actions menu · V1"). PM only. */
 export function StatusMenu({ name, canMoveLeft, canMoveRight, canDelete, onRename, onMove, onDelete }: MenuProps) {
+  const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,24 +48,24 @@ export function StatusMenu({ name, canMoveLeft, canMoveRight, canDelete, onRenam
 
   return (
     <div className="smenu" ref={ref}>
-      <button type="button" className="smenu-trigger" aria-label={`Actions for ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className="smenu-trigger" aria-label={t('Actions for {name}', { name })} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
         ⋯
       </button>
       {open && (
-        <div className="smenu-list" role="menu" aria-label="Status actions">
-          <span className="smenu-title">Status actions</span>
+        <div className="smenu-list" role="menu" aria-label={t('Status actions')}>
+          <span className="smenu-title">{t('Status actions')}</span>
           <button type="button" role="menuitem" onClick={run(onRename)}>
-            Rename status
+            {t('Rename status')}
           </button>
           <button type="button" role="menuitem" disabled={!canMoveLeft} onClick={run(() => onMove(-1))}>
-            Move left
+            {t('Move left')}
           </button>
           <button type="button" role="menuitem" disabled={!canMoveRight} onClick={run(() => onMove(1))}>
-            Move right
+            {t('Move right')}
           </button>
           <hr />
-          <button type="button" role="menuitem" className="danger" disabled={!canDelete} title={canDelete ? undefined : 'A project needs at least one status'} onClick={run(onDelete)}>
-            Delete status
+          <button type="button" role="menuitem" className="danger" disabled={!canDelete} title={canDelete ? undefined : t('A project needs at least one status')} onClick={run(onDelete)}>
+            {t('Delete status')}
           </button>
         </div>
       )}
@@ -83,6 +85,7 @@ export function RenameInput({
   onSave: (name: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = usePrefs();
   const [value, setValue] = useState(initial);
   const name = value.trim();
   const clash = name.toLowerCase() !== initial.toLowerCase() && taken(name);
@@ -96,7 +99,7 @@ export function RenameInput({
     <form className="rename" onSubmit={submit}>
       <input
         autoFocus
-        aria-label="Status name"
+        aria-label={t('Status name')}
         aria-invalid={clash}
         maxLength={50}
         value={value}
@@ -104,7 +107,7 @@ export function RenameInput({
         onKeyDown={(e) => e.key === 'Escape' && onCancel()}
         onBlur={onCancel}
       />
-      {clash && <span className="rename-err">That status already exists.</span>}
+      {clash && <span className="rename-err">{t('That status already exists.')}</span>}
     </form>
   );
 }
@@ -119,6 +122,7 @@ export function StatusCreator({
   taken: (name: string) => boolean;
   create: (name: string) => Promise<unknown>;
 }) {
+  const { t } = usePrefs();
   const [state, setState] = useState<CreatorState>('closed');
   const [name, setName] = useState('');
   const [added, setAdded] = useState('');
@@ -135,8 +139,8 @@ export function StatusCreator({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed) return setError('Enter a status name.');
-    if (taken(trimmed)) return setError('That status already exists.');
+    if (!trimmed) return setError(t('Enter a status name.'));
+    if (taken(trimmed)) return setError(t('That status already exists.'));
     setError('');
     setState('saving');
     try {
@@ -146,7 +150,7 @@ export function StatusCreator({
       setState('success');
       timer.current = window.setTimeout(() => setState('closed'), 2500);
     } catch (err) {
-      setError(errorText(err, 'Could not add the status. Try again.'));
+      setError(errorText(err, t('Could not add the status. Try again.')));
       setState('open');
     }
   };
@@ -154,25 +158,25 @@ export function StatusCreator({
   if (state === 'closed')
     return (
       <button type="button" className="screator-btn" onClick={() => setState('open')}>
-        <b>+</b> Add status
+        <b>+</b> {t('Add status')}
       </button>
     );
   if (state === 'success')
     return (
       <button type="button" className="screator success" onClick={close}>
-        <strong>{added} added</strong>
-        <span>Your new column is ready.</span>
+        <strong>{t('{name} added', { name: added })}</strong>
+        <span>{t('Your new column is ready.')}</span>
       </button>
     );
 
   const saving = state === 'saving';
   return (
     <form className="screator" onSubmit={(e) => void submit(e)} onKeyDown={(e) => e.key === 'Escape' && !saving && close()}>
-      <strong>{saving ? 'Adding status…' : error && taken(name.trim()) ? 'Add a status' : 'Add status'}</strong>
+      <strong>{t(saving ? 'Adding status…' : error && taken(name.trim()) ? 'Add a status' : 'Add status')}</strong>
       <input
         autoFocus
-        placeholder="e.g. QA review"
-        aria-label="Status name"
+        placeholder={t('e.g. QA review')}
+        aria-label={t('Status name')}
         aria-invalid={!!error}
         maxLength={50}
         disabled={saving}
@@ -187,15 +191,15 @@ export function StatusCreator({
           {error}
         </span>
       ) : (
-        <span className="screator-hint">{saving ? 'Please wait while it’s added.' : 'Give this step a clear name.'}</span>
+        <span className="screator-hint">{t(saving ? 'Please wait while it’s added.' : 'Give this step a clear name.')}</span>
       )}
       {!saving && (
         <div className="screator-actions">
           <button type="button" className="cancel" onClick={close}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="submit" className="primary">
-            Add status
+            {t('Add status')}
           </button>
         </div>
       )}

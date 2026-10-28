@@ -48,6 +48,18 @@ export const useUpdateProject = (id: string) => {
   });
 };
 
+/** Applies the difference between the saved member list and the edited one (POST / DELETE /projects/{id}/members). */
+export const useSyncMembers = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ add, remove }: { add: string[]; remove: string[] }) => {
+      for (const user_id of add) await api(`/projects/${id}/members`, { method: 'POST', body: JSON.stringify({ user_id }) });
+      for (const user_id of remove) await api(`/projects/${id}/members/${user_id}`, { method: 'DELETE' });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['projects', 'members', id] }),
+  });
+};
+
 export interface FieldErrors {
   [field: string]: string;
 }

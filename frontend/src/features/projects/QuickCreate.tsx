@@ -1,22 +1,26 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { ApiError } from '@/shared/api/client';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { Avatar } from '@/features/tasks/TaskParts';
 import { useAssignableUsers, useCreateTask, useProjectMembers, type TaskPriority } from '@/features/tasks/tasksApi';
 import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
 import lowIcon from './assets/priority-low.svg';
+import lowestIcon from './assets/priority-lowest.svg';
 
 const PRIORITIES: { key: TaskPriority; label: string; icon: string }[] = [
-  { key: 'critical', label: 'Critical', icon: highestIcon },
+  { key: 'highest', label: 'Highest', icon: highestIcon },
   { key: 'high', label: 'High', icon: highIcon },
   { key: 'medium', label: 'Medium', icon: mediumIcon },
   { key: 'low', label: 'Low', icon: lowIcon },
+  { key: 'lowest', label: 'Lowest', icon: lowestIcon },
 ];
 
 /** Inline task composer at the foot of a Board column (Figma "Task quick composer · Inline"). */
 export function QuickCreate({ projectId, statusId, onClose }: { projectId: string; statusId: string; onClose: () => void }) {
+  const { t } = usePrefs();
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [due, setDue] = useState('');
@@ -53,20 +57,20 @@ export function QuickCreate({ projectId, statusId, onClose }: { projectId: strin
         <input
           className="qc-title"
           autoFocus
-          placeholder="What needs to be done?"
-          aria-label="Task title"
+          placeholder={t('What needs to be done?')}
+          aria-label={t('Task title')}
           maxLength={300}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <div className="qc-fields">
-          <label className="qc-priority" title={`Priority: ${PRIORITIES.find((p) => p.key === priority)!.label}`}>
+          <label className="qc-priority" title={`${t('Priority')}: ${t(PRIORITIES.find((p) => p.key === priority)!.label)}`}>
             <img src={priorityIcon} alt="" width={16} height={16} />
             <span aria-hidden="true">⌄</span>
-            <select aria-label="Priority" value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
+            <select aria-label={t('Priority')} value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
               {PRIORITIES.map((p) => (
                 <option key={p.key} value={p.key}>
-                  {p.label}
+                  {t(p.label)}
                 </option>
               ))}
             </select>
@@ -74,14 +78,14 @@ export function QuickCreate({ projectId, statusId, onClose }: { projectId: strin
           <button
             type="button"
             className="qc-icon"
-            aria-label={due ? `Due date ${due}` : 'Set due date'}
-            title={due || 'Due date'}
+            aria-label={due ? `${t('Due date')} ${due}` : t('Set due date')}
+            title={due || t('Due date')}
             onClick={() => dueRef.current?.showPicker?.()}
           >
             ▦
             <input ref={dueRef} type="date" tabIndex={-1} aria-hidden="true" value={due} onChange={(e) => setDue(e.target.value)} />
           </button>
-          <label className="qc-assignee" title={assignee ? assignee.name : 'Unassigned'}>
+          <label className="qc-assignee" title={assignee ? assignee.name : t('Unassigned')}>
             {assignee ? (
               <Avatar user={{ id: assignee.user_id, name: assignee.name, email: assignee.email }} round />
             ) : (
@@ -89,8 +93,8 @@ export function QuickCreate({ projectId, statusId, onClose }: { projectId: strin
                 ?
               </span>
             )}
-            <select aria-label="Assignee" value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
-              <option value="">Unassigned</option>
+            <select aria-label={t('Assignee')} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+              <option value="">{t('Unassigned')}</option>
               {people.map((m) => (
                 <option key={m.user_id} value={m.user_id}>
                   {m.name}
@@ -98,18 +102,18 @@ export function QuickCreate({ projectId, statusId, onClose }: { projectId: strin
               ))}
             </select>
           </label>
-          <button type="submit" className="qc-create" disabled={!canCreate} aria-label="Create task" title="Create task (Enter)">
+          <button type="submit" className="qc-create" disabled={!canCreate} aria-label={t('Create task')} title={t('Create task (Enter)')}>
             ↵
           </button>
         </div>
       </div>
       {create.isError && (
         <p className="qc-error" role="alert">
-          {create.error instanceof ApiError ? create.error.message : 'Could not create the task. Try again.'}
+          {create.error instanceof ApiError ? create.error.message : t('Could not create the task. Try again.')}
         </p>
       )}
       <button type="button" className="kcol-link" onClick={onClose}>
-        Cancel
+        {t('Cancel')}
       </button>
     </form>
   );

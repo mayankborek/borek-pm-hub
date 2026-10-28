@@ -109,11 +109,4 @@
 .screator.success { cursor: pointer; }
 .screator.success strong { font-size: 14px; color: var(--accent); }
 
-.kcard-status { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--surface-2); font-size: 14px; color: var(--muted); }
-.kcard-status.st-in_progress { color: #124f94; }
-.kcard-status.st-blocked { color: #ad1f1f; }
-.kcard-status.st-done { color: #17735e; }
-:root[data-theme=dark] .kcard-status.st-in_progress { color: #a9c9ff; }
-:root[data-theme=dark] .kcard-status.st-blocked { color: #ffa7a2; }
-:root[data-theme=dark] .kcard-status.st-done { color: #8ce7b9; }
 .kcard-key { font-size: 12px; line-height: 16px; color: var(--muted); }
