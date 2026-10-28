@@ -46,6 +46,8 @@ export function TaskRow({
   selected,
   onSelect,
   onDelete,
+  onMoveToBoard,
+  moving,
 }: {
   task: Task;
   showProject?: boolean;
@@ -53,10 +55,13 @@ export function TaskRow({
   onSelect?: (checked: boolean) => void;
   /** Adds a trailing Delete button (PM only). */
   onDelete?: () => void;
+  /** Adds a trailing Move to Board button (Backlog rows). */
+  onMoveToBoard?: () => void;
+  moving?: boolean;
 }) {
   const { t } = usePrefs();
   return (
-    <div className={onDelete ? 'task-row has-actions' : 'task-row'} role="row">
+    <div className={onDelete || onMoveToBoard ? 'task-row has-actions' : 'task-row'} role="row">
       <div className="task-title" role="cell">
         {onSelect && (
           <input
@@ -108,11 +113,24 @@ export function TaskRow({
           </>
         )}
       </div>
-      {onDelete && (
+      {(onDelete || onMoveToBoard) && (
         <div className="cell-actions" role="cell">
-          <button type="button" className="link-btn task-delete" aria-label={t('Delete {key}', { key: task.key })} onClick={onDelete}>
-            {t('Delete')}
-          </button>
+          {onMoveToBoard && (
+            <button
+              type="button"
+              className="link-btn"
+              aria-label={t('Move {key} to Board', { key: task.key })}
+              disabled={moving}
+              onClick={onMoveToBoard}
+            >
+              {t(moving ? 'Moving…' : 'Move to Board')}
+            </button>
+          )}
+          {onDelete && (
+            <button type="button" className="link-btn task-delete" aria-label={t('Delete {key}', { key: task.key })} onClick={onDelete}>
+              {t('Delete')}
+            </button>
+          )}
         </div>
       )}
     </div>

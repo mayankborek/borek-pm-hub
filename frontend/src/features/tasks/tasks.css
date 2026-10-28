@@ -16,8 +16,8 @@
   min-height: 48px; min-width: 760px; border-top: 1px solid var(--line); color: inherit; text-decoration: none; font-size: 13px;
 }
 .task-row:hover { background: var(--surface-2); }
-.task-row.has-actions { grid-template-columns: minmax(260px, 1fr) 140px 140px 100px 180px 80px; }
-.task-row .cell-actions { text-align: right; }
+.task-row.has-actions { grid-template-columns: minmax(260px, 1fr) 140px 140px 100px 180px minmax(80px, max-content); }
+.task-row .cell-actions { text-align: right; display: flex; gap: 12px; justify-content: flex-end; white-space: nowrap; }
 .task-row .task-delete { color: #ad1f1f; }
 :root[data-theme=dark] .task-row .task-delete { color: #ffa7a2; }
 .task-row > * { padding: 0 8px 0 12px; min-width: 0; }
