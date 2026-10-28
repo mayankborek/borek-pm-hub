@@ -208,10 +208,6 @@ export function ProfilePage() {
               >
                 {t('Sign out')}
               </button>
-              <div className="pf-deactivate">
-                <button type="button" className="pf-link danger">{t('Deactivate account')}</button>
-                <small>{t('Requires confirmation')}</small>
-              </div>
             </div>
           </section>
         </aside>
