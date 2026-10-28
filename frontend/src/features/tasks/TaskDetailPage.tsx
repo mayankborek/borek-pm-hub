@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ApiError, describeApiError } from '@/shared/api/client';
@@ -71,6 +71,7 @@ function Description({ value, onChange, readOnly }: { value: string; onChange: (
 export function TaskDetailPage() {
   const { t } = usePrefs();
   const { taskId = '' } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: task, isPending, isError, refetch } = useTask(taskId);
   const statuses = useProjectStatuses(task?.project_id);
@@ -175,13 +176,14 @@ export function TaskDetailPage() {
   const edit = (patch: TaskPatch) =>
     isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))) });
   const conflict = update.error instanceof ApiError && update.error.status === 409;
+  // Return to wherever the user came from; fall back to the list/board when the page was opened directly.
+  const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(isPm ? paths.tasks : paths.projectBoard(task.project_id)));
 
   return (
     <section className={isPm ? 'page-body task-detail' : 'page-body task-detail td-dev'}>
-      <p className="td-crumb">
-        <Link to={paths.project(task.project_id)}>{task.project_name}</Link> /{' '}
-        {isPm ? <Link to={paths.tasks}>{t('Task List')}</Link> : <Link to={paths.projectBoard(task.project_id)}>{t('Board')}</Link>} / {task.key}
-      </p>
+      <button type="button" className="td-back" onClick={goBack}>
+        ← {t('Back')}
+      </button>
       <div className="td-head">
         <h2 className="td-title">{task.title}</h2>
         <button type="button" className="btn" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>

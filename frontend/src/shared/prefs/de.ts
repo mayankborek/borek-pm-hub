@@ -171,6 +171,7 @@ export const DE: Record<string, string> = {
 
   // Projects, board, tasks
   'Try again': 'Erneut versuchen',
+  'Back': 'Zurück',
   'Back to home': 'Zurück zur Startseite',
   'Page not found': 'Seite nicht gefunden',
   'The page you are looking for does not exist.': 'Die gesuchte Seite existiert nicht.',

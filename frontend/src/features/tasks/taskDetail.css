@@ -3,6 +3,8 @@
 .td-crumb { margin: 0 0 16px; font-size: 13px; color: var(--muted); }
 .td-crumb a { color: inherit; text-decoration: none; }
 .td-crumb a:hover { text-decoration: underline; }
+.td-back { margin: 0 0 16px; padding: 0; background: none; border: 0; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+.td-back:hover { text-decoration: underline; }
 .td-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 8px; }
 .td-head .btn:disabled { opacity: .45; cursor: not-allowed; }
 .td-title { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; color: var(--ink); }
