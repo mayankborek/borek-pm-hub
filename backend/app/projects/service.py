@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.common.enums import GlobalRole, MembershipSource, ProjectRole, StatusCategory
+from app.common.validation import like_escape
 from app.core.errors import AppError
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import MemberIn, ProjectCreate, ProjectUpdate, TaskSummary
@@ -127,7 +128,7 @@ async def list_projects(
     if status:
         conditions.append(Project.status == status)
     if q:
-        pattern = f"%{q.strip().replace('%', r'\%').replace('_', r'\_')}%"
+        pattern = f"%{like_escape(q.strip())}%"
         conditions.append(
             or_(Project.name.ilike(pattern, escape="\\"), Project.code.ilike(pattern, escape="\\"))
         )

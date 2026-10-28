@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import CurrentUser
 from app.auth.permissions import Action, Resource, require
 from app.common.enums import GlobalRole, ProjectStatus
+from app.common.validation import PageParam, PageSizeParam
 from app.core.database import SessionDep
 from app.projects import service
 from app.projects.membership import is_member
@@ -91,8 +92,8 @@ async def list_projects(
     q: Annotated[str | None, Query(max_length=100, description="Search name or code")] = None,
     status: ProjectStatus | None = None,
     include_archived: Annotated[bool, Query(description="PM only; ignored for developers")] = False,
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+    page: PageParam = 1,
+    page_size: PageSizeParam = 50,
 ) -> ProjectListOut:
     require(user, Action.PROJECT_LIST)
     projects, total = await service.list_projects(

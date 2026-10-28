@@ -23,7 +23,8 @@ class Action(StrEnum):
     MEMBER_MANAGE = "member:manage"
     STATUS_MANAGE = "status:manage"  # add, rename, reorder, delete a project's statuses
     TASK_CREATE = "task:create"
-    TASK_EDIT_DETAILS = "task:edit_details"  # title, description, priority, labels, estimate
+    TASK_EDIT_DETAILS = "task:edit_details"  # title, description, labels, estimate
+    TASK_EDIT_PRIORITY = "task:edit_priority"  # PM, or the developer the task is assigned to
     TASK_EDIT_SCHEDULE = "task:edit_schedule"  # start and due date
     TASK_ASSIGN = "task:assign"
     TASK_CHANGE_STATUS = "task:change_status"  # also covers blocked_reason
@@ -80,6 +81,9 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
         return resource.is_member
     if action is Action.STATUS_MANAGE:
         return resource.is_member and resource.is_project_lead
+    if action is Action.TASK_EDIT_PRIORITY:
+        # Never on tasks of other developers or on unassigned tasks.
+        return resource.is_member and resource.assignee_id == user.id
     if action is Action.TASK_CHANGE_STATUS:
         # Only on tasks assigned to them (the allowed transitions are checked by the workflow).
         return resource.is_member and resource.assignee_id == user.id

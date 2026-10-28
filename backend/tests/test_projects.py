@@ -504,3 +504,50 @@ async def test_removing_member_unassigns_their_tasks(
     await session.refresh(task)
     assert task.assignee_id is None
     assert task.version == 2
+
+
+# --- cancelled projects ---------------------------------------------------------------------
+
+
+async def test_project_can_be_created_cancelled_and_reopened(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    pm = await make_user(session, GlobalRole.PM)
+    headers = as_user(pm.id)
+
+    created = await client.post(
+        URL, headers=headers, json={"code": "CAN", "name": "Stopped", "status": "cancelled"}
+    )
+    assert created.status_code == 201 and created.json()["status"] == "cancelled"
+    project_id = created.json()["id"]
+
+    fetched = await client.get(f"{URL}/{project_id}", headers=headers)
+    assert fetched.json()["status"] == "cancelled"
+    listed = await client.get(URL, headers=headers, params={"status": "cancelled"})
+    assert [p["code"] for p in listed.json()["items"]] == ["CAN"]
+
+    reopened = await client.patch(
+        f"{URL}/{project_id}", headers=headers, json={"version": 1, "status": "active"}
+    )
+    assert reopened.status_code == 200 and reopened.json()["status"] == "active"
+
+    again = await client.patch(
+        f"{URL}/{project_id}", headers=headers, json={"version": 2, "status": "cancelled"}
+    )
+    assert again.json()["status"] == "cancelled"
+
+
+async def test_cancelled_project_keeps_its_tasks_inside_the_project(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    pm = await make_user(session, GlobalRole.PM)
+    project = await make_project(session, pm.id, code="KEEP")
+    await make_task(session, project, pm.id, title="Still here")
+    project.status = "cancelled"
+    await session.flush()
+
+    response = await client.get(f"{URL}/{project.id}/tasks", headers=as_user(pm.id))
+
+    assert [t["title"] for t in response.json()["items"]] == ["Still here"]
+    detail = await client.get(f"{URL}/{project.id}", headers=as_user(pm.id))
+    assert detail.json()["task_summary"]["total"] == 1

@@ -590,6 +590,48 @@ async def test_completed_at_follows_done_statuses(
     assert reopened.json()["completed_at"] is None
 
 
+async def test_pm_creates_in_backlog_then_moves_task_to_the_board(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    backlog = await status_by_name(session, world.project.id, "Backlog")
+    todo = await status_by_name(session, world.project.id, "To do")
+    other = await make_project(session, world.pm.id, code="OTH")
+    foreign = await status_by_name(session, other.id, "To do")
+    headers = as_user(world.pm)
+
+    created = await client.post(
+        tasks_url(world.project),
+        headers=headers,
+        json={"title": "Later", "status_id": str(backlog.id)},
+    )
+    assert created.status_code == 201
+    task = created.json()
+    assert task["status"]["category"] == "backlog" and task["assignee"] is None
+    url = f"/api/v1/tasks/{task['id']}"
+
+    stale = await client.patch(url, headers=headers, json={"version": 9, "status_id": str(todo.id)})
+    wrong_project = await client.patch(
+        url, headers=headers, json={"version": 1, "status_id": str(foreign.id)}
+    )
+    assert (stale.status_code, wrong_project.status_code) == (409, 404)
+
+    # An unassigned backlog task is PM-only: a developer cannot move it.
+    denied = await client.patch(
+        url, headers=as_user(world.dev), json={"version": 1, "status_id": str(todo.id)}
+    )
+    assert denied.status_code == 403
+
+    moved = await client.patch(url, headers=headers, json={"version": 1, "status_id": str(todo.id)})
+    assert moved.status_code == 200
+    assert moved.json()["status"]["name"] == "To do" and moved.json()["version"] == 2
+
+    assert (await client.get(url, headers=headers)).json()["status"]["name"] == "To do"
+    board = await client.get(tasks_url(world.project), headers=headers, params={"view": "board"})
+    by_name = {c["status"]["name"]: c for c in board.json()["columns"]}
+    assert by_name["Backlog"]["tasks"] == []
+    assert [t["title"] for t in by_name["To do"]["tasks"]] == ["Later"]
+
+
 async def test_developer_updates_status_on_own_task_only(
     client: httpx.AsyncClient, session: AsyncSession, world: World
 ) -> None:
@@ -620,7 +662,6 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
     for payload in (
         {"title": "x"},
         {"description": "x"},
-        {"priority": "low"},
         {"labels": ["x"]},
         {"estimate_value": 5, "estimate_unit": "hours"},
         {"assignee_id": str(world.other_dev.id)},
@@ -634,6 +675,39 @@ async def test_developer_cannot_edit_pm_fields_or_archive(
     assert (await client.delete(f"/api/v1/tasks/{own.id}", headers=headers)).status_code == 403
     await session.refresh(own)
     assert own.version == 1 and own.archived_at is None
+
+
+async def test_developer_changes_priority_only_of_tasks_assigned_to_them(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    mine = await make_task(session, world.project, world.pm.id, assignee_id=world.dev.id)
+    theirs = await make_task(session, world.project, world.pm.id, assignee_id=world.other_dev.id)
+    nobody = await make_task(session, world.project, world.pm.id)
+    headers = as_user(world.dev)
+
+    ok = await client.patch(
+        f"/api/v1/tasks/{mine.id}", headers=headers, json={"version": 1, "priority": "lowest"}
+    )
+    assert ok.status_code == 200 and ok.json()["priority"] == "lowest"
+    for other in (theirs, nobody):
+        denied = await client.patch(
+            f"/api/v1/tasks/{other.id}", headers=headers, json={"version": 1, "priority": "high"}
+        )
+        assert denied.status_code == 403
+        await session.refresh(other)
+        assert other.priority == "medium" and other.version == 1
+    mixed = await client.patch(
+        f"/api/v1/tasks/{mine.id}",
+        headers=headers,
+        json={"version": 2, "priority": "high", "title": "renamed"},
+    )
+    assert mixed.status_code == 403  # the PM-only part blocks the whole request
+    outsider = await client.patch(
+        f"/api/v1/tasks/{mine.id}",
+        headers=as_user(world.outsider),
+        json={"version": 2, "priority": "high"},
+    )
+    assert outsider.status_code == 404
 
 
 async def test_developer_edits_dates_only_of_tasks_created_for_themselves(

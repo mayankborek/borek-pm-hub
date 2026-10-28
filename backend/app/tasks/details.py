@@ -1,14 +1,17 @@
 """Comments, attachments and history of a task. Routers check access; this checks data rules."""
 
+import re
 import uuid
 from datetime import UTC, datetime
 from pathlib import PurePath
+from urllib.parse import urlsplit
 
 from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.enums import AttachmentKind, GlobalRole
+from app.common.validation import has_control_chars
 from app.core import storage
 from app.core.config import get_settings
 from app.core.errors import AppError
@@ -171,11 +174,11 @@ async def get_attachment(
 
 
 async def add_link(session: AsyncSession, task: Task, user: User, data: LinkIn) -> AttachmentOut:
-    name = data.name or (data.url.split("//", 1)[1].split("/", 1)[0])
+    name = (data.name or urlsplit(data.url).hostname or "link")[:255]
     item = TaskAttachment(
         task_id=task.id,
         kind=AttachmentKind.LINK.value,
-        name=name[:255],
+        name=name,
         url=data.url,
         uploaded_by=user.id,
     )
@@ -196,9 +199,22 @@ ALLOWED_EXTENSIONS = frozenset(
 )  # fmt: skip
 
 
+_CONTENT_TYPE = re.compile(r"^[a-z0-9][a-z0-9!#$&^_.+-]{0,60}/[a-z0-9][a-z0-9!#$&^_.+-]{0,80}$")
+
+
 def _clean_file_name(raw: str | None) -> str:
-    name = PurePath((raw or "").replace("\\", "/")).name.strip()
-    return (name or "file")[:255]
+    """Last path part, no control characters, 255 characters at most (extension kept)."""
+    name = PurePath((raw or "").replace("\\", "/")).name
+    name = "".join(char for char in name if not has_control_chars(char)).strip()
+    if len(name) > 255:
+        suffix = PurePath(name).suffix[:20]
+        name = name[: 255 - len(suffix)] + suffix
+    return name or "file"
+
+
+def _clean_content_type(raw: str | None) -> str:
+    value = (raw or "").split(";", 1)[0].strip().lower()
+    return value if _CONTENT_TYPE.fullmatch(value) else "application/octet-stream"
 
 
 async def add_file(
@@ -232,7 +248,7 @@ async def add_file(
         kind=AttachmentKind.FILE.value,
         name=name,
         storage_key=await storage.save(bytes(data)),
-        content_type=(upload.content_type or "application/octet-stream")[:150],
+        content_type=_clean_content_type(upload.content_type),
         size_bytes=len(data),
         uploaded_by=user.id,
     )
