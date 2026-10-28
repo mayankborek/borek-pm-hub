@@ -7,14 +7,12 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.common.validation import clean_optional_text, clean_text, has_control_chars
 from app.tasks.schemas import UserBrief
 
 
 def _clean_body(value: str) -> str:
-    value = value.strip()
-    if not value:
-        raise ValueError("The comment must not be empty.")
-    return value
+    return clean_text(value, label="The comment", multiline=True)
 
 
 class CommentIn(BaseModel):
@@ -44,15 +42,19 @@ class LinkIn(BaseModel):
     @classmethod
     def _http_only(cls, value: str) -> str:
         value = value.strip()
+        if has_control_chars(value) or any(char.isspace() for char in value):
+            raise ValueError("The link contains characters that are not allowed.")
         parts = urlsplit(value)
-        if parts.scheme not in ("http", "https") or not parts.netloc:
+        if parts.scheme not in ("http", "https") or not parts.hostname:
             raise ValueError("The link must start with http:// or https://.")
+        if parts.username is not None or parts.password is not None:
+            raise ValueError("The link must not contain a user name or password.")
         return value
 
     @field_validator("name")
     @classmethod
     def _strip_name(cls, value: str | None) -> str | None:
-        return (value or "").strip() or None
+        return clean_optional_text(value, max_length=255, label="Name", multiline=False)
 
 
 class AttachmentOut(BaseModel):

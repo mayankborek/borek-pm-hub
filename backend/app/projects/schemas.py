@@ -8,8 +8,23 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.common.enums import ProjectRole, ProjectStatus
+from app.common.validation import check_date, clean_optional_text, clean_text
 
-_CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9_-]{1,19}$")
+_CODE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$", re.ASCII)
+MAX_DESCRIPTION = 20_000
+MAX_MEMBERS = 200
+
+
+def _clean_description(value: str | None) -> str | None:
+    return clean_optional_text(value, max_length=MAX_DESCRIPTION, label="Description")
+
+
+def _check_start(value: date | None) -> date | None:
+    return check_date(value, "start_date")
+
+
+def _check_end(value: date | None) -> date | None:
+    return check_date(value, "target_end_date")
 
 
 class MemberIn(BaseModel):
@@ -29,7 +44,7 @@ class MemberOut(BaseModel):
     user_id: uuid.UUID
     name: str
     email: str
-    project_role: str
+    project_role: ProjectRole
     granted_at: datetime
 
 
@@ -52,29 +67,32 @@ class TaskSummary(BaseModel):
 class ProjectCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    code: str = Field(description="Unique short identifier, 2-20 chars (A-Z, 0-9, _ -). Immutable.")
+    code: str = Field(
+        max_length=40, description="Unique short identifier, 2-20 chars (A-Z, 0-9, _ -). Immutable."
+    )
     name: str = Field(min_length=1, max_length=200)
     description: str | None = None
     status: ProjectStatus = ProjectStatus.PLANNED
     start_date: date | None = None
     target_end_date: date | None = None
-    members: list[MemberIn] = Field(default_factory=list)
+    members: list[MemberIn] = Field(default_factory=list, max_length=MAX_MEMBERS)
+
+    _clean_desc = field_validator("description")(_clean_description)
+    _range_start = field_validator("start_date")(_check_start)
+    _range_end = field_validator("target_end_date")(_check_end)
 
     @field_validator("code")
     @classmethod
     def _normalise_code(cls, value: str) -> str:
-        value = value.strip().upper()
-        if not _CODE_PATTERN.match(value):
+        value = value.strip()
+        if not _CODE_PATTERN.fullmatch(value):
             raise ValueError("Use 2-20 characters: letters, digits, '_' or '-'.")
-        return value
+        return value.upper()
 
     @field_validator("name")
     @classmethod
     def _strip_name(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("Name is required.")
-        return value
+        return clean_text(value, label="Name")
 
     @model_validator(mode="after")
     def _check_dates(self) -> Self:
@@ -98,12 +116,11 @@ class ProjectUpdate(BaseModel):
     @field_validator("name")
     @classmethod
     def _strip_name(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        value = value.strip()
-        if not value:
-            raise ValueError("Name is required.")
-        return value
+        return None if value is None else clean_text(value, label="Name")
+
+    _clean_desc = field_validator("description")(_clean_description)
+    _range_start = field_validator("start_date")(_check_start)
+    _range_end = field_validator("target_end_date")(_check_end)
 
 
 class ProjectOut(BaseModel):
@@ -111,7 +128,7 @@ class ProjectOut(BaseModel):
     code: str
     name: str
     description: str | None
-    status: str
+    status: ProjectStatus
     start_date: date | None
     target_end_date: date | None
     created_by: uuid.UUID

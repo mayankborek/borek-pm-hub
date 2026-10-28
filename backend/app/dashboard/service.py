@@ -73,7 +73,9 @@ async def _attention(
 async def pm_dashboard(session: AsyncSession, limit: int) -> PmDashboard:
     projects = list(
         await session.scalars(
-            select(Project).where(Project.archived_at.is_(None)).order_by(Project.code)
+            select(Project)
+            .where(Project.archived_at.is_(None), Project.status != ProjectStatus.CANCELLED.value)
+            .order_by(Project.code)
         )
     )
     summaries = await project_service.task_summaries(session, [p.id for p in projects])
@@ -93,6 +95,7 @@ async def my_dashboard(session: AsyncSession, user: User, limit: int) -> MyDashb
         Task.assignee_id == user.id,
         Task.archived_at.is_(None),
         Project.archived_at.is_(None),
+        Project.status != ProjectStatus.CANCELLED.value,
     ]
     if scope is not None:
         mine.append(scope)
@@ -109,7 +112,11 @@ async def my_dashboard(session: AsyncSession, user: User, limit: int) -> MyDashb
         await session.scalars(
             select(Project)
             .join(ProjectMember, ProjectMember.project_id == Project.id)
-            .where(ProjectMember.user_id == user.id, Project.archived_at.is_(None))
+            .where(
+                ProjectMember.user_id == user.id,
+                Project.archived_at.is_(None),
+                Project.status != ProjectStatus.CANCELLED.value,
+            )
             .order_by(Project.code)
         )
     )

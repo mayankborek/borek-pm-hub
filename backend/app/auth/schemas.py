@@ -1,6 +1,8 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.common.validation import has_control_chars
 
 
 class UserOut(BaseModel):
@@ -29,6 +31,13 @@ class LoginIn(BaseModel):
 
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=1, max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def _plain_email(cls, value: str) -> str:
+        if has_control_chars(value) or any(char.isspace() for char in value.strip()):
+            raise ValueError("The email contains characters that are not allowed.")
+        return value
 
 
 class LoginOut(BaseModel):

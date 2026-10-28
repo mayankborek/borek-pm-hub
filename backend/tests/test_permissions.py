@@ -106,3 +106,15 @@ def test_require_returns_403_when_there_is_no_project_in_play() -> None:
 
 def test_require_passes_silently_when_allowed() -> None:
     require(make(GlobalRole.PM), Action.PROJECT_CREATE)
+
+
+def test_developer_changes_priority_only_on_own_task() -> None:
+    developer = make(GlobalRole.DEVELOPER)
+    own = Resource(project_id=PROJECT_ID, is_member=True, assignee_id=developer.id)
+    someone_elses = Resource(project_id=PROJECT_ID, is_member=True, assignee_id=uuid.uuid4())
+    unassigned = Resource(project_id=PROJECT_ID, is_member=True)
+    no_longer_member = Resource(project_id=PROJECT_ID, is_member=False, assignee_id=developer.id)
+    assert can(developer, Action.TASK_EDIT_PRIORITY, own)
+    assert not can(developer, Action.TASK_EDIT_PRIORITY, someone_elses)
+    assert not can(developer, Action.TASK_EDIT_PRIORITY, unassigned)
+    assert not can(developer, Action.TASK_EDIT_PRIORITY, no_longer_member)

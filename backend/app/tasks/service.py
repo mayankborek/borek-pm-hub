@@ -10,7 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.common.enums import MembershipSource, ProjectRole, StatusCategory, TaskPriority
+from app.common.enums import (
+    MembershipSource,
+    ProjectRole,
+    ProjectStatus,
+    StatusCategory,
+    TaskPriority,
+)
+from app.common.validation import like_escape
 from app.core.errors import AppError
 from app.projects.models import Project, ProjectMember
 from app.tasks import activity, statuses
@@ -45,6 +52,8 @@ DETAIL_FIELDS = frozenset(
 )
 # Part of DETAIL_FIELDS, but also editable by a developer on a task they created for themselves.
 SCHEDULE_FIELDS = frozenset({"start_date", "due_date"})
+# Part of DETAIL_FIELDS, but also editable by a developer on a task assigned to them.
+PRIORITY_FIELDS = frozenset({"priority"})
 STATUS_FIELDS = frozenset({"status_id", "blocked_reason"})
 _NOT_NULL_FIELDS = ("title", "priority", "labels", "status_id")
 
@@ -190,7 +199,7 @@ class TaskFilters:
             found.append(Task.due_date < datetime.now(UTC).date())
             found.append(WorkflowStatus.category != StatusCategory.DONE.value)
         if self.q:
-            pattern = f"%{self.q.strip().replace('%', r'\%').replace('_', r'\_')}%"
+            pattern = f"%{like_escape(self.q.strip())}%"
             found.append(
                 or_(Task.title.ilike(pattern, escape="\\"), Task.key.ilike(pattern, escape="\\"))
             )
@@ -242,7 +251,9 @@ async def list_tasks(
     if scope is not None:
         conditions.append(scope)
     if filters.project_id is None:
-        conditions.append(Project.archived_at.is_(None))  # cross-project lists skip archived ones
+        # cross-project lists skip archived and cancelled projects
+        conditions.append(Project.archived_at.is_(None))
+        conditions.append(Project.status != ProjectStatus.CANCELLED.value)
     total = (
         await session.scalar(
             select(func.count(Task.id))
