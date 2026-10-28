@@ -12,7 +12,13 @@ interface UserOut {
   role: string;
 }
 
-const toUser = (u: UserOut): User => ({ id: u.id, name: u.name, email: u.email, role: u.role as Role });
+const ROLES: readonly Role[] = ['pm', 'developer'];
+
+/** Rejects an unknown role instead of casting it, so the UI never runs with a role it does not understand. */
+function toUser(u: UserOut): User {
+  if (!ROLES.includes(u.role as Role)) throw new NoAccessError();
+  return { id: u.id, name: u.name, email: u.email, role: u.role as Role };
+}
 
 interface LoginOut {
   access_token: string;

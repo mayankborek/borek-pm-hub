@@ -11,7 +11,8 @@ export function readCookie(name: string): string | null {
 
 export function writeCookie(name: string, value: string) {
   try {
-    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR}; SameSite=Lax`;
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR}; SameSite=Lax${secure}`;
   } catch {
     /* cookies unavailable */
   }

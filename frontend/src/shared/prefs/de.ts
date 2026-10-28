@@ -97,6 +97,7 @@ export const DE: Record<string, string> = {
   Password: 'Passwort',
   Change: 'Ändern',
   'Sign out': 'Abmelden',
+  'Could not verify your session.': 'Ihre Sitzung konnte nicht überprüft werden.',
   'Deactivate account': 'Konto deaktivieren',
   'Requires confirmation': 'Bestätigung erforderlich',
   'Discard unsaved changes?': 'Nicht gespeicherte Änderungen verwerfen?',

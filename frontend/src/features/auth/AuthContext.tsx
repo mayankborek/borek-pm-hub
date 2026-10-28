@@ -1,12 +1,30 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ApiError, setApiToken, setApiUser, setUnauthorizedHandler } from '@/shared/api/client';
-import { fetchMe } from './authService';
+import {
+  ApiError,
+  hasApiToken,
+  hasStoredCredentials,
+  setApiToken,
+  setApiUser,
+  setUnauthorizedHandler,
+} from '@/shared/api/client';
+import { usePrefs } from '@/shared/prefs/PrefsContext';
+import { fetchMe, NoAccessError } from './authService';
 import type { User } from './types';
 
-const STORAGE_KEY = 'borek.user';
+// Earlier builds kept the whole user (role included) here. It is never read; just clear it.
+const LEGACY_USER_KEY = 'borek.user';
+try {
+  sessionStorage.removeItem(LEGACY_USER_KEY);
+} catch {
+  /* ignore */
+}
+
+/** loading: a stored credential is being checked; unavailable: the check failed for a reason other than 401. */
+type Status = 'ready' | 'loading' | 'unavailable';
 
 interface AuthValue {
+  /** Only ever set from a server response, never from browser storage. */
   user: User | null;
   signIn: (user: User) => void;
   signOut: () => void;
@@ -14,35 +32,25 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
-let loadedUserId: string | null = null;
-
-function loadUser(): User | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    const user = raw ? (JSON.parse(raw) as User) : null;
-    setApiUser(user?.id ?? null);
-    loadedUserId = user?.id ?? null;
-    return user;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const [user, setUser] = useState<User | null>(loadUser);
+  const { t } = usePrefs();
+  const [user, setUser] = useState<User | null>(null);
+  const [status, setStatus] = useState<Status>(() => (hasStoredCredentials() ? 'loading' : 'ready'));
+  const [attempt, setAttempt] = useState(0);
 
   const signIn = useCallback((next: User) => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setApiUser(next.id);
+    // With a bearer token the dev user id header is ignored, so it is not stored.
+    if (!hasApiToken()) setApiUser(next.id);
     setUser(next);
+    setStatus('ready');
   }, []);
 
   const signOut = useCallback(() => {
-    sessionStorage.removeItem(STORAGE_KEY);
     setApiUser(null);
     setApiToken(null);
     setUser(null);
+    setStatus('ready');
     qc.clear();
   }, [qc]);
 
@@ -51,20 +59,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 
-  // Re-resolve the stored session with the server on load: picks up role changes, drops expired/inactive users.
+  // A stored credential only resumes a session: the server decides who this is and what role they hold.
   useEffect(() => {
-    if (!loadedUserId) return;
+    if (status !== 'loading') return;
+    let cancelled = false;
     fetchMe()
       .then((fresh) => {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+        if (cancelled) return;
         setUser(fresh);
+        setStatus('ready');
       })
       .catch((e) => {
-        if (e instanceof ApiError && e.status === 401) signOut();
+        if (cancelled) return;
+        if (e instanceof NoAccessError || (e instanceof ApiError && e.status >= 400 && e.status < 500)) signOut();
+        else setStatus('unavailable');
       });
-  }, [signOut]);
+    return () => {
+      cancelled = true;
+    };
+  }, [status, attempt, signOut]);
 
   const value = useMemo(() => ({ user, signIn, signOut }), [user, signIn, signOut]);
+
+  if (status === 'loading') {
+    return (
+      <div role="status" aria-live="polite" style={{ padding: 24 }}>
+        {t('Loading…')}
+      </div>
+    );
+  }
+  if (status === 'unavailable') {
+    return (
+      <div role="alert" style={{ padding: 24 }}>
+        <p>{t('Could not verify your session.')}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setStatus('loading');
+            setAttempt((n) => n + 1);
+          }}
+        >
+          {t('Retry')}
+        </button>{' '}
+        <button type="button" onClick={signOut}>
+          {t('Sign out')}
+        </button>
+      </div>
+    );
+  }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

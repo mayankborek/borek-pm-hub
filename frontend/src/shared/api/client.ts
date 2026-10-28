@@ -20,10 +20,25 @@ export function describeApiError(err: unknown, fallback: string): string {
 
 // Phase 1 auth: the selected seeded user id is sent on every request
 // (X-Dev-User-Id). Replaced by a bearer token when Entra ID is added.
+// Browser storage holds only these credentials, never profile data or the role: both are editable
+// by the user, so they are a way to resume a session, not proof of who someone is or what they may do.
+// The server's answer (GET /auth/me) is the only source of identity in the UI.
+const DEV_USER_KEY = 'borek.dev-user';
 let devUserId: string | null = null;
+try {
+  devUserId = sessionStorage.getItem(DEV_USER_KEY);
+} catch {
+  /* storage unavailable: the session just won't survive a reload */
+}
 export const getApiUser = () => devUserId;
 export const setApiUser = (id: string | null) => {
   devUserId = id;
+  try {
+    if (id) sessionStorage.setItem(DEV_USER_KEY, id);
+    else sessionStorage.removeItem(DEV_USER_KEY);
+  } catch {
+    /* ignore */
+  }
 };
 
 // AUTH_MODE=local: the bearer token from POST /auth/login, kept for the browser session.
@@ -34,6 +49,9 @@ try {
 } catch {
   /* storage unavailable: the session just won't survive a reload */
 }
+export const hasApiToken = () => apiToken !== null;
+/** True when a stored credential exists that still has to be checked with the server. */
+export const hasStoredCredentials = () => apiToken !== null || devUserId !== null;
 export const setApiToken = (token: string | null) => {
   apiToken = token;
   try {
