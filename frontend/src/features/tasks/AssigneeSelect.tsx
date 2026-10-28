@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { useAssignableUsers } from './tasksApi';
+import { useProjectMembers } from './tasksApi';
 
 interface Props {
+  projectId: string;
   value: string | null;
   /** Current assignee, shown even while the list is still loading. */
   current: { id: string; name: string } | null;
@@ -11,9 +12,9 @@ interface Props {
 
 /**
  * Assignee picker (Figma "Field picker · PM · Assignee options"): label, search, "Unassigned", then every
- * developer (GET /users). Assigning someone who is not in the project yet adds them as a member.
+ * member of the project (GET /projects/{id}/members). The server rejects assignees who are not members.
  */
-export function AssigneeSelect({ value, current, onChange }: Props) {
+export function AssigneeSelect({ projectId, value, current, onChange }: Props) {
   const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -21,10 +22,13 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
   const [term, setTerm] = useState('');
   const [picked, setPicked] = useState<{ id: string | null; name: string } | null>(null);
   const root = useRef<HTMLDivElement>(null);
-  const users = useAssignableUsers(term, open);
+  const members = useProjectMembers(projectId);
+  const needle = term.trim().toLowerCase();
   const options: { id: string | null; name: string }[] = [
     ...(term ? [] : [{ id: null, name: 'Unassigned' }]),
-    ...(users.data?.items ?? []).map((u) => ({ id: u.id, name: u.name })),
+    ...(members.data ?? [])
+      .filter((m) => !needle || m.name.toLowerCase().includes(needle) || m.email.toLowerCase().includes(needle))
+      .map((m) => ({ id: m.user_id, name: m.name })),
   ];
 
   useEffect(() => {
@@ -89,7 +93,7 @@ export function AssigneeSelect({ value, current, onChange }: Props) {
             onChange={(e) => setSearch(e.target.value)}
           />
           <ul role="listbox" aria-labelledby="as-title">
-            {options.length === 0 && <li className="as-empty">{t(users.isPending ? 'Loading…' : 'No people found')}</li>}
+            {options.length === 0 && <li className="as-empty">{t(members.isPending ? 'Loading…' : 'No people found')}</li>}
             {options.map((o, i) => (
               <li
                 key={o.id ?? 'none'}

@@ -374,7 +374,7 @@ export function TaskDetailPage() {
             </Row>
             <Row label="Assignee">
               {isPm ? (
-                <AssigneeSelect value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
+                <AssigneeSelect projectId={task.project_id} value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
               ) : (
                 <span className="td-static">{task.assignee?.name || t('Unassigned')}</span>
               )}
