@@ -274,6 +274,7 @@ export const DE: Record<string, string> = {
   'Assignee': 'Zugewiesen an',
   'Set due date': 'Fälligkeitsdatum festlegen',
   'Create task': 'Aufgabe erstellen',
+  'Create backlog task': 'Backlog-Aufgabe erstellen',
   'Create task (Enter)': 'Aufgabe erstellen (Eingabe)',
   'Could not create the task. Try again.': 'Die Aufgabe konnte nicht erstellt werden. Versuchen Sie es erneut.',
   'Projects  /  All Projects': 'Projekte  /  Alle Projekte',

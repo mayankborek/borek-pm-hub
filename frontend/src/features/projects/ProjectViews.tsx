@@ -1,8 +1,7 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
+import { useMemo, useState } from 'react';
 import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
+import { QuickCreateTask } from '@/features/tasks/QuickCreateTask';
 import { TaskFilters, TaskGroup, TaskRow } from '@/features/tasks/TaskParts';
 import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
 import { useProjectStatuses, useProjectTasks } from '@/features/tasks/tasksApi';
@@ -11,6 +10,7 @@ import { useProjectContext } from './ProjectLayout';
 /** Backlog tab: GET /projects/{id}/tasks, only tasks in the Backlog category; new tasks land here by default. */
 export function ProjectListPage() {
   const project = useProjectContext();
+  const [creating, setCreating] = useState(false);
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const { data: statuses } = useProjectStatuses(project.id);
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
@@ -30,15 +30,16 @@ export function ProjectListPage() {
         count={backlog.length}
         empty={filtered ? 'No matching backlog tasks. Try changing or clearing the filters.' : 'No backlog tasks yet. New tasks land here and stay off the Board until planned.'}
         action={
-          <Link className="btn" to={`${paths.taskNew}?project_id=${project.id}`}>
+          <button type="button" className="btn" onClick={() => setCreating(true)}>
             Add task
-          </Link>
+          </button>
         }
       >
         {backlog.map((t) => (
           <TaskRow key={t.id} task={t} />
         ))}
       </TaskGroup>
+      {creating && <QuickCreateTask projectId={project.id} statuses={statuses} onClose={() => setCreating(false)} />}
     </>
   );
 }

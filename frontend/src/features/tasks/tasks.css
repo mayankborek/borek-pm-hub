@@ -66,3 +66,11 @@
 .filter-group h4 { margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
 .filter-opt { display: flex; align-items: center; gap: 12px; height: 36px; font-size: 14px; color: var(--ink); cursor: pointer; }
 .filter-opt input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+
+/* Backlog quick create overlay (Figma "Backlog quick create · Overlay") */
+.qc-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5, 8, 26, .42); }
+.qc-card { box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; gap: 14px; width: 360px; max-width: 100%; padding: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, .16); }
+.qc-card h2 { margin: 0; font-size: 16px; line-height: 24px; color: var(--ink); }
+.qc-card p { margin: -8px 0 0; font-size: 13px; line-height: 18px; color: var(--muted); }
+.qc-card .input { height: 40px; border: 2px solid var(--accent); }
+.qc-actions { display: flex; justify-content: flex-end; gap: 8px; }
