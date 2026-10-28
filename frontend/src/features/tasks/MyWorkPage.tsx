@@ -52,8 +52,6 @@ export function MyWorkPage() {
             void tasks.refetch();
           }}
         />
-      ) : tasks.data.total === 0 ? (
-        <EmptyState title={t('No tasks assigned')} text={t('Tasks assigned to you will appear here. Ask your Project Manager if you expected some.')} />
       ) : (
         <MyWorkBody dashboard={dashboard.data} tasks={tasks.data.items} />
       )}
@@ -112,17 +110,21 @@ function AssignedTasks({ tasks, projectCount }: { tasks: Task[]; projectCount: n
         <span>{t('Status')}</span>
         <span>{t('Priority')}</span>
       </div>
-      <ul className="mw-list">
-        {tasks.map((task) => (
-          <li key={task.id}>
-            <Link to={paths.task(task.id)}>
-              {task.key} · {task.title} →
-            </Link>
-            <span className={`ss-label tone-${toneOf(task.status)}`}>{task.status.name}</span>
-            <PriorityIndicator priority={task.priority} />
-          </li>
-        ))}
-      </ul>
+      {tasks.length === 0 ? (
+        <EmptyState title={t('No tasks assigned')} text={t('Tasks assigned to you will appear here. Ask your Project Manager if you expected some.')} />
+      ) : (
+        <ul className="mw-list">
+          {tasks.map((task) => (
+            <li key={task.id}>
+              <Link to={paths.task(task.id)}>
+                {task.key} · {task.title} →
+              </Link>
+              <span className={`ss-label tone-${toneOf(task.status)}`}>{task.status.name}</span>
+              <PriorityIndicator priority={task.priority} />
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
