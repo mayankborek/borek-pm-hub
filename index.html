@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Overview - Website Redesign</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+
+    <header class="top-header">
+      <div class="page-heading">
+        <h1>Project Overview</h1>
+        <div class="heading-line"></div>
+      </div>
+
+      <div class="user-controls">
+        <div class="language-switch">
+          <button>DE</button>
+          <button class="active">EN</button>
+        </div>
+        <span class="header-divider"></span>
+        <div class="profile">
+          <span class="profile-initials">AM</span>
+          <span>Alex Morgan</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="project-heading">
+        <div class="breadcrumb">
+          <span>Projects</span>
+          <span>/</span>
+          <span>Website Redesign</span>
+        </div>
+        <h2>Website Redesign</h2>
+        <button class="primary-button">Add Task</button>
+      </div>
+
+      <nav class="tabs">
+        <a href="#">Overview</a>
+        <a href="#" class="selected">Backlog</a>
+        <a href="#">Board</a>
+      </nav>
+
+      <section class="toolbar">
+        <input
+          type="search"
+          id="taskSearch"
+          placeholder="Search tasks"
+          aria-label="Search tasks"
+        />
+
+        <div class="team-avatars" aria-label="Team members">
+          <span class="avatar gray">●</span>
+          <span class="avatar purple">AM</span>
+          <span class="avatar green">NK</span>
+          <span class="avatar orange">MC</span>
+        </div>
+
+        <button class="filter-button" id="filterButton">
+          <span>☷</span> Filter
+        </button>
+      </section>
+
+      <section class="task-group">
+        <div class="group-header">
+          <div class="group-title">
+            <input type="checkbox" aria-label="Select all board tasks" />
+            <span class="chevron">⌄</span>
+            <strong>Board</strong>
+            <span class="muted">25 project tasks</span>
+          </div>
+          <button class="outline-button">Move to Backlog</button>
+        </div>
+
+        <div class="task-table">
+          <div class="task-row task-labels">
+            <span></span>
+            <span>Task</span>
+            <span>Status</span>
+            <span>Due date</span>
+            <span>Priority</span>
+            <span>Assignee</span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BO-194" />
+            <strong class="task-name">BO-194 · Set up design tokens</strong>
+            <span class="status done">Done</span>
+            <span class="date">24 Oct 2026</span>
+            <span class="priority">Low</span>
+            <span class="assignee">
+              <span class="avatar square purple">AM</span> Alex Morgan
+            </span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BO-201" />
+            <strong class="task-name">BO-201 · Approve visual direction</strong>
+            <span class="status review">Code review</span>
+            <span class="date">27 Oct 2026</span>
+            <span class="priority">High</span>
+            <span class="assignee">
+              <span class="avatar square green">NK</span> Noah Kim
+            </span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BO-208" />
+            <strong class="task-name">BO-208 · Redesign project overview</strong>
+            <span class="status progress">In progress</span>
+            <span class="date">28 Oct 2026</span>
+            <span class="priority">High</span>
+            <span class="assignee">
+              <span class="avatar square purple">AM</span> Alex Morgan
+            </span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BO-214" />
+            <strong class="task-name">BO-214 · Update brand guidelines</strong>
+            <span class="status todo">To do</span>
+            <span class="date">30 Oct 2026</span>
+            <span class="priority">Medium</span>
+            <span class="assignee">
+              <span class="avatar square orange">MC</span> Mia Chen
+            </span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BO-212" />
+            <strong class="task-name">BO-212 · Audit mobile navigation</strong>
+            <span class="status testing">Testing</span>
+            <span class="date">31 Oct 2026</span>
+            <span class="priority">Medium</span>
+            <span class="assignee">
+              <span class="avatar square orange">MC</span> Mia Chen
+            </span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BO-219" />
+            <strong class="task-name">BO-219 · Review homepage copy</strong>
+            <span class="status todo">To do</span>
+            <span class="date">02 Nov 2026</span>
+            <span class="priority">Low</span>
+            <span class="assignee">
+              <span class="avatar square green">NK</span> Noah Kim
+            </span>
+          </div>
+
+          <div class="task-row">
+            <input type="checkbox" aria-label="Select BFL-096" />
+            <strong class="task-name">BFL-096 · Homepage wireframes</strong>
+            <span class="status progress">In progress</span>
+            <span class="date">18 Oct 2026</span>
+            <span class="priority">High</span>
+            <span class="assignee">
+              <span class="avatar square indigo">NP</span> Noah Patel
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <p class="task-count">25 project tasks</p>
+
+      <section class="task-group backlog">
+        <div class="group-header">
+          <div class="group-title">
+            <input type="checkbox" aria-label="Select backlog tasks" />
+            <span class="chevron">⌄</span>
+            <strong>Backlog</strong>
+            <span class="muted">0 tasks</span>
+          </div>
+        </div>
+
+        <div class="empty-state">
+          No backlog tasks yet. Tasks here stay off the Board until planned.
+        </div>
+
+        <button class="create-task" id="createTask">
+          <span>＋</span> Create task
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById("taskSearch");
+    const taskRows = document.querySelectorAll(
+      ".task-table .task-row:not(.task-labels)"
+    );
+
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.toLowerCase();
+
+      taskRows.forEach((row) => {
+        row.style.display = row.textContent.toLowerCase().includes(query)
+          ? ""
+          : "none";
+      });
+    });
+
+    document.getElementById("filterButton").addEventListener("click", () => {
+      alert("Connect your status, priority, and assignee filters here.");
+    });
+
+    document.getElementById("createTask").addEventListener("click", () => {
+      const name = prompt("Enter the new task name:");
+      if (name && name.trim()) {
+        alert("Task created locally: " + name.trim());
+      }
+    });
+  </script>
+</body>
+</html>

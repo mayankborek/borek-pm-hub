@@ -144,6 +144,7 @@ export function TaskGroup({
   empty,
   selectAll,
   action,
+  footer,
   children,
 }: {
   title: string;
@@ -153,6 +154,8 @@ export function TaskGroup({
   /** Shows the select-all checkbox and collapse chevron in the header (Figma "Board group heading"). */
   selectAll?: { checked: boolean; indeterminate: boolean; onChange: (checked: boolean) => void };
   action?: ReactNode;
+  /** Rendered under the rows while the group is open (e.g. the Backlog "Create task" row). */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = usePrefs();
@@ -190,6 +193,7 @@ export function TaskGroup({
         {action && <div className="task-group-action">{action}</div>}
       </div>
       {!open ? null : count === 0 && empty ? <div className="task-group-empty">{t(empty)}</div> : children}
+      {open && footer}
     </section>
   );
 }

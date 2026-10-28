@@ -85,6 +85,12 @@
 .task-list-page .task-group-head span { font-size: 14px; }
 .task-list-page .task-row { min-height: 53px; }
 .task-list-page .task-row .task-title { padding-left: 17px; font-size: 13.5px; font-weight: 700; }
+/* Backlog group (index.html / styles.css reference): outline header action and a "Create task" row under the rows. */
+.task-group-action .outline-btn { min-width: 158px; height: 30px; padding: 0 23px; font-size: 14px; font-weight: 400; color: var(--muted); background: transparent; border: 1px solid var(--field); border-radius: 0; cursor: pointer; }
+.task-group-action .outline-btn:hover { background: var(--surface); }
+.task-group .create-task { display: flex; align-items: center; gap: 7px; width: 100%; min-height: 39px; padding: 8px 13px; border: 0; border-top: 1px solid var(--line); background: var(--surface); color: var(--link); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.task-group .create-task:hover { background: var(--surface-2); }
+.task-group .create-task span { font-size: 19px; }
 .task-title-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-title-line .proj-link { font-weight: 700; }
 .task-list-page .cell-status, .task-list-page .cell-muted { font-size: 14px; }

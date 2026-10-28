@@ -14,6 +14,7 @@ import { useProjectContext } from './ProjectLayout';
 export function ProjectListPage() {
   const project = useProjectContext();
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const { data: statuses } = useProjectStatuses(project.id);
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
@@ -46,16 +47,39 @@ export function ProjectListPage() {
 
   const filtered = isFiltered(applied);
 
+  const chosen = backlog.filter((t) => selected.has(t.id));
+  const allSelected = backlog.length > 0 && chosen.length === backlog.length;
+  const toggle = (id: string, checked: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
   return (
-    <>
+    <div className="task-list-page">
       <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
       <TaskGroup
         title="Backlog"
         count={backlog.length}
-        empty={filtered ? 'No matching backlog tasks. Try changing or clearing the filters.' : 'No backlog tasks yet. New tasks land here and stay off the Board until planned.'}
+        countLabel={backlog.length === 1 ? 'task' : 'tasks'}
+        empty={filtered ? 'No matching backlog tasks. Try changing or clearing the filters.' : 'No backlog tasks yet. Tasks here stay off the Board until planned.'}
+        selectAll={{
+          checked: allSelected,
+          indeterminate: chosen.length > 0 && !allSelected,
+          onChange: (checked) => setSelected(checked ? new Set(backlog.map((t) => t.id)) : new Set()),
+        }}
         action={
-          <button type="button" className="btn" onClick={() => setCreating(true)}>
-            Add task
+          chosen.length > 0 && (
+            <button type="button" className="outline-btn" onClick={() => chosen.forEach(moveToBoard)}>
+              {tr('Move to Board')}
+            </button>
+          )
+        }
+        footer={
+          <button type="button" className="create-task" onClick={() => setCreating(true)}>
+            <span aria-hidden="true">＋</span> {tr('Create task')}
           </button>
         }
       >
@@ -63,13 +87,15 @@ export function ProjectListPage() {
           <TaskRow
             key={t.id}
             task={t}
+            selected={selected.has(t.id)}
+            onSelect={(checked) => toggle(t.id, checked)}
             onMoveToBoard={() => moveToBoard(t)}
             moving={moveTask.isPending && moveTask.variables?.task.id === t.id}
           />
         ))}
       </TaskGroup>
       {creating && <QuickCreateTask projectId={project.id} statuses={statuses} onClose={() => setCreating(false)} />}
-    </>
+    </div>
   );
 }
 
