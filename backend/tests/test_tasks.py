@@ -844,46 +844,51 @@ async def member_ids(session: AsyncSession, project: Project) -> set[uuid.UUID]:
     return set(rows)
 
 
-async def test_assigning_a_non_member_adds_them_to_the_project(
+async def test_assigning_a_non_member_is_refused_and_adds_nobody(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    headers = as_user(world.pm)
+    outsider = await make_user(session)
+    before = await member_ids(session, world.project)
+    task = await make_task(session, world.project, world.pm.id)
+
+    put = await client.put(
+        assignee_url(task), headers=headers, json={"version": 1, "assignee_id": str(outsider.id)}
+    )
+    created = await client.post(
+        tasks_url(world.project),
+        headers=headers,
+        json={"title": "x", "assignee_id": str(outsider.id)},
+    )
+    patched = await client.patch(
+        f"/api/v1/tasks/{task.id}",
+        headers=headers,
+        json={"version": 1, "assignee_id": str(outsider.id)},
+    )
+
+    for response in (put, created, patched):
+        assert response.status_code == 422
+        assert response.json()["error"]["details"][0]["issue"] == "not_a_member"
+    assert await member_ids(session, world.project) == before  # nobody was added
+
+
+async def test_a_member_added_later_can_be_assigned(
     client: httpx.AsyncClient, session: AsyncSession, world: World
 ) -> None:
     headers = as_user(world.pm)
     newcomer = await make_user(session)
-    other = await make_user(session)
-    third = await make_user(session)
-
-    # PUT /tasks/{id}/assignee
     task = await make_task(session, world.project, world.pm.id)
+    added = await client.post(
+        f"/api/v1/projects/{world.project.id}/members",
+        headers=headers,
+        json={"user_id": str(newcomer.id), "project_role": "developer"},
+    )
+    assert added.status_code == 201
+
     put = await client.put(
         assignee_url(task), headers=headers, json={"version": 1, "assignee_id": str(newcomer.id)}
     )
-    # POST /projects/{id}/tasks
-    created = await client.post(
-        tasks_url(world.project), headers=headers, json={"title": "x", "assignee_id": str(other.id)}
-    )
-    # PATCH /tasks/{id}
-    patched = await client.patch(
-        f"/api/v1/tasks/{task.id}",
-        headers=headers,
-        json={"version": 2, "assignee_id": str(third.id)},
-    )
-
-    assert (put.status_code, created.status_code, patched.status_code) == (200, 201, 200)
-    assert {newcomer.id, other.id, third.id} <= await member_ids(session, world.project)
-    row = await session.scalar(
-        select(ProjectMember).where(
-            ProjectMember.project_id == world.project.id, ProjectMember.user_id == newcomer.id
-        )
-    )
-    assert row is not None
-    assert (row.source, row.project_role, row.granted_by) == (
-        "task_assignment",
-        "developer",
-        world.pm.id,
-    )
-    # the new member can now see the project's tasks
-    seen = await client.get(f"/api/v1/tasks/{task.id}", headers=as_user(third))
-    assert seen.status_code == 200
+    assert put.status_code == 200 and put.json()["assignee"]["id"] == str(newcomer.id)
 
 
 async def test_assigning_an_existing_member_does_not_add_a_second_row(

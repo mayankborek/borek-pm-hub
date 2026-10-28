@@ -11,8 +11,6 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.common.enums import (
-    MembershipSource,
-    ProjectRole,
     ProjectStatus,
     StatusCategory,
     TaskPriority,
@@ -297,12 +295,9 @@ async def board(
 # --- writing ----------------------------------------------------------------------------------
 
 
-async def _check_assignee(session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID) -> bool:
-    """The assignee must be an active user. True means they are not a member of the project yet.
-
-    Assigning a task makes the person a member (see `_add_assignment_member`), so the PM does not
-    need a separate "add member" step.
-    """
+async def _check_assignee(session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    """The assignee must be an active user AND a member of the project (add them as a member
+    first). Assigning never adds anyone to the project."""
     is_active = await session.scalar(select(User.is_active).where(User.id == user_id))
     if not is_active:
         raise _invalid("assignee_id", "unknown_user", "The assignee must be an active user.")
@@ -311,21 +306,10 @@ async def _check_assignee(session: AsyncSession, project_id: uuid.UUID, user_id:
             ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
         )
     )
-    return member_id is None
-
-
-def _add_assignment_member(
-    session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID, actor: User
-) -> None:
-    session.add(
-        ProjectMember(
-            project_id=project_id,
-            user_id=user_id,
-            project_role=ProjectRole.DEVELOPER.value,
-            source=MembershipSource.TASK_ASSIGNMENT.value,
-            granted_by=actor.id,
+    if member_id is None:
+        raise _invalid(
+            "assignee_id", "not_a_member", "The assignee must be a member of the project."
         )
-    )
 
 
 def _apply_status(task: Task, status: WorkflowStatus, blocked_reason: str | None) -> None:
@@ -355,7 +339,8 @@ async def create_task(
         if assignee_id not in (None, user.id):
             raise AppError(403, "FORBIDDEN", "Developers can only assign tasks to themselves.")
         assignee_id = user.id
-    new_member = assignee_id is not None and await _check_assignee(session, project.id, assignee_id)
+    if assignee_id is not None:
+        await _check_assignee(session, project.id, assignee_id)
 
     if data.status_id is not None:
         status = await statuses.get_status(session, project.id, data.status_id)
@@ -389,9 +374,6 @@ async def create_task(
     session.add(task)
     try:
         await session.flush()
-        if new_member:
-            assert assignee_id is not None
-            _add_assignment_member(session, project.id, assignee_id, user)
         activity.record(session, task.id, user.id, "created")
         await session.commit()
     except IntegrityError:
@@ -450,9 +432,8 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
             "estimate_value and estimate_unit must be set or cleared together.",
         )
     new_assignee_id = changes.get("assignee_id")
-    new_member = new_assignee_id is not None and await _check_assignee(
-        session, task.project_id, new_assignee_id
-    )
+    if new_assignee_id is not None and new_assignee_id != task.assignee_id:
+        await _check_assignee(session, task.project_id, new_assignee_id)
 
     # Do every lookup and check before touching the task, so a rejected request leaves it as is.
     old_status = await session.get(WorkflowStatus, task.status_id)
@@ -483,9 +464,6 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
     )
     if changed:
         activity.record(session, task.id, actor.id, "updated", changed)
-    if new_member:
-        assert new_assignee_id is not None
-        _add_assignment_member(session, task.project_id, new_assignee_id, actor)
 
     try:
         await session.commit()
@@ -498,22 +476,18 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
 async def assign_task(
     session: AsyncSession, task: Task, assignee_id: uuid.UUID | None, version: int, actor: User
 ) -> TaskOut:
-    """Assign, reassign or (with None) unassign. An assignee who is not a member is added."""
+    """Assign, reassign or (with None) unassign. The assignee must be a project member."""
     if version != task.version:
         raise version_conflict()
-    new_member = assignee_id is not None and await _check_assignee(
-        session, task.project_id, assignee_id
-    )
     if assignee_id != task.assignee_id:  # same assignee: nothing to save, version stays
+        if assignee_id is not None:
+            await _check_assignee(session, task.project_id, assignee_id)
         names = [
             await _user_name(session, task.assignee_id),
             await _user_name(session, assignee_id),
         ]
         activity.record(session, task.id, actor.id, "updated", {"assignee": names})
         task.assignee_id = assignee_id
-        if new_member:
-            assert assignee_id is not None
-            _add_assignment_member(session, task.project_id, assignee_id, actor)
         try:
             await session.commit()
         except StaleDataError:
