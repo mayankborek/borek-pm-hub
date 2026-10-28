@@ -95,3 +95,5 @@
 .task-title-line .proj-link { font-weight: 700; }
 .task-list-page .cell-status, .task-list-page .cell-muted { font-size: 14px; }
 .task-list-page .task-foot { margin-top: 18px; font-size: 14px; }
+
+.task-group-more { padding: 10px 17px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }

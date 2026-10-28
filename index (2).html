@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Overview – Website Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1240;
+    --text: #0f1240;
+    --muted: #5c6178;
+    --border: #d5d8e2;
+    --row-border: #e8eaf0;
+    --bg-soft: #f2f3f8;
+    --blue: #2655b8;
+    --blue-text: #184a9c;
+    --green: #0f7a55;
+    --purple: #4b2aa6;
+    --brown: #8a4a00;
+    --av-purple: #5b35c7;
+    --av-green: #1b7a5c;
+    --av-orange: #f0932b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: #fff;
+    font-size: 14px;
+  }
+  .page { max-width: 1050px; margin: 0 auto; padding: 0 28px 80px; }
+
+  /* Top bar */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-top: 18px;
+  }
+  .topbar h1 {
+    margin: 0; font-size: 22px; font-weight: 700; color: var(--navy);
+    padding: 4px 0 14px; border-bottom: 2px solid var(--navy);
+    width: 246px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 14px; margin-top: 2px; }
+  .lang { display: flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .lang button {
+    border: 0; background: #fff; font: 500 13px "Inter", sans-serif;
+    color: var(--muted); padding: 11px 8px; width: 30px; cursor: pointer;
+  }
+  .lang button.active { background: #eceef6; color: var(--blue-text); font-weight: 600; }
+  .user { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+  .user .initials {
+    width: 27px; height: 27px; background: #eceef6; display: grid; place-items: center;
+    font-weight: 600; font-size: 13px;
+  }
+
+  /* Page heading */
+  .heading { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; }
+  .crumbs { color: var(--muted); font-size: 13px; }
+  .crumbs span { margin: 0 4px; }
+  .heading h2 { margin: 2px 0 0; font-size: 26px; font-weight: 700; }
+  .btn-primary {
+    background: var(--navy); color: #fff; border: 0; font: 600 13px "Inter", sans-serif;
+    height: 34px; padding: 0 25px; cursor: pointer;
+  }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 21px; margin-top: 24px; border-bottom: 1px solid var(--row-border); height: 44px; }
+  .tabs a {
+    text-decoration: none; color: var(--muted); font-size: 14px; padding: 6px 0 0;
+    height: 44px; display: block;
+  }
+  .tabs a.active { color: var(--navy); font-weight: 600; border-bottom: 2px solid var(--navy); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--bg-soft); height: 41px; margin-top: 14px; padding: 0 0;
+  }
+  .search {
+    width: 223px; height: 31px; border: 1px solid var(--border); background: #fff;
+    padding: 0 11px; font: 14px "Inter", sans-serif; color: var(--muted);
+    margin-left: 0;
+  }
+  .search::placeholder { color: var(--muted); }
+  .avatars { display: flex; margin-left: 4px; }
+  .avatars .av {
+    width: 18px; height: 18px; border-radius: 50%; margin-right: -2px;
+    display: grid; place-items: center; font-size: 9px; font-weight: 600; color: #fff;
+    border: 1px solid #fff; width: 22px; height: 22px; font-size: 11px;
+  }
+  .av.anon { background: #fff; border: 1px solid var(--border); color: #6b7088; }
+  .av.am { background: var(--av-purple); }
+  .av.nk { background: var(--av-green); }
+  .av.mc { background: #e07b00; }
+  .filter {
+    margin-left: 6px; width: 94px; height: 31px; border: 1px solid var(--border);
+    background: #fff; font: 500 14px "Inter", sans-serif; color: var(--navy);
+    display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  }
+
+  /* Sections */
+  .section { border: 1px solid #aeb3c4; margin-top: 14px; }
+  .section + .note { margin: 18px 0 0; color: var(--muted); font-size: 14px; }
+  .section-head {
+    display: flex; align-items: center; gap: 12px; background: var(--bg-soft);
+    height: 35px; padding: 0 14px;
+  }
+  .section-head .chev { color: var(--muted); font-size: 10px; margin-left: 2px; }
+  .section-head .title { font-weight: 600; font-size: 14px; color: #4a4f68; }
+  .section-head .count { color: var(--muted); font-size: 13px; }
+  .section-head .btn-move {
+    margin-left: auto; background: var(--blue); color: #fff; border: 0;
+    height: 24px; padding: 0 20px; font: 600 13px "Inter", sans-serif; cursor: pointer;
+  }
+  .cb {
+    width: 14px; height: 14px; border: 1px solid #c3c7d6; background: #fff; border-radius: 2px;
+    display: inline-block; flex: none; position: relative;
+  }
+  .cb.checked { background: var(--blue); border-color: var(--blue); }
+  .cb.checked::after {
+    content: ""; position: absolute; left: 4px; top: 1px; width: 3px; height: 7px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 14px 1fr 112px 118px 85px 168px;
+    align-items: center; gap: 0 14px;
+    height: 42px; padding: 0 14px; border-top: 1px solid var(--row-border);
+  }
+  .row:first-of-type { border-top: 0; }
+  .row .name { font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .status { font-size: 14px; font-weight: 500; }
+  .status.done { color: var(--green); }
+  .status.review { color: var(--purple); }
+  .status.progress { color: var(--blue-text); }
+  .status.todo { color: var(--muted); font-weight: 400; }
+  .status.testing { color: var(--brown); }
+  .date, .prio { color: var(--muted); font-size: 14px; }
+  .assignee { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #4a4f68; }
+  .sq {
+    width: 20px; height: 20px; display: grid; place-items: center;
+    color: #fff; font-size: 10px; font-weight: 700;
+  }
+  .sq.am { background: var(--av-purple); }
+  .sq.nk { background: var(--av-green); }
+  .sq.mc { background: var(--av-orange); }
+  .sq { width: 21px; height: 21px; }
+
+  .empty {
+    text-align: center; color: var(--muted); font-size: 14px;
+    padding: 12px 0; border-top: 1px solid var(--row-border);
+    border-bottom: 1px solid var(--row-border); background: #fff;
+  }
+  .create {
+    display: flex; align-items: center; gap: 8px; padding: 10px 22px;
+    color: var(--blue-text); font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .create .plus { font-size: 18px; line-height: 1; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <h1>Project Overview</h1>
+    <div class="topbar-right">
+      <div class="lang">
+        <button>DE</button>
+        <button class="active">EN</button>
+      </div>
+      <div class="user">
+        <span class="initials">AM</span>
+        <span>Alex Morgan</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="heading">
+    <div>
+      <div class="crumbs">Projects <span>/</span> Website Redesign</div>
+      <h2>Website Redesign</h2>
+    </div>
+    <button class="btn-primary">Add Task</button>
+  </div>
+
+  <nav class="tabs">
+    <a href="#">Overview</a>
+    <a href="#" class="active">Backlog</a>
+    <a href="#">Board</a>
+  </nav>
+
+  <div class="toolbar">
+    <input class="search" type="text" placeholder="Search tasks">
+    <div class="avatars">
+      <span class="av anon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#6b7088"><circle cx="12" cy="7" r="5"/><path d="M2 22c0-6 4-9 10-9s10 3 10 9z"/></svg>
+      </span>
+      <span class="av am">AM</span>
+      <span class="av nk">NK</span>
+      <span class="av mc">MC</span>
+    </div>
+    <button class="filter">
+      <svg width="12" height="10" viewBox="0 0 12 10" fill="#184a9c"><rect x="0" y="0" width="3" height="2"/><rect x="5" y="0" width="7" height="2"/><rect x="0" y="4" width="3" height="2"/><rect x="5" y="4" width="7" height="2"/><rect x="0" y="8" width="3" height="2"/><rect x="5" y="8" width="7" height="2"/></svg>
+      Filter
+    </button>
+  </div>
+
+  <!-- Board section -->
+  <section class="section">
+    <div class="section-head">
+      <span class="cb"></span>
+      <span class="chev">&#8964;</span>
+      <span class="title">Board</span>
+      <span class="count">25 work items</span>
+      <button class="btn-move">Move to Backlog</button>
+    </div>
+
+    <div class="row">
+      <span class="cb checked"></span>
+      <span class="name">BO-194 · Set up design tokens</span>
+      <span class="status done">Done</span>
+      <span class="date">24 Oct 2026</span>
+      <span class="prio">Low</span>
+      <span class="assignee"><span class="sq am">AM</span>Alex Morgan</span>
+    </div>
+    <div class="row">
+      <span class="cb"></span>
+      <span class="name">BO-201 · Approve visual direction</span>
+      <span class="status review">Code review</span>
+      <span class="date">27 Oct 2026</span>
+      <span class="prio">High</span>
+      <span class="assignee"><span class="sq nk">NK</span>Noah Kim</span>
+    </div>
+    <div class="row">
+      <span class="cb"></span>
+      <span class="name">BO-208 · Redesign project overview</span>
+      <span class="status progress">In progress</span>
+      <span class="date">28 Oct 2026</span>
+      <span class="prio">High</span>
+      <span class="assignee"><span class="sq am">AM</span>Alex Morgan</span>
+    </div>
+    <div class="row">
+      <span class="cb"></span>
+      <span class="name">BO-214 · Update brand guidelines</span>
+      <span class="status todo">To do</span>
+      <span class="date">30 Oct 2026</span>
+      <span class="prio">Medium</span>
+      <span class="assignee"><span class="sq mc">MC</span>Mia Chen</span>
+    </div>
+    <div class="row">
+      <span class="cb"></span>
+      <span class="name">BO-212 · Audit mobile navigation</span>
+      <span class="status testing">Testing</span>
+      <span class="date">31 Oct 2026</span>
+      <span class="prio">Medium</span>
+      <span class="assignee"><span class="sq mc">MC</span>Mia Chen</span>
+    </div>
+    <div class="row">
+      <span class="cb"></span>
+      <span class="name">BO-219 · Review homepage copy</span>
+      <span class="status todo">To do</span>
+      <span class="date">02 Nov 2026</span>
+      <span class="prio">Low</span>
+      <span class="assignee"><span class="sq nk">NK</span>Noah Kim</span>
+    </div>
+  </section>
+
+  <p class="note">Showing 6 of 25 tasks · Load more</p>
+
+  <!-- Backlog section -->
+  <section class="section" style="margin-top:24px">
+    <div class="section-head">
+      <span class="cb"></span>
+      <span class="chev">&#8964;</span>
+      <span class="title">Backlog</span>
+      <span class="count">0 work items</span>
+    </div>
+    <div class="empty">No backlog tasks yet. Tasks here stay off the Board until planned.</div>
+    <div class="create"><span class="plus">+</span> Create task</div>
+  </section>
+
+</div>
+</body>
+</html>
