@@ -64,11 +64,9 @@ export function ProfilePage() {
   return (
     <div className="pf">
       <section className="pf-card pf-identity">
-        {!editing && (
-          <div className="pf-avatar">
-            <span aria-hidden="true">{initials}</span>
-          </div>
-        )}
+        <div className="pf-avatar">
+          <span aria-hidden="true">{initials}</span>
+        </div>
         <div className="pf-who">
           <h2>{user.name}</h2>
           <p>{roleLabel}</p>
