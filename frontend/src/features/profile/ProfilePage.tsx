@@ -43,10 +43,6 @@ export function ProfilePage() {
   const roleLabel = t(user.role === 'pm' ? 'Project Manager' : 'Developer');
   const editing = mode !== 'view';
 
-  const startEdit = () => {
-    setDraftPhone(phone);
-    setMode('edit');
-  };
   const save = (e?: React.FormEvent) => {
     e?.preventDefault();
     setPhone(draftPhone.trim());
@@ -71,11 +67,6 @@ export function ProfilePage() {
           <h2>{user.name}</h2>
           <p>{roleLabel}</p>
         </div>
-        {!editing && (
-          <button type="button" className="pf-btn primary" onClick={startEdit}>
-            {t('Edit profile')}
-          </button>
-        )}
       </section>
 
       <div className="pf-layout">
