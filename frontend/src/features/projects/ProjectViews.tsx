@@ -23,7 +23,7 @@ export function ProjectListPage() {
 
   return (
     <>
-      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} />
+      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined />
       <TaskGroup
         title="Backlog"
         count={backlog.length}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { formatDate } from '@/features/projects/projectUi';
@@ -202,18 +202,102 @@ function useSeenAssignees(tasks: Task[]) {
   return seen;
 }
 
+const PRIORITY_MARK: Record<TaskPriority, { mark: string; color: string }> = {
+  highest: { mark: '⏫', color: '#dd3d00' },
+  high: { mark: '▲', color: '#c94a32' },
+  medium: { mark: '≡', color: '#e07e00' },
+  low: { mark: '▼', color: '#2e61d6' },
+  lowest: { mark: '⏬', color: '#124f94' },
+};
+const CATEGORY_COLOR: Record<StatusCategory, string> = {
+  backlog: '#5c6178',
+  todo: '#5c6178',
+  in_progress: '#124f94',
+  blocked: '#ad1f1f',
+  done: '#17735E',
+};
+
+/** "Filter" button and popover (Figma 603:8883): Priority and Status checkbox groups; picking an option again clears it. */
+function FilterMenu({ filter, onChange, onClear }: { filter: TaskFilter; onChange: (f: TaskFilter) => void; onClear?: () => void }) {
+  const { t } = usePrefs();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const active = (filter.priority ? 1 : 0) + (filter.category ? 1 : 0);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+
+  return (
+    <div className="filter-menu" ref={ref}>
+      <button type="button" className="input filter-btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {t('Filter')}
+        {active > 0 && <span className="filter-count">{active}</span>}
+        <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="filter-panel" role="dialog" aria-label={t('Filters')}>
+          <div className="filter-head">
+            <strong>{t('Filters')}</strong>
+            {onClear && active > 0 && (
+              <button type="button" className="link-btn" onClick={() => onChange({ ...filter, category: '', priority: '' })}>
+                {t('Clear all')}
+              </button>
+            )}
+            <button type="button" className="filter-close" aria-label={t('Close')} onClick={() => setOpen(false)}>
+              ✕
+            </button>
+          </div>
+          <div className="filter-group" role="group" aria-label={t('Priority')}>
+            <h4>{t('Priority')}</h4>
+            {(Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((p) => (
+              <label key={p} className="filter-opt">
+                <input type="checkbox" checked={filter.priority === p} onChange={() => onChange({ ...filter, priority: filter.priority === p ? '' : p })} />
+                <span className="filter-mark" style={{ color: PRIORITY_MARK[p].color }} aria-hidden="true">
+                  {PRIORITY_MARK[p].mark}
+                </span>
+                {t(PRIORITY_LABEL[p])}
+              </label>
+            ))}
+          </div>
+          <div className="filter-group" role="group" aria-label={t('Status')}>
+            <h4>{t('Status')}</h4>
+            {(Object.keys(CATEGORY_LABEL) as StatusCategory[]).map((c) => (
+              <label key={c} className="filter-opt" style={{ color: CATEGORY_COLOR[c] }}>
+                <input type="checkbox" checked={filter.category === c} onChange={() => onChange({ ...filter, category: filter.category === c ? '' : c })} />
+                {t(CATEGORY_LABEL[c])}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TaskFilters({
   filter,
   onChange,
   tasks,
   extra,
   onClear,
+  combined,
 }: {
   filter: TaskFilter;
   onChange: (f: TaskFilter) => void;
   tasks: Task[];
   extra?: ReactNode;
   onClear?: () => void;
+  /** One "Filter" dropdown holding Priority and Status, instead of two selects. */
+  combined?: boolean;
 }) {
   const { t } = usePrefs();
   const assignees = useSeenAssignees(tasks);
@@ -246,32 +330,38 @@ export function TaskFilters({
           ))}
         </div>
       )}
-      <select
-        className="input"
-        aria-label={t('Filter by status')}
-        value={filter.category}
-        onChange={(e) => onChange({ ...filter, category: e.target.value as TaskFilter['category'] })}
-      >
-        <option value="">{t('Status: All')}</option>
-        {(Object.keys(CATEGORY_LABEL) as StatusCategory[]).map((c) => (
-          <option key={c} value={c}>
-            {t(CATEGORY_LABEL[c])}
-          </option>
-        ))}
-      </select>
-      <select
-        className="input"
-        aria-label={t('Filter by priority')}
-        value={filter.priority}
-        onChange={(e) => onChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
-      >
-        <option value="">{t('Priority: All')}</option>
-        {(Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((p) => (
-          <option key={p} value={p}>
-            {t(PRIORITY_LABEL[p])}
-          </option>
-        ))}
-      </select>
+      {combined ? (
+        <FilterMenu filter={filter} onChange={onChange} onClear={onClear} />
+      ) : (
+        <>
+        <select
+          className="input"
+          aria-label={t('Filter by status')}
+          value={filter.category}
+          onChange={(e) => onChange({ ...filter, category: e.target.value as TaskFilter['category'] })}
+        >
+          <option value="">{t('Status: All')}</option>
+          {(Object.keys(CATEGORY_LABEL) as StatusCategory[]).map((c) => (
+            <option key={c} value={c}>
+              {t(CATEGORY_LABEL[c])}
+            </option>
+          ))}
+        </select>
+        <select
+          className="input"
+          aria-label={t('Filter by priority')}
+          value={filter.priority}
+          onChange={(e) => onChange({ ...filter, priority: e.target.value as TaskFilter['priority'] })}
+        >
+          <option value="">{t('Priority: All')}</option>
+          {(Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((p) => (
+            <option key={p} value={p}>
+              {t(PRIORITY_LABEL[p])}
+            </option>
+          ))}
+        </select>
+        </>
+      )}
       {onClear && (filter.q.trim() || filter.category || filter.priority || filter.assigneeId) && (
         <button type="button" className="link-btn" onClick={onClear}>
           {t('Clear all')}
