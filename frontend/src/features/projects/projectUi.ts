@@ -6,6 +6,7 @@ export const STATUS_LABEL: Record<ProjectStatus, string> = {
   active: 'In Progress',
   on_hold: 'On Hold',
   completed: 'Completed',
+  cancelled: 'Cancelled',
 };
 
 export const STATUS_TONE: Record<ProjectStatus, Tone> = {
@@ -13,6 +14,7 @@ export const STATUS_TONE: Record<ProjectStatus, Tone> = {
   active: 'progress',
   on_hold: 'risk',
   completed: 'track',
+  cancelled: 'neutral',
 };
 
 /** "12 Oct 2026", or an em dash when the date is not set. Dates are plain calendar days, so no timezone shift. */

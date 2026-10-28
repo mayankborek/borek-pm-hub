@@ -64,6 +64,7 @@ export const DE: Record<string, string> = {
   'In Progress': 'In Bearbeitung',
   'On Hold': 'Pausiert',
   Completed: 'Abgeschlossen',
+  Cancelled: 'Abgebrochen',
 
   // Profile
   'Edit profile': 'Profil bearbeiten',

@@ -28,7 +28,7 @@
 .proj-list a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 .proj-list a:hover { text-decoration: underline; }
 .proj-list li span { display: flex; align-items: center; justify-content: center; height: 26px; padding: 0 10px 0 9px; font-size: 12px; line-height: 16px; font-weight: 500; box-sizing: border-box; }
-.life.planned, .life.completed { color: var(--muted); }
+.life.planned, .life.completed, .life.cancelled { color: var(--muted); }
 .life.active { color: #124f94; }
 .life.on_hold { color: #0d1240; }
 .health.at-risk { color: #0d1240; }

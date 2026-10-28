@@ -13,7 +13,7 @@ export interface DashboardProject {
   id: string;
   code: string;
   name: string;
-  status: 'planned' | 'active' | 'on_hold' | 'completed';
+  status: 'planned' | 'active' | 'on_hold' | 'completed' | 'cancelled';
   start_date: string | null;
   target_end_date: string | null;
   tasks: TaskSummary;
