@@ -26,6 +26,30 @@ export const setApiUser = (id: string | null) => {
   devUserId = id;
 };
 
+// AUTH_MODE=local: the bearer token from POST /auth/login, kept for the browser session.
+const TOKEN_KEY = 'borek.token';
+let apiToken: string | null = null;
+try {
+  apiToken = sessionStorage.getItem(TOKEN_KEY);
+} catch {
+  /* storage unavailable: the session just won't survive a reload */
+}
+export const setApiToken = (token: string | null) => {
+  apiToken = token;
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+/** Auth headers for the current session: bearer token when signed in with a password, else the dev user id. */
+export function applyAuth(headers: Headers) {
+  if (apiToken) headers.set('Authorization', `Bearer ${apiToken}`);
+  else if (devUserId) headers.set('X-Dev-User-Id', devUserId);
+}
+
 let onUnauthorized: (() => void) | null = null;
 /** AuthProvider registers this so any 401 ends the session in one place. */
 export const setUnauthorizedHandler = (fn: (() => void) | null) => {
@@ -36,11 +60,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-  if (devUserId) headers.set('X-Dev-User-Id', devUserId);
+  applyAuth(headers);
 
   const res = await fetch(`${env.apiBaseUrl}${path}`, { ...init, headers });
   if (!res.ok) {
-    if (res.status === 401 && devUserId) onUnauthorized?.();
+    if (res.status === 401 && (apiToken || devUserId)) onUnauthorized?.();
     const body = await res.json().catch(() => undefined);
     throw new ApiError(res.status, res.statusText, body);
   }
