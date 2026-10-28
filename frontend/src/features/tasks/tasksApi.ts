@@ -8,7 +8,7 @@ import type { Page } from '@/features/projects/types';
 export const ESTIMATE_UNITS = ['minutes', 'hours', 'weeks'] as const;
 export type EstimateUnit = (typeof ESTIMATE_UNITS)[number];
 export type StatusCategory = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
-export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
+export type TaskPriority = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
 
 export interface UserBrief {
   id: string;

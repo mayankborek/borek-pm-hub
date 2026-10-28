@@ -8,12 +8,14 @@ import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
 import lowIcon from './assets/priority-low.svg';
+import lowestIcon from './assets/priority-lowest.svg';
 
 const PRIORITIES: { key: TaskPriority; label: string; icon: string }[] = [
-  { key: 'critical', label: 'Critical', icon: highestIcon },
+  { key: 'highest', label: 'Highest', icon: highestIcon },
   { key: 'high', label: 'High', icon: highIcon },
   { key: 'medium', label: 'Medium', icon: mediumIcon },
   { key: 'low', label: 'Low', icon: lowIcon },
+  { key: 'lowest', label: 'Lowest', icon: lowestIcon },
 ];
 
 /** Inline task composer at the foot of a Board column (Figma "Task quick composer · Inline"). */

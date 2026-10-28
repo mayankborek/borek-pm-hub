@@ -8,6 +8,7 @@ import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
 import lowIcon from './assets/priority-low.svg';
+import lowestIcon from './assets/priority-lowest.svg';
 import './projects.css';
 
 const CATEGORY_COLOR: Record<StatusCategory, string> = {
@@ -21,10 +22,11 @@ const CATEGORY_COLOR: Record<StatusCategory, string> = {
 const NAME_COLOR: Record<string, string> = { 'code review': '#7c55ce', testing: '#24a49a' };
 
 const PRIORITIES: { key: TaskPriority; label: string; icon: string; color: string }[] = [
-  { key: 'critical', label: 'Critical', icon: highestIcon, color: '#c94a32' },
+  { key: 'highest', label: 'Highest', icon: highestIcon, color: '#c94a32' },
   { key: 'high', label: 'High', icon: highIcon, color: '#c94a32' },
   { key: 'medium', label: 'Medium', icon: mediumIcon, color: '#e07e00' },
   { key: 'low', label: 'Low', icon: lowIcon, color: '#2e61d6' },
+  { key: 'lowest', label: 'Lowest', icon: lowestIcon, color: '#7a8aa8' },
 ];
 
 const DONUT_SIZE = 220;

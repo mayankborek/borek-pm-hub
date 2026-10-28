@@ -22,14 +22,16 @@ import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
 import lowIcon from './assets/priority-low.svg';
+import lowestIcon from './assets/priority-lowest.svg';
 import gripDots from './assets/grip-dots.svg';
 import './board.css';
 
 const PRIORITY: Record<TaskPriority, { label: string; icon: string }> = {
-  critical: { label: 'Critical', icon: highestIcon },
+  highest: { label: 'Highest', icon: highestIcon },
   high: { label: 'High', icon: highIcon },
   medium: { label: 'Medium', icon: mediumIcon },
   low: { label: 'Low', icon: lowIcon },
+  lowest: { label: 'Lowest', icon: lowestIcon },
 };
 
 /** Named workflow states keep the design's heading colours; other statuses use their category colour. */

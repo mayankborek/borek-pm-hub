@@ -7,7 +7,13 @@ import type { StatusCategory, Task, TaskFilter, TaskPriority, UserBrief } from '
 import './tasks.css';
 
 const AVATAR_COLORS = ['#0d1240', '#124f94', '#5c6178'];
-const PRIORITY_LABEL: Record<TaskPriority, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+const PRIORITY_LABEL: Record<TaskPriority, string> = {
+  highest: 'Highest',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  lowest: 'Lowest',
+};
 const CATEGORY_LABEL: Record<StatusCategory, string> = {
   backlog: 'Backlog',
   todo: 'To do',

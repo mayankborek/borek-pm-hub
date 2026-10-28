@@ -3,15 +3,16 @@ import highestIcon from '@/features/projects/assets/priority-highest.svg';
 import highIcon from '@/features/projects/assets/priority-high.svg';
 import mediumIcon from '@/features/projects/assets/priority-medium.svg';
 import lowIcon from '@/features/projects/assets/priority-low.svg';
+import lowestIcon from '@/features/projects/assets/priority-lowest.svg';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import type { TaskPriority } from './tasksApi';
 
-/** The app has four levels; Critical takes the design's "Highest" icon. */
 export const PRIORITY_OPTIONS: { value: TaskPriority; label: string; icon: string }[] = [
-  { value: 'critical', label: 'Critical', icon: highestIcon },
+  { value: 'highest', label: 'Highest', icon: highestIcon },
   { value: 'high', label: 'High', icon: highIcon },
   { value: 'medium', label: 'Medium', icon: mediumIcon },
   { value: 'low', label: 'Low', icon: lowIcon },
+  { value: 'lowest', label: 'Lowest', icon: lowestIcon },
 ];
 
 /** Icon + label (Figma "PriorityIndicator · V1"), for menus and forms. */
