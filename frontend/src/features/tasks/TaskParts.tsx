@@ -4,6 +4,7 @@ import { paths } from '@/app/routes';
 import { formatDate } from '@/features/projects/projectUi';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import type { StatusCategory, Task, TaskFilter, TaskPriority, UserBrief } from './tasksApi';
+import { PRIORITY_OPTIONS } from './PrioritySelect';
 import './tasks.css';
 
 const AVATAR_COLORS = ['#0d1240', '#124f94', '#5c6178'];
@@ -202,13 +203,7 @@ function useSeenAssignees(tasks: Task[]) {
   return seen;
 }
 
-const PRIORITY_MARK: Record<TaskPriority, { mark: string; color: string }> = {
-  highest: { mark: '⏫', color: '#dd3d00' },
-  high: { mark: '▲', color: '#c94a32' },
-  medium: { mark: '≡', color: '#e07e00' },
-  low: { mark: '▼', color: '#2e61d6' },
-  lowest: { mark: '⏬', color: '#124f94' },
-};
+const PRIORITY_ICON = Object.fromEntries(PRIORITY_OPTIONS.map((o) => [o.value, o.icon])) as Record<TaskPriority, string>;
 const CATEGORY_COLOR: Record<StatusCategory, string> = {
   backlog: '#5c6178',
   todo: '#5c6178',
@@ -261,9 +256,7 @@ function FilterMenu({ filter, onChange, onClear }: { filter: TaskFilter; onChang
             {(Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((p) => (
               <label key={p} className="filter-opt">
                 <input type="checkbox" checked={filter.priority === p} onChange={() => onChange({ ...filter, priority: filter.priority === p ? '' : p })} />
-                <span className="filter-mark" style={{ color: PRIORITY_MARK[p].color }} aria-hidden="true">
-                  {PRIORITY_MARK[p].mark}
-                </span>
+                <img src={PRIORITY_ICON[p]} alt="" width={16} height={16} />
                 {t(PRIORITY_LABEL[p])}
               </label>
             ))}

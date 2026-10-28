@@ -66,4 +66,3 @@
 .filter-group h4 { margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
 .filter-opt { display: flex; align-items: center; gap: 12px; height: 36px; font-size: 14px; color: var(--ink); cursor: pointer; }
 .filter-opt input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
-.filter-mark { width: 16px; text-align: center; font-size: 12px; }
