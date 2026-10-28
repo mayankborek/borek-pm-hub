@@ -13,6 +13,7 @@ import borekLogo from '@/assets/borek-logo.png';
 import ms365Logo from '@/assets/ms365-logo.png';
 import heroArt from '@/assets/login-hero.jpg';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
+import { writeCookie } from '@/shared/prefs/cookies';
 import { LOGIN_STRINGS, initialLang, type Lang } from './loginStrings';
 import './login.css';
 
@@ -36,7 +37,7 @@ export function LoginPage() {
 
   const changeLang = (l: Lang) => {
     setLang(l);
-    localStorage.setItem('lang', l);
+    writeCookie('lang', l);
     document.documentElement.lang = l;
   };
 

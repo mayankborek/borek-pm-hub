@@ -1,3 +1,5 @@
+import { readCookie } from '@/shared/prefs/cookies';
+
 export type Lang = 'en' | 'de';
 
 export const LOGIN_STRINGS = {
@@ -48,6 +50,6 @@ export const LOGIN_STRINGS = {
 export function initialLang(): Lang {
   const q = new URLSearchParams(window.location.search).get('lang');
   if (q === 'de' || q === 'en') return q;
-  const saved = localStorage.getItem('lang');
+  const saved = readCookie('lang');
   return saved === 'de' ? 'de' : 'en';
 }

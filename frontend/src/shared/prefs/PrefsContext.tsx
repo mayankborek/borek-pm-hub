@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DE } from './de';
+import { readCookie, writeCookie } from './cookies';
 
 export type Lang = 'en' | 'de';
 export type Theme = 'light' | 'dark';
@@ -13,23 +14,8 @@ interface Prefs {
   t: (text: string, vars?: Record<string, string | number>) => string;
 }
 
-const read = (key: string) => {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-const write = (key: string, value: string) => {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* storage unavailable */
-  }
-};
-
-const initialLang = (): Lang => (read('lang') === 'de' ? 'de' : 'en');
-const initialTheme = (): Theme => (read('theme') === 'dark' ? 'dark' : 'light');
+const initialLang = (): Lang => (readCookie('lang') === 'de' ? 'de' : 'en');
+const initialTheme = (): Theme => (readCookie('theme') === 'dark' ? 'dark' : 'light');
 
 const apply = (lang: Lang, theme: Theme) => {
   document.documentElement.lang = lang;
@@ -48,11 +34,11 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   useEffect(() => apply(lang, theme), [lang, theme]);
 
   const setLang = useCallback((l: Lang) => {
-    write('lang', l);
+    writeCookie('lang', l);
     setLangState(l);
   }, []);
   const setTheme = useCallback((t: Theme) => {
-    write('theme', t);
+    writeCookie('theme', t);
     setThemeState(t);
   }, []);
 
