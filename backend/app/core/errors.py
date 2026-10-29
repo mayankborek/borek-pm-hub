@@ -2,6 +2,7 @@
 
 import logging
 import re
+from collections.abc import Mapping
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DataError, IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import Scope
 
 from app.core.middleware import get_request_id
 
@@ -24,6 +26,7 @@ _STATUS_CODES = {
     413: "PAYLOAD_TOO_LARGE",
     415: "UNSUPPORTED_MEDIA_TYPE",
     422: "VALIDATION_ERROR",
+    429: "RATE_LIMITED",
     503: "SERVICE_UNAVAILABLE",
 }
 
@@ -37,12 +40,14 @@ class AppError(Exception):
         code: str,
         message: str,
         details: list[dict[str, Any]] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.code = code
         self.message = message
         self.details = details or []
+        self.headers = headers
 
 
 def error_response(
@@ -51,21 +56,35 @@ def error_response(
     code: str,
     message: str,
     details: list[dict[str, Any]] | None = None,
+    headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     body = {
         "error": {"code": code, "message": message, "details": details or []},
         "request_id": get_request_id(request.scope),
     }
-    return JSONResponse(status_code=status_code, content=body)
+    return JSONResponse(status_code=status_code, content=body, headers=headers)
+
+
+def too_large_response(scope: Scope) -> JSONResponse:
+    """413 in the standard shape, for middleware that refuses a body before any route runs."""
+    return error_response(
+        Request(scope), 413, "PAYLOAD_TOO_LARGE", "The request body is too large."
+    )
 
 
 async def _app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-    return error_response(request, exc.status_code, exc.code, exc.message, exc.details)
+    if exc.status_code in (401, 403):
+        # Refused requests: many of them in a row point to token guessing or probing.
+        from app.auth.events import security_event  # avoid an import cycle
+
+        event = "unauthenticated" if exc.status_code == 401 else "forbidden"
+        security_event(event, request, level=logging.INFO, code=exc.code)
+    return error_response(request, exc.status_code, exc.code, exc.message, exc.details, exc.headers)
 
 
 async def _http_error_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     code = _STATUS_CODES.get(exc.status_code, "HTTP_ERROR")
-    return error_response(request, exc.status_code, code, str(exc.detail))
+    return error_response(request, exc.status_code, code, str(exc.detail), headers=exc.headers)
 
 
 _LOCATION_PREFIXES = ("body", "query", "path", "header", "cookie")
@@ -95,9 +114,19 @@ async def _validation_error_handler(request: Request, exc: RequestValidationErro
     return error_response(request, 422, "VALIDATION_ERROR", "The request is not valid.", details)
 
 
+def _db_error_summary(exc: IntegrityError | DataError) -> str:
+    """Error class, SQLSTATE and constraint name only: the full message holds row values (PII)."""
+    cause = getattr(exc.orig, "__cause__", None) or exc.orig
+    sqlstate = getattr(cause, "sqlstate", None) or "-"
+    constraint = getattr(cause, "constraint_name", None) or "-"
+    return f"{type(cause).__name__} sqlstate={sqlstate} constraint={constraint}"
+
+
 async def _integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
     """A constraint the services did not catch: report a conflict, never a 500."""
-    logger.warning("Integrity error (request_id=%s): %s", get_request_id(request.scope), exc.orig)
+    logger.warning(
+        "Integrity error (request_id=%s): %s", get_request_id(request.scope), _db_error_summary(exc)
+    )
     return error_response(
         request, 409, "CONFLICT", "The request conflicts with existing data or its rules."
     )
@@ -105,7 +134,9 @@ async def _integrity_error_handler(request: Request, exc: IntegrityError) -> JSO
 
 async def _data_error_handler(request: Request, exc: DataError) -> JSONResponse:
     """A value the database cannot store (too long, out of range, bad characters)."""
-    logger.warning("Data error (request_id=%s): %s", get_request_id(request.scope), exc.orig)
+    logger.warning(
+        "Data error (request_id=%s): %s", get_request_id(request.scope), _db_error_summary(exc)
+    )
     return error_response(request, 422, "VALIDATION_ERROR", "The request is not valid.")
 
 

@@ -6,9 +6,12 @@ later, only this module changes.
 """
 
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import anyio
+from anyio import AsyncFile
 
 from app.core.config import get_settings
 
@@ -21,10 +24,20 @@ def path_for(key: str) -> Path:
     return _root() / key
 
 
-async def save(data: bytes) -> str:
-    """Write the bytes to a new file and return its key."""
+@asynccontextmanager
+async def new_file() -> AsyncIterator[tuple[str, AsyncFile[bytes]]]:
+    """Open a new file for writing in chunks; yields (key, file).
+
+    If the block raises (too large, empty, client gone), the partial file is removed: it was
+    never saved, so this is not deleting user data.
+    """
     key = uuid.uuid4().hex
     root = _root()
     await anyio.to_thread.run_sync(lambda: root.mkdir(parents=True, exist_ok=True))
-    await anyio.to_thread.run_sync(path_for(key).write_bytes, data)
-    return key
+    path = path_for(key)
+    try:
+        async with await anyio.open_file(path, "wb") as out:
+            yield key, out
+    except BaseException:
+        await anyio.to_thread.run_sync(lambda: path.unlink(missing_ok=True))
+        raise

@@ -44,8 +44,14 @@ services:
       BOOTSTRAP_DEV_EMAIL: ${BOOTSTRAP_DEV_EMAIL:-qa.dev@borek.test}
       BOOTSTRAP_DEV_PASSWORD: ${BOOTSTRAP_DEV_PASSWORD:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Read the visitor's IP from X-Forwarded-For (set by nginx / the host proxy), so the
+      # sign-in rate limit counts per visitor, not per proxy. Safe only because the API port
+      # below is not reachable from outside this host.
+      TRUST_PROXY_HEADERS: "true"
+    # Local to the host only (health checks, a reverse proxy on the host). Browsers reach the API
+    # through the web container's /api proxy, so its body-size limit can not be bypassed.
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:
       - pmhub_uploads:/app/uploads   # task attachment files
     command: >

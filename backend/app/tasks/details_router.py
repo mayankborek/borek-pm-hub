@@ -130,7 +130,7 @@ async def download_file(
         raise AppError(404, "FILE_MISSING", "The stored file is missing.")
     return FileResponse(
         path,
-        media_type=item.content_type or "application/octet-stream",
+        media_type=details.content_type_for(item.name),  # never the type the uploader claimed
         filename=item.name,  # sent as an attachment, never shown inline
         headers={"X-Content-Type-Options": "nosniff"},
     )

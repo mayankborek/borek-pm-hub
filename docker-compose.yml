@@ -10,8 +10,10 @@ services:
       POSTGRES_USER: pmhub
       POSTGRES_PASSWORD: change-me   # local development only
       POSTGRES_DB: pmhub
+    # Bound to this machine only: nobody on the same network can reach the database.
     ports:
-      - "${DB_HOST_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_HOST_PORT:-5432}:5432"
+      - "[::1]:${DB_HOST_PORT:-5432}:5432"   # IPv6 loopback too, or "localhost" waits ~2 s per connect
     volumes:
       - pmhub_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,8 +32,11 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://pmhub:change-me@db:5432/pmhub
+    # Bound to this machine only: dev sign-in trusts a header, so it must not be reachable from
+    # the office network or Wi-Fi.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+      - "[::1]:8000:8000"
     volumes:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
@@ -50,7 +55,8 @@ services:
     build:
       context: ./frontend
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+      - "[::1]:${WEB_PORT:-8080}:80"
     depends_on:
       - api
 

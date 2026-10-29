@@ -265,8 +265,8 @@
       "Body_upload_file_api_v1_tasks__task_id__attachments_post": {
         "properties": {
           "file": {
+            "contentMediaType": "application/octet-stream",
             "description": "multipart/form-data field 'file'",
-            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -2003,6 +2003,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -2106,6 +2113,21 @@
           }
         },
         "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "description": "Sign out everywhere: every token issued to this user so far stops working.\n\nA user can be signed in on several devices or tabs at once (one token each); this ends\nall of them. The client also deletes its own copy of the token.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout",
         "tags": [
           "auth"
         ]

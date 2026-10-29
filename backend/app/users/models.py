@@ -22,6 +22,10 @@ class User(IdMixin, TimestampMixin, Base):
         Integer, nullable=False, default=0, server_default=text("0")
     )
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Part of every access token; raising it (sign out, password reset) ends all older tokens.
+    token_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0")
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )

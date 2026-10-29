@@ -76,6 +76,7 @@ async def ensure_accounts(
             user.password_hash = hash_password(password)
             user.failed_login_count = 0
             user.locked_until = None
+            user.token_version += 1  # a new password ends the sessions made with the old one
             report.append(f"password set for {email}")
         else:
             report.append(f"kept {email}")
