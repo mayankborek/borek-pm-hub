@@ -41,7 +41,6 @@ export function ProfilePage() {
     .slice(0, 2)
     .toUpperCase();
   const roleLabel = t(user.role === 'pm' ? 'Project Manager' : 'Developer');
-  const editing = mode !== 'view';
 
   const save = (e?: React.FormEvent) => {
     e?.preventDefault();
