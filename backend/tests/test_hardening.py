@@ -164,12 +164,40 @@ async def test_task_dates_estimate_and_labels(client: httpx.AsyncClient, world: 
     assert_invalid(await post(start_date="1999-12-31"), "start_date")
     assert_invalid(await post(due_date="2101-01-01"), "due_date")
     assert_invalid(await post(start_date="2026-05-02", due_date="2026-05-01"))
-    assert_invalid(await post(estimate_value=521, estimate_unit="weeks"), "estimate_value")
-    assert_invalid(await post(estimate_value=10_001, estimate_unit="hours"), "estimate_value")
+    assert_invalid(await post(estimate_value=13, estimate_unit="weeks"), "estimate_value")
+    assert_invalid(await post(estimate_value=161, estimate_unit="hours"), "estimate_value")
+    assert_invalid(await post(estimate_value=4_801, estimate_unit="minutes"), "estimate_value")
     assert_invalid(await post(estimate_value=5), None)
     assert_invalid(await post(labels=[f"l{i}" for i in range(51)]), "labels")
     assert_invalid(await post(labels=["a\x00b"]), "labels")
-    assert (await post(estimate_value=520, estimate_unit="weeks")).status_code == 201
+    assert (await post(estimate_value=12, estimate_unit="weeks")).status_code == 201
+    assert (await post(estimate_value=160, estimate_unit="hours")).status_code == 201
+    assert (await post(estimate_value=4_800, estimate_unit="minutes")).status_code == 201
+
+
+async def test_estimate_cap_cannot_be_bypassed_on_patch(
+    client: httpx.AsyncClient, world: World
+) -> None:
+    url = f"{API}/tasks/{world.task.id}"
+    hours = {"version": 1, "estimate_value": 90, "estimate_unit": "hours"}
+    set_hours = await client.patch(url, headers=world.headers, json=hours)
+    assert set_hours.status_code == 200
+
+    # only the unit: 90 hours would become 90 weeks
+    unit_only = await client.patch(
+        url, headers=world.headers, json={"version": 2, "estimate_unit": "weeks"}
+    )
+    assert_invalid(unit_only, "estimate_value")
+    # only the amount, above the hours cap
+    value_only = await client.patch(
+        url, headers=world.headers, json={"version": 2, "estimate_value": 161}
+    )
+    assert_invalid(value_only, "estimate_value")
+
+    fits = await client.patch(
+        url, headers=world.headers, json={"version": 2, "estimate_unit": "minutes"}
+    )
+    assert fits.status_code == 200 and fits.json()["estimate_value"] == 90
 
 
 # --- projects ---------------------------------------------------------------------------------

@@ -8,12 +8,18 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.common.enums import GlobalRole, MembershipSource, ProjectRole, StatusCategory
+from app.common.enums import (
+    GlobalRole,
+    MembershipSource,
+    ProjectRole,
+    ProjectStatus,
+    StatusCategory,
+)
 from app.common.validation import like_escape
 from app.core.errors import AppError
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import MemberIn, ProjectCreate, ProjectUpdate, TaskSummary
-from app.tasks import statuses
+from app.tasks import activity, statuses
 from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
 
@@ -39,6 +45,25 @@ async def get_active_project(session: AsyncSession, project_id: uuid.UUID) -> Pr
     project = await get_project(session, project_id)
     if project.archived_at is not None:
         raise AppError(409, "PROJECT_ARCHIVED", "The project is archived.")
+    return project
+
+
+def ensure_writable(project: Project) -> None:
+    """Archived and cancelled projects are read-only. A cancelled one opens again when the PM
+    sets another status (PATCH /projects/{id} stays allowed for that)."""
+    if project.archived_at is not None:
+        raise AppError(409, "PROJECT_ARCHIVED", "The project is archived.")
+    if project.status == ProjectStatus.CANCELLED.value:
+        raise AppError(
+            409,
+            "PROJECT_CANCELLED",
+            "The project is cancelled. Set it to another status to make changes.",
+        )
+
+
+async def get_writable_project(session: AsyncSession, project_id: uuid.UUID) -> Project:
+    project = await get_project(session, project_id)
+    ensure_writable(project)
     return project
 
 
@@ -328,9 +353,18 @@ async def change_member_role(
     return member, user
 
 
-async def remove_member(session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID) -> None:
-    """Remove the user and unassign their tasks here, so no task keeps a non-member assignee."""
+async def remove_member(
+    session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID, actor: User
+) -> None:
+    """Remove the user and unassign their tasks here, so no task keeps a non-member assignee.
+    Each unassigned task gets a history row."""
     member = await _get_member(session, project_id, user_id)
+    name = await session.scalar(select(User.name).where(User.id == user_id))
+    task_ids = await session.scalars(
+        select(Task.id).where(Task.project_id == project_id, Task.assignee_id == user_id)
+    )
+    for task_id in task_ids:
+        activity.record(session, task_id, actor.id, "updated", {"assignee": [name, None]})
     await session.execute(
         update(Task)
         .where(Task.project_id == project_id, Task.assignee_id == user_id)

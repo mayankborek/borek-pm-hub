@@ -63,11 +63,10 @@ async def _project_for(
             creator_id=creator_id,
         ),
     )
-    if project.archived_at is not None:
-        if user.global_role != GlobalRole.PM:
-            raise project_service.not_found()
-        if writable:
-            raise AppError(409, "PROJECT_ARCHIVED", "The project is archived.")
+    if project.archived_at is not None and user.global_role != GlobalRole.PM:
+        raise project_service.not_found()
+    if writable:
+        project_service.ensure_writable(project)  # archived or cancelled: read-only
     return project
 
 
@@ -175,7 +174,7 @@ async def update_status(
     session: SessionDep,
 ) -> StatusOut:
     await _project_for(session, user, project_id, Action.STATUS_MANAGE, writable=True)
-    await statuses.update_status(session, project_id, status_id, body)
+    await statuses.update_status(session, project_id, status_id, body, user)
     return await statuses.status_out(session, project_id, status_id)
 
 
@@ -191,7 +190,7 @@ async def delete_status(
 ) -> None:
     """Delete a status. If tasks use it, `move_to` says where they go."""
     await _project_for(session, user, project_id, Action.STATUS_MANAGE, writable=True)
-    await statuses.delete_status(session, project_id, status_id, move_to)
+    await statuses.delete_status(session, project_id, status_id, move_to, user)
 
 
 # --- tasks of a project -----------------------------------------------------------------------
@@ -318,6 +317,8 @@ async def assign_task(
 
 @router.delete("/tasks/{task_id}", status_code=204)
 async def archive_task(task_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> None:
-    """Archive (soft delete). The task stays in the database."""
+    """Archive (soft delete). The task stays in the database. Not in archived or cancelled
+    projects; archiving an already archived task is harmless."""
     task = await _task_for(session, user, task_id, Action.TASK_ARCHIVE)
+    project_service.ensure_writable(await project_service.get_project(session, task.project_id))
     await service.archive_task(session, task, user)

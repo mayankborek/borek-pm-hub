@@ -29,6 +29,7 @@ from app.tasks.schemas import (
     TaskSort,
     TaskUpdate,
     UserBrief,
+    estimate_too_large,
 )
 from app.users.models import User
 
@@ -431,6 +432,12 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
             "pair_required",
             "estimate_value and estimate_unit must be set or cleared together.",
         )
+    # Checked on the merged values: changing only the unit (90 hours -> weeks) must not
+    # get past the cap of the new unit.
+    if "estimate_value" in changes or "estimate_unit" in changes:
+        too_large = estimate_too_large(estimate_value, estimate_unit)
+        if too_large:
+            raise _invalid("estimate_value", "too_large", too_large)
     new_assignee_id = changes.get("assignee_id")
     if new_assignee_id is not None and new_assignee_id != task.assignee_id:
         await _check_assignee(session, task.project_id, new_assignee_id)

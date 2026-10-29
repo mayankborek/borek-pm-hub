@@ -317,3 +317,38 @@ async def test_status_of_another_project_is_404_and_archived_project_is_409(
     assert (
         await session.scalar(select(WorkflowStatus.id).where(WorkflowStatus.name == "Q"))
     ) is None
+
+
+async def test_moving_tasks_between_statuses_is_recorded_in_their_history(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    pm = await make_user(session, GlobalRole.PM)
+    project = await make_project(session, pm.id)
+    headers = as_user(pm.id)
+    testing = await status_by_name(session, project.id, "Testing")
+    blocked = await status_by_name(session, project.id, "Blocked")
+    task = await make_task(session, project, pm.id, status="Testing")
+
+    async def latest() -> dict[str, list[object]]:
+        history = await client.get(f"/api/v1/tasks/{task.id}/activity", headers=headers)
+        entry = history.json()["items"][0]
+        assert entry["action"] == "updated" and entry["actor"]["id"] == str(pm.id)
+        return entry["changes"]
+
+    # a category change keeps the status, the history says what changed
+    recategorised = await client.patch(
+        url(project, f"/{testing.id}"), headers=headers, json={"category": "done"}
+    )
+    assert recategorised.status_code == 200
+    assert await latest() == {"status_category": ["in_progress", "done"]}
+
+    # deleting the status moves the task; a blocked target also sets a reason
+    moved = await client.delete(
+        url(project, f"/{testing.id}"), headers=headers, params={"move_to": str(blocked.id)}
+    )
+    assert moved.status_code == 204
+    assert await latest() == {
+        "status": ["Testing", "Blocked"],
+        "status_category": ["done", "blocked"],
+        "blocked_reason": [None, "Moved to a blocked status."],
+    }
