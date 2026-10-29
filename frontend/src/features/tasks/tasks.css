@@ -76,9 +76,13 @@
 .qc-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* All-projects task list (index.html / styles.css reference): one-line titles, tinted heading row. */
-.task-list-page .page-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.15; color: var(--navy); margin: 0; }
-.task-list-page .page-crumb { margin-bottom: 3px; font-size: 14px; }
-.task-list-page .task-filters { min-height: 53px; margin: 18px 0 17px; }
+/* Same page rhythm as the dashboard: 32px padding, 20px gap, 26px/700 title, 14px description, 148×44 action. */
+.task-list-page { display: flex; flex-direction: column; gap: 20px; padding: 32px; box-sizing: border-box; }
+.task-list-page .page-header { height: 75px; flex-wrap: nowrap; align-items: center; }
+.task-list-page .page-title { font-size: 26px; font-weight: 700; letter-spacing: 0; line-height: 34px; color: var(--ink); margin: 0 0 4px; }
+.task-list-page .page-desc { font-size: 14px; line-height: normal; margin: 0; }
+.task-list-page .btn { width: 148px; height: 44px; border-radius: 0; flex: none; }
+.task-list-page .task-filters { min-height: 53px; margin: 0; }
 .task-list-page .task-filters .input { height: 39px; }
 .task-list-page .task-group { border-top: 0; }
 .task-list-page .task-group-head { height: 44px; padding: 0 17px; gap: 12px; }

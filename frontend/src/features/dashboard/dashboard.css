@@ -22,7 +22,8 @@
 
 .proj-list, .attn-list { list-style: none; margin: 0; padding: 0; }
 .proj-head, .proj-list li { display: grid; align-items: center; }
-.proj-head { grid-template-columns: minmax(0, 1fr) 112px 112px; gap: 12px; height: 20px; font-size: 13px; line-height: 18px; font-weight: 400; color: var(--muted); text-transform: uppercase; margin: 0; border-bottom: 0; padding: 0; }
+.proj-head { grid-template-columns: minmax(0, 1fr) 96px 96px; gap: 4px; height: 20px; font-size: 13px; line-height: 18px; font-weight: 400; color: var(--muted); text-transform: uppercase; margin: 0; border-bottom: 0; padding: 0; }
+.proj-head span:nth-child(n+2) { text-align: center; }
 .proj-list { margin: 0; padding-top: 6px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 .proj-list li { grid-template-columns: minmax(0, 1fr) 96px 96px; gap: 4px; height: 32px; }
 .proj-list a { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }

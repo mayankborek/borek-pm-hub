@@ -46,8 +46,8 @@ export function TasksPage() {
     <section className="page-body task-list-page">
       <div className="page-header">
         <div>
-          <p className="page-crumb">{tr('All accessible projects')}</p>
           <h1 className="page-title">{tr('All project tasks')}</h1>
+          <p className="page-desc">{tr('All accessible projects')}</p>
         </div>
         <Link className="btn" to={projectId ? `${paths.taskNew}?project_id=${projectId}` : paths.taskNew}>
           {tr('Add Task')}
