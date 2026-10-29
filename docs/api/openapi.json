@@ -1407,7 +1407,7 @@
             "anyOf": [
               {
                 "exclusiveMinimum": 0.0,
-                "maximum": 1000000.0,
+                "maximum": 4800.0,
                 "type": "integer"
               },
               {
@@ -1805,7 +1805,7 @@
             "anyOf": [
               {
                 "exclusiveMinimum": 0.0,
-                "maximum": 1000000.0,
+                "maximum": 4800.0,
                 "type": "integer"
               },
               {
@@ -2881,7 +2881,7 @@
     },
     "/api/v1/projects/{project_id}/members/{user_id}": {
       "delete": {
-        "description": "Remove a member. Their tasks in this project become unassigned.",
+        "description": "Remove a member. Their tasks in this project become unassigned (recorded in history).",
         "operationId": "remove_member_api_v1_projects__project_id__members__user_id__delete",
         "parameters": [
           {
@@ -3900,7 +3900,7 @@
     },
     "/api/v1/tasks/{task_id}": {
       "delete": {
-        "description": "Archive (soft delete). The task stays in the database.",
+        "description": "Archive (soft delete). The task stays in the database. Not in archived or cancelled\nprojects; archiving an already archived task is harmless.",
         "operationId": "archive_task_api_v1_tasks__task_id__delete",
         "parameters": [
           {

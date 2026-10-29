@@ -11,14 +11,15 @@ from app.common.validation import check_date, clean_optional_text, clean_text
 
 MAX_LABELS = 10
 MAX_LABEL_INPUT = 50  # raw list size accepted before de-duplication
-MAX_ESTIMATE = 1_000_000
 MAX_DESCRIPTION = 20_000
 MAX_BLOCKED_REASON = 1_000
+# About a month of work (160 hours) or a quarter (12 weeks); bigger work is split into tasks.
 MAX_ESTIMATE_BY_UNIT = {
-    EstimateUnit.MINUTES: 100_000,
-    EstimateUnit.HOURS: 10_000,
-    EstimateUnit.WEEKS: 520,
+    EstimateUnit.MINUTES: 4_800,
+    EstimateUnit.HOURS: 160,
+    EstimateUnit.WEEKS: 12,
 }
+MAX_ESTIMATE = max(MAX_ESTIMATE_BY_UNIT.values())
 
 
 # --- statuses ---------------------------------------------------------------------------------
@@ -102,13 +103,22 @@ def _clean_reason(value: str | None) -> str | None:
     return clean_optional_text(value, max_length=MAX_BLOCKED_REASON, label="Blocked reason")
 
 
+def estimate_too_large(value: int | None, unit: str | None) -> str | None:
+    """The error message when `value` exceeds the cap of `unit`, else None."""
+    if value is None or unit is None:
+        return None
+    cap = MAX_ESTIMATE_BY_UNIT[EstimateUnit(unit)]
+    if value <= cap:
+        return None
+    return f"estimate_value can be at most {cap} {EstimateUnit(unit).value}."
+
+
 def _check_estimate(value: int | None, unit: EstimateUnit | None) -> None:
     if (value is None) != (unit is None):
         raise ValueError("estimate_value and estimate_unit must be sent together.")
-    if value is not None and unit is not None and value > MAX_ESTIMATE_BY_UNIT[unit]:
-        raise ValueError(
-            f"estimate_value can be at most {MAX_ESTIMATE_BY_UNIT[unit]} {unit.value}."
-        )
+    message = estimate_too_large(value, unit)
+    if message:
+        raise ValueError(message)
 
 
 def _check_start(value: date | None) -> date | None:

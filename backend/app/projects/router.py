@@ -160,7 +160,7 @@ async def add_member(
     project_id: uuid.UUID, body: MemberIn, user: CurrentUser, session: SessionDep
 ) -> MemberOut:
     await _require_manage(session, user, project_id, Action.MEMBER_MANAGE)
-    project = await service.get_active_project(session, project_id)
+    project = await service.get_writable_project(session, project_id)
     member, member_user = await service.add_member(session, project, user, body)
     return _member_out(member, member_user)
 
@@ -174,7 +174,7 @@ async def change_member_role(
     session: SessionDep,
 ) -> MemberOut:
     await _require_manage(session, user, project_id, Action.MEMBER_MANAGE)
-    await service.get_active_project(session, project_id)
+    await service.get_writable_project(session, project_id)
     member, member_user = await service.change_member_role(
         session, project_id, user_id, body.project_role
     )
@@ -185,7 +185,7 @@ async def change_member_role(
 async def remove_member(
     project_id: uuid.UUID, user_id: uuid.UUID, user: CurrentUser, session: SessionDep
 ) -> None:
-    """Remove a member. Their tasks in this project become unassigned."""
+    """Remove a member. Their tasks in this project become unassigned (recorded in history)."""
     await _require_manage(session, user, project_id, Action.MEMBER_MANAGE)
-    await service.get_active_project(session, project_id)
-    await service.remove_member(session, project_id, user_id)
+    await service.get_writable_project(session, project_id)
+    await service.remove_member(session, project_id, user_id, user)

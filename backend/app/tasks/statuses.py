@@ -13,8 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.enums import StatusCategory
 from app.core.errors import AppError
+from app.tasks import activity
 from app.tasks.models import Task, WorkflowStatus
 from app.tasks.schemas import StatusCreate, StatusOut, StatusUpdate
+from app.users.models import User
 
 DEFAULT_STATUSES: list[tuple[str, StatusCategory]] = [
     ("Backlog", StatusCategory.BACKLOG),
@@ -122,9 +124,37 @@ async def _done_count(session: AsyncSession, project_id: uuid.UUID) -> int:
 
 
 async def _retarget_tasks(
-    session: AsyncSession, project_id: uuid.UUID, from_id: uuid.UUID, dest: WorkflowStatus
+    session: AsyncSession,
+    project_id: uuid.UUID,
+    source: tuple[uuid.UUID, str, str],
+    dest: WorkflowStatus,
+    actor: User,
 ) -> None:
-    """Point tasks at `dest` and make their completed/blocked fields match its category."""
+    """Point tasks at `dest` and make their completed/blocked fields match its category.
+
+    `source` is the (id, name, category) the tasks had before. Every moved task gets a history
+    row: the status (or, for a category change of the same status, the category) and the
+    blocked reason when it changes."""
+    from_id, from_name, from_category = source
+    fallback_reason = "Moved to a blocked status."
+    is_blocked = dest.category == StatusCategory.BLOCKED.value
+    affected = await session.execute(
+        select(Task.id, Task.blocked_reason).where(
+            Task.project_id == project_id, Task.status_id == from_id
+        )
+    )
+    for task_id, old_reason in affected.all():
+        changes: dict[str, list[object]] = {}
+        if dest.id != from_id:
+            changes["status"] = [from_name, dest.name]
+        if dest.category != from_category:
+            changes["status_category"] = [from_category, dest.category]
+        new_reason = ((old_reason or "").strip() or fallback_reason) if is_blocked else None
+        if new_reason != old_reason:
+            changes["blocked_reason"] = [old_reason, new_reason]
+        if changes:
+            activity.record(session, task_id, actor.id, "updated", changes)
+
     now = datetime.now(UTC)
     values: dict[str, object] = {"status_id": dest.id, "version": Task.version + 1}
     if dest.category == StatusCategory.DONE.value:
@@ -134,7 +164,7 @@ async def _retarget_tasks(
     if dest.category == StatusCategory.BLOCKED.value:
         values["blocked_at"] = func.coalesce(Task.blocked_at, now)
         values["blocked_reason"] = func.coalesce(
-            func.nullif(func.btrim(Task.blocked_reason), ""), "Moved to a blocked status."
+            func.nullif(func.btrim(Task.blocked_reason), ""), fallback_reason
         )
     else:
         values["blocked_at"] = None
@@ -180,9 +210,14 @@ async def create_status(
 
 
 async def update_status(
-    session: AsyncSession, project_id: uuid.UUID, status_id: uuid.UUID, data: StatusUpdate
+    session: AsyncSession,
+    project_id: uuid.UUID,
+    status_id: uuid.UUID,
+    data: StatusUpdate,
+    actor: User,
 ) -> WorkflowStatus:
     status = await get_status(session, project_id, status_id)
+    old_category = status.category
     changes = data.model_dump(exclude_unset=True)
     if "name" in changes and changes["name"] is None:
         raise AppError(
@@ -219,7 +254,9 @@ async def update_status(
         raise _duplicate_name(changes["name"]) from None
     if category_changed:
         # Tasks already in this status must satisfy the new category's rules.
-        await _retarget_tasks(session, project_id, status.id, status)
+        await _retarget_tasks(
+            session, project_id, (status.id, status.name, old_category), status, actor
+        )
     await session.commit()
     await session.refresh(status)
     return status
@@ -253,6 +290,7 @@ async def delete_status(
     project_id: uuid.UUID,
     status_id: uuid.UUID,
     move_to: uuid.UUID | None,
+    actor: User,
 ) -> None:
     status = await get_status(session, project_id, status_id)
     if status.category == StatusCategory.DONE.value and await _done_count(session, project_id) < 2:
@@ -290,6 +328,8 @@ async def delete_status(
                 ],
             )
         destination = await get_status(session, project_id, move_to)
-        await _retarget_tasks(session, project_id, status_id, destination)
+        await _retarget_tasks(
+            session, project_id, (status.id, status.name, status.category), destination, actor
+        )
     await session.delete(status)
     await session.commit()

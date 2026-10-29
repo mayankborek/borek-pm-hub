@@ -551,3 +551,67 @@ async def test_cancelled_project_keeps_its_tasks_inside_the_project(
     assert [t["title"] for t in response.json()["items"]] == ["Still here"]
     detail = await client.get(f"{URL}/{project.id}", headers=as_user(pm.id))
     assert detail.json()["task_summary"]["total"] == 1
+
+
+async def test_cancelled_project_is_read_only_until_reopened(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    pm = await make_user(session, GlobalRole.PM)
+    dev = await make_user(session)
+    other = await make_user(session)
+    project = await make_project(session, pm.id, code="RO")
+    await add_member(session, project, dev.id)
+    task = await make_task(session, project, pm.id, assignee_id=dev.id)
+    project.status = "cancelled"
+    await session.flush()
+    pm_h, dev_h = as_user(pm.id), as_user(dev.id)
+    tasks_url = f"/api/v1/tasks/{task.id}"
+    statuses_url = f"{URL}/{project.id}/statuses"
+
+    blocked_writes = [
+        client.post(f"{URL}/{project.id}/tasks", headers=pm_h, json={"title": "new"}),
+        client.patch(tasks_url, headers=pm_h, json={"version": 1, "title": "x"}),
+        client.patch(tasks_url, headers=dev_h, json={"version": 1, "priority": "high"}),
+        client.put(f"{tasks_url}/assignee", headers=pm_h, json={"version": 1, "assignee_id": None}),
+        client.post(f"{tasks_url}/comments", headers=dev_h, json={"body": "hi"}),
+        client.post(f"{tasks_url}/attachments/link", headers=pm_h, json={"url": "https://a.b"}),
+        client.delete(tasks_url, headers=pm_h),
+        client.post(statuses_url, headers=pm_h, json={"name": "QA", "category": "todo"}),
+        client.post(f"{URL}/{project.id}/members", headers=pm_h, json={"user_id": str(other.id)}),
+        client.delete(f"{URL}/{project.id}/members/{dev.id}", headers=pm_h),
+    ]
+    for call in blocked_writes:
+        response = await call
+        assert response.status_code == 409, response.text
+        assert response.json()["error"]["code"] == "PROJECT_CANCELLED"
+
+    # reading still works for members
+    assert (await client.get(tasks_url, headers=dev_h)).status_code == 200
+    assert (await client.get(f"{URL}/{project.id}", headers=dev_h)).status_code == 200
+
+    # the PM reopens it, then writes work again
+    version = (await client.get(f"{URL}/{project.id}", headers=pm_h)).json()["version"]
+    reopened = await client.patch(
+        f"{URL}/{project.id}", headers=pm_h, json={"version": version, "status": "active"}
+    )
+    assert reopened.status_code == 200
+    edited = await client.patch(tasks_url, headers=pm_h, json={"version": 1, "title": "x"})
+    assert edited.status_code == 200
+
+
+async def test_removing_a_member_records_unassignment_in_task_history(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    pm = await make_user(session, GlobalRole.PM)
+    dev = await make_user(session)
+    project = await make_project(session, pm.id, code="HIS")
+    await add_member(session, project, dev.id)
+    task = await make_task(session, project, pm.id, assignee_id=dev.id)
+
+    removed = await client.delete(f"{URL}/{project.id}/members/{dev.id}", headers=as_user(pm.id))
+    assert removed.status_code == 204
+
+    history = await client.get(f"/api/v1/tasks/{task.id}/activity", headers=as_user(pm.id))
+    entry = history.json()["items"][0]
+    assert entry["action"] == "updated" and entry["actor"]["id"] == str(pm.id)
+    assert entry["changes"] == {"assignee": [dev.name, None]}
