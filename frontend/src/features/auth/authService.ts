@@ -54,3 +54,15 @@ export async function signInWithMicrosoft(): Promise<User> {
 export async function fetchMe(): Promise<User> {
   return toUser(await api<UserOut>('/auth/me'));
 }
+
+/**
+ * POST /auth/logout ends all of this user's sessions on the server. Best effort: the local session
+ * is cleared by the caller whether or not this succeeds (offline, already expired, or an API without the route).
+ */
+export async function logoutOnServer(): Promise<void> {
+  try {
+    await api<void>('/auth/logout', { method: 'POST' });
+  } catch {
+    /* the caller signs out locally regardless */
+  }
+}

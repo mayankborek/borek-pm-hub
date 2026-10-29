@@ -191,8 +191,8 @@ export function ProfilePage() {
               <button
                 type="button"
                 className="pf-link"
-                onClick={() => {
-                  signOut();
+                onClick={async () => {
+                  await signOut();
                   navigate(paths.login, { replace: true });
                 }}
               >

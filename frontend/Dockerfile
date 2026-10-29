@@ -16,9 +16,13 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
 # Stage 2: serve the bundle with nginx and proxy /api to the backend.
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
+
+# Pick up Alpine security fixes published since the base image was built.
+RUN apk upgrade --no-cache
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY security-headers.inc /etc/nginx/conf.d/security-headers.inc
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80

@@ -5,16 +5,32 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public body?: unknown,
+    /** Seconds from the Retry-After header (429), when the server sent one. */
+    public retryAfter?: number,
   ) {
     super(message);
   }
 }
 
+/** Retry-After is either delay-seconds or an HTTP date; returns whole seconds, or undefined if absent/unparseable. */
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const secs = Number(value);
+  if (Number.isFinite(secs)) return Math.max(0, Math.ceil(secs));
+  const at = Date.parse(value);
+  return Number.isNaN(at) ? undefined : Math.max(0, Math.ceil((at - Date.now()) / 1000));
+}
+
 /** The API's message plus its request_id ({ error: { message }, request_id }), so a failure can be traced in the backend logs. */
 export function describeApiError(err: unknown, fallback: string): string {
   if (!(err instanceof ApiError)) return fallback;
-  const body = err.body as { error?: { message?: string }; request_id?: string } | undefined;
-  const message = body?.error?.message ?? `${fallback} (${err.status})`;
+  const body = err.body as { error?: { code?: string; message?: string }; request_id?: string } | undefined;
+  let message = body?.error?.message ?? `${fallback} (${err.status})`;
+  if (err.status === 429 || body?.error?.code === 'RATE_LIMITED') {
+    message = err.retryAfter !== undefined ? `Too many requests. Try again in ${err.retryAfter} s.` : 'Too many requests. Try again shortly.';
+  } else if (err.status === 413 || body?.error?.code === 'PAYLOAD_TOO_LARGE') {
+    message = 'That request is too large.';
+  }
   return body?.request_id ? `${message} (request ${body.request_id})` : message;
 }
 
@@ -84,7 +100,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     if (res.status === 401 && (apiToken || devUserId)) onUnauthorized?.();
     const body = await res.json().catch(() => undefined);
-    throw new ApiError(res.status, res.statusText, body);
+    throw new ApiError(res.status, res.statusText, body, parseRetryAfter(res.headers.get('Retry-After')));
   }
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }

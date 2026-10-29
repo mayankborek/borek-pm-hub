@@ -9,7 +9,7 @@ import {
   setUnauthorizedHandler,
 } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { fetchMe, NoAccessError } from './authService';
+import { fetchMe, logoutOnServer, NoAccessError } from './authService';
 import type { User } from './types';
 
 // Earlier builds kept the whole user (role included) here. It is never read; just clear it.
@@ -27,7 +27,8 @@ interface AuthValue {
   /** Only ever set from a server response, never from browser storage. */
   user: User | null;
   signIn: (user: User) => void;
-  signOut: () => void;
+  /** Ends the server sessions first (credentials are still attached), then clears local state. */
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('ready');
   }, []);
 
-  const signOut = useCallback(() => {
+  const clearSession = useCallback(() => {
     setApiUser(null);
     setApiToken(null);
     setUser(null);
@@ -54,10 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.clear();
   }, [qc]);
 
+  const signOut = useCallback(async () => {
+    await logoutOnServer();
+    clearSession();
+  }, [clearSession]);
+
   useEffect(() => {
-    setUnauthorizedHandler(signOut);
+    setUnauthorizedHandler(clearSession);
     return () => setUnauthorizedHandler(null);
-  }, [signOut]);
+  }, [clearSession]);
 
   // A stored credential only resumes a session: the server decides who this is and what role they hold.
   useEffect(() => {
@@ -71,13 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((e) => {
         if (cancelled) return;
-        if (e instanceof NoAccessError || (e instanceof ApiError && e.status >= 400 && e.status < 500)) signOut();
+        if (e instanceof NoAccessError || (e instanceof ApiError && e.status >= 400 && e.status < 500)) clearSession();
         else setStatus('unavailable');
       });
     return () => {
       cancelled = true;
     };
-  }, [status, attempt, signOut]);
+  }, [status, attempt, clearSession]);
 
   const value = useMemo(() => ({ user, signIn, signOut }), [user, signIn, signOut]);
 
