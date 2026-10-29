@@ -125,6 +125,8 @@ export const DE: Record<string, string> = {
   'Assigned Tasks': 'Zugewiesene Aufgaben',
   'Across {n} project': 'In {n} Projekt',
   'Across {n} projects': 'In {n} Projekten',
+  '{c} completed · {p} projects': '{c} abgeschlossen · {p} Projekte',
+  'No active tasks right now. Your completed work is listed below.': 'Derzeit keine aktiven Aufgaben. Deine abgeschlossenen Aufgaben sind unten aufgeführt.',
   '{n} active tasks': '{n} aktive Aufgaben',
   '{n} due today': '{n} heute fällig',
   'Needs your attention': 'Handlungsbedarf',

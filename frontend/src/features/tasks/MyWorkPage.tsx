@@ -71,7 +71,7 @@ function MyWorkBody({ dashboard, tasks }: { dashboard: MyDashboard; tasks: Task[
     {
       label: t('Assigned Tasks'),
       value: summary.total,
-      note: t(projects.length === 1 ? 'Across {n} project' : 'Across {n} projects', { n: projects.length }),
+      note: t('{c} completed · {p} projects', { c: summary.completed, p: projects.length }),
     },
     { label: t('Tasks in Progress'), value: summary.in_progress, note: t('{n} active tasks', { n: summary.total - summary.completed }) },
     { label: t('Due this Week'), value: dueThisWeek.length, note: t('{n} due today', { n: dueToday }) },
@@ -105,6 +105,7 @@ function AssignedTasks({ tasks, projectCount }: { tasks: Task[]; projectCount: n
     <section className="card" aria-label={t('All Assigned Tasks')}>
       <h3>{t('All Assigned Tasks')}</h3>
       <p className="desc">{t(tasks.length === 1 ? '{n} task assigned to you across {p} projects' : '{n} tasks assigned to you across {p} projects', { n: tasks.length, p: projectCount })}</p>
+      {tasks.length > 0 && !tasks.some(isOpen) && <p className="muted">{t('No active tasks right now. Your completed work is listed below.')}</p>}
       <div className="mw-head" aria-hidden="true">
         <span>{t('Task')}</span>
         <span>{t('Status')}</span>

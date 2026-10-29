@@ -34,12 +34,10 @@ export function AppLayout() {
         ? 'Task details'
         : navItems.find((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))?.label ?? 'Borek Flow';
 
-  const isProfile = pathname === paths.profile;
   const items = navItems.filter((i) => i.roles.includes(user.role));
 
   return (
-    <div className="shell" style={isProfile ? { gridTemplateColumns: '1fr' } : undefined}>
-      {!isProfile && (
+    <div className="shell">
       <aside className="sidebar">
         <div className="brand">
           <img src={theme === 'dark' ? borekLogoDark : borekLogo} alt="BOREK Solutions Group" width={112} height={26} />
@@ -54,7 +52,6 @@ export function AppLayout() {
           {user.role === 'developer' && <DevProjectsNav />}
         </nav>
       </aside>
-      )}
 
       <div className="main">
         <header className="topbar">
