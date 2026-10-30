@@ -2,13 +2,13 @@
 @keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
 
 .login-page {
-  min-height:100vh;min-height:100dvh;overflow-x:hidden;
+  height:100vh;height:100dvh;overflow:hidden;
   --l-navy:#0d1240;
   --l-text-secondary:#5c6178;
   --l-border:#e2e4ec;
   --l-action:#124f94;
 
-  .page{display:grid;grid-template-columns:760fr 680fr;min-height:100vh;min-height:100dvh;overflow:hidden}
+  .page{display:grid;grid-template-columns:760fr 680fr;overflow:hidden}
 
   /* Hero */
   .hero{position:relative;background:var(--l-navy);color:#fff;display:flex;flex-direction:column;padding:76px 88px 93px;overflow:hidden}

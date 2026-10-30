@@ -57,6 +57,7 @@
 
 html { touch-action: pan-x pan-y; min-width: 1100px; }
 html, body, #root { margin: 0; min-height: 100%; }
+html, body { height: 100%; overflow-y: hidden; }
 
 body {
   font-family: Inter, system-ui, sans-serif;
@@ -69,7 +70,7 @@ a { color: var(--link); }
 select, input { color-scheme: inherit; }
 
 /* ---- App shell ---- */
-.shell { display: grid; grid-template-columns: 216px 1fr; min-height: 100vh; }
+.shell { display: grid; grid-template-columns: 216px 1fr; height: 100vh; height: 100dvh; overflow: hidden; }
 .sidebar { background: var(--surface); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 24px; }
 .brand { display: flex; flex-direction: column; gap: 4px; }
 .brand img { display: block; }
@@ -100,7 +101,7 @@ select, input { color-scheme: inherit; }
 .nav-sub a.active { color: var(--ink); font-weight: 600; }
 .nav-sub a:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
 
-.main { display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
+.main { display: flex; flex-direction: column; background: var(--bg); min-width: 0; min-height: 0; }
 .topbar {
   display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: var(--spacing-4, 16px);
   width: 100%; height: 70px; box-sizing: border-box; overflow: hidden;
@@ -129,7 +130,7 @@ select, input { color-scheme: inherit; }
 .splash i { width: 71.5px; height: 4px; background: var(--navy); flex: none; }
 .link-btn { background: none; border: 0; color: var(--link); font: 500 12px Inter, sans-serif; cursor: pointer; }
 .link-btn:hover { text-decoration: underline; }
-.content { padding: 24px; flex: 1; }
+.content { padding: 24px; flex: 1; min-height: 0; overflow: hidden; }
 
 /* ---- Pages ---- */
 .page-title { font-size: 24px; font-weight: 300; margin: 0 0 8px; }

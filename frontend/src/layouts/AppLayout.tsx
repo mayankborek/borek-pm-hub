@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { navItems, paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -5,12 +6,16 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
 import borekLogoDark from '@/assets/borek-logo.png';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
+import { useFitHeight } from '@/shared/useFitHeight';
 import { DevProjectsNav } from './DevProjectsNav';
 
 export function AppLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const { lang, setLang, t, theme } = usePrefs();
+  const hostRef = useRef<HTMLElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  useFitHeight(hostRef, innerRef);
   if (!user) return null;
 
   const initials = user.name
@@ -75,8 +80,10 @@ export function AppLayout() {
             <i /><i /><i /><i />
           </div>
         </header>
-        <main className="content">
-          <Outlet />
+        <main className="content" ref={hostRef}>
+          <div className="fit" ref={innerRef}>
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
