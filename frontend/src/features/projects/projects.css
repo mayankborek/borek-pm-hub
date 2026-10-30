@@ -69,7 +69,7 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .form-alert { padding: 10px 12px; border: 1px solid #fbbfc7; background: #ffe3e8; color: #a21d30; border-radius:0; font-size: 13px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
-@media (max-width: 900px) { .ov-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ov-charts { grid-template-columns: 1fr; } }
+
 .form .input { max-width: none; }
 
 /* Create / edit project (Figma "05 Project Form — Primary"). */
@@ -115,7 +115,7 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .pform-btn:disabled { background: var(--disabled); border-color: var(--disabled); cursor: not-allowed; }
 .pform-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 :root[data-theme=dark] .pform-btn.primary { background: #3263c9; border-color: #3263c9; color: #fff; }
-@media (max-width: 700px) { .pform-row.two, .pform-row.sched { grid-template-columns: 1fr; } }
+
 
 .project-head .crumbs { margin-bottom: 8px; }
 .project-head .page-title { font-size: 26px; font-weight: 600; margin: 0; color: var(--navy); }

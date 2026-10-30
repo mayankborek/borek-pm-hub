@@ -49,7 +49,7 @@
 .td-card-head .td-relate { height: 36px; }
 .td-dev .td-card-head .td-relate { width: 128px; }
 
-@media (max-width: 900px) { .td-grid { grid-template-columns: 1fr; } }
+
 
 /* Status dropdown: options are the coloured status labels from the Figma filter popover. */
 .ss { position: relative; min-width: 0; }

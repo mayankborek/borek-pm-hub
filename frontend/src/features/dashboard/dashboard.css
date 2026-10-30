@@ -56,12 +56,5 @@
 .main:has(.dashboard) { background: var(--surface); }
 .attn-note { margin: 16px 0 0; font-size: 13px; }
 
-@media (max-width: 1100px) {
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .split { grid-template-columns: 1fr; }
-}
-@media (max-width: 600px) {
-  .metrics { grid-template-columns: 1fr; }
-  .proj-head, .proj-list li { grid-template-columns: minmax(0, 1fr) 84px 76px; }
-  .mw-head, .mw-list li { grid-template-columns: minmax(0, 1fr) 84px 96px; gap: 12px; }
-}
+
+

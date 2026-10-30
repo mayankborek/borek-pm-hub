@@ -55,7 +55,7 @@
 *::before,
 *::after { box-sizing: border-box; }
 
-html { touch-action: pan-x pan-y; }
+html { touch-action: pan-x pan-y; min-width: 1100px; }
 html, body, #root { margin: 0; min-height: 100%; }
 
 body {
@@ -143,9 +143,4 @@ select, input { color-scheme: inherit; }
 .tab { padding: 0 0 8px; font-size: 13px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
 .tab.active { color: var(--ink); border-bottom-color: var(--navy); font-weight: 600; }
 
-@media (max-width: 860px) {
-  .shell { grid-template-columns: 1fr; }
-  .sidebar { padding: 12px; }
-  .sidebar nav { display: flex; gap: 4px; overflow-x: auto; }
-  .brand { padding-bottom: 12px; }
-}
+
