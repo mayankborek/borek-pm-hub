@@ -26,9 +26,9 @@ interface LoginOut {
 }
 
 /**
- * AUTH_MODE=local: POST /auth/login returns a bearer token.
- * AUTH_MODE=dev (login answers 404): the backend lists seeded users and trusts X-Dev-User-Id;
- * the password is not checked. Entra ID sign-in plugs in behind the same two functions.
+ * POST /auth/login (backend AUTH_MODE=local) checks the password and returns a bearer token.
+ * There is no fallback: if the backend is not in local mode the sign-in fails instead of skipping the check.
+ * Entra ID sign-in plugs in behind the same two functions.
  */
 export async function signInWithPassword(email: string, password: string): Promise<User> {
   try {
@@ -37,12 +37,8 @@ export async function signInWithPassword(email: string, password: string): Promi
     return toUser(res.user);
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) throw new InvalidCredentialsError();
-    if (!(e instanceof ApiError) || e.status !== 404) throw e;
+    throw e;
   }
-  const users = await api<UserOut[]>('/auth/dev-users');
-  const found = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-  if (!found) throw new NoAccessError();
-  return toUser(found);
 }
 
 export async function signInWithMicrosoft(): Promise<User> {

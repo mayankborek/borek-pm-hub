@@ -73,7 +73,7 @@ export function ProjectsPage() {
   );
 
   return (
-    <section className="page-body">
+    <section className={isPm ? 'page-body' : 'page-body task-list-page'}>
       <div className="page-header">
         <div>
           {!isPm && <p className="page-crumb">{t('Workspace / Projects assigned to me')}</p>}
