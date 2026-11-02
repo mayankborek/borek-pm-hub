@@ -23,7 +23,18 @@ const CATEGORY_LABEL: Record<StatusCategory, string> = {
   done: 'Done',
 };
 
-const colorFor = (id: string) => AVATAR_COLORS[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
+// Each user gets their own colour, handed out in first-seen order: the brand palette first, then extra hues
+// (dark enough for white initials) so no two users share a colour.
+const assignedColors = new Map<string, string>();
+const colorFor = (id: string) => {
+  let color = assignedColors.get(id);
+  if (!color) {
+    const n = assignedColors.size;
+    color = n < AVATAR_COLORS.length ? AVATAR_COLORS[n] : `hsl(${(n * 137.5) % 360} 55% 38%)`;
+    assignedColors.set(id, color);
+  }
+  return color;
+};
 const initials = (name: string) =>
   name
     .split(/\s+/)
