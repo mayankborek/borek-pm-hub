@@ -45,7 +45,8 @@
 .td-dev .td-field > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-dev .td-field .pi { font: inherit; }
 .td-dev .td-field img { flex: none; }
-.td-dev .td-row { grid-template-columns: 256px 1fr; }
+.td-dev .td-row { grid-template-columns: minmax(0, 1fr) minmax(0, 266px); }
+.td-dev .td-row > .td-field { justify-self: end; width: 100%; }
 .td-dev .td-row > .ss { justify-self: end; width: 140px; }
 .td-dev .td-sub + .td-row { min-height: 36px; border-bottom: 0; }
 .td-card-head .td-relate { height: 36px; }
@@ -162,7 +163,8 @@
 .td-static .pi { font-weight: 600; }
 
 /* Developer pickers share the read-only field box and add the design's chevron / calendar icon. */
-.td-dev .td-row > .ps, .td-dev .td-row > .as, .td-dev .td-row > .dp { width: 266px; max-width: 100%; }
+.td-dev .td-row > .ps, .td-dev .td-row > .as, .td-dev .td-row > .dp { width: 100%; max-width: 266px; justify-self: end; box-sizing: border-box; }
+.td-dev .ps-btn, .td-dev .dp-btn { box-sizing: border-box; }
 .td-dev .ps-btn, .td-dev .dp-btn { padding-right: 32px; font-weight: 600; font-size: 13px; background: var(--surface) url(./assets/select-chevron.svg) no-repeat right 8px center; }
 .td-dev .dp-btn { background-image: url(./assets/select-calendar.svg); }
 .td-dev .ps-btn .pi { font: inherit; }
