@@ -28,7 +28,7 @@ export function AppLayout() {
           ? 'Create Project'
           : pathname === paths.projects && user.role === 'developer'
           ? 'My Projects'
-          :/^\/projects\/(?!new$)[^/]+(\/board)?\/?$/.test(pathname)
+          :/^\/projects\/(?!new$)[^/]+(\/(board|list))?\/?$/.test(pathname)
         ? 'Project Overview'
         : pathname.startsWith(`${paths.tasks}/`)
         ? 'Task details'

@@ -18,8 +18,8 @@
   .hero>*:not(.art){position:relative;z-index:2}
   .art{z-index:0;background-size:cover}
   .logo{display:block;width:182px;height:auto}
-  .product{font-size:11px;font-weight:600;letter-spacing:.1em;margin:21px 0 0 7px}
-  .copy{margin:min(399px,44.2vh) 0 0 -11px}
+  .product{font-size:11px;font-weight:600;letter-spacing:.1em;margin:21px 0 0}
+  .copy{margin:min(399px,44.2vh) 0 0}
   .copy h1{font-size:clamp(38px,3.75vw,54px);line-height:64px;font-weight:300;margin:0 0 min(86px,9.5vh);max-width:540px}
   .copy p{font-size:16px;line-height:27px;font-weight:400;margin:0;max-width:520px}
   .hero footer{margin-top:auto;padding-top:24px;font-size:11px;line-height:14px}
