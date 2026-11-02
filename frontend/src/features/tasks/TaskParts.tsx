@@ -7,7 +7,7 @@ import type { StatusCategory, Task, TaskFilter, TaskPriority, TaskStatusOption, 
 import { PRIORITY_OPTIONS } from './PrioritySelect';
 import './tasks.css';
 
-const AVATAR_COLORS = ['#0d1240', '#124f94', '#5c6178'];
+const AVATAR_COLORS = ['#673AB7', '#16836F', '#F08C00', '#6B7280'];
 const PRIORITY_LABEL: Record<TaskPriority, string> = {
   highest: 'Highest',
   high: 'High',
