@@ -144,10 +144,11 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .proj-row .pill { justify-content: center; min-width: 108px; padding: 0 12px; line-height: 1; }
 
 /* Project pages share the dashboard rhythm (32px padding); the header and tabs stay, the active tab scrolls. */
-.project-page { display: flex; flex-direction: column; gap: 20px; height: var(--page-h); min-height: 0; padding: 32px; box-sizing: border-box; }
+.project-page { display: flex; flex-direction: column; gap: 12px; height: var(--page-h); min-height: 0; padding: 12px 32px 24px; box-sizing: border-box; }
 .project-page > * { flex: none; }
 .project-page > .project-head { margin: 0; }
-.project-page > .crumbs { margin: 0 0 -12px; }
+.project-page > .project-head .page-header { height: auto; min-height: 56px; }
+.project-page > .crumbs { margin: 0 0 -6px; }
 .project-page > .ov,
 .project-page > .task-list-page,
 .project-page > .kanban { flex: 1 1 auto; min-height: 0; overflow: auto; }

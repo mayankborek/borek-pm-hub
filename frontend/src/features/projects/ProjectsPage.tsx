@@ -73,7 +73,7 @@ export function ProjectsPage() {
   );
 
   return (
-    <section className="page-body task-list-page">
+    <section className={`page-body task-list-page${isPm ? '' : ' dev-projects'}`}>
       <div className="page-header">
         <div>
           <h1 className="page-title">{t(isPm ? 'Projects' : 'My projects')}</h1>
