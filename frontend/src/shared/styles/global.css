@@ -11,8 +11,8 @@
   --surface-2: #f3f4f8; /* Mist */
   --accent: #124f94;
   --field: #8a90a5;
-  /* Viewport height left under the 70px top bar and the 24px content padding; pages scroll inside it. */
-  --page-h: calc(100dvh - 70px - 48px);
+  /* Viewport height left under the 70px top bar and the 24px content padding; pages scroll inside it (never under 520px). */
+  --page-h: max(calc(100dvh - 70px - 48px), 520px);
   color-scheme: light;
 }
 
@@ -57,9 +57,7 @@
 *::before,
 *::after { box-sizing: border-box; }
 
-html { touch-action: pan-x pan-y; min-width: 1100px; }
 html, body, #root { margin: 0; min-height: 100%; }
-html, body { height: 100%; overflow-y: hidden; }
 
 body {
   font-family: Inter, system-ui, sans-serif;
@@ -72,8 +70,8 @@ a { color: var(--link); }
 select, input { color-scheme: inherit; }
 
 /* ---- App shell ---- */
-.shell { display: grid; grid-template-columns: 216px 1fr; height: 100vh; height: 100dvh; overflow: hidden; }
-.sidebar { background: var(--surface); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.shell { display: grid; grid-template-columns: 216px minmax(0, 1fr); height: 100vh; height: 100dvh; overflow: hidden; }
+.sidebar { min-height: 0; overflow-y: auto; background: var(--surface); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 24px; }
 .brand { display: flex; flex-direction: column; gap: 4px; }
 .brand img { display: block; }
 .brand span { font-size: 12px; line-height: 16px; color: var(--accent); }
@@ -132,7 +130,9 @@ select, input { color-scheme: inherit; }
 .splash i { width: 71.5px; height: 4px; background: var(--navy); flex: none; }
 .link-btn { background: none; border: 0; color: var(--link); font: 500 12px Inter, sans-serif; cursor: pointer; }
 .link-btn:hover { text-decoration: underline; }
-.content { padding: 24px; flex: 1; min-height: 0; overflow: hidden; }
+.content { padding: 24px; flex: 1; min-height: 0; overflow: auto; }
+/* Very wide screens: stop stretching and centre the page. */
+.fit { max-width: 1600px; margin: 0 auto; }
 
 /* ---- Pages ---- */
 .page-title { font-size: 26px; font-weight: 700; line-height: 34px; letter-spacing: 0; color: var(--ink); margin: 0 0 4px; }
@@ -146,4 +146,42 @@ select, input { color-scheme: inherit; }
 .tab { padding: 0 0 8px; font-size: 13px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
 .tab.active { color: var(--ink); border-bottom-color: var(--navy); font-weight: 600; }
 
-
+/* ---- Responsive: zoomed in / narrow windows / tablets and phones ----
+   Last in the cascade on purpose: these beat the same-specificity rules in the feature CSS files. */
+@media (max-width: 1100px) {
+  .metrics, .ov-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .split, .ov-charts { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .td-grid, .pf-secondary { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  /* The page itself scrolls; sidebar stacks above the content. */
+  :root { --page-h: auto; }
+  .shell { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 100dvh; overflow: visible; }
+  .sidebar { padding: 12px 16px; overflow: visible; gap: 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .sidebar nav { flex-direction: row; flex-wrap: wrap; }
+  .nav-link { height: 40px; }
+  .topbar { height: auto; min-height: 70px; padding: 8px 16px; gap: 8px; overflow: visible; }
+  .topbar-row { flex-wrap: wrap; gap: 8px; }
+  .topbar-title { font-size: 20px; line-height: 28px; }
+  .content { padding: 16px; overflow: visible; }
+  .dashboard, .task-list-page, .project-page, .task-detail, .page-body.narrow { padding-left: 16px; padding-right: 16px; }
+  .content .page-header, .project-page .project-head .page-header { height: auto; flex-wrap: wrap; }
+  .project-page > .ov, .project-page > .task-list-page, .project-page > .kanban { flex: none; }
+  .task-list-page > .task-group, .task-list-page > .table-wrap { flex: none; }
+  .task-filters.toolbar .input { width: 100%; }
+  .td-dev .td-row { grid-template-columns: 1fr; gap: 6px; padding: 6px 0; }
+  .td-dev .td-row > .td-field, .td-dev .td-row > .ss, .td-dev .td-row > .ps, .td-dev .td-row > .as, .td-dev .td-row > .dp { justify-self: stretch; max-width: none; width: 100%; }
+}
+@media (max-width: 700px) {
+  .pf-row, .pform-row.two, .pform-row.sched { grid-template-columns: 1fr; }
+  .pf-identity { flex-wrap: wrap; }
+}
+@media (max-width: 600px) {
+  .metrics, .ov-metrics { grid-template-columns: 1fr; }
+  .proj-head, .proj-list li { grid-template-columns: minmax(0, 1fr) 84px 76px; }
+  .mw-head, .mw-list li { grid-template-columns: minmax(0, 1fr) 84px 96px; gap: 12px; }
+  .user-name { display: none; }
+  .form-actions, .pform-actions { flex-wrap: wrap; }
+}

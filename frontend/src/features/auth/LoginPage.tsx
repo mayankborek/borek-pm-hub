@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { useLayoutEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { homeFor } from '@/app/routes';
 import { useAuth } from './AuthContext';
@@ -12,7 +12,6 @@ import type { User } from './types';
 import borekLogo from '@/assets/borek-logo.png';
 import ms365Logo from '@/assets/ms365-logo.png';
 import heroArt from '@/assets/login-hero.jpg';
-import { useFitHeight } from '@/shared/useFitHeight';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { writeCookie } from '@/shared/prefs/cookies';
 import { LOGIN_STRINGS, initialLang, type Lang } from './loginStrings';
@@ -24,9 +23,6 @@ type FieldErrors = { email?: string; password?: string };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  useFitHeight(hostRef, innerRef);
   const { signIn } = useAuth();
   const { setTheme } = usePrefs();
   const navigate = useNavigate();
@@ -87,8 +83,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="login-page" ref={hostRef}>
-      <div className="page" ref={innerRef}>
+    <div className="login-page">
+      <div className="page">
         <section className="hero">
           <div className="art" aria-hidden="true" style={{ backgroundImage: `url(${heroArt})` }} />
           <div>
