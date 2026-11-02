@@ -73,17 +73,16 @@ export function ProjectsPage() {
   );
 
   return (
-    <section className={isPm ? 'page-body' : 'page-body task-list-page'}>
+    <section className="page-body task-list-page">
       <div className="page-header">
         <div>
-          {!isPm && <p className="page-crumb">{t('Workspace / Projects assigned to me')}</p>}
           <h1 className="page-title">{t(isPm ? 'Projects' : 'My projects')}</h1>
-          {isPm && <p className="page-desc">{t('Projects you can access. Open a project to see its overview and tasks.')}</p>}
+          <p className="page-desc">{t('Projects you can access. Open a project to see its overview and tasks.')}</p>
         </div>
         {newButton}
       </div>
 
-      <div className={isPm ? 'toolbar' : 'toolbar task-filters'} hidden={!isPm && data?.total === 0 && !search.trim()}>
+      <div className="toolbar task-filters" hidden={!isPm && data?.total === 0 && !search.trim()}>
         <input
           type="search"
           className="input"

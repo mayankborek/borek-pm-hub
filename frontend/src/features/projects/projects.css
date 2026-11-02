@@ -118,8 +118,10 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 
 
 .project-head .crumbs { margin-bottom: 8px; }
-.project-head .page-title { font-size: 26px; font-weight: 600; margin: 0; color: var(--navy); }
-.project-sub { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.project-head .page-header { height: 75px; flex-wrap: nowrap; align-items: center; }
+.project-head .page-title { font-size: 26px; font-weight: 700; line-height: 34px; margin: 0 0 4px; color: var(--ink); }
+.project-sub { margin: 0; font-size: 14px; color: var(--muted); }
+.project-head .btn { height: 44px; flex: none; }
 
 .page-crumb { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
 .empty-art { gap: 24px; }
@@ -140,3 +142,17 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .task-filters.toolbar .input { width: 260px; }
 .proj-row .pill .dot { display: none; }
 .proj-row .pill { justify-content: center; min-width: 108px; padding: 0 12px; line-height: 1; }
+
+/* Project pages share the dashboard rhythm (32px padding); the header and tabs stay, the active tab scrolls. */
+.project-page { display: flex; flex-direction: column; gap: 20px; height: var(--page-h); min-height: 0; padding: 32px; box-sizing: border-box; }
+.project-page > * { flex: none; }
+.project-page > .project-head { margin: 0; }
+.project-page > .crumbs { margin: 0 0 -12px; }
+.project-page > .ov,
+.project-page > .task-list-page,
+.project-page > .kanban { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.project-page > .task-list-page { height: auto; padding: 0; overflow: hidden; gap: 16px; }
+.project-page > .ov { padding-right: 2px; }
+
+/* Breadcrumb above the title: identical on My Projects and project pages. */
+.crumbs, .page-crumb { margin: 0; font-size: 12px; line-height: 16px; color: var(--muted); }

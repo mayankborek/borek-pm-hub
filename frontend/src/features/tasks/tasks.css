@@ -101,3 +101,17 @@
 .task-list-page .task-foot { margin-top: 18px; font-size: 14px; }
 
 .task-group-more { padding: 10px 17px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+
+/* Viewport-fit list pages: header and filters stay put, the table area scrolls with a sticky heading. */
+.task-list-page { height: var(--page-h); min-height: 0; }
+.task-list-page > .task-group,
+.task-list-page > .table-wrap { flex: 0 1 auto; min-height: 0; margin: 0; overflow: auto; }
+.task-list-page > .task-foot { margin: 0; flex: none; }
+.task-list-page .task-group-head,
+.task-list-page .task-table-head { position: sticky; top: 0; z-index: 2; }
+.task-list-page .table th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); }
+.task-list-page .toolbar { margin: 0; }
+.task-list-page > .state,
+.task-list-page > .page-header,
+.task-list-page > .task-filters,
+.task-list-page > .toolbar { flex: none; }

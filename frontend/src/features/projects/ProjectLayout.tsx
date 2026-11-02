@@ -39,11 +39,12 @@ export function ProjectLayout() {
   ];
 
   return (
-    <>
+    <div className="project-page">
       <nav className="crumbs" aria-label={t('Breadcrumb')}>
-        <Link to={paths.projects}>{t('Projects')}</Link>
-        <span aria-hidden="true"> / </span>
-        <span>{project.name}</span>
+        <Link to={paths.projects}>
+          <span aria-hidden="true">← </span>
+          {t('Back')}
+        </Link>
       </nav>
       <div className="project-head">
         <div className="page-header">
@@ -66,6 +67,6 @@ export function ProjectLayout() {
         </nav>
       </div>
       <Outlet context={project} />
-    </>
+    </div>
   );
 }

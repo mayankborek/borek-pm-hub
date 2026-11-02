@@ -11,6 +11,8 @@
   --surface-2: #f3f4f8; /* Mist */
   --accent: #124f94;
   --field: #8a90a5;
+  /* Viewport height left under the 70px top bar and the 24px content padding; pages scroll inside it. */
+  --page-h: calc(100dvh - 70px - 48px);
   color-scheme: light;
 }
 
@@ -133,8 +135,8 @@ select, input { color-scheme: inherit; }
 .content { padding: 24px; flex: 1; min-height: 0; overflow: hidden; }
 
 /* ---- Pages ---- */
-.page-title { font-size: 24px; font-weight: 300; margin: 0 0 8px; }
-.page-desc { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+.page-title { font-size: 26px; font-weight: 700; line-height: 34px; letter-spacing: 0; color: var(--ink); margin: 0 0 4px; }
+.page-desc { font-size: 14px; color: var(--muted); margin: 0; }
 .placeholder {
   padding: 48px; border: 1px dashed var(--line); border-radius:0; background: var(--surface);
   color: var(--muted); text-align: center; font-size: 13px;
