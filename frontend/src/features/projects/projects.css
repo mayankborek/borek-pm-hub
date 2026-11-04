@@ -154,6 +154,9 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .project-page > .kanban { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .project-page > .task-list-page { height: auto; padding: 0; overflow: hidden; gap: 16px; }
 .project-page > .ov { padding-right: 2px; }
+/* Board tab renders its filter bar directly in .project-page; match the Backlog tab's bar (same size, position). */
+.project-page > .task-filters { min-height: 53px; margin: 0; }
+.project-page > .task-filters .input { height: 39px; }
 
 /* Breadcrumb above the title: identical on My Projects and project pages. */
 .crumbs, .page-crumb { margin: 0; font-size: 12px; line-height: 16px; color: var(--muted); }
