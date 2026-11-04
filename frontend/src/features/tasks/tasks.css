@@ -82,6 +82,12 @@
 .task-list-page .page-title { font-size: 26px; font-weight: 700; letter-spacing: 0; line-height: 34px; color: var(--ink); margin: 0 0 4px; }
 .task-list-page .page-desc { font-size: 14px; line-height: normal; margin: 0; }
 .task-list-page .btn { width: 148px; height: 44px; border-radius: 0; flex: none; }
+.task-list-page .page-actions { display: flex; gap: 12px; align-items: center; }
+.task-list-page .page-actions .btn.secondary { width: auto; min-width: 148px; padding: 0 16px; }
+.rd-field input[type='file'] { height: auto; padding: 0; border: 0; background: none; }
+.ji-stats { display: flex; gap: 16px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.ji-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
+.ji-errors { margin: 0; padding-left: 18px; max-height: 200px; overflow-y: auto; font-size: 12px; color: #a21d30; }
 .task-list-page .task-filters { min-height: 53px; margin: 0; }
 .task-list-page .task-filters .input { height: 39px; }
 .task-list-page .task-group { border-top: 0; }

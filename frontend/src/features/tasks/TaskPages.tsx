@@ -9,6 +9,8 @@ import { describeApiError } from '@/shared/api/client';
 import { useToast } from '@/shared/ui/Toast';
 import { TaskFilters, TaskGroup, TaskRow } from './TaskParts';
 import { useAllTasks, useDeleteTask, useProjectStatuses } from './tasksApi';
+import { exportFilter, exportTasks } from './jiraApi';
+import { JiraImportDialog } from './JiraImportDialog';
 import { isFiltered, useUrlFilter } from './useUrlFilter';
 import './tasks.css';
 
@@ -23,6 +25,8 @@ export function TasksPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const isPm = useAuth().user?.role === 'pm';
   const toast = useToast();
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const deleteTask = useDeleteTask();
   const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, applied);
 
@@ -40,6 +44,16 @@ export function TasksPage() {
       },
       { replace: true },
     );
+  const runExport = () => {
+    setExporting(true);
+    exportTasks(
+      selected.size
+        ? { format: 'csv', task_ids: [...selected] }
+        : { format: 'csv', project_id: projectId || undefined, filter: exportFilter(applied) },
+    )
+      .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
+      .finally(() => setExporting(false));
+  };
   const allSelected = tasks.length > 0 && tasks.every((t) => selected.has(t.id));
 
   return (
@@ -49,10 +63,23 @@ export function TasksPage() {
           <h1 className="page-title">{tr('All project tasks')}</h1>
           <p className="page-desc">{tr('All accessible projects')}</p>
         </div>
-        <Link className="btn" to={projectId ? `${paths.taskNew}?project_id=${projectId}` : paths.taskNew}>
-          {tr('Add Task')}
-        </Link>
+        <div className="page-actions">
+          {isPm && (
+            <>
+              <button type="button" className="btn secondary" onClick={() => setImporting(true)}>
+                {tr('Import')}
+              </button>
+              <button type="button" className="btn secondary" disabled={exporting || total === 0} onClick={runExport}>
+                {tr(exporting ? 'Exporting…' : selected.size ? 'Export selected ({n})' : 'Export', { n: selected.size })}
+              </button>
+            </>
+          )}
+          <Link className="btn" to={projectId ? `${paths.taskNew}?project_id=${projectId}` : paths.taskNew}>
+            {tr('Add Task')}
+          </Link>
+        </div>
       </div>
+      {importing && <JiraImportDialog projects={projects} defaultProjectId={projectId} onClose={() => setImporting(false)} />}
 
       <TaskFilters
         filter={filter}
