@@ -175,15 +175,48 @@ async def test_bootstrap_creates_missing_accounts_once(session: AsyncSession) ->
     first = await ensure_accounts(session, env)
     second = await ensure_accounts(session, env)
 
-    assert first[0].startswith("created qa.pm@borek.test") and first[1].startswith("skipped")
-    assert second[0].startswith("kept")
+    # order: administrator (no password given, skipped), PM, developer (password too short)
+    assert first[0].startswith("skipped admin@borek.test")
+    assert first[1].startswith("created qa.pm@borek.test") and first[2].startswith("skipped")
+    assert second[1].startswith("kept")
     users = (await session.scalars(select(User))).all()
     assert [(u.email, u.global_role) for u in users] == [("qa.pm@borek.test", "pm")]
     assert users[0].password_hash and verify_password("pm-password-123", users[0].password_hash)
 
     new_env = {**env, "BOOTSTRAP_PM_PASSWORD": "new-password-456"}
-    assert (await ensure_accounts(session, new_env))[0].startswith("kept")  # not overwritten
+    assert (await ensure_accounts(session, new_env))[1].startswith("kept")  # not overwritten
     reset = await ensure_accounts(session, new_env, reset_passwords=True)
     await session.refresh(users[0])
-    assert reset[0].startswith("password set")
+    assert reset[1].startswith("password set")
     assert verify_password("new-password-456", users[0].password_hash or "")
+
+
+async def test_bootstrap_creates_the_first_administrator(session: AsyncSession) -> None:
+    env = {
+        "BOOTSTRAP_ADMIN_EMAIL": "  Rina@Borek.Example ",
+        "BOOTSTRAP_ADMIN_NAME": "Rina",
+        "BOOTSTRAP_ADMIN_PASSWORD": "admin-password-123",
+    }
+
+    report = await ensure_accounts(session, env)
+
+    assert report[0] == "created rina@borek.example (admin)"
+    admin = await session.scalar(select(User).where(User.email == "rina@borek.example"))
+    assert admin is not None and admin.name == "Rina" and admin.global_role == "admin"
+    assert verify_password("admin-password-123", admin.password_hash or "")
+
+
+async def test_bootstrap_does_not_change_the_role_of_an_existing_account(
+    session: AsyncSession,
+) -> None:
+    existing = await make_user(session, GlobalRole.PM, email="rina@borek.example")
+    env = {
+        "BOOTSTRAP_ADMIN_EMAIL": "rina@borek.example",
+        "BOOTSTRAP_ADMIN_PASSWORD": "admin-password-123",
+    }
+
+    report = await ensure_accounts(session, env)
+
+    assert any("has the role pm, not admin" in line for line in report)
+    await session.refresh(existing)
+    assert existing.global_role == "pm"

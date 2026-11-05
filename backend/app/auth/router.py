@@ -1,12 +1,27 @@
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import func, select
 
 from app.auth.dependencies import CurrentUser
-from app.auth.schemas import LoginIn, LoginOut, MembershipOut, MeOut, UserOut
-from app.auth.security import burn_password_check, create_access_token, verify_password
+from app.auth.invites import accept_invite
+from app.auth.schemas import (
+    AcceptInviteIn,
+    AcceptInviteOut,
+    ChangePasswordIn,
+    LoginIn,
+    LoginOut,
+    MembershipOut,
+    MeOut,
+    UserOut,
+)
+from app.auth.security import (
+    burn_password_check,
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 from app.core.config import Settings, get_settings
 from app.core.database import SessionDep
 from app.core.errors import AppError
@@ -87,3 +102,58 @@ async def login(
     await session.commit()
     token, expires_in = create_access_token(user.id, settings)
     return LoginOut(access_token=token, expires_in=expires_in, user=_to_user_out(user))
+
+
+@router.post("/accept-invite", response_model=AcceptInviteOut)
+async def accept_invite_link(
+    body: AcceptInviteIn, session: SessionDep, settings: Annotated[Settings, Depends(get_settings)]
+) -> AcceptInviteOut:
+    """Public. Set the password with the one-use link an administrator handed over."""
+    if settings.auth_mode != "local":
+        raise AppError(404, "NOT_FOUND", "Not found.")
+    user = await accept_invite(session, body.token, body.password)
+    return AcceptInviteOut(email=user.email)
+
+
+@router.post("/change-password", status_code=204)
+async def change_password(
+    body: ChangePasswordIn,
+    user: CurrentUser,
+    session: SessionDep,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> Response:
+    """Signed-in users change their own password. Wrong attempts count towards the lockout."""
+    if settings.auth_mode != "local":
+        raise AppError(404, "NOT_FOUND", "Not found.")
+    now = datetime.now(UTC)
+    locked = user.locked_until is not None and user.locked_until > now
+    if (
+        locked
+        or user.password_hash is None
+        or not verify_password(body.current_password, user.password_hash)
+    ):
+        if not locked:
+            user.failed_login_count += 1
+            if user.failed_login_count >= settings.max_failed_logins:
+                user.locked_until = now + timedelta(minutes=settings.lockout_minutes)
+                user.failed_login_count = 0
+            await session.commit()
+        raise AppError(400, "WRONG_CURRENT_PASSWORD", "The current password is not correct.")
+    if body.new_password == body.current_password:
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "The request is not valid.",
+            [
+                {
+                    "field": "new_password",
+                    "issue": "same_as_current",
+                    "message": "The new password must be different from the current one.",
+                }
+            ],
+        )
+    user.password_hash = hash_password(body.new_password)
+    user.failed_login_count = 0
+    user.locked_until = None
+    await session.commit()
+    return Response(status_code=204)

@@ -290,6 +290,7 @@ async def list_tasks(
     page_size: PageSizeParam = 50,
 ) -> TaskListOut:
     """PMs see tasks of every active project, developers those of their projects."""
+    require(user, Action.PROJECT_LIST)  # roles without project views get 403, even as members
     filters.project_id = project_id
     scope = None if sees_all_projects(user) else service.scope_for_developer(user)
     items, total = await service.list_tasks(
@@ -332,6 +333,7 @@ async def export_tasks(
     project_id: uuid.UUID | None = None,
 ) -> Response:
     """Download what `GET /tasks` lists (same filters, same visibility) as a CSV file."""
+    require(user, Action.PROJECT_LIST)
     filters.project_id = project_id
     scope = None if sees_all_projects(user) else service.scope_for_developer(user)
     tasks = await service.export_tasks(session, filters, scope=scope)

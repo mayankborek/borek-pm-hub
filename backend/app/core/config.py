@@ -39,9 +39,21 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     log_level: str = "INFO"
 
+    # Address of the web app, used to build invite links. Empty = the first CORS origin.
+    frontend_url: str = ""
+    # How long an invite link works (days).
+    invite_valid_days: int = 7
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def invite_base_url(self) -> str:
+        base = self.frontend_url.strip() or (
+            self.cors_origin_list[0] if self.cors_origin_list else ""
+        )
+        return base.rstrip("/")
 
     @model_validator(mode="after")
     def _forbid_dev_auth_in_production(self) -> Self:

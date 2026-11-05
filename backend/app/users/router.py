@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import ColumnElement, func, or_, select
 
 from app.auth.dependencies import CurrentUser
-from app.auth.permissions import Action, require
+from app.auth.permissions import Action, require, works_on_tasks_condition
 from app.common.enums import GlobalRole
 from app.common.validation import PageParam, PageSizeParam, like_escape
 from app.core.database import SessionDep
@@ -23,9 +23,10 @@ async def list_users(
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> UserListOut:
-    """Active users, for the assignee picker (PM only). A task can be assigned to anyone listed."""
+    """Active PMs and developers, for the assignee picker (PM only). Administrators and the other
+    roles do no project work, so they are not listed."""
     require(user, Action.USER_LIST)
-    conditions: list[ColumnElement[bool]] = [User.is_active.is_(True)]
+    conditions: list[ColumnElement[bool]] = [User.is_active.is_(True), works_on_tasks_condition()]
     if role:
         conditions.append(User.global_role == role.value)
     if q and q.strip():

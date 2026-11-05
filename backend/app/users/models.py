@@ -1,6 +1,18 @@
-from datetime import datetime
+import uuid
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.common.enums import GlobalRole, sql_in
@@ -25,6 +37,31 @@ class User(IdMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )
+    # Optional: the day the person joined (set by the administrator).
+    join_date: Mapped[date | None] = mapped_column(Date)
 
     def __repr__(self) -> str:
         return f"<User {self.email} ({self.global_role})>"
+
+
+class UserInvite(IdMixin, Base):
+    """A one-use link that lets a person set their own password (also used to reset it).
+
+    Only a hash of the token is stored, so a copy of the database cannot be used to sign in.
+    """
+
+    __tablename__ = "user_invites"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("users.id"), nullable=False, index=True
+    )
+    # SHA-256 (hex) of the token. The token is random and long, so a fast hash is enough.
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when the administrator makes a newer link (the older one stops working).
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

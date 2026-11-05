@@ -1,5 +1,6 @@
 """Shared input checks. Every free-text field and paging parameter goes through these."""
 
+import re
 import unicodedata
 from datetime import date
 from typing import Annotated
@@ -50,6 +51,20 @@ def clean_optional_text(
         raise ValueError(f"{label} contains characters that are not allowed.")
     if len(value) > max_length:
         raise ValueError(f"{label} can have at most {max_length} characters.")
+    return value
+
+
+_EMAIL = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
+
+
+def clean_email(value: str) -> str:
+    """Trim and lower-case an email address, and reject anything that is not plainly one.
+
+    Emails are stored in lower case so two accounts can never differ only by letter case.
+    """
+    value = value.strip().lower()
+    if len(value) > 320 or has_control_chars(value) or not _EMAIL.match(value):
+        raise ValueError("Enter a valid email address.")
     return value
 
 

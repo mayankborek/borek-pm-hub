@@ -1,12 +1,18 @@
-"""Make sure one PM and one developer account exist, with passwords, for AUTH_MODE=local.
+"""Make sure one administrator, one PM and one developer account exist, with passwords, for
+AUTH_MODE=local.
 
 Safe to run on every start: it only creates what is missing and never changes other data.
 Passwords come from the environment (never from the code); a missing or short password skips
 that account.
 
+  BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_ADMIN_PASSWORD   (default email admin@borek.test;
+                                                      BOOTSTRAP_ADMIN_NAME sets the display name)
   BOOTSTRAP_PM_EMAIL / BOOTSTRAP_PM_PASSWORD     (default email qa.pm@borek.test)
   BOOTSTRAP_DEV_EMAIL / BOOTSTRAP_DEV_PASSWORD   (default email qa.dev@borek.test)
   --reset-passwords   also set the password of accounts that already exist
+
+The administrator is the first account of a real installation: it creates everyone else through
+the admin screens. If that email already belongs to someone else, their role is left alone.
 
 Run from the backend folder:  python -m scripts.bootstrap_users
 """
@@ -21,15 +27,21 @@ from dotenv import dotenv_values
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.security import hash_password
+from app.auth.security import MIN_PASSWORD_LENGTH, hash_password
 from app.common.enums import GlobalRole
 from app.core.database import get_engine, get_sessionmaker
 from app.users.models import User
 
-MIN_PASSWORD_LENGTH = 12
-
 # (id, display name, role, email variable, default email, password variable)
 ACCOUNTS = [
+    (
+        uuid.UUID("00000000-0000-4000-8000-000000000020"),
+        "Administrator",
+        GlobalRole.ADMIN,
+        "BOOTSTRAP_ADMIN_EMAIL",
+        "admin@borek.test",
+        "BOOTSTRAP_ADMIN_PASSWORD",
+    ),
     (
         uuid.UUID("00000000-0000-4000-8000-000000000021"),
         "QA PM",
@@ -65,7 +77,7 @@ async def ensure_accounts(
             session.add(
                 User(
                     id=user_id,
-                    name=name,
+                    name=env.get(email_var.replace("_EMAIL", "_NAME"), name).strip() or name,
                     email=email,
                     global_role=role.value,
                     password_hash=hash_password(password),
@@ -79,6 +91,8 @@ async def ensure_accounts(
             report.append(f"password set for {email}")
         else:
             report.append(f"kept {email}")
+        if user is not None and user.global_role != role.value:
+            report.append(f"note: {email} has the role {user.global_role}, not {role.value}")
     await session.flush()
     return report
 
