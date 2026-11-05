@@ -1,15 +1,17 @@
 export type ClientHealth = 'on_track' | 'at_risk' | 'off_track';
-export type MilestoneState = 'done' | 'late' | 'in_progress' | 'planned';
+export type MilestoneState = 'done' | 'late' | 'revised' | 'at_risk' | 'in_progress' | 'planned';
 export type ChangeRequestStatus = 'in_review' | 'approved' | 'declined';
 
 export interface ClientMilestone {
   id: string;
+  /** Short reference shown on the milestone card, e.g. M-01. */
+  code: string;
   name: string;
   /** ISO date (YYYY-MM-DD). */
   dueDate: string;
   state: MilestoneState;
   progress: number;
-  /** Only when the client has asked for a later date through a change request. */
+  /** A later date: proposed while the change request is open, published once the state is `revised`. */
   requestedDate?: string;
   changeRequestRef?: string;
 }

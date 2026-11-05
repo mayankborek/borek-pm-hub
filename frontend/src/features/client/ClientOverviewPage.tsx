@@ -3,9 +3,8 @@ import { paths } from '@/app/routes';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { dayMonth } from './format';
 import { nextMilestone } from './clientPortalApi';
-import { CR_LABEL, HEALTH_LABEL, HEALTH_TONE } from './labels';
+import { CR_LABEL, HEALTH_LABEL, HEALTH_TONE, MILESTONE_BADGE } from './labels';
 import { useProjectContext } from './ClientProjectLayout';
-import type { MilestoneState } from './types';
 import { Badge, Bar, Kpi } from './ui';
 
 const HEALTH_NOTE = {
@@ -13,13 +12,6 @@ const HEALTH_NOTE = {
   at_risk: 'Needs attention',
   off_track: 'Behind plan',
 } as const;
-
-const MILESTONE_BADGE: Record<MilestoneState, { label: string; tone?: 'late' | 'plan' }> = {
-  done: { label: 'Done' },
-  late: { label: 'Overdue', tone: 'late' },
-  in_progress: { label: 'In progress', tone: 'plan' },
-  planned: { label: 'Planned', tone: 'plan' },
-};
 
 const R = 87;
 const CIRCUMFERENCE = 2 * Math.PI * R;
@@ -50,7 +42,7 @@ export function ClientOverviewPage() {
           value={next ? dayMonth(lang, next.dueDate) : '–'}
           hint={next ? `${next.name} · ${t(MILESTONE_BADGE[next.state].label)}` : t('Nothing planned')}
         />
-        <Kpi overview label={t('Change requests')} value={total} hint={t('{n} in review', { n: inReview })} />
+        <Kpi overview label={t('Open change requests')} value={inReview} hint={t('{n} awaiting a published decision', { n: inReview })} />
       </div>
       <div className="cp-ov2">
         <div className="cp-card" style={{ minHeight: 326 }}>

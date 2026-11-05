@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { EmptyState, LoadingState } from '@/shared/ui/States';
 import { useClientPortal } from './clientPortalApi';
 import type { ClientProject } from './types';
+import { EmptyCard, PortalPending } from './ui';
 
 export interface ProjectContext {
   project: ClientProject;
@@ -60,13 +60,14 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
 export function ClientProjectLayout() {
   const { projectId } = useParams();
   const { t } = usePrefs();
-  const { data, isLoading } = useClientPortal();
-  if (isLoading || !data) return <LoadingState />;
+  const query = useClientPortal();
+  const { data } = query;
+  if (!data) return <PortalPending query={query} />;
 
   const project = data.projects.find((p) => p.id === projectId);
   if (!project) {
     return (
-      <EmptyState
+      <EmptyCard
         title="Project not found"
         text="This project does not exist or has not been shared with you."
         action={<Link to={paths.clientProjects}>{t('Projects')}</Link>}

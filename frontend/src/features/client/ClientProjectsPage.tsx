@@ -1,17 +1,18 @@
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { LoadingState } from '@/shared/ui/States';
 import { longDate, paddedDate } from './format';
 import { nextMilestone, useClientPortal } from './clientPortalApi';
 import { HEALTH_LABEL, HEALTH_TONE } from './labels';
-import { Badge, Bar } from './ui';
+import { Badge, Bar, EmptyCard, PortalPending } from './ui';
 
 export function ClientProjectsPage() {
   const { t, lang } = usePrefs();
-  const { data, isLoading } = useClientPortal();
-  if (isLoading || !data) return <LoadingState />;
+  const query = useClientPortal();
+  const { data } = query;
+  if (!data) return <PortalPending query={query} />;
 
+  if (!data.projects.length) return <EmptyCard />;
   const published = data.projects[0];
   return (
     <>

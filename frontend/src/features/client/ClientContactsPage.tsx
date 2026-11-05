@@ -1,6 +1,7 @@
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { initialsOf } from './format';
 import { useProjectContext } from './ClientProjectLayout';
+import { EmptyCard } from './ui';
 
 export function ClientContactsPage() {
   const { project } = useProjectContext();
@@ -10,6 +11,7 @@ export function ClientContactsPage() {
     <>
       <h2 className="cp-section-title">{t('Project contacts')}</h2>
       <p className="cp-section-sub">{t('Contact your Project Manager for delivery questions and shared updates.')}</p>
+      {!project.contacts.length && <EmptyCard />}
       {project.contacts.map((c) => (
         <article className="cp-contact" key={c.email}>
           <div className="cp-contact-head">

@@ -4,7 +4,8 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { longDate, shortDate } from './format';
 import { useProjectContext } from './ClientProjectLayout';
 import type { ClientMilestone } from './types';
-import { Bar } from './ui';
+import { MILESTONE_BADGE, MILESTONE_STATUS, NODE_FILL } from './labels';
+import { Bar, MilestoneCard } from './ui';
 
 // The curve, node slots and "today" marker are fixed by the design (a 1160x520 canvas with two milestones).
 const SLOTS = [
@@ -17,13 +18,6 @@ const AFTER_TODAY = 'M473.75 309C522 348 572 374 640 374C752 374 752 244 850 244
 const DASH = { stroke: '#7D879C', strokeWidth: 3, strokeDasharray: '7 7' };
 const SOLID = { stroke: '#124F94', strokeWidth: 4, strokeLinecap: 'round' as const };
 
-const STATUS_LINE = {
-  done: { label: 'Completed', color: 'var(--green)', weight: 600 },
-  late: { label: 'Running late', color: 'var(--red)', weight: 600 },
-  in_progress: { label: 'In progress', color: 'var(--navy)', weight: 600 },
-  planned: { label: 'Not started yet', color: 'var(--mute)', weight: 500 },
-} as const;
-
 function Node({ m, n, x, y }: { m: ClientMilestone; n: number; x: number; y: number }) {
   if (m.state === 'planned') {
     return (
@@ -35,7 +29,7 @@ function Node({ m, n, x, y }: { m: ClientMilestone; n: number; x: number; y: num
   }
   return (
     <>
-      <circle cx={x} cy={y} r="19" fill={m.state === 'late' ? '#C94A32' : '#124F94'} />
+      <circle cx={x} cy={y} r="19" fill={NODE_FILL[m.state]} />
       <text x={x} y={y + 6} textAnchor="middle" fill="#fff" fontSize="16" fontWeight="600" fontFamily="Inter,sans-serif">{n}</text>
     </>
   );
@@ -65,8 +59,8 @@ export function ClientMilestonesPage() {
           {passed === 1 && <circle cx={TODAY.x} cy={TODAY.y} r="7.5" fill="#0D1240" stroke="#fff" strokeWidth="3" />}
         </svg>
         {milestones.map((m, i) => {
-          const status = STATUS_LINE[m.state];
-          const open = m.state === 'late' || m.state === 'in_progress';
+          const status = MILESTONE_STATUS[m.state];
+          const open = m.state === 'late' || m.state === 'revised' || m.state === 'in_progress';
           return (
             <div className="cp-blk" key={m.id} style={{ left: SLOTS[i].left, top: SLOTS[i].top }}>
               <h5>{m.name}</h5>
@@ -76,9 +70,11 @@ export function ClientMilestonesPage() {
                   ? t('Planned for {date}', { date: longDate(lang, m.dueDate) })
                   : m.state === 'done'
                     ? t('Completed on {date}', { date: longDate(lang, m.dueDate) })
-                    : t('Was due {date}', { date: longDate(lang, m.dueDate) })}
+                    : m.state === 'late' || m.state === 'revised'
+                      ? t('Was due {date}', { date: longDate(lang, m.dueDate) })
+                      : t('Due {date}', { date: longDate(lang, m.dueDate) })}
               </div>
-              {m.requestedDate && (
+              {m.requestedDate && m.state !== 'revised' && (
                 <div className="cp-t" style={{ marginTop: 12 }}>
                   {t('New date requested: {date}', { date: longDate(lang, m.requestedDate) })}
                 </div>
@@ -102,6 +98,18 @@ export function ClientMilestonesPage() {
           <span>{t('Done so far')}</span>
           <span className="cp-d">{t('Still ahead')}</span>
         </div>
+      </div>
+      <div className="cp-mcards">
+        {project.milestones.map((m) => {
+          const badge = MILESTONE_BADGE[m.state];
+          const meta =
+            m.state === 'revised' && m.requestedDate
+              ? t('Published revision: {from} → {to} · {n}%', { from: shortDate(lang, m.dueDate), to: longDate(lang, m.requestedDate), n: m.progress })
+              : m.requestedDate
+                ? t('Baseline {from} · Proposed {to} · {n}%', { from: longDate(lang, m.dueDate), to: longDate(lang, m.requestedDate), n: m.progress })
+                : t('Due {date} · {n}%', { date: longDate(lang, m.dueDate), n: m.progress });
+          return <MilestoneCard key={m.id} code={m.code} name={m.name} tone={badge.tone} badge={t(badge.label)} meta={meta} progress={m.progress} />;
+        })}
       </div>
     </>
   );

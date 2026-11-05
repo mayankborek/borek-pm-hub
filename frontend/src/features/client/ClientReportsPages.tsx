@@ -1,9 +1,9 @@
 import { Link, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { EmptyState } from '@/shared/ui/States';
 import { dateRange, longDate } from './format';
 import { useProjectContext } from './ClientProjectLayout';
+import { EmptyCard } from './ui';
 
 const downloadIcon = (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -24,6 +24,8 @@ export function ClientReportsPage() {
     <>
       <h2 className="cp-sec" style={{ fontSize: 20, marginTop: 32 }}>{t('Reports')}</h2>
       <p className="cp-sub" style={{ marginTop: 10 }}>{t('View published reports shared with your organisation.')}</p>
+      {!project.reports.length && <EmptyCard />}
+      {project.reports.length > 0 && (
       <div className="cp-rt">
         <div className="cp-h">
           <span>{t('Report')}</span>
@@ -45,6 +47,7 @@ export function ClientReportsPage() {
           </div>
         ))}
       </div>
+      )}
       <p className="cp-small" style={{ marginTop: 16 }}>
         {t('Reports include only published information shared with your organisation.')}
       </p>
@@ -60,7 +63,7 @@ export function ClientReportPage() {
 
   if (!report) {
     return (
-      <EmptyState
+      <EmptyCard
         title="Report not found"
         text="This report does not exist or has not been shared with you."
         action={<Link to={paths.clientReports(project.id)}>{t('Back')}</Link>}

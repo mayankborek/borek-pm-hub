@@ -55,8 +55,11 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-card h4{font-size:18px;font-weight:600;letter-spacing:-.1px}
 
 .cp-badge{display:inline-block;font-size:12px;font-weight:600;padding:4px 8px;line-height:16px;background:var(--green-bg);color:var(--green)}
-.cp-badge.cp-late{background:var(--red-bg);color:var(--red)}
-.cp-badge.cp-plan{background:var(--bg);color:var(--slate)}
+.cp-badge.cp-success{background:#E0F5E8;color:#17735E}
+.cp-badge.cp-warning{background:#FFF5DB;color:var(--navy)}
+.cp-badge.cp-danger{background:#FCE8E3;color:#AD1F1F}
+.cp-badge.cp-info{background:#E3EDFC;color:#124F94}
+.cp-badge.cp-neutral{background:none;color:var(--slate);padding-left:0;padding-right:0}
 .cp-bar{height:6px;background:var(--bg);position:relative}
 .cp-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--blue)}
 
@@ -251,3 +254,23 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
   .cp-pgrid,.cp-pcols{grid-template-columns:1fr}
   .cp-pcard-head{flex-wrap:wrap}
 }
+
+/* ───── Component sheet (component-client.png): milestone cards and shared-information states ───── */
+.cp-mcards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
+.cp-mcard{background:#fff;border:1px solid var(--line);padding:12px 12px 14px}
+.cp-mcard h4{font-size:14px;font-weight:600;line-height:17px}
+.cp-mcard .cp-badge{margin-top:10px}
+.cp-mcard p{margin-top:10px;font-size:12px;line-height:15px}
+.cp-mcard .cp-bar{margin-top:12px}
+
+.cp-state{max-width:320px;margin-top:24px;padding:18px;background:#fff;border:1px solid var(--line)}
+.cp-state h4{font-size:14px;font-weight:600;line-height:17px}
+.cp-state p{margin-top:10px;font-size:12px;line-height:15px;color:var(--slate)}
+.cp-skel{display:grid;gap:10px;margin-top:16px}
+.cp-skel i{display:block;height:10px;background:var(--bg)}
+.cp-skel i:nth-child(1){width:100%}
+.cp-skel i:nth-child(2){width:80%}
+.cp-skel i:nth-child(3){width:55%}
+.cp-retry{margin-top:6px;height:38px;padding:0 10px;border:1px solid var(--mute);background:#fff;color:var(--navy);font-size:12px;text-align:left;min-width:136px}
+.cp-retry:hover{background:var(--bg)}
+@media (max-width:1000px){.cp-mcards{grid-template-columns:1fr}}

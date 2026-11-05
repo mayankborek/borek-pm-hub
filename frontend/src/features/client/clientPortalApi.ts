@@ -23,6 +23,7 @@ const SAMPLE: ClientPortalData = {
       milestones: [
         {
           id: 'delivery-review',
+          code: 'M-01',
           name: 'Delivery review',
           dueDate: '2026-10-30',
           state: 'late',
@@ -30,7 +31,7 @@ const SAMPLE: ClientPortalData = {
           requestedDate: '2026-11-02',
           changeRequestRef: 'CR-02',
         },
-        { id: 'client-handover', name: 'Client handover', dueDate: '2026-11-06', state: 'planned', progress: 0 },
+        { id: 'client-handover', code: 'M-02', name: 'Client handover', dueDate: '2026-11-06', state: 'planned', progress: 0 },
       ],
       changeRequests: [{ ref: 'CR-02', title: 'Extend delivery review', status: 'in_review' }],
       reports: [
@@ -56,8 +57,8 @@ const SAMPLE: ClientPortalData = {
       publishedBy: { name: 'Alex Morgan', role: 'Project Manager' },
       contacts: [{ name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' }],
       milestones: [
-        { id: 'preview-review', name: 'Preview review', dueDate: '2026-11-09', state: 'planned', progress: 0 },
-        { id: 'client-handover', name: 'Client handover', dueDate: '2026-11-13', state: 'planned', progress: 0 },
+        { id: 'preview-review', code: 'M-01', name: 'Preview review', dueDate: '2026-11-09', state: 'planned', progress: 0 },
+        { id: 'client-handover', code: 'M-02', name: 'Client handover', dueDate: '2026-11-13', state: 'planned', progress: 0 },
       ],
       changeRequests: [],
       reports: [

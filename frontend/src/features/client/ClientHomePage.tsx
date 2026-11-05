@@ -2,17 +2,17 @@ import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { LoadingState } from '@/shared/ui/States';
 import { dayMonth } from './format';
 import { nextMilestone, useClientPortal } from './clientPortalApi';
 import { CR_LABEL, HEALTH_LABEL, HEALTH_TONE } from './labels';
-import { Badge, Bar, Kpi } from './ui';
+import { Badge, Bar, Kpi, PortalPending } from './ui';
 
 export function ClientHomePage() {
   const { user } = useAuth();
   const { t, lang } = usePrefs();
-  const { data, isLoading } = useClientPortal();
-  if (isLoading || !data) return <LoadingState />;
+  const query = useClientPortal();
+  const { data } = query;
+  if (!data) return <PortalPending query={query} />;
 
   const { projects, today } = data;
   const firstName = user?.name.split(' ')[0] ?? '';
