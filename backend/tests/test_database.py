@@ -128,7 +128,7 @@ async def test_user_email_must_be_unique(session: AsyncSession) -> None:
 
 
 async def test_user_role_is_checked(session: AsyncSession) -> None:
-    session.add(User(name="x", email="y@test.example", global_role="admin"))
+    session.add(User(name="x", email="y@test.example", global_role="ghost"))
     with pytest.raises(IntegrityError):
         await session.flush()
 

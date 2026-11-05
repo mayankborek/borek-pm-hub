@@ -87,3 +87,17 @@ async def test_developers_and_anonymous_are_refused(
 
     assert (await client.get(URL, headers={HEADER: str(dev.id)})).status_code == 403
     assert (await client.get(URL)).status_code == 401
+
+
+async def test_picker_lists_only_roles_that_do_project_work(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    pm = await named(session, "Pat PM", "pat@test.example", GlobalRole.PM)
+    await named(session, "Dev Dee", "dee@test.example", GlobalRole.DEVELOPER)
+    await named(session, "Ada Admin", "ada@test.example", GlobalRole.ADMIN)
+    await named(session, "Cli Client", "cli@test.example", GlobalRole.CLIENT)
+
+    response = await client.get(URL, headers={HEADER: str(pm.id)})
+
+    assert [u["name"] for u in response.json()["items"]] == ["Dev Dee", "Pat PM"]
+    assert response.json()["total"] == 2

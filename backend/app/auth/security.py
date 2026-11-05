@@ -12,6 +12,10 @@ from app.core.config import Settings
 _hasher = PasswordHasher()
 _ALGORITHM = "HS256"
 
+# Length rule for every new password (invite link, change password, bootstrap accounts).
+MIN_PASSWORD_LENGTH = 12
+MAX_PASSWORD_LENGTH = 128
+
 
 def hash_password(password: str) -> str:
     return _hasher.hash(password)

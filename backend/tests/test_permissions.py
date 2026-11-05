@@ -27,9 +27,33 @@ def make(role: GlobalRole, *, active: bool = True) -> User:
     return User(id=uuid.uuid4(), name="x", email="x@x", global_role=role.value, is_active=active)
 
 
-@pytest.mark.parametrize("action", list(Action))
-def test_pm_can_do_everything(action: Action) -> None:
+@pytest.mark.parametrize("action", [a for a in Action if a is not Action.ADMIN_USERS])
+def test_pm_can_do_everything_except_administration(action: Action) -> None:
     assert can(make(GlobalRole.PM), action, OUTSIDER)
+
+
+@pytest.mark.parametrize("role", [GlobalRole.PM, GlobalRole.DEVELOPER])
+def test_only_the_administrator_may_administer_users(role: GlobalRole) -> None:
+    assert not can(make(role), Action.ADMIN_USERS)
+    assert can(make(GlobalRole.ADMIN), Action.ADMIN_USERS)
+    assert not can(make(GlobalRole.ADMIN, active=False), Action.ADMIN_USERS)
+
+
+@pytest.mark.parametrize("action", [a for a in Action if a is not Action.ADMIN_USERS])
+def test_administrator_has_no_access_to_project_data(action: Action) -> None:
+    admin = make(GlobalRole.ADMIN)
+    assert not can(admin, action)
+    assert not can(admin, action, MEMBER)
+    assert not sees_all_projects(admin)
+    assert not has_lead_rights(admin)
+
+
+@pytest.mark.parametrize(
+    "role", [GlobalRole.MANAGER, GlobalRole.ACCOUNT_MANAGER, GlobalRole.CLIENT]
+)
+def test_roles_without_views_yet_can_do_nothing(role: GlobalRole) -> None:
+    for action in Action:
+        assert not can(make(role), action, MEMBER), action
 
 
 @pytest.mark.parametrize(
@@ -93,8 +117,9 @@ def test_inactive_user_can_do_nothing(role: GlobalRole) -> None:
 
 def test_unknown_role_can_do_nothing() -> None:
     user = make(GlobalRole.PM)
-    user.global_role = "admin"
+    user.global_role = "ghost"
     assert not can(user, Action.PROJECT_LIST)
+    assert not can(user, Action.ADMIN_USERS)
 
 
 def test_require_returns_404_for_a_non_member_and_403_for_a_member() -> None:

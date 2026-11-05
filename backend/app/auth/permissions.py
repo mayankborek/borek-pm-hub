@@ -9,6 +9,8 @@ import uuid
 from dataclasses import dataclass
 from enum import StrEnum
 
+from sqlalchemy import ColumnElement
+
 from app.common.enums import GlobalRole
 from app.core.errors import AppError
 from app.users.models import User
@@ -35,6 +37,7 @@ class Action(StrEnum):
     MY_TASKS = "task:my_tasks"
     DASHBOARD_VIEW = "dashboard:view"
     USER_LIST = "user:list"  # search users for the assignee picker
+    ADMIN_USERS = "admin:users"  # create, edit, deactivate users; invite links (admin only)
 
 
 @dataclass(frozen=True)
@@ -67,6 +70,8 @@ _MEMBER_ACTIONS = frozenset(
     {Action.PROJECT_VIEW, Action.TASK_VIEW, Action.TASK_CREATE, Action.TASK_COMMENT}
 )
 _ANY_USER = frozenset({Action.PROJECT_LIST, Action.MY_TASKS})
+# The administrator can do these and nothing else; nobody else can do them (not even a PM).
+_ADMIN_ONLY = frozenset({Action.ADMIN_USERS})
 
 
 # --- role helpers -------------------------------------------------------------------------------
@@ -85,8 +90,26 @@ def has_lead_rights(user: User) -> bool:
     return user.global_role == GlobalRole.PM
 
 
+def is_admin(user: User) -> bool:
+    return user.global_role == GlobalRole.ADMIN
+
+
+def admin_condition() -> ColumnElement[bool]:
+    """SQL condition for "is an administrator" (the last-admin rule counts them)."""
+    return User.global_role == GlobalRole.ADMIN.value
+
+
+def works_on_tasks_condition() -> ColumnElement[bool]:
+    """SQL condition for the roles that do project work, so the assignee picker lists only them."""
+    return User.global_role.in_([GlobalRole.PM.value, GlobalRole.DEVELOPER.value])
+
+
 def can(user: User, action: Action, resource: Resource | None = None) -> bool:
     if not user.is_active:
+        return False
+    if is_admin(user):
+        return action in _ADMIN_ONLY  # no project data: denied by default
+    if action in _ADMIN_ONLY:
         return False
     if has_lead_rights(user):
         return True

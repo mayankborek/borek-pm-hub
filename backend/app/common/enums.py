@@ -4,8 +4,18 @@ from enum import StrEnum
 
 
 class GlobalRole(StrEnum):
+    ADMIN = "admin"
     PM = "pm"
     DEVELOPER = "developer"
+    # Manager, Account Manager and Client exist so the database accepts them, but they have no
+    # views or rights yet (`can()` denies them everything), so the admin API does not offer them.
+    MANAGER = "manager"
+    ACCOUNT_MANAGER = "account_manager"
+    CLIENT = "client"
+
+
+# The roles an administrator may give today (Sprint 02-26 plan, Admin Accounts Plan).
+ASSIGNABLE_GLOBAL_ROLES = (GlobalRole.ADMIN, GlobalRole.PM, GlobalRole.DEVELOPER)
 
 
 class ProjectStatus(StrEnum):
