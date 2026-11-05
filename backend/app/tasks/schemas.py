@@ -238,6 +238,7 @@ class UserBrief(BaseModel):
 class TaskOut(BaseModel):
     id: uuid.UUID
     key: str
+    external_key: str | None = Field(description="Key in the system it was imported from, if any.")
     project_id: uuid.UUID
     project_name: str
     title: str
@@ -278,6 +279,36 @@ class BoardOut(BaseModel):
 
     columns: list[BoardColumn]
     total: int
+
+
+class ImportIssueOut(BaseModel):
+    row: int = Field(description="Spreadsheet row number; the header is row 1.")
+    external_key: str | None = Field(description="Issue key in the file, if the row has one.")
+    field: str | None = Field(description="Column the problem is about.")
+    message: str
+
+
+class ImportResultOut(BaseModel):
+    """What an import did (`dry_run=false`) or would do (`dry_run=true`, nothing is saved)."""
+
+    dry_run: bool
+    total_rows: int
+    created: int = Field(description="Tasks created, or that would be created in a dry run.")
+    skipped_existing: int = Field(description="Rows whose issue key is already in the project.")
+    failed: int = Field(description="Rows that cannot become a task (see `failures`).")
+    failures: list[ImportIssueOut] = Field(description="At most 200; `failed` is the full count.")
+    warnings: list[ImportIssueOut] = Field(description="At most 200; see `warning_count`.")
+    warning_count: int
+    unknown_statuses: dict[str, str] = Field(
+        description="Status names in the file that are not statuses of the project, and the "
+        "status they became."
+    )
+    unknown_assignees: list[str] = Field(description="Names with no matching active user.")
+    members_added: list[str] = Field(description="Assignees added to the project as members.")
+    ignored_columns: list[str]
+    other_projects_in_file: list[str] = Field(
+        description="More than one Jira project in the file; all rows go into the chosen one."
+    )
 
 
 TaskSort = Literal[

@@ -262,6 +262,20 @@
         "title": "BoardOut",
         "type": "object"
       },
+      "Body_import_project_tasks_api_v1_projects__project_id__tasks_import_post": {
+        "properties": {
+          "file": {
+            "format": "binary",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_project_tasks_api_v1_projects__project_id__tasks_import_post",
+        "type": "object"
+      },
       "Body_upload_file_api_v1_tasks__task_id__attachments_post": {
         "properties": {
           "file": {
@@ -387,6 +401,155 @@
           "version"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "ImportIssueOut": {
+        "properties": {
+          "external_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Issue key in the file, if the row has one.",
+            "title": "External Key"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Column the problem is about.",
+            "title": "Field"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "description": "Spreadsheet row number; the header is row 1.",
+            "title": "Row",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row",
+          "external_key",
+          "field",
+          "message"
+        ],
+        "title": "ImportIssueOut",
+        "type": "object"
+      },
+      "ImportResultOut": {
+        "description": "What an import did (`dry_run=false`) or would do (`dry_run=true`, nothing is saved).",
+        "properties": {
+          "created": {
+            "description": "Tasks created, or that would be created in a dry run.",
+            "title": "Created",
+            "type": "integer"
+          },
+          "dry_run": {
+            "title": "Dry Run",
+            "type": "boolean"
+          },
+          "failed": {
+            "description": "Rows that cannot become a task (see `failures`).",
+            "title": "Failed",
+            "type": "integer"
+          },
+          "failures": {
+            "description": "At most 200; `failed` is the full count.",
+            "items": {
+              "$ref": "#/components/schemas/ImportIssueOut"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "ignored_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ignored Columns",
+            "type": "array"
+          },
+          "members_added": {
+            "description": "Assignees added to the project as members.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Members Added",
+            "type": "array"
+          },
+          "other_projects_in_file": {
+            "description": "More than one Jira project in the file; all rows go into the chosen one.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Other Projects In File",
+            "type": "array"
+          },
+          "skipped_existing": {
+            "description": "Rows whose issue key is already in the project.",
+            "title": "Skipped Existing",
+            "type": "integer"
+          },
+          "total_rows": {
+            "title": "Total Rows",
+            "type": "integer"
+          },
+          "unknown_assignees": {
+            "description": "Names with no matching active user.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown Assignees",
+            "type": "array"
+          },
+          "unknown_statuses": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Status names in the file that are not statuses of the project, and the status they became.",
+            "title": "Unknown Statuses",
+            "type": "object"
+          },
+          "warning_count": {
+            "title": "Warning Count",
+            "type": "integer"
+          },
+          "warnings": {
+            "description": "At most 200; see `warning_count`.",
+            "items": {
+              "$ref": "#/components/schemas/ImportIssueOut"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dry_run",
+          "total_rows",
+          "created",
+          "skipped_existing",
+          "failed",
+          "failures",
+          "warnings",
+          "warning_count",
+          "unknown_statuses",
+          "unknown_assignees",
+          "members_added",
+          "ignored_columns",
+          "other_projects_in_file"
+        ],
+        "title": "ImportResultOut",
         "type": "object"
       },
       "LinkIn": {
@@ -1606,6 +1769,18 @@
             ],
             "title": "Estimate Value"
           },
+          "external_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Key in the system it was imported from, if any.",
+            "title": "External Key"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1669,6 +1844,7 @@
         "required": [
           "id",
           "key",
+          "external_key",
           "project_id",
           "project_name",
           "title",
@@ -3617,6 +3793,302 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/tasks/export": {
+      "get": {
+        "description": "Download the tasks of one project (same filters as the list) as a CSV file. The file can\nbe imported again, into this or another project.",
+        "operationId": "export_project_tasks_api_v1_projects__project_id__tasks_export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Search title or key",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search title or key",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/StatusCategory"
+                  },
+                  "maxItems": 10,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/TaskPriority"
+                  },
+                  "maxItems": 10,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assignee_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Assignee Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unassigned",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unassigned",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "label",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Label"
+            }
+          },
+          {
+            "description": "Due strictly before this date",
+            "in": "query",
+            "name": "due_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Due strictly before this date",
+              "title": "Due Before"
+            }
+          },
+          {
+            "description": "Due strictly after this date",
+            "in": "query",
+            "name": "due_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Due strictly after this date",
+              "title": "Due After"
+            }
+          },
+          {
+            "description": "Past due and not in a done status",
+            "in": "query",
+            "name": "overdue",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Past due and not in a done status",
+              "title": "Overdue",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "PM only; ignored for developers",
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "PM only; ignored for developers",
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV file"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Project Tasks",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/import": {
+      "post": {
+        "description": "PM only: bring tasks in from a CSV file (a Jira export, or a file from our own export).\n\nSend the file with `dry_run=true` first to see what would happen, then again with\n`dry_run=false` to save it. Tasks whose issue key is already in the project are skipped, so\nrunning it twice is safe. Everything is saved in one transaction.",
+        "operationId": "import_project_tasks_api_v1_projects__project_id__tasks_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "true (default): check and report only, nothing is saved",
+            "in": "query",
+            "name": "dry_run",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "true (default): check and report only, nothing is saved",
+              "title": "Dry Run",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_project_tasks_api_v1_projects__project_id__tasks_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Project Tasks",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
     "/api/v1/tasks": {
       "get": {
         "description": "PMs see tasks of every active project, developers those of their projects.",
@@ -3893,6 +4365,243 @@
           }
         },
         "summary": "List Tasks",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/v1/tasks/export": {
+      "get": {
+        "description": "Download what `GET /tasks` lists (same filters, same visibility) as a CSV file.",
+        "operationId": "export_tasks_api_v1_tasks_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "description": "Search title or key",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search title or key",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/StatusCategory"
+                  },
+                  "maxItems": 10,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/TaskPriority"
+                  },
+                  "maxItems": 10,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assignee_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Assignee Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unassigned",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unassigned",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "label",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Label"
+            }
+          },
+          {
+            "description": "Due strictly before this date",
+            "in": "query",
+            "name": "due_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Due strictly before this date",
+              "title": "Due Before"
+            }
+          },
+          {
+            "description": "Due strictly after this date",
+            "in": "query",
+            "name": "due_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Due strictly after this date",
+              "title": "Due After"
+            }
+          },
+          {
+            "description": "Past due and not in a done status",
+            "in": "query",
+            "name": "overdue",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Past due and not in a done status",
+              "title": "Overdue",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "PM only; ignored for developers",
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "PM only; ignored for developers",
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV file"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Tasks",
         "tags": [
           "tasks"
         ]

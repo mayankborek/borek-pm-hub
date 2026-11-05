@@ -1,10 +1,19 @@
 """The permission matrix (architecture section 8): role x action x member/not member/assignee."""
 
+import re
 import uuid
+from pathlib import Path
 
 import pytest
 
-from app.auth.permissions import Action, Resource, can, require
+from app.auth.permissions import (
+    Action,
+    Resource,
+    can,
+    has_lead_rights,
+    require,
+    sees_all_projects,
+)
 from app.common.enums import GlobalRole
 from app.core.errors import AppError
 from app.users.models import User
@@ -33,6 +42,7 @@ def test_pm_can_do_everything(action: Action) -> None:
         Action.TASK_EDIT_DETAILS,
         Action.TASK_ASSIGN,
         Action.TASK_ARCHIVE,
+        Action.TASK_IMPORT,
         Action.DASHBOARD_VIEW,
     ],
 )
@@ -118,3 +128,33 @@ def test_developer_changes_priority_only_on_own_task() -> None:
     assert not can(developer, Action.TASK_EDIT_PRIORITY, someone_elses)
     assert not can(developer, Action.TASK_EDIT_PRIORITY, unassigned)
     assert not can(developer, Action.TASK_EDIT_PRIORITY, no_longer_member)
+
+
+# --- role helpers (S2-01): today they mean exactly "is a PM" -------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("role", "expected"), [(GlobalRole.PM, True), (GlobalRole.DEVELOPER, False)]
+)
+def test_role_helpers_match_the_old_pm_check(role: GlobalRole, expected: bool) -> None:
+    user = make(role)
+    assert sees_all_projects(user) is expected
+    assert has_lead_rights(user) is expected
+
+
+_ROLE_CHECK = re.compile(r"GlobalRole\.[A-Z_]+|global_role\s*[!=]=\s*[\"']")
+
+
+def test_no_role_comparison_outside_the_permission_module() -> None:
+    """New roles must only change `permissions.py`: no other module checks a specific role,
+    neither through the enum (`GlobalRole.PM`) nor as a string (`global_role == "pm"`)."""
+    app_dir = Path(__file__).resolve().parents[1] / "app"
+    allowed = {app_dir / "auth" / "permissions.py", app_dir / "common" / "enums.py"}
+    offenders = [
+        f"{path.relative_to(app_dir)}:{number}"
+        for path in app_dir.rglob("*.py")
+        if path not in allowed
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+        if _ROLE_CHECK.search(line)
+    ]
+    assert offenders == []

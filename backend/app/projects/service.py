@@ -8,8 +8,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
+from app.auth.permissions import sees_all_projects
 from app.common.enums import (
-    GlobalRole,
     MembershipSource,
     ProjectRole,
     ProjectStatus,
@@ -143,7 +143,7 @@ async def list_projects(
 ) -> tuple[list[Project], int]:
     """PMs see every project; developers only the ones they are a member of."""
     conditions: list[ColumnElement[bool]] = []
-    if user.global_role != GlobalRole.PM:
+    if not sees_all_projects(user):
         conditions.append(
             Project.id.in_(select(ProjectMember.project_id).where(ProjectMember.user_id == user.id))
         )

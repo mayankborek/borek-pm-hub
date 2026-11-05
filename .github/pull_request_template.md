@@ -8,7 +8,7 @@
 <!-- Steps or commands a reviewer can run -->
 
 ## Branch and commits
-- [ ] Branch is named `<type>/PT-<n>-short-description` (feature, fix, chore) and was cut from `dev`
+- [ ] Branch is named `<type>/short-description` (feature, fix, chore) and was cut from `dev`
 - [ ] Every commit message starts with the key, e.g. `PT-19: add login form`
 - [ ] I did not push this work straight to `dev` or `main`
 

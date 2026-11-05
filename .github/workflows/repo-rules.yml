@@ -2,6 +2,7 @@ name: Repo rules
 
 # Checks the NEW commits of every push to dev/main and every pull request. No database needed.
 #  1. Every commit message starts with the Jira key:  PT-<n>: summary   (merge commits are exempt).
+#  1. (Switched off while Jira is down) Commit messages used to need the Jira key  PT-<n>: summary.
 #  2. Only the backend owner changes backend/ or docker-compose.yml. Others ask first.
 
 on:
@@ -45,14 +46,6 @@ jobs:
           echo "Checking: $range"
           git log --no-merges --format='%h %an: %s' "$range"
 
-      - name: Commit messages start with PT-<n>
-        run: |
-          bad=$(git log --no-merges --format='%h %s' "$RANGE" | grep -Ev '^[0-9a-f]+ PT-[0-9]+: ' || true)
-          if [ -n "$bad" ]; then
-            echo "::error::Commit messages must start with the Jira key, e.g. 'PT-19: add login form'."
-            echo "$bad"
-            exit 1
-          fi
 
       - name: Backend files are changed by the backend owner only
         run: |

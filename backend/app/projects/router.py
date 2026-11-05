@@ -7,8 +7,8 @@ from fastapi import APIRouter, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.auth.permissions import Action, Resource, require
-from app.common.enums import GlobalRole, ProjectStatus
+from app.auth.permissions import Action, Resource, require, sees_all_projects
+from app.common.enums import ProjectStatus
 from app.common.validation import PageParam, PageSizeParam
 from app.core.database import SessionDep
 from app.projects import service
@@ -70,7 +70,7 @@ async def _require_view(session: AsyncSession, user: User, project_id: uuid.UUID
     project = await service.get_project(session, project_id)
     member = await is_member(session, user.id, project_id)
     require(user, Action.PROJECT_VIEW, Resource(project_id=project_id, is_member=member))
-    if project.archived_at is not None and user.global_role != GlobalRole.PM:
+    if project.archived_at is not None and not sees_all_projects(user):
         raise service.not_found()
     return project
 

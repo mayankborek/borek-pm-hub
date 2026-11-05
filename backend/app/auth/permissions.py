@@ -31,6 +31,7 @@ class Action(StrEnum):
     TASK_VIEW = "task:view"
     TASK_COMMENT = "task:comment"  # comments and attachments
     TASK_ARCHIVE = "task:archive"
+    TASK_IMPORT = "task:import"  # bring tasks in from a CSV file (Jira transfer)
     MY_TASKS = "task:my_tasks"
     DASHBOARD_VIEW = "dashboard:view"
     USER_LIST = "user:list"  # search users for the assignee picker
@@ -56,6 +57,7 @@ _PM_ONLY = frozenset(
         Action.TASK_EDIT_DETAILS,
         Action.TASK_ASSIGN,
         Action.TASK_ARCHIVE,
+        Action.TASK_IMPORT,
         Action.DASHBOARD_VIEW,
         Action.USER_LIST,
     }
@@ -67,10 +69,26 @@ _MEMBER_ACTIONS = frozenset(
 _ANY_USER = frozenset({Action.PROJECT_LIST, Action.MY_TASKS})
 
 
+# --- role helpers -------------------------------------------------------------------------------
+# The only place that maps global roles to "how much of the system" a user sees. Other modules
+# call these instead of comparing `global_role`, so new roles change only this block.
+
+
+def sees_all_projects(user: User) -> bool:
+    """Sees every project, including archived ones, in lists, dashboards and project pages."""
+    return user.global_role == GlobalRole.PM
+
+
+def has_lead_rights(user: User) -> bool:
+    """May do the lead's work on other people's items: assign tasks to anyone on creation,
+    archive comments and attachments of others."""
+    return user.global_role == GlobalRole.PM
+
+
 def can(user: User, action: Action, resource: Resource | None = None) -> bool:
     if not user.is_active:
         return False
-    if user.global_role == GlobalRole.PM:
+    if has_lead_rights(user):
         return True
     if user.global_role != GlobalRole.DEVELOPER:
         return False
@@ -104,7 +122,7 @@ def require(user: User, action: Action, resource: Resource | None = None) -> Non
     if (
         resource is not None
         and resource.project_id is not None
-        and user.global_role == GlobalRole.DEVELOPER
+        and not sees_all_projects(user)
         and not resource.is_member
     ):
         raise AppError(404, "NOT_FOUND", "Project not found.")

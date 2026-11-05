@@ -34,6 +34,7 @@ from app.tasks.schemas import (
 from app.users.models import User
 
 BOARD_LIMIT = 1000  # a board is never paginated; this keeps one request bounded
+MAX_EXPORT_ROWS = 20_000  # an export is built in memory; this keeps one request bounded
 
 # Fields only a PM may change vs. the ones a developer may change on an own task.
 DETAIL_FIELDS = frozenset(
@@ -103,6 +104,7 @@ def _to_out(
     return TaskOut(
         id=task.id,
         key=task.key,
+        external_key=task.external_key,
         project_id=task.project_id,
         project_name=project.name,
         title=task.title,
@@ -200,7 +202,11 @@ class TaskFilters:
         if self.q:
             pattern = f"%{like_escape(self.q.strip())}%"
             found.append(
-                or_(Task.title.ilike(pattern, escape="\\"), Task.key.ilike(pattern, escape="\\"))
+                or_(
+                    Task.title.ilike(pattern, escape="\\"),
+                    Task.key.ilike(pattern, escape="\\"),
+                    Task.external_key.ilike(pattern, escape="\\"),
+                )
             )
         return found
 
@@ -237,6 +243,21 @@ def scope_for_developer(user: User) -> ColumnElement[bool]:
     )
 
 
+def _list_conditions(
+    filters: TaskFilters, scope: ColumnElement[bool] | None
+) -> list[ColumnElement[bool]]:
+    """The filters plus the visibility rules. Lists and the export both use this, so an
+    export can never contain more than the list shows."""
+    conditions = filters.conditions()
+    if scope is not None:
+        conditions.append(scope)
+    if filters.project_id is None:
+        # cross-project lists skip archived and cancelled projects
+        conditions.append(Project.archived_at.is_(None))
+        conditions.append(Project.status != ProjectStatus.CANCELLED.value)
+    return conditions
+
+
 async def list_tasks(
     session: AsyncSession,
     filters: TaskFilters,
@@ -246,13 +267,7 @@ async def list_tasks(
     page_size: int,
     scope: ColumnElement[bool] | None = None,
 ) -> tuple[list[TaskOut], int]:
-    conditions = filters.conditions()
-    if scope is not None:
-        conditions.append(scope)
-    if filters.project_id is None:
-        # cross-project lists skip archived and cancelled projects
-        conditions.append(Project.archived_at.is_(None))
-        conditions.append(Project.status != ProjectStatus.CANCELLED.value)
+    conditions = _list_conditions(filters, scope)
     total = (
         await session.scalar(
             select(func.count(Task.id))
@@ -270,6 +285,27 @@ async def list_tasks(
         .offset((page - 1) * page_size)
     )
     return [_to_out(*row) for row in rows.all()], total
+
+
+async def export_tasks(
+    session: AsyncSession, filters: TaskFilters, *, scope: ColumnElement[bool] | None = None
+) -> list[TaskOut]:
+    """Every task the filters match (no paging), oldest first so a re-import keeps the order."""
+    rows = await session.execute(
+        _select_rows()
+        .where(*_list_conditions(filters, scope))
+        # Tasks made in one transaction (an import) share a timestamp: the key number decides.
+        .order_by(Task.created_at, func.length(Task.key), Task.key)
+        .limit(MAX_EXPORT_ROWS + 1)
+    )
+    tasks = [_to_out(*row) for row in rows.all()]
+    if len(tasks) > MAX_EXPORT_ROWS:
+        raise AppError(
+            422,
+            "EXPORT_TOO_LARGE",
+            f"More than {MAX_EXPORT_ROWS} tasks match. Narrow the filters and try again.",
+        )
+    return tasks
 
 
 async def board(
@@ -313,7 +349,7 @@ async def _check_assignee(session: AsyncSession, project_id: uuid.UUID, user_id:
         )
 
 
-def _apply_status(task: Task, status: WorkflowStatus, blocked_reason: str | None) -> None:
+def apply_status(task: Task, status: WorkflowStatus, blocked_reason: str | None) -> None:
     """Set the status and keep completed_at / blocked_* consistent with its category.
 
     Validates first, so a rejected request changes nothing on the task.
@@ -333,10 +369,10 @@ def _apply_status(task: Task, status: WorkflowStatus, blocked_reason: str | None
 
 
 async def create_task(
-    session: AsyncSession, project: Project, user: User, data: TaskCreate, *, is_pm: bool
+    session: AsyncSession, project: Project, user: User, data: TaskCreate, *, lead_rights: bool
 ) -> TaskOut:
     assignee_id = data.assignee_id
-    if not is_pm:
+    if not lead_rights:
         if assignee_id not in (None, user.id):
             raise AppError(403, "FORBIDDEN", "Developers can only assign tasks to themselves.")
         assignee_id = user.id
@@ -346,7 +382,7 @@ async def create_task(
     if data.status_id is not None:
         status = await statuses.get_status(session, project.id, data.status_id)
     else:
-        status = await _default_status(session, project.id)
+        status = await default_status(session, project.id)
 
     # Atomic key number. The UPDATE locks the project row until commit, so keys never repeat.
     projects = Project.__table__
@@ -371,7 +407,7 @@ async def create_task(
         assignee_id=assignee_id,
         created_by=user.id,
     )
-    _apply_status(task, status, data.blocked_reason)
+    apply_status(task, status, data.blocked_reason)
     session.add(task)
     try:
         await session.flush()
@@ -383,7 +419,7 @@ async def create_task(
     return await get_task_out(session, task.id)
 
 
-async def _default_status(session: AsyncSession, project_id: uuid.UUID) -> WorkflowStatus:
+async def default_status(session: AsyncSession, project_id: uuid.UUID) -> WorkflowStatus:
     todo = await session.scalar(
         select(WorkflowStatus)
         .where(
@@ -460,7 +496,7 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
             new_status = await session.get(WorkflowStatus, task.status_id)
             assert new_status is not None
         reason = changes["blocked_reason"] if "blocked_reason" in changes else task.blocked_reason
-        _apply_status(task, new_status, reason)
+        apply_status(task, new_status, reason)
     for field in DETAIL_FIELDS & changes.keys():
         value = changes[field]
         if field in ("priority", "estimate_unit") and value is not None:
