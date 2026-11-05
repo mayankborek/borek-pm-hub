@@ -1,4 +1,5 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { paths } from './routes';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ClientLoginPage } from '@/features/auth/client/ClientLoginPage';
@@ -17,6 +18,10 @@ import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientProfilePage } from '@/features/client/ClientProfilePage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
+import { AdminLayout } from '@/features/admin/AdminLayout';
+import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
+import { AdminOrganisationsPage } from '@/features/admin/AdminOrganisationsPage';
+import { AdminRolesPage } from '@/features/admin/AdminRolesPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
@@ -73,6 +78,22 @@ export const router = createBrowserRouter([
                   { path: 'contacts', element: <ClientContactsPage /> },
                 ],
               },
+            ],
+          },
+        ],
+      },
+      // Admin console: its own shell, administrators only
+      {
+        element: <RequireRole roles={['admin']} />,
+        children: [
+          {
+            path: 'admin',
+            element: <AdminLayout />,
+            children: [
+              { index: true, element: <Navigate to={paths.adminUsers} replace /> },
+              { path: 'users', element: <AdminUsersPage /> },
+              { path: 'organisations', element: <AdminOrganisationsPage /> },
+              { path: 'roles', element: <AdminRolesPage /> },
             ],
           },
         ],

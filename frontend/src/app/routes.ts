@@ -31,15 +31,18 @@ export const paths = {
   clientReport: (id: string, reportId: string) => `/client/projects/${id}/reports/${reportId}`,
   clientChangeRequests: (id: string) => `/client/projects/${id}/change-requests`,
   clientContacts: (id: string) => `/client/projects/${id}/contacts`,
+  adminUsers: '/admin/users',
+  adminOrganisations: '/admin/organisations',
+  adminRoles: '/admin/roles',
 } as const;
 
 /** Client pages carry the invitation token in the query string so the flow can resume at any step. */
 export const withInvitation = (path: string, token: string | null) =>
   token ? `${path}?invitation=${encodeURIComponent(token)}` : path;
 
-/** Landing page after sign-in: PM -> dashboard, Developer -> My Work, Client -> Home. */
+/** Landing page after sign-in: PM -> dashboard, Developer -> My Work, Client -> Home, Admin -> Users. */
 export const homeFor = (role: Role) =>
-  role === 'pm' ? paths.dashboard : role === 'client' ? paths.clientHome : paths.myWork;
+  role === 'pm' ? paths.dashboard : role === 'client' ? paths.clientHome : role === 'admin' ? paths.adminUsers : paths.myWork;
 
 export interface NavItem {
   label: string;

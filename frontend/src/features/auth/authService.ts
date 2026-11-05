@@ -12,7 +12,7 @@ interface UserOut {
   role: string;
 }
 
-const ROLES: readonly Role[] = ['pm', 'developer', 'client'];
+const ROLES: readonly Role[] = ['pm', 'developer', 'client', 'admin'];
 
 /** Rejects an unknown role instead of casting it, so the UI never runs with a role it does not understand. */
 function toUser(u: UserOut): User {
