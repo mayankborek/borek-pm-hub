@@ -1,6 +1,13 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { ClientLoginPage } from '@/features/auth/client/ClientLoginPage';
+import {
+  ClientAccessUnavailablePage,
+  ClientAccountReadyPage,
+  ClientCreateAccountPage,
+  ClientInvitePage,
+} from '@/features/auth/client/ClientPages';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
@@ -20,7 +27,14 @@ export const router = createBrowserRouter([
   // Public
   {
     element: <RedirectIfAuthed />,
-    children: [{ path: 'login', element: <LoginPage /> }],
+    children: [
+      { path: 'login', element: <LoginPage /> },
+      { path: 'client/login', element: <ClientLoginPage /> },
+      { path: 'client/invitation/:token', element: <ClientInvitePage /> },
+      { path: 'client/create-account', element: <ClientCreateAccountPage /> },
+      { path: 'client/account-ready', element: <ClientAccountReadyPage /> },
+      { path: 'client/access-unavailable', element: <ClientAccessUnavailablePage /> },
+    ],
   },
 
   // Authenticated app shell
