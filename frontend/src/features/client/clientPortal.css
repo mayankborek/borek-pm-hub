@@ -156,11 +156,98 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
   .cp-msv{overflow-x:auto}
 }
 /* additions that have no counterpart in the design */
-.cp-signout{font-size:12px;color:var(--slate)}
-.cp-signout:hover{text-decoration:underline}
 .cp-ptitle{position:relative}
 .cp-ptitle button{display:inline-flex;align-items:center;gap:10px;font:inherit;letter-spacing:inherit}
 .cp-switch{position:absolute;left:0;top:100%;z-index:5;min-width:240px;margin-top:4px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:400;letter-spacing:0}
 .cp-switch a{display:block;padding:12px 16px;color:var(--navy);text-decoration:none}
 .cp-switch a:hover,.cp-switch a[aria-current=true]{background:var(--bg);text-decoration:none}
 .cp-switch a[aria-current=true]{font-weight:600}
+
+/* ───── From borek-flow-auth (1)/portal.css: contacts, notifications, profile, dialogs ───── */
+.cp{--muted:var(--slate);--line-soft:var(--bg);--link:var(--blue);--field-border:#7D879C;--navy-hover:#1b2260;--white:#fff}
+.cp.cp-solo{display:block}
+
+.cp-tools{position:relative}
+.cp-user{color:var(--navy)}
+.cp-user:hover{text-decoration:none}
+
+/* Notifications popover */
+.cp-notif{position:absolute;top:calc(100% + 8px);right:0;z-index:10;width:400px;max-width:calc(100vw - 32px);padding:16px 16px 28px;border:1px solid var(--line);background:#fff;box-shadow:0 8px 24px rgba(13,18,64,.12)}
+.cp-notif-title{font-size:18px;font-weight:600;line-height:22px}
+.cp-notif-list{display:flex;flex-direction:column;gap:28px;margin:28px 0 0;padding:0;list-style:none}
+.cp-notif-item{position:relative;display:block;padding-left:12px;color:var(--navy)}
+:where(.cp) a.cp-notif-item:hover{text-decoration:none}
+.cp-notif-item.cp-unread::before{content:"";position:absolute;left:0;top:0;width:3px;height:40px;background:var(--blue)}
+.cp-notif-headline{display:block;font-size:14px;font-weight:600;line-height:17px}
+.cp-notif-meta{display:block;margin-top:8px;font-size:12px;line-height:15px;font-weight:400}
+.cp-notif-item:hover .cp-notif-headline{text-decoration:underline}
+
+/* Project contacts */
+.cp-section-title{margin-top:26px;font-size:20px;font-weight:600;line-height:24px}
+.cp-section-sub{margin-top:17px;color:var(--muted);font-size:14px;line-height:17px}
+.cp-contact{width:560px;max-width:100%;margin-top:17px;padding:16px;border:1px solid var(--line)}
+.cp-contact-head{display:flex;align-items:center;gap:12px}
+.cp-contact-initials{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--line-soft);font-size:16px;font-weight:600;line-height:20px}
+.cp-contact-name{font-size:20px;font-weight:600;line-height:24px}
+.cp-contact-role{margin-left:21px;color:var(--muted);font-size:14px;line-height:17px}
+.cp-contact-email{display:block;margin-top:14px;font-size:14px;line-height:17px}
+.cp-contact-tel{margin-top:13px;color:var(--muted);font-size:12px;line-height:15px}
+
+/* Profile */
+.cp-profile{width:min(100% - 48px,1040px);margin:0 auto;padding:52px 0 64px;min-height:100vh}
+.cp-profile-back{display:flex;width:fit-content;align-items:center;gap:10px;margin-bottom:23px;font-size:14px;font-weight:500;line-height:17px}
+.cp-profile-back svg{width:16px;height:16px}
+.cp-profile-title{font-size:28px;font-weight:600;line-height:34px}
+.cp-profile-sub{margin-top:20px;color:var(--muted);font-size:14px;line-height:17px}
+.cp-profile-form{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.cp-pcard{padding:20px;border:1px solid var(--line);background:#fff}
+.cp-pcard-title{font-size:18px;font-weight:600;line-height:22px}
+.cp-pcard-sub{margin-top:6px;color:var(--muted);font-size:12px;line-height:15px}
+.cp-pcard-head{display:flex;align-items:center;gap:16px;padding:17px 19px}
+.cp-pcard-head .cp-avatar{width:64px;height:64px;font-size:20px}
+.cp-who{flex:1;min-width:0}
+.cp-who-name{font-size:22px;font-weight:500;line-height:27px}
+.cp-who-role{margin-top:6px;font-size:14px;font-weight:500;line-height:17px}
+.cp-pactions{display:flex;gap:9px}
+.cp-pbtn{display:inline-flex;align-items:center;justify-content:center;height:43px;padding:0 16px;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--navy);font-size:14px;font-weight:500;line-height:17px;cursor:pointer;transition:background-color .15s}
+.cp-pbtn:hover{background:var(--line-soft)}
+.cp-pbtn.cp-primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.cp-pbtn.cp-primary:hover{background:var(--navy-hover)}
+.cp-pgrid{display:grid;grid-template-columns:1fr 1fr;gap:15px 16px;margin-top:16px}
+.cp-pfield{display:flex;flex-direction:column;gap:7px;min-width:0}
+.cp-pfield-label{color:var(--muted);font-size:12px;font-weight:600;line-height:15px}
+.cp-pfield-input{display:block;width:100%;padding:0;border:0;border-radius:0;background:transparent;color:var(--navy);font:400 14px/17px Inter,sans-serif}
+.cp-edit .cp-pfield.cp-ro{background:var(--line-soft)}
+.cp-edit .cp-pfield.cp-phone{gap:0}
+.cp-edit .cp-pfield.cp-phone .cp-pfield-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.cp-edit .cp-pfield.cp-phone .cp-pfield-input{height:43px;padding:0 8px;border:1px solid var(--field-border);background:#fff}
+.cp-edit .cp-pfield.cp-phone .cp-pfield-input:focus-visible{outline:0;border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.cp-pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.cp-select-btn{display:flex;align-items:center;justify-content:space-between;width:256px;height:40px;margin-top:4px;padding:0 16px;border:1px solid var(--field-border);border-radius:0;background:#fff;font-size:14px;line-height:17px;cursor:pointer}
+.cp-select-btn svg{width:8px;height:8px;color:var(--muted)}
+.cp-theme{margin-top:16px}
+.cp-theme-row{display:flex;align-items:center;justify-content:space-between;min-height:40px;margin-top:4px;font-size:14px;line-height:17px}
+.cp-toggle{position:relative;width:40px;height:24px;padding:0;border:0;border-radius:12px;background:var(--line);cursor:pointer;transition:background-color .15s}
+.cp-toggle::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.cp-toggle[aria-checked=true]{background:var(--navy)}
+.cp-toggle[aria-checked=true]::after{transform:translateX(16px)}
+.cp-arow{display:flex;align-items:center;justify-content:space-between;margin-top:15px;padding:5px 0;border-top:1px solid var(--line);font-size:14px;line-height:17px}
+.cp-text-btn{padding:0;border:0;background:none;color:var(--navy);font-size:12px;font-weight:600;line-height:15px;cursor:pointer}
+.cp-text-btn:hover{text-decoration:underline}
+.cp-signout{display:inline-block;margin-top:12px;padding-bottom:5px}
+
+/* Dialogs */
+.cp-dialog{width:480px;max-width:calc(100vw - 32px);padding:0;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--navy);font-family:Inter,system-ui,sans-serif}
+.cp-dialog::backdrop{background:rgba(13,18,64,.45)}
+.cp-dialog-inner{display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:24px}
+.cp-dialog-title{font-size:20px;font-weight:600;line-height:24px}
+.cp-dialog-text{font-size:14px;line-height:17px}
+.cp-dialog-row{display:flex;gap:12px}
+.cp-dialog-stack{display:flex;flex-direction:column;gap:16px;width:100%}
+.cp-dbtn{display:flex;align-items:center;justify-content:center;height:43px;min-width:140px;padding:0 16px;border:1px solid var(--navy);border-radius:6px;background:#fff;color:var(--navy);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.cp-dbtn:hover{background:var(--line-soft)}
+
+@media (max-width:900px){
+  .cp-pgrid,.cp-pcols{grid-template-columns:1fr}
+  .cp-pcard-head{flex-wrap:wrap}
+}

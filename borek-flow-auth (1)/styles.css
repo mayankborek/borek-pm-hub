@@ -1,0 +1,540 @@
+/* Borek Flow · Invitation and access
+   Shared styles for: invitation.html, sign-in.html, access-unavailable.html
+   Design frame: 1440 × 1024, 760px brand panel + 680px content panel. */
+
+:root {
+  --navy: #0d1240;
+  --navy-hover: #1b2260;
+  --navy-active: #070a2b;
+  --muted: #5c6178;
+  --line: #e2e4ec;
+  --line-soft: #f3f4f8;
+  --field-border: #7d879c;
+  --link: #124f94;
+  --link-sm: #0d2966;
+  --white: #ffffff;
+  --radius: 6px;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--navy);
+  font-family: var(--font);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* ───────────── Page shell ───────────── */
+
+.auth {
+  display: grid;
+  grid-template-columns: min(52.78vw, 760px) 1fr;
+  min-height: max(100vh, 1024px);
+}
+
+/* ───────────── Brand panel (left) ───────────── */
+
+.brand {
+  position: relative;
+  overflow: hidden;
+  background: var(--navy);
+  color: var(--white);
+}
+
+.brand__hero {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 523px;
+  background: url("assets/hero.jpg") center top / cover no-repeat;
+}
+
+.brand__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 390px;
+  height: 190px;
+  background: linear-gradient(
+    180deg,
+    rgba(13, 18, 64, 0) 0%,
+    rgba(13, 18, 64, 0.18) 48%,
+    rgba(13, 18, 64, 0.72) 78%,
+    var(--navy) 100%
+  );
+}
+
+.brand__logo {
+  position: absolute;
+  left: 88px;
+  top: 76px;
+  width: 184px;
+  height: 43px;
+}
+
+.brand__eyebrow {
+  position: absolute;
+  left: 95px;
+  top: 140px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 15px;
+  letter-spacing: 1.2px;
+}
+
+.brand__headline {
+  position: absolute;
+  left: 77px;
+  top: 554px;
+  width: min(540px, calc(100% - 154px));
+  font-size: 56px;
+  font-weight: 300;
+  line-height: 66px;
+}
+
+.brand__sub {
+  position: absolute;
+  left: 77px;
+  top: 772px;
+  width: min(520px, calc(100% - 154px));
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 29px;
+}
+
+.brand__footer {
+  position: absolute;
+  left: 77px;
+  bottom: 93px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 15px;
+}
+
+/* ───────────── Content panel (right) ───────────── */
+
+.auth__main {
+  padding-inline: clamp(32px, 6.667vw, 96px) 32px;
+}
+
+.auth__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: min(100%, 448px);
+}
+
+/* Screens 01 and 03 start at y=200, screen 02 at y=224 */
+.auth__content--invite,
+.auth__content--status { padding-top: 200px; gap: 20px; }
+.auth__content--signin { padding-top: 224px; }
+.auth__content--create,
+.auth__content--ready { padding-top: 224px; gap: 20px; }
+
+.title {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 36px;
+}
+
+.project {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 17px;
+}
+
+/* ───────────── Buttons · Action ─────────────
+   One primary action per page section.
+   States: default, hover, focus, active, disabled, loading. */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn--primary { background: var(--navy); color: var(--white); }
+.btn--primary:hover { background: var(--navy-hover); }
+.btn--primary:active { background: var(--navy-active); }
+
+.btn--secondary {
+  background: var(--white);
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.btn--secondary:hover { background: var(--line-soft); }
+.btn--secondary:active { background: var(--line); }
+
+.btn--text {
+  width: auto;
+  align-items: flex-start;
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--navy);
+  font-size: 13px;
+  line-height: 16px;
+}
+.btn--text:hover { background: var(--line-soft); }
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn[aria-busy="true"] { pointer-events: none; position: relative; }
+.btn[aria-busy="true"]::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ───────────── 01 · Invitation details card ───────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+.card__label { font-size: 12px; line-height: 15px; }
+.card__value { font-size: 14px; font-weight: 600; line-height: 17px; }
+.card__meta  { font-size: 12px; line-height: 15px; }
+
+/* ───────────── 02 · Sign in ───────────── */
+
+.welcome {
+  font-size: 40px;
+  font-weight: 300;
+  line-height: 48px;
+}
+
+.lede {
+  max-width: 420px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 19px;
+}
+
+.signin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 18px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.signin-btn:hover { background: var(--navy-hover); }
+.signin-btn:active { background: var(--navy-active); }
+.signin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.signin-btn[aria-busy="true"] { pointer-events: none; opacity: 0.8; }
+
+.signin-btn__icon { width: 20px; height: 20px; flex: none; }
+
+.signin-btn--ms { margin-top: 40px; }
+.signin-btn--login { margin-top: 16px; }
+
+.alt-label {
+  align-self: stretch;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+}
+
+.form { width: 100%; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  min-height: 77px;           /* label + field + reserved slot for helper/error text */
+}
+.field + .field { margin-top: 16px; }
+.form .field:first-child { margin-top: 21px; }
+
+.field__label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.field__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--field-border);
+  border-radius: 0;
+  background: var(--white);
+  font-size: 14px;
+  line-height: 22px;
+}
+.field__input:focus-visible { outline-offset: 0; border-color: var(--link); }
+.field__input--password { padding-right: 52px; }
+.field__input[aria-invalid="true"] { border-color: #b3261e; }
+
+.field__toggle {
+  position: absolute;
+  right: 0;
+  bottom: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.field__toggle svg { width: 20px; height: 20px; }
+.field__toggle .icon-hide { display: none; }
+.field__toggle[aria-pressed="true"] .icon-show { display: none; }
+.field__toggle[aria-pressed="true"] .icon-hide { display: block; }
+
+.signin-btn--login { margin-top: 16px; }
+
+.options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 17px;
+  padding-right: 22px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 15px;
+  cursor: pointer;
+}
+.check input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+.check input::before {            /* Check box outline blank */
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 2px solid var(--muted);
+  border-radius: 2px;
+}
+.check input:checked::before { background: var(--muted); }
+.check input:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 3.5px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.link-sm { color: var(--link-sm); font-size: 12px; line-height: 15px; }
+.link-sm:hover { text-decoration: underline; }
+
+.divider {
+  width: 100%;
+  height: 1px;
+  margin: 47px 0 0;
+  border: 0;
+  background: var(--line-soft);
+}
+
+.lang { margin-top: 33px; }
+.lang__label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 15px;
+}
+.lang__list {
+  display: flex;
+  gap: 8px;
+  margin: 17px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 17px;
+}
+.lang__list a { color: var(--link); }
+.lang__list a:hover { text-decoration: underline; }
+
+.register {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin-top: 17px;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.register { margin-bottom: 60px; }
+
+.help {
+  margin-top: 28px;
+  padding-bottom: 60px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+/* ───────────── 04 · Create account / 05 · Account ready ───────────── */
+
+.sub {
+  font-size: 16px;
+  line-height: 19px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.sfield { display: flex; flex-direction: column; gap: 12px; }
+.sfield__label { font-size: 12px; line-height: 15px; }
+.sfield__input {
+  width: 100%;
+  height: 43px;
+  padding: 0 24px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  font-size: 14px;
+  line-height: 17px;
+}
+.sfield__input::placeholder { color: var(--navy); opacity: 1; }
+.sfield__input:focus-visible { outline: 0; border-color: var(--link); box-shadow: 0 0 0 1px var(--link); }
+
+.note { font-size: 13px; line-height: 16px; }
+.note--sm { font-size: 12px; line-height: 15px; }
+.note--gap { margin-top: 36px; }
+
+.card__desc { font-size: 13px; line-height: 16px; }
+
+/* ───────────── Responsive ───────────── */
+
+@media (max-width: 1100px) {
+  .auth { grid-template-columns: 1fr; min-height: 100vh; }
+  .brand { height: 300px; }
+  .brand__hero { height: 100%; }
+  .brand__fade { top: 120px; height: 180px; }
+  .brand__logo { left: 32px; top: 40px; }
+  .brand__eyebrow { left: 39px; top: 104px; }
+  .brand__headline, .brand__sub, .brand__footer { display: none; }
+  .auth__main { padding: 0 24px 48px; }
+  .auth__content--invite,
+  .auth__content--status { padding-top: 40px; }
+  .auth__content--signin,
+  .auth__content--create,
+  .auth__content--ready { padding-top: 40px; }
+  .divider { margin-top: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation-duration: 0.01ms !important; }
+}
+
+/* ───────────── Dialogs (shared) ─────────────
+   Native <dialog>; open with showModal(). 480px wide, 24px inner padding. */
+
+.dialog {
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--navy);
+}
+.dialog::backdrop { background: rgba(13, 18, 64, 0.45); }
+
+.dialog__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+}
+.dialog__title { font-size: 20px; font-weight: 600; line-height: 24px; }
+.dialog__title--lg { font-size: 24px; line-height: 28px; }
+.dialog__text  { font-size: 14px; line-height: 17px; }
+.dialog__row   { display: flex; gap: 12px; }
+.dialog__stack { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+
+.dialog .btn { height: 43px; width: auto; }
+.dialog .btn--fixed { min-width: 140px; white-space: nowrap; }
+.dialog .btn--w380 { width: 380px; max-width: 100%; }
+.dialog .btn--full { width: 100%; }
+.dialog .sfield { width: 100%; gap: 12px; }
+.dialog .gap-lg { margin-top: 16px; }   /* 32px total with the flex gap */

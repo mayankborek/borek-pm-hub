@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your profile · Borek Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+<main class="profile">
+  <a class="profile__back" href="#home"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5"/></svg>Back to Home</a>
+  <h1 class="profile__title">Your profile</h1>
+  <p class="profile__sub">Manage your personal details and account preferences.</p>
+
+  <form class="profile__form" id="profile-form" data-mode="view" novalidate>
+
+    <section class="pcard pcard--head" aria-label="Profile summary">
+      <span class="avatar" aria-hidden="true">JL</span>
+      <div class="who">
+        <p class="who__name">Jordan Lee</p>
+        <p class="who__role">Client · Customer organisation</p>
+      </div>
+      <button class="pbtn pbtn--primary" type="button" id="edit-btn">Edit profile</button>
+      <div class="pactions" id="edit-actions" hidden>
+        <button class="pbtn" type="button" id="cancel-btn">Cancel</button>
+        <button class="pbtn pbtn--primary" type="submit">Save Changes</button>
+      </div>
+    </section>
+
+    <section class="pcard" aria-labelledby="personal-title">
+      <h2 class="pcard__title" id="personal-title">Personal &amp; contact information</h2>
+      <p class="pcard__sub">Your contact details for collaborators.</p>
+      <div class="pgrid">
+        <div class="pfield pfield--ro">
+          <label class="pfield__label" for="first-name">First name</label>
+          <input class="pfield__input" id="first-name" value="Jordan" readonly>
+        </div>
+        <div class="pfield pfield--ro">
+          <label class="pfield__label" for="last-name">Last name</label>
+          <input class="pfield__input" id="last-name" value="Lee" readonly>
+        </div>
+        <div class="pfield pfield--ro">
+          <label class="pfield__label" for="work-email">Work email</label>
+          <input class="pfield__input" id="work-email" type="email" value="jordan.lee@customer.com" readonly>
+        </div>
+        <div class="pfield pfield--phone">
+          <label class="pfield__label" for="phone">Phone number</label>
+          <input class="pfield__input" id="phone" type="tel" value="+49 30 555 0192" autocomplete="tel" readonly>
+        </div>
+      </div>
+    </section>
+
+    <div class="pcols">
+      <section class="pcard" aria-labelledby="prefs-title">
+        <h2 class="pcard__title" id="prefs-title">Preferences</h2>
+        <div class="pfield" style="margin-top:13px">
+          <span class="pfield__label" id="lang-label">Language</span>
+          <button class="select-btn" type="button" style="margin-top:4px" aria-labelledby="lang-label lang-value" aria-haspopup="dialog" data-open-dialog="language-dialog">
+            <span id="lang-value">English (EN)</span><svg viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1 2.5 3 3 3-3"/></svg>
+          </button>
+        </div>
+        <div class="theme">
+          <span class="pfield__label" id="theme-label">Theme</span>
+          <div class="theme-row">
+            <span id="theme-value">Light mode</span>
+            <button class="switch" type="button" role="switch" aria-checked="false" aria-labelledby="theme-value" id="theme-switch"></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pcard" aria-labelledby="account-title">
+        <h2 class="pcard__title" id="account-title">Account &amp; security</h2>
+        <p class="pcard__sub">Manage access to your Borek account.</p>
+        <div class="arow">
+          <span>Organisation sign-in</span>
+          <button class="text-btn" type="button" data-open-dialog="org-dialog">Details</button>
+        </div>
+        <a class="text-btn signout" href="sign-in.html">Sign out</a>
+      </section>
+    </div>
+  </form>
+</main>
+
+<!-- Discard profile changes -->
+<dialog class="dialog" id="discard-dialog" aria-labelledby="discard-title">
+  <div class="dialog__inner">
+    <h2 class="dialog__title" id="discard-title">Discard profile changes?</h2>
+    <p class="dialog__text">Your unsaved changes will be lost.</p>
+    <div class="dialog__row">
+      <button class="btn btn--secondary btn--fixed" type="button" data-close-dialog>Keep editing</button>
+      <button class="btn btn--secondary btn--fixed" type="button" id="discard-confirm">Discard changes</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Organisation sign-in -->
+<dialog class="dialog" id="org-dialog" aria-labelledby="org-title">
+  <div class="dialog__inner">
+    <h2 class="dialog__title" id="org-title">Organisation sign-in</h2>
+    <p class="dialog__text">Your organisation manages sign-in and identity verification. Contact your organisation administrator for changes to authentication.</p>
+    <button class="btn btn--secondary btn--fixed" type="button" data-close-dialog>Close</button>
+  </div>
+</dialog>
+
+<!-- Preferred language -->
+<dialog class="dialog" id="language-dialog" aria-labelledby="language-title" style="width:400px">
+  <div class="dialog__inner">
+    <h2 class="dialog__title" id="language-title">Preferred language</h2>
+    <div class="dialog__stack" style="width:auto">
+      <button class="btn btn--secondary btn--fixed" type="button" data-lang="English (EN)">English (EN)</button>
+      <button class="btn btn--secondary btn--fixed" type="button" data-lang="Deutsch (DE)">Deutsch (DE)</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+<script>
+  (function () {
+    var form = document.getElementById('profile-form');
+    var phone = document.getElementById('phone');
+    var editBtn = document.getElementById('edit-btn');
+    var actions = document.getElementById('edit-actions');
+    var saved = phone.value;
+
+    function setMode(mode) {
+      form.setAttribute('data-mode', mode);
+      var edit = mode === 'edit';
+      editBtn.hidden = edit;
+      actions.hidden = !edit;
+      phone.readOnly = !edit;
+      if (edit) phone.focus();
+    }
+
+    editBtn.addEventListener('click', function () { setMode('edit'); });
+
+    document.getElementById('cancel-btn').addEventListener('click', function () {
+      if (phone.value !== saved) document.getElementById('discard-dialog').showModal();
+      else setMode('view');
+    });
+
+    document.getElementById('discard-confirm').addEventListener('click', function () {
+      phone.value = saved;
+      document.getElementById('discard-dialog').close();
+      setMode('view');
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      saved = phone.value;            // TODO: persist via your API
+      setMode('view');
+    });
+
+    document.querySelectorAll('[data-lang]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.getElementById('lang-value').textContent = b.getAttribute('data-lang');
+        document.getElementById('language-dialog').close();
+      });
+    });
+
+    var sw = document.getElementById('theme-switch');
+    sw.addEventListener('click', function () {
+      var on = sw.getAttribute('aria-checked') !== 'true';
+      sw.setAttribute('aria-checked', String(on));
+      document.getElementById('theme-value').textContent = on ? 'Dark mode' : 'Light mode';
+    });
+  })();
+</script>
+</body>
+</html>

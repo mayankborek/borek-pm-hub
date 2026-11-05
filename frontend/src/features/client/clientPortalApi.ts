@@ -5,6 +5,12 @@ import type { ClientPortalData, ClientProject } from './types';
 // data. Replace `fetchPortal` with a call to the real API; the pages only depend on ClientPortalData.
 const SAMPLE: ClientPortalData = {
   today: '2026-11-02',
+  notifications: [
+    { id: 'n1', headline: 'A progress report is available', meta: 'Website Redesign', to: '/client/projects/website-redesign/reports/delivery-status', unread: true },
+    { id: 'n2', headline: 'Your change request is in review', meta: 'Website Redesign · CR-02', to: '/client/projects/website-redesign/change-requests', unread: true },
+    { id: 'n3', headline: 'Client handover is coming up', meta: 'Website Redesign · 06 Nov', to: '/client/projects/website-redesign/milestones', unread: false },
+    { id: 'n4', headline: 'A new report is ready to view', meta: 'Customer portal', to: '/client/projects/customer-portal/reports/delivery-status', unread: false },
+  ],
   projects: [
     {
       id: 'website-redesign',
@@ -13,6 +19,7 @@ const SAMPLE: ClientPortalData = {
       progress: 68,
       publishedOn: '2026-11-02',
       publishedBy: { name: 'Alex Morgan', role: 'Project Manager' },
+      contacts: [{ name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' }],
       milestones: [
         {
           id: 'delivery-review',
@@ -47,6 +54,7 @@ const SAMPLE: ClientPortalData = {
       progress: 45,
       publishedOn: '2026-11-02',
       publishedBy: { name: 'Alex Morgan', role: 'Project Manager' },
+      contacts: [{ name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' }],
       milestones: [
         { id: 'preview-review', name: 'Preview review', dueDate: '2026-11-09', state: 'planned', progress: 0 },
         { id: 'client-handover', name: 'Client handover', dueDate: '2026-11-13', state: 'planned', progress: 0 },

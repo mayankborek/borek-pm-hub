@@ -31,6 +31,22 @@ export interface ClientReport {
   progress: number;
 }
 
+export interface ClientContact {
+  name: string;
+  role: string;
+  email: string;
+  phone?: string;
+}
+
+export interface ClientNotification {
+  id: string;
+  headline: string;
+  meta: string;
+  /** App path the notification opens. */
+  to: string;
+  unread: boolean;
+}
+
 export interface ClientProject {
   id: string;
   name: string;
@@ -39,6 +55,7 @@ export interface ClientProject {
   progress: number;
   publishedOn: string;
   publishedBy: { name: string; role: string };
+  contacts: ClientContact[];
   milestones: ClientMilestone[];
   changeRequests: ClientChangeRequest[];
   reports: ClientReport[];
@@ -47,5 +64,6 @@ export interface ClientProject {
 export interface ClientPortalData {
   /** The date the portal treats as "today" (milestones before it are behind us). */
   today: string;
+  notifications: ClientNotification[];
   projects: ClientProject[];
 }

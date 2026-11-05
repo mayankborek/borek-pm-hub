@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Access unavailable · Borek Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="auth">
+
+  <!-- Brand panel -->
+  <aside class="brand">
+    <div class="brand__hero" role="presentation"></div>
+    <div class="brand__fade" role="presentation"></div>
+    <img class="brand__logo" src="assets/borek-logo.svg" width="184" height="43" alt="Borek">
+    <p class="brand__eyebrow">Borek Flow</p>
+    <p class="brand__headline">Work, Moving Forward.</p>
+    <p class="brand__sub">One workspace for project plans, team tasks, and delivery progress.</p>
+    <p class="brand__footer">Borek Flow · Secure workspace</p>
+  </aside>
+
+  <!-- Content panel -->
+  <section class="auth__main">
+    <div class="auth__content auth__content--status">
+      <h1 class="title">Access unavailable</h1>
+      <p class="body">This invitation has expired or access is no longer available.</p>
+
+      <a class="btn btn--primary" href="#choose-account" data-open-dialog="account-dialog">Use the invited account</a>
+      <a class="btn btn--secondary" href="#request-invitation">Request a new invitation</a>
+      <a class="btn btn--secondary" href="#projects">View other projects</a>
+    </div>
+  </section>
+</main>
+<!-- Choose your account -->
+<dialog class="dialog" id="account-dialog" aria-labelledby="account-title">
+  <div class="dialog__inner">
+    <h2 class="dialog__title" id="account-title">Choose your account</h2>
+    <p class="dialog__text">Use the account that received the project invitation.</p>
+    <div class="dialog__stack">
+      <a class="btn btn--secondary btn--w380" href="sign-in.html">Jordan Lee · Invited account</a>
+      <a class="btn btn--secondary btn--w380" href="sign-in.html">Taylor Reed · Another account</a>
+    </div>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -23,6 +23,7 @@ export const paths = {
   clientAccountReady: '/client/account-ready',
   clientAccessUnavailable: '/client/access-unavailable',
   clientHome: '/client',
+  clientProfile: '/client/profile',
   clientProjects: '/client/projects',
   clientProject: (id: string) => `/client/projects/${id}`,
   clientMilestones: (id: string) => `/client/projects/${id}/milestones`,

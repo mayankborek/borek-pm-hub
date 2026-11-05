@@ -14,6 +14,8 @@ import { ClientProjectsPage } from '@/features/client/ClientProjectsPage';
 import { ClientProjectLayout } from '@/features/client/ClientProjectLayout';
 import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
+import { ClientContactsPage } from '@/features/client/ClientContactsPage';
+import { ClientProfilePage } from '@/features/client/ClientProfilePage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
@@ -52,6 +54,7 @@ export const router = createBrowserRouter([
       {
         element: <RequireRole roles={['client']} />,
         children: [
+          { path: 'client/profile', element: <ClientProfilePage /> },
           {
             path: 'client',
             element: <ClientLayout />,
@@ -67,7 +70,7 @@ export const router = createBrowserRouter([
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
                   { path: 'change-requests', element: <ClientPlaceholderPage /> },
-                  { path: 'contacts', element: <ClientPlaceholderPage /> },
+                  { path: 'contacts', element: <ClientContactsPage /> },
                 ],
               },
             ],
