@@ -3,11 +3,21 @@ import { useAuth } from '@/features/auth/AuthContext';
 import type { Role } from '@/features/auth/types';
 import { homeFor, paths } from './routes';
 
-/** Anonymous users go to /login and come back to where they were headed. */
+/** Anonymous users go to /login (or /client/login for portal URLs) and come back to where they were headed. */
 export function RequireAuth() {
   const { user } = useAuth();
   const location = useLocation();
-  if (!user) return <Navigate to={paths.login} replace state={{ from: location.pathname }} />;
+  if (!user) {
+    const to = location.pathname.startsWith('/client') ? paths.clientLogin : paths.login;
+    return <Navigate to={to} replace state={{ from: location.pathname }} />;
+  }
+  return <Outlet />;
+}
+
+/** The staff app is not for clients: they have their own portal. */
+export function StaffOnly() {
+  const { user } = useAuth();
+  if (user?.role === 'client') return <Navigate to={paths.clientHome} replace />;
   return <Outlet />;
 }
 

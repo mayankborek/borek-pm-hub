@@ -8,6 +8,13 @@ import {
   ClientCreateAccountPage,
   ClientInvitePage,
 } from '@/features/auth/client/ClientPages';
+import { ClientLayout } from '@/features/client/ClientLayout';
+import { ClientHomePage } from '@/features/client/ClientHomePage';
+import { ClientProjectsPage } from '@/features/client/ClientProjectsPage';
+import { ClientProjectLayout } from '@/features/client/ClientProjectLayout';
+import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
+import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
+import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
@@ -21,7 +28,7 @@ import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
 import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';
-import { RedirectIfAuthed, RequireAuth, RequireRole, RoleHome } from './guards';
+import { RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly } from './guards';
 
 export const router = createBrowserRouter([
   // Public
@@ -41,6 +48,36 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
+      // Client portal: its own shell, invited clients only
+      {
+        element: <RequireRole roles={['client']} />,
+        children: [
+          {
+            path: 'client',
+            element: <ClientLayout />,
+            children: [
+              { index: true, element: <ClientHomePage /> },
+              { path: 'projects', element: <ClientProjectsPage /> },
+              {
+                path: 'projects/:projectId',
+                element: <ClientProjectLayout />,
+                children: [
+                  { index: true, element: <ClientOverviewPage /> },
+                  { path: 'milestones', element: <ClientMilestonesPage /> },
+                  { path: 'reports', element: <ClientReportsPage /> },
+                  { path: 'reports/:reportId', element: <ClientReportPage /> },
+                  { path: 'change-requests', element: <ClientPlaceholderPage /> },
+                  { path: 'contacts', element: <ClientPlaceholderPage /> },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      // Staff app shell (clients are sent to their portal)
+      {
+        element: <StaffOnly />,
+        children: [
       {
         element: <AppLayout />,
         children: [
@@ -84,6 +121,8 @@ export const router = createBrowserRouter([
 
           { path: 'forbidden', element: <ForbiddenPage /> },
           { path: '*', element: <NotFoundPage /> },
+        ],
+      },
         ],
       },
     ],
