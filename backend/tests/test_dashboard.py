@@ -280,3 +280,18 @@ async def test_developer_with_only_completed_tasks_still_sees_their_history(
         params=[("category", "todo"), ("category", "in_progress"), ("category", "blocked")],
     )
     assert pending.status_code == 200 and pending.json()["total"] == 0
+
+
+async def test_my_dashboard_counts_only_tasks_of_projects_the_user_may_see(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    """Assignment normally implies membership; if the data ever disagrees, a developer's
+    personal numbers still leave out projects they are not a member of. The PM sees all."""
+    await make_task(session, world.beta, world.pm.id, title="Stale", assignee_id=world.dev.id)
+    await make_task(session, world.beta, world.pm.id, title="PM's own", assignee_id=world.pm.id)
+
+    dev = (await client.get("/api/v1/dashboard/me", headers=as_user(world.dev))).json()
+    assert dev["summary"]["total"] == 3  # the Beta task is not counted
+
+    pm = (await client.get("/api/v1/dashboard/me", headers=as_user(world.pm))).json()
+    assert pm["summary"]["total"] == 1  # not a Beta member, still counted

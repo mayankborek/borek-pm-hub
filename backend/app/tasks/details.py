@@ -10,7 +10,8 @@ from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.enums import AttachmentKind, GlobalRole
+from app.auth.permissions import has_lead_rights
+from app.common.enums import AttachmentKind
 from app.common.validation import has_control_chars
 from app.core import storage
 from app.core.config import get_settings
@@ -127,7 +128,7 @@ async def archive_comment(
     session: AsyncSession, task_id: uuid.UUID, comment_id: uuid.UUID, user: User
 ) -> None:
     comment = await _get_comment(session, task_id, comment_id)
-    if comment.author_id != user.id and user.global_role != GlobalRole.PM:
+    if comment.author_id != user.id and not has_lead_rights(user):
         raise _forbidden()
     comment.archived_at = datetime.now(UTC)
     await session.commit()
@@ -263,7 +264,7 @@ async def archive_attachment(
 ) -> None:
     """Hide the attachment. The stored file is kept (nothing is physically deleted)."""
     item = await get_attachment(session, task_id, attachment_id)
-    if item.uploaded_by != user.id and user.global_role != GlobalRole.PM:
+    if item.uploaded_by != user.id and not has_lead_rights(user):
         raise _forbidden()
     item.archived_at = datetime.now(UTC)
     activity.record(

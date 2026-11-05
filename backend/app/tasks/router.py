@@ -1,26 +1,29 @@
 """Status and task endpoints (F03, F04, F05)."""
 
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Response, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.auth.permissions import Action, Resource, require
-from app.common.enums import GlobalRole, ProjectRole, StatusCategory, TaskPriority
+from app.auth.permissions import Action, Resource, has_lead_rights, require, sees_all_projects
+from app.common.enums import ProjectRole, StatusCategory, TaskPriority
 from app.common.validation import PageParam, PageSizeParam
+from app.core.config import get_settings
 from app.core.database import SessionDep
 from app.core.errors import AppError
 from app.projects import service as project_service
 from app.projects.membership import project_role
 from app.projects.models import Project
-from app.tasks import service, statuses
+from app.tasks import csv_import, importer, service, statuses, transfer
 from app.tasks.models import Task
 from app.tasks.schemas import (
     AssigneeUpdate,
     BoardOut,
+    ImportResultOut,
     StatusCreate,
     StatusOrder,
     StatusOut,
@@ -63,7 +66,7 @@ async def _project_for(
             creator_id=creator_id,
         ),
     )
-    if project.archived_at is not None and user.global_role != GlobalRole.PM:
+    if project.archived_at is not None and not sees_all_projects(user):
         raise project_service.not_found()
     if writable:
         project_service.ensure_writable(project)  # archived or cancelled: read-only
@@ -84,7 +87,7 @@ async def _task_for(
         writable=writable,
     )
     if task.archived_at is not None:
-        if user.global_role != GlobalRole.PM:
+        if not sees_all_projects(user):
             raise service.not_found()
         if writable:
             raise AppError(409, "TASK_ARCHIVED", "The task is archived.")
@@ -129,7 +132,7 @@ def task_filters(
         due_before=due_before,
         due_after=due_after,
         overdue=overdue,
-        include_archived=include_archived and user.global_role == GlobalRole.PM,
+        include_archived=include_archived and sees_all_projects(user),
     )
 
 
@@ -206,10 +209,48 @@ async def create_task(
 ) -> TaskOut:
     project = await _project_for(session, user, project_id, Action.TASK_CREATE, writable=True)
     task = await service.create_task(
-        session, project, user, body, is_pm=user.global_role == GlobalRole.PM
+        session, project, user, body, lead_rights=has_lead_rights(user)
     )
     response.headers["Location"] = f"/api/v1/tasks/{task.id}"
     return task
+
+
+async def _read_csv_upload(upload: UploadFile) -> bytes:
+    """The uploaded file in memory, refusing more than MAX_UPLOAD_MB. Nothing is kept on disk."""
+    limit = get_settings().max_upload_mb * 1024 * 1024
+    data = bytearray()
+    while chunk := await upload.read(1024 * 1024):
+        data += chunk
+        if len(data) > limit:
+            raise AppError(
+                413, "FILE_TOO_LARGE", f"Files can be at most {get_settings().max_upload_mb} MB."
+            )
+    return bytes(data)
+
+
+@router.post("/projects/{project_id}/tasks/import", response_model=ImportResultOut)
+async def import_project_tasks(
+    project_id: uuid.UUID,
+    file: UploadFile,
+    user: CurrentUser,
+    session: SessionDep,
+    dry_run: Annotated[
+        bool, Query(description="true (default): check and report only, nothing is saved")
+    ] = True,
+) -> ImportResultOut:
+    """PM only: bring tasks in from a CSV file (a Jira export, or a file from our own export).
+
+    Send the file with `dry_run=true` first to see what would happen, then again with
+    `dry_run=false` to save it. Tasks whose issue key is already in the project are skipped, so
+    running it twice is safe. Everything is saved in one transaction.
+    """
+    project = await _project_for(session, user, project_id, Action.TASK_IMPORT, writable=True)
+    data = await _read_csv_upload(file)
+    try:
+        parsed = await run_in_threadpool(csv_import.parse_file, data, file.filename)
+    except csv_import.ImportFileError as error:
+        raise AppError(422, "IMPORT_BAD_FILE", str(error)) from None
+    return await importer.import_tasks(session, project, user, parsed, dry_run=dry_run)
 
 
 @router.get("/projects/{project_id}/tasks", response_model=TaskListOut | BoardOut)
@@ -250,11 +291,52 @@ async def list_tasks(
 ) -> TaskListOut:
     """PMs see tasks of every active project, developers those of their projects."""
     filters.project_id = project_id
-    scope = None if user.global_role == GlobalRole.PM else service.scope_for_developer(user)
+    scope = None if sees_all_projects(user) else service.scope_for_developer(user)
     items, total = await service.list_tasks(
         session, filters, sort=sort, page=page, page_size=page_size, scope=scope
     )
     return TaskListOut(items=items, total=total, page=page, page_size=page_size)
+
+
+def _csv_response(content: bytes, name: str) -> Response:
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
+
+
+_CSV_RESPONSE: dict[int | str, dict[str, object]] = {
+    200: {"description": "CSV file", "content": {"text/csv": {"schema": {"type": "string"}}}}
+}
+
+
+@router.get("/projects/{project_id}/tasks/export", response_class=Response, responses=_CSV_RESPONSE)
+async def export_project_tasks(
+    project_id: uuid.UUID, user: CurrentUser, session: SessionDep, filters: Filters
+) -> Response:
+    """Download the tasks of one project (same filters as the list) as a CSV file. The file can
+    be imported again, into this or another project."""
+    project = await _project_for(session, user, project_id, Action.TASK_VIEW)
+    filters.project_id = project_id
+    tasks = await service.export_tasks(session, filters)
+    name = f"tasks-{project.code}-{datetime.now(UTC).date().isoformat()}.csv"
+    return _csv_response(transfer.build_csv(tasks), name)
+
+
+@router.get("/tasks/export", response_class=Response, responses=_CSV_RESPONSE)
+async def export_tasks(
+    user: CurrentUser,
+    session: SessionDep,
+    filters: Filters,
+    project_id: uuid.UUID | None = None,
+) -> Response:
+    """Download what `GET /tasks` lists (same filters, same visibility) as a CSV file."""
+    filters.project_id = project_id
+    scope = None if sees_all_projects(user) else service.scope_for_developer(user)
+    tasks = await service.export_tasks(session, filters, scope=scope)
+    name = f"tasks-all-{datetime.now(UTC).date().isoformat()}.csv"
+    return _csv_response(transfer.build_csv(tasks), name)
 
 
 @router.get("/me/tasks", response_model=TaskListOut)
@@ -272,7 +354,7 @@ async def my_tasks(
     filters.project_id = project_id
     filters.assignee_id = user.id  # always the caller; the `assignee_id` and `unassigned` filters
     filters.unassigned = False  # do not apply here
-    scope = None if user.global_role == GlobalRole.PM else service.scope_for_developer(user)
+    scope = None if sees_all_projects(user) else service.scope_for_developer(user)
     items, total = await service.list_tasks(
         session, filters, sort=sort, page=page, page_size=page_size, scope=scope
     )

@@ -63,11 +63,21 @@ class Task(IdMixin, TimestampMixin, Base):
         Index("ix_tasks_assignee_id_status_id", "assignee_id", "status_id"),
         Index("ix_tasks_project_id_due_date", "project_id", "due_date"),
         Index("ix_tasks_project_id_updated_at", "project_id", "updated_at"),
+        # One task per outside key in a project (import skips what it already has).
+        Index(
+            "uq_tasks_project_id_external_key",
+            "project_id",
+            "external_key",
+            unique=True,
+            postgresql_where=text("external_key IS NOT NULL"),
+        ),
     )
 
     project_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("projects.id"), nullable=False)
     # <project code>-<n> (e.g. BFL-88), generated from projects.task_counter, never reused.
     key: Mapped[str] = mapped_column(String(32), nullable=False)
+    # The key in the system the task was imported from (e.g. Jira's PT-27). Null for own tasks.
+    external_key: Mapped[str | None] = mapped_column(String(50))
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)

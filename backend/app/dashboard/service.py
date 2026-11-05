@@ -5,7 +5,8 @@ import uuid
 from sqlalchemy import ColumnElement, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.enums import GlobalRole, ProjectStatus, StatusCategory
+from app.auth.permissions import sees_all_projects
+from app.common.enums import ProjectStatus, StatusCategory
 from app.dashboard.schemas import (
     AttentionList,
     MemberCounts,
@@ -91,7 +92,7 @@ async def pm_dashboard(session: AsyncSession, limit: int) -> PmDashboard:
 
 
 async def my_dashboard(session: AsyncSession, user: User, limit: int) -> MyDashboard:
-    scope = None if user.global_role == GlobalRole.PM else task_service.scope_for_developer(user)
+    scope = None if sees_all_projects(user) else task_service.scope_for_developer(user)
     mine = [
         Task.assignee_id == user.id,
         Task.archived_at.is_(None),
