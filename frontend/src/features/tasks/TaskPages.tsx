@@ -46,11 +46,7 @@ export function TasksPage() {
     );
   const runExport = () => {
     setExporting(true);
-    exportTasks(
-      selected.size
-        ? { format: 'csv', task_ids: [...selected] }
-        : { format: 'csv', project_id: projectId || undefined, filter: exportFilter(applied) },
-    )
+    exportTasks({ project_id: projectId || undefined, filter: exportFilter(applied) })
       .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
       .finally(() => setExporting(false));
   };
@@ -70,7 +66,7 @@ export function TasksPage() {
                 {tr('Import')}
               </button>
               <button type="button" className="btn secondary" disabled={exporting || total === 0} onClick={runExport}>
-                {tr(exporting ? 'Exporting…' : selected.size ? 'Export selected ({n})' : 'Export', { n: selected.size })}
+                {tr(exporting ? 'Exporting…' : 'Export')}
               </button>
             </>
           )}
