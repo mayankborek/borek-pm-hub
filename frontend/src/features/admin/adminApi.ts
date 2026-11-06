@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '@/shared/api/client';
 import { qs } from '@/features/projects/projectsApi';
 
-export type AssignableRole = 'admin' | 'pm' | 'developer';
+export type AssignableRole = 'admin' | 'manager' | 'account_manager' | 'pm' | 'developer';
 export type StatusFilter = 'all' | 'active' | 'inactive';
 
 export interface AdminUser {
@@ -47,7 +47,7 @@ export const ROLE_LABEL: Record<string, string> = {
   client: 'Client',
 };
 
-export const ASSIGNABLE_ROLES: AssignableRole[] = ['admin', 'pm', 'developer'];
+export const ASSIGNABLE_ROLES: AssignableRole[] = ['admin', 'manager', 'account_manager', 'pm', 'developer'];
 
 const keys = {
   all: ['admin', 'users'] as const,
