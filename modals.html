@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirm modals</title>
+<style>
+  :root {
+    --navy: #0d1142;
+    --border: #e4e5ea;
+    --overlay-light: #b0b4c1;
+    --overlay-dark: #030512;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--navy); }
+
+  /* Overlay (use one per modal in your app) */
+  .overlay {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--overlay-light);
+  }
+  .overlay.dark { background: var(--overlay-dark); }
+
+  /* Modal */
+  .modal {
+    width: 100%;
+    max-width: 528px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 25px;
+  }
+  .modal h2 {
+    margin: 0 0 25px;
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .modal p {
+    margin: 0 0 18px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .modal .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 17px;
+  }
+  .btn {
+    height: 43px;
+    padding: 0 17px;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .btn-secondary { background: #fff; color: var(--navy); border: 1px solid var(--border); }
+  .btn-primary   { background: var(--navy); color: #fff; border: 1px solid var(--navy); min-width: 161px; text-align: left; }
+  .btn:focus-visible { outline: 2px solid #5b63d6; outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Create new link (light overlay) -->
+<div class="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="t1" aria-describedby="d1">
+    <h2 id="t1">Create new link?</h2>
+    <p id="d1">The old link will stop working. The user's account information and role will stay the same.</p>
+    <div class="actions">
+      <button class="btn btn-secondary" type="button">Cancel</button>
+      <button class="btn btn-primary" type="button">Create new link</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Deactivate (dark overlay) -->
+<div class="overlay dark">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="t2" aria-describedby="d2">
+    <h2 id="t2">Deactivate?</h2>
+    <p id="d2">Deactivating this account suspends project access. You can activate it again later.</p>
+    <div class="actions">
+      <button class="btn btn-secondary" type="button">Cancel</button>
+      <button class="btn btn-primary" type="button" style="min-width:134px">Deactivate</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Create new link (dark overlay) -->
+<div class="overlay dark">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="t3" aria-describedby="d3">
+    <h2 id="t3">Create new link?</h2>
+    <p id="d3">The old link will stop working. The user's account information and role will stay the same.</p>
+    <div class="actions">
+      <button class="btn btn-secondary" type="button">Cancel</button>
+      <button class="btn btn-primary" type="button">Create new link</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

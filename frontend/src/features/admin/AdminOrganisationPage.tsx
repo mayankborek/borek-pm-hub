@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
-import { EMAIL_RE, Dialog, Field } from './Dialog';
+import { EMAIL_RE, ConfirmDialog, Dialog, Field } from './Dialog';
 import { OrganisationDialog } from './AdminOrganisationsPage';
 import { Back } from './Back';
 import { orgActions, useOrganisation, type OrgMember } from './adminStore';
@@ -91,23 +91,17 @@ export function AdminOrganisationPage() {
         />
       )}
       {target && (
-        <Dialog title="Remove member?" onClose={() => setRemoving(null)}>
-          <p className="ad-hint">{t('{name} will no longer belong to {org}.', { name: target.name, org: org.name })}</p>
-          <div className="ad-actions">
-            <button type="button" className="ad-btn ad-btn--ghost" onClick={() => setRemoving(null)}>{t('Cancel')}</button>
-            <button
-              type="button"
-              className="ad-btn ad-btn--danger-fill"
-              onClick={() => {
-                orgActions.removeMember(org.id, target.id);
-                setRemoving(null);
-                toast.success('Member removed.');
-              }}
-            >
-              {t('Remove')}
-            </button>
-          </div>
-        </Dialog>
+        <ConfirmDialog
+          title="Remove member?"
+          text={t('{name} will no longer belong to {org}.', { name: target.name, org: org.name })}
+          confirm="Remove"
+          onCancel={() => setRemoving(null)}
+          onConfirm={() => {
+            orgActions.removeMember(org.id, target.id);
+            setRemoving(null);
+            toast.success('Member removed.');
+          }}
+        />
       )}
     </>
   );

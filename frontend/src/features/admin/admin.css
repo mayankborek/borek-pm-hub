@@ -113,3 +113,10 @@
 .ad-copy{display:flex;gap:12px;margin-top:16px}
 .ad-copy-field{flex:1;min-width:0;height:44px;padding:0 14px;border:0;background:var(--bg);color:var(--navy);font:inherit;font-size:15px}
 .ad-copy .ad-btn{height:44px}
+
+.ad-overlay--confirm{background:rgba(3,5,18,.72)}
+.ad-dialog--confirm{max-width:528px;padding:25px;border-radius:8px}
+.ad-dialog--confirm h2{margin-bottom:25px;font-size:18px;line-height:1.3}
+.ad-confirm-text{font-size:14px;line-height:1.5}
+.ad-dialog--confirm .ad-actions{margin-top:18px;gap:17px}
+.ad-dialog--confirm .ad-btn{height:43px;padding:0 17px}

@@ -15,7 +15,7 @@ import {
   type AssignableRole,
 } from './adminApi';
 import { Back } from './Back';
-import { EMAIL_RE, Field } from './Dialog';
+import { ConfirmDialog, EMAIL_RE, Field } from './Dialog';
 
 export function AdminUserPage() {
   const { t } = usePrefs();
@@ -49,6 +49,7 @@ function UserDetail({ user }: { user: AdminUser }) {
   const [joinDate, setJoinDate] = useState(user.join_date ?? '');
   const [tried, setTried] = useState(false);
   const [error, setError] = useState('');
+  const [confirm, setConfirm] = useState<'deactivate' | 'link' | null>(null);
 
   const errors = {
     name: name.trim() ? '' : 'Enter a name.',
@@ -79,6 +80,7 @@ function UserDetail({ user }: { user: AdminUser }) {
   };
 
   const toggle = async () => {
+    setConfirm(null);
     setError('');
     try {
       await setActive.mutateAsync({ id: user.id, active: !user.is_active });
@@ -89,6 +91,7 @@ function UserDetail({ user }: { user: AdminUser }) {
   };
 
   const createLink = async () => {
+    setConfirm(null);
     setError('');
     try {
       const created = await newInvite.mutateAsync(user.id);
@@ -104,8 +107,8 @@ function UserDetail({ user }: { user: AdminUser }) {
       <div className="ad-head ad-gap">
         <h2 className="ad-title ad-title--lg">{user.name}</h2>
         <div className="ad-head-actions">
-          <button type="button" className="ad-btn ad-btn--ghost" disabled={busy} onClick={toggle}>{t(user.is_active ? 'Deactivate' : 'Activate')}</button>
-          <button type="button" className="ad-btn" disabled={busy} onClick={createLink}>{t('Create new link')}</button>
+          <button type="button" className="ad-btn ad-btn--ghost" disabled={busy} onClick={user.is_active ? () => setConfirm('deactivate') : toggle}>{t(user.is_active ? 'Deactivate' : 'Activate')}</button>
+          <button type="button" className="ad-btn" disabled={busy} onClick={() => setConfirm('link')}>{t('Create new link')}</button>
         </div>
       </div>
 
@@ -135,6 +138,25 @@ function UserDetail({ user }: { user: AdminUser }) {
           <button type="submit" className="ad-btn" disabled={busy}>{t('Save changes')}</button>
         </div>
       </form>
+
+      {confirm === 'deactivate' && (
+        <ConfirmDialog
+          title="Deactivate?"
+          text="Deactivating this account suspends project access. You can activate it again later."
+          confirm="Deactivate"
+          onConfirm={toggle}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === 'link' && (
+        <ConfirmDialog
+          title="Create new link?"
+          text="The old link will stop working. The user's account information and role will stay the same."
+          confirm="Create new link"
+          onConfirm={createLink}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </>
   );
 }
