@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
+import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { dayMonth } from './format';
 import { nextMilestone } from './clientPortalApi';
@@ -17,6 +17,7 @@ const R = 87;
 const CIRCUMFERENCE = 2 * Math.PI * R;
 
 export function ClientOverviewPage() {
+  const pp = usePortalPaths();
   const { project, today } = useProjectContext();
   const { t, lang } = usePrefs();
 
@@ -105,7 +106,7 @@ export function ClientOverviewPage() {
         <div className="cp-card" style={{ minHeight: 148 }}>
           <h4>{t('Latest report')}</h4>
           {latestReport ? (
-            <Link className="cp-link-b" to={paths.clientReport(project.id, latestReport.id)}>{latestReport.title}</Link>
+            <Link className="cp-link-b" to={pp.report(project.id, latestReport.id)}>{latestReport.title}</Link>
           ) : (
             <p className="cp-sub">{t('No reports have been shared yet.')}</p>
           )}

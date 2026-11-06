@@ -577,6 +577,8 @@ export const DE: Record<string, string> = {
   'Search organisations': 'Organisationen suchen',
   Organisation: 'Organisation',
   'Account Manager': 'Account Manager',
+  'Account Manager · Borek Solutions': 'Account Manager · Borek Solutions',
+  'Edit stakeholder': 'Stakeholder bearbeiten',
   Manage: 'Verwalten',
   'Manage {role}': '{role} verwalten',
   'No organisations match your search.': 'Keine Organisationen gefunden.',

@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { paths } from '@/app/routes';
+import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { dateRange, longDate } from './format';
 import { useProjectContext } from './ClientProjectLayout';
@@ -17,6 +17,7 @@ const backIcon = (
 );
 
 export function ClientReportsPage() {
+  const pp = usePortalPaths();
   const { project } = useProjectContext();
   const { t, lang } = usePrefs();
 
@@ -36,7 +37,7 @@ export function ClientReportsPage() {
         </div>
         {project.reports.map((r) => (
           <div className="cp-r" key={r.id}>
-            <Link to={paths.clientReport(project.id, r.id)}><b>{r.title}</b></Link>
+            <Link to={pp.report(project.id, r.id)}><b>{r.title}</b></Link>
             <span>{dateRange(lang, r.periodStart, r.periodEnd)}</span>
             <span>{longDate(lang, r.createdOn)}</span>
             <span className="cp-pub">{t('Published')}</span>
@@ -56,6 +57,7 @@ export function ClientReportsPage() {
 }
 
 export function ClientReportPage() {
+  const pp = usePortalPaths();
   const { reportId } = useParams();
   const { project } = useProjectContext();
   const { t, lang } = usePrefs();
@@ -66,14 +68,14 @@ export function ClientReportPage() {
       <EmptyCard
         title="Report not found"
         text="This report does not exist or has not been shared with you."
-        action={<Link to={paths.clientReports(project.id)}>{t('Back')}</Link>}
+        action={<Link to={pp.reports(project.id)}>{t('Back')}</Link>}
       />
     );
   }
 
   return (
     <div className="cp-rd">
-      <Link className="cp-back" to={paths.clientReports(project.id)}>
+      <Link className="cp-back" to={pp.reports(project.id)}>
         {backIcon}
         {t('Back')}
       </Link>

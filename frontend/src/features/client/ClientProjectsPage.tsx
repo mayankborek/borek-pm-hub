@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
+import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { longDate, paddedDate } from './format';
 import { nextMilestone, useClientPortal } from './clientPortalApi';
@@ -7,6 +7,7 @@ import { HEALTH_LABEL, HEALTH_TONE } from './labels';
 import { Badge, Bar, EmptyCard, PortalPending } from './ui';
 
 export function ClientProjectsPage() {
+  const pp = usePortalPaths();
   const { t, lang } = usePrefs();
   const query = useClientPortal();
   const { data } = query;
@@ -43,7 +44,7 @@ export function ClientProjectsPage() {
                   {t('Next milestone: {name} · {date}', { name: next.name, date: longDate(lang, next.dueDate) })}
                 </p>
               )}
-              <Link className="cp-btn" to={paths.clientProject(p.id)}>{t('View project')}</Link>
+              <Link className="cp-btn" to={pp.project(p.id)}>{t('View project')}</Link>
             </div>
           );
         })}

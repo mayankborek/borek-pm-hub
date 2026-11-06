@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { dayMonth } from './format';
 import { nextMilestone, useClientPortal } from './clientPortalApi';
@@ -8,6 +8,7 @@ import { CR_LABEL, HEALTH_LABEL, HEALTH_TONE } from './labels';
 import { Badge, Bar, Kpi, PortalPending } from './ui';
 
 export function ClientHomePage() {
+  const pp = usePortalPaths();
   const { user } = useAuth();
   const { t, lang } = usePrefs();
   const query = useClientPortal();
@@ -47,7 +48,7 @@ export function ClientHomePage() {
             return (
               <div className="cp-tbl-r" key={p.id}>
                 <div>
-                  <Link to={paths.clientProject(p.id)}><b>{p.name}</b></Link>
+                  <Link to={pp.project(p.id)}><b>{p.name}</b></Link>
                   {next && <div className="cp-m">{next.name} · {dayMonth(lang, next.dueDate)}</div>}
                 </div>
                 <div><Badge tone={HEALTH_TONE[p.health]}>{t(HEALTH_LABEL[p.health])}</Badge></div>
@@ -74,7 +75,7 @@ export function ClientHomePage() {
             {requests.map(({ p, c }) => (
               <div key={`${p.id}-${c.ref}`}>
                 <div style={{ marginTop: 12, fontSize: 13 }}>
-                  <Link to={paths.clientChangeRequests(p.id)}>{c.title}</Link>
+                  <Link to={pp.changeRequests(p.id)}>{c.title}</Link>
                 </div>
                 <div className="cp-cr-line"><span>{p.name} · {c.ref}</span><em>{t(CR_LABEL[c.status])}</em></div>
               </div>

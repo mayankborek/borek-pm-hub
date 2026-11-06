@@ -19,6 +19,8 @@ import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientProfilePage } from '@/features/client/ClientProfilePage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
+import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLayout';
+import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 import { AdminUserPage } from '@/features/admin/AdminUserPage';
@@ -84,6 +86,32 @@ export const router = createBrowserRouter([
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
                   { path: 'change-requests', element: <ClientPlaceholderPage /> },
                   { path: 'contacts', element: <ClientContactsPage /> },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      // Account Manager portal: its own shell, reuses the client screens (sample data until the API exists)
+      {
+        element: <RequireRole roles={['account_manager']} />,
+        children: [
+          {
+            path: 'account-manager',
+            element: <AccountManagerLayout />,
+            children: [
+              { index: true, element: <ClientHomePage /> },
+              { path: 'profile', element: <ClientProfilePage /> },
+              { path: 'projects', element: <ClientProjectsPage /> },
+              {
+                path: 'projects/:projectId',
+                element: <ClientProjectLayout />,
+                children: [
+                  { index: true, element: <ClientOverviewPage /> },
+                  { path: 'milestones', element: <ClientMilestonesPage /> },
+                  { path: 'reports', element: <ClientReportsPage /> },
+                  { path: 'reports/:reportId', element: <ClientReportPage /> },
+                  { path: 'stakeholders', element: <StakeholdersPage /> },
                 ],
               },
             ],

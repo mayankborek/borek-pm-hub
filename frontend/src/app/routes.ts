@@ -40,15 +40,31 @@ export const paths = {
   adminRoles: '/admin/roles',
   adminRole: (id: string) => `/admin/roles/${id}`,
   adminProfile: '/admin/profile',
+  amHome: '/account-manager',
+  amProfile: '/account-manager/profile',
+  amProjects: '/account-manager/projects',
+  amProject: (id: string) => `/account-manager/projects/${id}`,
+  amMilestones: (id: string) => `/account-manager/projects/${id}/milestones`,
+  amReports: (id: string) => `/account-manager/projects/${id}/reports`,
+  amReport: (id: string, reportId: string) => `/account-manager/projects/${id}/reports/${reportId}`,
+  amStakeholders: (id: string) => `/account-manager/projects/${id}/stakeholders`,
 } as const;
 
 /** Client pages carry the invitation token in the query string so the flow can resume at any step. */
 export const withInvitation = (path: string, token: string | null) =>
   token ? `${path}?invitation=${encodeURIComponent(token)}` : path;
 
-/** Landing page after sign-in: PM -> dashboard, Developer -> My Work, Client -> Home, Admin -> Users. */
+/** Landing page after sign-in: PM -> dashboard, Developer -> My Work, Client -> Home, Admin -> Users, Account Manager -> Overview. */
 export const homeFor = (role: Role) =>
-  role === 'pm' ? paths.dashboard : role === 'client' ? paths.clientHome : role === 'admin' ? paths.adminUsers : paths.myWork;
+  role === 'pm'
+    ? paths.dashboard
+    : role === 'client'
+      ? paths.clientHome
+      : role === 'admin'
+        ? paths.adminUsers
+        : role === 'account_manager'
+          ? paths.amHome
+          : paths.myWork;
 
 export interface NavItem {
   label: string;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
-import { paths } from '@/app/routes';
+import { useAuth } from '@/features/auth/AuthContext';
+import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useClientPortal } from './clientPortalApi';
 import type { ClientProject } from './types';
@@ -21,6 +22,7 @@ const chevron = (
 
 /** Project name with a menu to jump to another shared project. */
 function ProjectSwitcher({ current, projects }: { current: ClientProject; projects: ClientProject[] }) {
+  const pp = usePortalPaths();
   const { t } = usePrefs();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -46,7 +48,7 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
       {open && (
         <nav className="cp-switch" aria-label={t('Projects')}>
           {projects.map((p) => (
-            <Link key={p.id} to={paths.clientProject(p.id)} aria-current={p.id === current.id} onClick={() => setOpen(false)}>
+            <Link key={p.id} to={pp.project(p.id)} aria-current={p.id === current.id} onClick={() => setOpen(false)}>
               {p.name}
             </Link>
           ))}
@@ -58,6 +60,8 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
 
 /** Breadcrumb, project title and the Overview / Milestones / Reports / Change Requests / Contacts tabs. */
 export function ClientProjectLayout() {
+  const pp = usePortalPaths();
+  const isAm = useAuth().user?.role === 'account_manager';
   const { projectId } = useParams();
   const { t } = usePrefs();
   const query = useClientPortal();
@@ -70,23 +74,30 @@ export function ClientProjectLayout() {
       <EmptyCard
         title="Project not found"
         text="This project does not exist or has not been shared with you."
-        action={<Link to={paths.clientProjects}>{t('Projects')}</Link>}
+        action={<Link to={pp.projects}>{t('Projects')}</Link>}
       />
     );
   }
 
-  const tabs: [string, string, boolean?][] = [
-    [paths.clientProject(project.id), 'Overview', true],
-    [paths.clientMilestones(project.id), 'Milestones'],
-    [paths.clientReports(project.id), 'Reports'],
-    [paths.clientChangeRequests(project.id), 'Change Requests'],
-    [paths.clientContacts(project.id), 'Contacts'],
-  ];
+  const tabs: [string, string, boolean?][] = isAm
+    ? [
+        [pp.project(project.id), 'Overview', true],
+        [pp.milestones(project.id), 'Milestones'],
+        [pp.reports(project.id), 'Reports'],
+        [pp.people(project.id), 'Stakeholders'],
+      ]
+    : [
+        [pp.project(project.id), 'Overview', true],
+        [pp.milestones(project.id), 'Milestones'],
+        [pp.reports(project.id), 'Reports'],
+        [pp.changeRequests(project.id), 'Change Requests'],
+        [pp.people(project.id), 'Contacts'],
+      ];
 
   return (
     <>
       <div className="cp-crumb">
-        <Link to={paths.clientProjects}>{t('Projects')}</Link> / {project.name}
+        <Link to={pp.projects}>{t('Projects')}</Link> / {project.name}
       </div>
       <ProjectSwitcher current={project} projects={data.projects} />
       <nav className="cp-tabs" aria-label={t('Project sections')}>

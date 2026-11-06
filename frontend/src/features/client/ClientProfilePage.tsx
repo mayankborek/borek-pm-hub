@@ -15,6 +15,7 @@ const chevron = (
 /** Client profile (borek-flow-auth/profile.html): name and email are managed by Borek, only the phone number is editable. */
 export function ClientProfilePage() {
   const { user, signOut } = useAuth();
+  const isAm = user?.role === 'account_manager';
   const navigate = useNavigate();
   const { lang, setLang, theme, setTheme, t } = usePrefs();
   const [editing, setEditing] = useState(false);
@@ -65,7 +66,7 @@ export function ClientProfilePage() {
             <span className="cp-avatar" aria-hidden="true">{initialsOf(user.name)}</span>
             <div className="cp-who">
               <p className="cp-who-name">{user.name}</p>
-              <p className="cp-who-role">{t('Client · Customer organisation')}</p>
+              <p className="cp-who-role">{isAm ? t('Account Manager · Borek Solutions') : t('Client · Customer organisation')}</p>
             </div>
             {editing ? (
               <div className="cp-pactions">
@@ -151,7 +152,7 @@ export function ClientProfilePage() {
               <button
                 className="cp-text-btn cp-signout"
                 type="button"
-                onClick={() => void signOut().then(() => navigate(paths.clientLogin, { replace: true }))}
+                onClick={() => void signOut().then(() => navigate(isAm ? paths.login : paths.clientLogin, { replace: true }))}
               >
                 {t('Sign out')}
               </button>

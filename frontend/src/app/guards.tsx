@@ -14,11 +14,12 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-/** The staff app is not for clients or admins: they have their own shells. */
+/** The staff app is not for clients, admins or account managers: they have their own shells. */
 export function StaffOnly() {
   const { user } = useAuth();
   if (user?.role === 'client') return <Navigate to={paths.clientHome} replace />;
   if (user?.role === 'admin') return <Navigate to={paths.adminUsers} replace />;
+  if (user?.role === 'account_manager') return <Navigate to={paths.amHome} replace />;
   return <Outlet />;
 }
 

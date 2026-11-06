@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
+import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { longDate, shortDate } from './format';
 import { useProjectContext } from './ClientProjectLayout';
@@ -36,6 +36,7 @@ function Node({ m, n, x, y }: { m: ClientMilestone; n: number; x: number; y: num
 }
 
 export function ClientMilestonesPage() {
+  const pp = usePortalPaths();
   const { project, today } = useProjectContext();
   const { t, lang } = usePrefs();
 
@@ -83,7 +84,7 @@ export function ClientMilestonesPage() {
               <Bar value={m.progress} style={{ width: 300, height: 8 }} />
               {open && m.changeRequestRef && (
                 <div style={{ marginTop: 10, fontSize: 14 }}>
-                  <Link to={paths.clientChangeRequests(project.id)}>
+                  <Link to={pp.changeRequests(project.id)}>
                     {t('See the change request ({ref})', { ref: m.changeRequestRef })}
                   </Link>
                 </div>
