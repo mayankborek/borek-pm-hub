@@ -35,6 +35,7 @@ export interface UserInput {
   name: string;
   email: string;
   role: AssignableRole;
+  join_date?: string | null;
 }
 
 export const ROLE_LABEL: Record<string, string> = {

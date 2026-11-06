@@ -52,12 +52,12 @@ export function AdminLayout() {
                 EN
               </button>
             </div>
-            <div className="cp-user">
+            <Link className="cp-user" to={paths.profile}>
               <div className="cp-avatar" aria-hidden="true">
                 {initialsOf(user.name)}
               </div>
               <span>{user.name}</span>
-            </div>
+            </Link>
           </div>
         </header>
         <div className="ad-content">

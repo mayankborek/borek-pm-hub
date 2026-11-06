@@ -5,6 +5,7 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { orgActions, useOrganisations, type AdminOrganisation } from './adminStore';
 import { Dialog, Field } from './Dialog';
+import { useAdminUsers } from './adminApi';
 
 export function AdminOrganisationsPage() {
   const { t } = usePrefs();
@@ -81,6 +82,7 @@ export function OrganisationDialog({
   const [manager, setManager] = useState(org?.accountManager ?? '');
   const [active, setActive] = useState(org?.active ?? true);
   const [tried, setTried] = useState(false);
+  const managers = useAdminUsers('', 'account_manager', 'active').data?.items ?? [];
   const others = useOrganisations().filter((o) => o.id !== org?.id);
 
   const error = !name.trim() ? 'Enter an organisation name.' : others.some((o) => o.name.toLowerCase() === name.trim().toLowerCase()) ? 'An organisation with this name already exists.' : '';
@@ -99,7 +101,8 @@ export function OrganisationDialog({
         <input className="ad-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} autoComplete="off" />
       </Field>
       <Field label="Account Manager">
-        <input className="ad-input" value={manager} onChange={(e) => setManager(e.target.value)} maxLength={200} autoComplete="off" />
+        <input className="ad-input" list="ad-managers" placeholder={t('Select Account Manager')} value={manager} onChange={(e) => setManager(e.target.value)} maxLength={200} autoComplete="off" />
+        <datalist id="ad-managers">{managers.map((m) => <option key={m.id} value={m.name} />)}</datalist>
       </Field>
       {org && (
         <label className="ad-check">

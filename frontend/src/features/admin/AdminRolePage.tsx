@@ -2,7 +2,9 @@ import { useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
+import { useState } from 'react';
 import { Back } from './Back';
+import { Dialog } from './Dialog';
 import { AREAS, ROLES, isCustomised, permissionActions, usePermissions, type Access } from './adminStore';
 
 const LEVELS: Access[] = ['view', 'edit', 'denied'];
@@ -14,6 +16,7 @@ export function AdminRolePage() {
   const { roleId = '' } = useParams();
   const role = ROLES.find((r) => r.id === roleId);
   const perms = usePermissions(roleId);
+  const [confirming, setConfirming] = useState(false);
 
   if (!role) {
     return (
@@ -36,10 +39,7 @@ export function AdminRolePage() {
           type="button"
           className="ad-link"
           disabled={!customised}
-          onClick={() => {
-            permissionActions.reset(role.id);
-            toast.success('Permissions reset to default.');
-          }}
+          onClick={() => setConfirming(true)}
         >
           {t('Reset to default')}
         </button>
@@ -72,6 +72,25 @@ export function AdminRolePage() {
           </div>
         ))}
       </div>
+      {confirming && (
+        <Dialog title="Restore permissions?" onClose={() => setConfirming(false)}>
+          <p className="ad-hint">{t('Your custom changes will be replaced with the default permissions.')}</p>
+          <div className="ad-actions">
+            <button type="button" className="ad-btn ad-btn--ghost" onClick={() => setConfirming(false)}>{t('Cancel')}</button>
+            <button
+              type="button"
+              className="ad-btn"
+              onClick={() => {
+                permissionActions.reset(role.id);
+                setConfirming(false);
+                toast.success('Permissions reset to default.');
+              }}
+            >
+              {t('Restore defaults')}
+            </button>
+          </div>
+        </Dialog>
+      )}
       <p className="ad-hint ad-note">{t('Changes are saved automatically in this browser.')}</p>
     </>
   );

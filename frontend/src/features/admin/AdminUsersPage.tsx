@@ -142,6 +142,7 @@ function UserDialog({ user, onClose, onInvite }: { user: AdminUser | null; onClo
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [role, setRole] = useState<string>(user?.role ?? 'developer');
+  const [joinDate, setJoinDate] = useState(user?.join_date ?? '');
   const [tried, setTried] = useState(false);
   const [error, setError] = useState('');
 
@@ -159,12 +160,12 @@ function UserDialog({ user, onClose, onInvite }: { user: AdminUser | null; onClo
     setTried(true);
     setError('');
     if (errors.name || errors.email) return;
-    const body = { name: name.trim(), email: email.trim(), role: role as AssignableRole };
+    const body = { name: name.trim(), email: email.trim(), role: role as AssignableRole, join_date: joinDate || null };
     try {
       if (!user) {
         onInvite(await create.mutateAsync(body));
       } else {
-        await update.mutateAsync({ id: user.id, name: body.name, email: body.email, ...(roleLocked ? {} : { role: body.role }) });
+        await update.mutateAsync({ id: user.id, name: body.name, email: body.email, join_date: body.join_date, ...(roleLocked ? {} : { role: body.role }) });
         toast.success('User updated.');
         onClose();
       }
@@ -208,6 +209,12 @@ function UserDialog({ user, onClose, onInvite }: { user: AdminUser | null; onClo
           {roleLocked && <option value={role}>{t(ROLE_LABEL[role] ?? role)}</option>}
           {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r])}</option>)}
         </select>
+      </Field>
+      <Field label="Joining date">
+        <input className="ad-input" type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} />
+      </Field>
+      <Field label="Account status">
+        <input className="ad-input" readOnly value={t(!user ? 'Pending activation' : user.is_active ? 'Active' : 'Inactive')} />
       </Field>
       {!user && <p className="ad-hint">{t('We’ll create the account and give you a one-time sign-in link to share.')}</p>}
       {error && <p className="ad-error" role="alert">{error}</p>}

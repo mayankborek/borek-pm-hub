@@ -95,3 +95,10 @@
   .ad-role{grid-template-columns:1fr auto auto;gap:8px}
   .ad-role>*{padding-left:0}
 }
+
+.ad-picker{margin:16px 0 0;padding:0;list-style:none;max-height:320px;overflow:auto}
+.ad-pick{display:flex;align-items:center;gap:12px;min-height:48px;cursor:pointer}
+.ad-pick input{width:18px;height:18px;accent-color:var(--navy);flex:none}
+.ad-pick .cp-avatar{width:32px;height:32px;font-size:11px}
+.ad-pick-text{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.ad-pick-email{color:var(--slate);font-size:12px}
