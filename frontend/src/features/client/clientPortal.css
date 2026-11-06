@@ -3,32 +3,35 @@
   --navy:#0D1240; --slate:#5C6178; --mute:#7D879C; --blue:#124F94;
   --bg:#F3F4F8; --line:#E2E4EC;
   --green-bg:#E0F5E8; --green:#17735E; --red:#AD1F1F; --red-bg:#FCE8E3; --orange:#C94A32;
-  background:#fff;color:var(--navy);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;
+  color:var(--navy);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;
 }
+/* Dark mode: same palette as the staff app (global.css). */
+:root[data-theme=dark] .cp{
+  --navy:#e8edf7; --slate:#b6c2d5; --mute:#8d9ab0; --blue:#a9c9ff;
+  --bg:#121a29; --line:#344258;
+  --green-bg:#16382f; --green:#8ce7b9; --red:#ffa7a2; --red-bg:#3f222a; --orange:#ffb199;
+  --field-border:#64748b; --navy-hover:#264fa6;
+}
+:root[data-theme=dark] .cp-badge.cp-success{background:#16382f;color:#8ce7b9}
+:root[data-theme=dark] .cp-badge.cp-warning{background:#3b2d16;color:#f7d794}
+:root[data-theme=dark] .cp-badge.cp-danger{background:#3f222a;color:#ffa7a2}
+:root[data-theme=dark] .cp-badge.cp-info{background:#1d3153;color:#a9c9ff}
+:root[data-theme=dark] .cp-pbtn.cp-primary,:root[data-theme=dark] .ad-btn:not(.ad-btn--ghost){background:#3263c9;border-color:#3263c9;color:#fff}
+:root[data-theme=dark] .cp-pbtn.cp-primary:hover,:root[data-theme=dark] .ad-btn:not(.ad-btn--ghost):hover{background:#264fa6}
+:root[data-theme=dark] .cp-toggle[aria-checked=true]{background:#3263c9}
+:root[data-theme=dark] .cp-toggle:not([aria-checked=true]){background:#526179}
+:root[data-theme=dark] .cp-notif{box-shadow:0 8px 24px rgba(0,0,0,.5)}
+:root[data-theme=dark] .ad-overlay{background:rgba(0,0,0,.6)}
 :where(.cp) *{box-sizing:border-box;margin:0;padding:0}
 :where(.cp) a{color:var(--blue);text-decoration:none;cursor:pointer}
 :where(.cp) a:hover{text-decoration:underline}
 :where(.cp) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :where(.cp) :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
-.cp{display:grid;grid-template-columns:216px 1fr;min-height:100vh}
-.cp-side{border-right:1px solid var(--line);padding:24px 24px}
-.cp-logo{display:block;width:116px;height:auto;margin-left:-0px}
-.cp-nav{margin-top:24px;display:flex;flex-direction:column;gap:4px}
-.cp-nav a{position:relative;display:block;height:44px;line-height:44px;padding-left:31px;color:var(--navy);font-size:14px;text-decoration:none}
-.cp-nav a.cp-active{background:var(--bg)}
-.cp-nav a.cp-active::before{content:"";position:absolute;left:16px;top:12px;width:3px;height:20px;background:var(--blue)}
-
-.cp-main{padding:0 32px 64px;min-width:0}
-.cp-top{display:flex;justify-content:space-between;align-items:flex-start;height:70px;position:relative}
-.cp-top h1{font-size:26px;font-weight:400;line-height:1;padding-top:26px;position:relative;height:70px;width:286px;border-bottom:2px solid var(--navy);white-space:nowrap}
-.cp-tools{display:flex;align-items:center;gap:16px;padding-top:21px;margin-right:25px}
+/* The page chrome (sidebar, top bar) is the shared staff shell in global.css; .cp only scopes the page content. */
 .cp-bell{width:20px;height:20px;display:grid;place-items:center}
-.cp-lang{display:flex;border:1px solid var(--line);height:32px}
-.cp-lang button{width:34px;font-size:12px;color:var(--slate)}
-.cp-lang button.cp-on{background:var(--bg);color:var(--blue);font-weight:600}
-.cp-user{display:flex;align-items:center;gap:8px;font-size:14px}
 .cp-avatar{width:32px;height:32px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:600}
+.topbar-actions .cp-tools{position:relative;display:flex;align-items:center}
 
 .cp-crumb{font-size:12px;color:var(--slate);margin-top:24px}
 .cp-crumb a{color:var(--slate)}
@@ -42,7 +45,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-sub{color:var(--slate);font-size:14px;margin-top:10px}
 .cp-small{font-size:12px;color:var(--slate)}
 
-.cp-card{border:1px solid var(--line);background:#fff;padding:24px}
+.cp-card{border:1px solid var(--line);background:var(--surface);padding:24px}
 .cp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
 .cp-kpi{padding:16px}
 .cp-kpi .cp-l{font-size:16px;font-weight:600}
@@ -143,14 +146,6 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 
 /* mobile */
 @media (max-width:1000px){
-  .cp{grid-template-columns:1fr}
-  .cp-side{display:flex;align-items:center;gap:24px;border-right:0;border-bottom:1px solid var(--line);padding:12px 16px;flex-wrap:wrap}
-  .cp-nav{flex-direction:row;margin-top:0}
-  .cp-nav a{padding:0 16px 0 28px}
-  .cp-nav a.cp-active::before{left:12px}
-  .cp-main{padding:0 16px 48px}
-  .cp-top h1{width:auto;padding-right:24px}
-  .cp-tools{margin-right:0;gap:10px}.cp-user span{display:none}
   .cp-grid4,.cp-home-row,.cp-pcards,.cp-ov2{grid-template-columns:1fr}
   .cp-tbl-h,.cp-tbl-r{grid-template-columns:1fr 100px 1fr}
   .cp-rt{overflow-x:auto}.cp-rt .cp-h,.cp-rt .cp-r{min-width:760px}
@@ -161,21 +156,17 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 /* additions that have no counterpart in the design */
 .cp-ptitle{position:relative}
 .cp-ptitle button{display:inline-flex;align-items:center;gap:10px;font:inherit;letter-spacing:inherit}
-.cp-switch{position:absolute;left:0;top:100%;z-index:5;min-width:240px;margin-top:4px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:400;letter-spacing:0}
+.cp-switch{position:absolute;left:0;top:100%;z-index:5;min-width:240px;margin-top:4px;background:var(--surface);border:1px solid var(--line);font-size:14px;font-weight:400;letter-spacing:0}
 .cp-switch a{display:block;padding:12px 16px;color:var(--navy);text-decoration:none}
 .cp-switch a:hover,.cp-switch a[aria-current=true]{background:var(--bg);text-decoration:none}
 .cp-switch a[aria-current=true]{font-weight:600}
 
 /* ───── From borek-flow-auth (1)/portal.css: contacts, notifications, profile, dialogs ───── */
 .cp{--muted:var(--slate);--line-soft:var(--bg);--link:var(--blue);--field-border:#7D879C;--navy-hover:#1b2260;--white:#fff}
-.cp.cp-solo{display:block}
 
-.cp-tools{position:relative}
-.cp-user{color:var(--navy)}
-.cp-user:hover{text-decoration:none}
 
 /* Notifications popover */
-.cp-notif{position:absolute;top:calc(100% + 8px);right:0;z-index:10;width:400px;max-width:calc(100vw - 32px);padding:16px 16px 28px;border:1px solid var(--line);background:#fff;box-shadow:0 8px 24px rgba(13,18,64,.12)}
+.cp-notif{position:absolute;top:calc(100% + 8px);right:0;z-index:10;width:400px;max-width:calc(100vw - 32px);padding:16px 16px 28px;border:1px solid var(--line);background:var(--surface);box-shadow:0 8px 24px rgba(13,18,64,.12)}
 .cp-notif-title{font-size:18px;font-weight:600;line-height:22px}
 .cp-notif-list{display:flex;flex-direction:column;gap:28px;margin:28px 0 0;padding:0;list-style:none}
 .cp-notif-item{position:relative;display:block;padding-left:12px;color:var(--navy)}
@@ -197,13 +188,13 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-contact-tel{margin-top:13px;color:var(--muted);font-size:12px;line-height:15px}
 
 /* Profile */
-.cp-profile{width:min(100% - 48px,1040px);margin:0 auto;padding:52px 0 64px;min-height:100vh}
+.cp-profile{width:100%;max-width:1040px;margin:0;padding:0 0 32px}
 .cp-profile-back{display:flex;width:fit-content;align-items:center;gap:10px;margin-bottom:23px;font-size:14px;font-weight:500;line-height:17px}
 .cp-profile-back svg{width:16px;height:16px}
 .cp-profile-title{font-size:28px;font-weight:600;line-height:34px}
 .cp-profile-sub{margin-top:20px;color:var(--muted);font-size:14px;line-height:17px}
 .cp-profile-form{display:flex;flex-direction:column;gap:16px;margin-top:28px}
-.cp-pcard{padding:20px;border:1px solid var(--line);background:#fff}
+.cp-pcard{padding:20px;border:1px solid var(--line);background:var(--surface)}
 .cp-pcard-title{font-size:18px;font-weight:600;line-height:22px}
 .cp-pcard-sub{margin-top:6px;color:var(--muted);font-size:12px;line-height:15px}
 .cp-pcard-head{display:flex;align-items:center;gap:16px;padding:17px 19px}
@@ -212,7 +203,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-who-name{font-size:22px;font-weight:500;line-height:27px}
 .cp-who-role{margin-top:6px;font-size:14px;font-weight:500;line-height:17px}
 .cp-pactions{display:flex;gap:9px}
-.cp-pbtn{display:inline-flex;align-items:center;justify-content:center;height:43px;padding:0 16px;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--navy);font-size:14px;font-weight:500;line-height:17px;cursor:pointer;transition:background-color .15s}
+.cp-pbtn{display:inline-flex;align-items:center;justify-content:center;height:43px;padding:0 16px;border:1px solid var(--line);border-radius:0;background:var(--surface);color:var(--navy);font-size:14px;font-weight:500;line-height:17px;cursor:pointer;transition:background-color .15s}
 .cp-pbtn:hover{background:var(--line-soft)}
 .cp-pbtn.cp-primary{background:var(--navy);border-color:var(--navy);color:#fff}
 .cp-pbtn.cp-primary:hover{background:var(--navy-hover)}
@@ -223,10 +214,10 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-edit .cp-pfield.cp-ro{background:var(--line-soft)}
 .cp-edit .cp-pfield.cp-phone{gap:0}
 .cp-edit .cp-pfield.cp-phone .cp-pfield-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.cp-edit .cp-pfield.cp-phone .cp-pfield-input{height:43px;padding:0 8px;border:1px solid var(--field-border);background:#fff}
+.cp-edit .cp-pfield.cp-phone .cp-pfield-input{height:43px;padding:0 8px;border:1px solid var(--field-border);background:var(--surface)}
 .cp-edit .cp-pfield.cp-phone .cp-pfield-input:focus-visible{outline:0;border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
 .cp-pcols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.cp-select-btn{display:flex;align-items:center;justify-content:space-between;width:256px;height:40px;margin-top:4px;padding:0 16px;border:1px solid var(--field-border);border-radius:0;background:#fff;font-size:14px;line-height:17px;cursor:pointer}
+.cp-select-btn{display:flex;align-items:center;justify-content:space-between;width:256px;height:40px;margin-top:4px;padding:0 16px;border:1px solid var(--field-border);border-radius:0;background:var(--surface);font-size:14px;line-height:17px;cursor:pointer}
 .cp-select-btn svg{width:8px;height:8px;color:var(--muted)}
 .cp-theme{margin-top:16px}
 .cp-theme-row{display:flex;align-items:center;justify-content:space-between;min-height:40px;margin-top:4px;font-size:14px;line-height:17px}
@@ -240,14 +231,14 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-signout{display:inline-block;margin-top:12px;padding-bottom:5px}
 
 /* Dialogs */
-.cp-dialog{width:480px;max-width:calc(100vw - 32px);padding:0;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--navy);font-family:Inter,system-ui,sans-serif}
+.cp-dialog{width:480px;max-width:calc(100vw - 32px);padding:0;border:1px solid var(--line);border-radius:0;background:var(--surface);color:var(--navy);font-family:Inter,system-ui,sans-serif}
 .cp-dialog::backdrop{background:rgba(13,18,64,.45)}
 .cp-dialog-inner{display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:24px}
 .cp-dialog-title{font-size:20px;font-weight:600;line-height:24px}
 .cp-dialog-text{font-size:14px;line-height:17px}
 .cp-dialog-row{display:flex;gap:12px}
 .cp-dialog-stack{display:flex;flex-direction:column;gap:16px;width:100%}
-.cp-dbtn{display:flex;align-items:center;justify-content:center;height:43px;min-width:140px;padding:0 16px;border:1px solid var(--navy);border-radius:6px;background:#fff;color:var(--navy);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.cp-dbtn{display:flex;align-items:center;justify-content:center;height:43px;min-width:140px;padding:0 16px;border:1px solid var(--navy);border-radius:6px;background:var(--surface);color:var(--navy);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
 .cp-dbtn:hover{background:var(--line-soft)}
 
 @media (max-width:900px){
@@ -257,13 +248,13 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 
 /* ───── Component sheet (component-client.png): milestone cards and shared-information states ───── */
 .cp-mcards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
-.cp-mcard{background:#fff;border:1px solid var(--line);padding:12px 12px 14px}
+.cp-mcard{background:var(--surface);border:1px solid var(--line);padding:12px 12px 14px}
 .cp-mcard h4{font-size:14px;font-weight:600;line-height:17px}
 .cp-mcard .cp-badge{margin-top:10px}
 .cp-mcard p{margin-top:10px;font-size:12px;line-height:15px}
 .cp-mcard .cp-bar{margin-top:12px}
 
-.cp-state{max-width:320px;margin-top:24px;padding:18px;background:#fff;border:1px solid var(--line)}
+.cp-state{max-width:320px;margin-top:24px;padding:18px;background:var(--surface);border:1px solid var(--line)}
 .cp-state h4{font-size:14px;font-weight:600;line-height:17px}
 .cp-state p{margin-top:10px;font-size:12px;line-height:15px;color:var(--slate)}
 .cp-skel{display:grid;gap:10px;margin-top:16px}
@@ -271,6 +262,6 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-skel i:nth-child(1){width:100%}
 .cp-skel i:nth-child(2){width:80%}
 .cp-skel i:nth-child(3){width:55%}
-.cp-retry{margin-top:6px;height:38px;padding:0 10px;border:1px solid var(--mute);background:#fff;color:var(--navy);font-size:12px;text-align:left;min-width:136px}
+.cp-retry{margin-top:6px;height:38px;padding:0 10px;border:1px solid var(--mute);background:var(--surface);color:var(--navy);font-size:12px;text-align:left;min-width:136px}
 .cp-retry:hover{background:var(--bg)}
 @media (max-width:1000px){.cp-mcards{grid-template-columns:1fr}}

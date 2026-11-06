@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -9,11 +9,6 @@ import './clientPortal.css';
 const chevron = (
   <svg viewBox="0 0 12 8" fill="none" aria-hidden="true">
     <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const backIcon = (
-  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M14 8H2M7 3L2 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -61,13 +56,8 @@ export function ClientProfilePage() {
   };
 
   return (
-    <div className="cp cp-solo">
-      <main className="cp-profile">
-        <Link className="cp-profile-back" to={paths.clientHome}>
-          {backIcon}
-          {t('Back to portal')}
-        </Link>
-        <h1 className="cp-profile-title">{t('Your profile')}</h1>
+    <>
+      <div className="cp-profile">
         <p className="cp-profile-sub">{t('Manage your personal details and account preferences.')}</p>
 
         <form className={editing ? 'cp-profile-form cp-edit' : 'cp-profile-form'} onSubmit={save} noValidate>
@@ -168,7 +158,7 @@ export function ClientProfilePage() {
             </section>
           </div>
         </form>
-      </main>
+      </div>
 
       <dialog className="cp-dialog" ref={discardRef} aria-labelledby="cp-discard-title" onClick={backdropClose}>
         <div className="cp-dialog-inner">
@@ -212,6 +202,6 @@ export function ClientProfilePage() {
           </div>
         </div>
       </dialog>
-    </div>
+    </>
   );
 }

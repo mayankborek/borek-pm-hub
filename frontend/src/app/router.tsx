@@ -63,12 +63,12 @@ export const router = createBrowserRouter([
       {
         element: <RequireRole roles={['client']} />,
         children: [
-          { path: 'client/profile', element: <ClientProfilePage /> },
           {
             path: 'client',
             element: <ClientLayout />,
             children: [
               { index: true, element: <ClientHomePage /> },
+              { path: 'profile', element: <ClientProfilePage /> },
               { path: 'projects', element: <ClientProjectsPage /> },
               {
                 path: 'projects/:projectId',
