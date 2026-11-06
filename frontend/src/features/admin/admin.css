@@ -15,6 +15,16 @@
 .ad-filter{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:1px solid var(--slate);background:var(--surface);font-size:14px;line-height:17px}
 .ad-filter:hover{background:var(--bg)}
 .ad-filter svg{width:14px;height:14px}
+.ad-filter-menu{position:relative}
+.ad-filter-count{min-width:18px;padding:0 5px;background:var(--blue);color:var(--surface);font-size:11px;line-height:18px;text-align:center;border-radius:9px}
+.ad-filter-panel{position:absolute;top:40px;left:0;z-index:20;width:280px;padding:0 0 8px;background:var(--surface);border:1px solid var(--slate);box-shadow:0 8px 24px rgba(13,18,64,.12)}
+.ad-filter-head{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.ad-filter-head strong{flex:1;font-size:14px;color:var(--navy)}
+.ad-filter-close{background:none;border:0;color:var(--slate);cursor:pointer;font-size:14px}
+.ad-filter-group{padding:8px 14px;border-top:1px solid var(--bg)}
+.ad-filter-group h4{margin:0 0 4px;font-size:12px;font-weight:500;color:var(--slate)}
+.ad-filter-opt{display:flex;align-items:center;gap:12px;height:36px;font-size:14px;color:var(--navy);cursor:pointer}
+.ad-filter-opt input{width:16px;height:16px;margin:0;accent-color:var(--blue)}
 
 .ad-table-wrap{margin-top:18px;overflow-x:auto}
 .ad-table{width:100%;min-width:860px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:14px;line-height:17px}

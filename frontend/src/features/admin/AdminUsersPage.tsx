@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
@@ -36,6 +36,20 @@ export function AdminUsersPage() {
   const list = useAdminUsers(useDebounced(q), role, status);
   const users = list.data?.items ?? [];
   const filtered = !!(q || role || status !== 'all');
+  const activeFilters = (role ? 1 : 0) + (status !== 'all' ? 1 : 0);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const away = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setFiltersOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setFiltersOpen(false);
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [filtersOpen]);
 
   return (
     <>
@@ -49,27 +63,47 @@ export function AdminUsersPage() {
 
       <form className="ad-toolbar" role="search" onSubmit={(e) => e.preventDefault()}>
         <input className="ad-search" type="search" placeholder={t('Search users...')} aria-label={t('Search users')} value={q} onChange={(e) => setQ(e.target.value)} />
-        <button type="button" className="ad-filter" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((o) => !o)}>
-          <svg viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="2" height="2" /><rect x="5" y="2" width="8" height="2" /><rect x="1" y="6" width="2" height="2" /><rect x="5" y="6" width="8" height="2" /><rect x="1" y="10" width="2" height="2" /><rect x="5" y="10" width="8" height="2" /></svg>
-          {t('Filter')}
-        </button>
-        {filtersOpen && (
-          <>
-            <select className="ad-select" aria-label={t('Role')} value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="">{t('All roles')}</option>
-              {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r])}</option>)}
-            </select>
-            <select className="ad-select" aria-label={t('Status')} value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}>
-              <option value="all">{t('All statuses')}</option>
-              <option value="active">{t('Active')}</option>
-              <option value="inactive">{t('Inactive')}</option>
-            </select>
-            {filtered && (
-              <button type="button" className="ad-link" onClick={() => { setQ(''); setRole(''); setStatus('all'); }}>
-                {t('Clear filters')}
-              </button>
-            )}
-          </>
+        <div className="ad-filter-menu" ref={menuRef}>
+          <button type="button" className="ad-filter" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((o) => !o)}>
+            <svg viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="2" height="2" /><rect x="5" y="2" width="8" height="2" /><rect x="1" y="6" width="2" height="2" /><rect x="5" y="6" width="8" height="2" /><rect x="1" y="10" width="2" height="2" /><rect x="5" y="10" width="8" height="2" /></svg>
+            {t('Filter')}
+            {activeFilters > 0 && <span className="ad-filter-count">{activeFilters}</span>}
+            <span aria-hidden="true">▾</span>
+          </button>
+          {filtersOpen && (
+            <div className="ad-filter-panel" role="dialog" aria-label={t('Filters')}>
+              <div className="ad-filter-head">
+                <strong>{t('Filters')}</strong>
+                {activeFilters > 0 && (
+                  <button type="button" className="ad-link" onClick={() => { setRole(''); setStatus('all'); }}>{t('Clear all')}</button>
+                )}
+                <button type="button" className="ad-filter-close" aria-label={t('Close')} onClick={() => setFiltersOpen(false)}>✕</button>
+              </div>
+              <div className="ad-filter-group" role="group" aria-label={t('Role')}>
+                <h4>{t('Role')}</h4>
+                {ASSIGNABLE_ROLES.map((r) => (
+                  <label key={r} className="ad-filter-opt">
+                    <input type="checkbox" checked={role === r} onChange={() => setRole(role === r ? '' : r)} />
+                    {t(ROLE_LABEL[r])}
+                  </label>
+                ))}
+              </div>
+              <div className="ad-filter-group" role="group" aria-label={t('Status')}>
+                <h4>{t('Status')}</h4>
+                {(['active', 'inactive'] as const).map((s) => (
+                  <label key={s} className="ad-filter-opt">
+                    <input type="checkbox" checked={status === s} onChange={() => setStatus(status === s ? 'all' : s)} />
+                    {t(s === 'active' ? 'Active' : 'Inactive')}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {filtered && (
+          <button type="button" className="ad-link" onClick={() => { setQ(''); setRole(''); setStatus('all'); }}>
+            {t('Clear filters')}
+          </button>
         )}
       </form>
 
