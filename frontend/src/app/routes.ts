@@ -33,7 +33,9 @@ export const paths = {
   clientContacts: (id: string) => `/client/projects/${id}/contacts`,
   adminUsers: '/admin/users',
   adminOrganisations: '/admin/organisations',
+  adminOrganisation: (id: string) => `/admin/organisations/${id}`,
   adminRoles: '/admin/roles',
+  adminRole: (id: string) => `/admin/roles/${id}`,
 } as const;
 
 /** Client pages carry the invitation token in the query string so the flow can resume at any step. */

@@ -23,6 +23,7 @@ export function AdminLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const { lang, setLang, t } = usePrefs();
+  const section = `/${pathname.split('/').slice(1, 3).join('/')}`;
   if (!user) return null;
 
   return (
@@ -41,7 +42,7 @@ export function AdminLayout() {
       </aside>
       <section className="cp-main">
         <header className="cp-top">
-          <h1>{t(TITLES[pathname.replace(/\/$/, '')] ?? 'Users')}</h1>
+          <h1>{t(TITLES[section] ?? 'Users')}</h1>
           <div className="cp-tools">
             <div className="cp-lang" role="group" aria-label={t('Language')}>
               <button type="button" className={lang === 'de' ? 'cp-on' : undefined} aria-pressed={lang === 'de'} onClick={() => setLang('de')}>

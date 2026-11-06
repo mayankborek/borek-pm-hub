@@ -35,7 +35,62 @@
 .ad-role-manage{display:inline-flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap}
 .ad-role-manage svg{width:14px;height:14px}
 
+/* ---------- interactive pieces ---------- */
+.ad-gap{margin-top:12px}
+.ad-title--lg{font-size:24px;line-height:29px}
+.ad-head-actions{display:flex;align-items:center;gap:20px}
+.ad-link{background:none;border:0;padding:0;color:var(--blue);font:inherit;font-weight:500;cursor:pointer;text-align:left}
+.ad-link:hover:not(:disabled){text-decoration:underline}
+.ad-link:disabled{color:var(--mute);cursor:default}
+.ad-back{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-size:14px;font-weight:500}
+.ad-back svg{width:16px;height:16px}
+.ad-lead{margin-top:18px;font-size:14px;font-weight:500}
+.ad-hint{margin:12px 0 0;color:var(--slate);font-size:14px;line-height:20px}
+.ad-note{margin-top:20px}
+.ad-error{margin:16px 0 0;color:var(--red);font-size:14px}
+.ad-tag{margin-left:8px;padding:2px 8px;background:var(--bg);color:var(--slate);font-size:12px;font-weight:500}
+.ad-off td{color:var(--slate)}
+.ad-select{height:36px;padding:0 12px;border:1px solid var(--slate);background:#fff;color:var(--navy);font:inherit;font-size:14px;border-radius:0}
+.ad-toolbar .ad-link{align-self:center;margin-left:4px}
+.ad-btn:disabled{opacity:.55;cursor:default}
+.ad-btn--ghost{background:#fff;color:var(--navy);border:1px solid var(--slate)}
+.ad-btn--ghost:hover:not(:disabled){background:var(--bg)}
+.ad-btn--ghost:active:not(:disabled){background:var(--line)}
+.ad-btn--danger{color:var(--red);border-color:var(--red)}
+.ad-btn--danger-fill{background:var(--red)}
+.ad-btn--danger-fill:hover{background:#8F1818}
+
+.ad-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,8,26,.42)}
+.ad-dialog{width:100%;max-width:480px;max-height:100%;overflow:auto;padding:24px;background:#fff;box-shadow:0 12px 40px rgba(5,8,26,.25)}
+.ad-dialog h2{font-size:20px;font-weight:600;line-height:24px}
+.ad-field{display:block;margin-top:16px}
+.ad-field>span{display:block;margin-bottom:6px;font-size:14px;font-weight:500}
+.ad-field em{display:block;margin-top:4px;color:var(--red);font-size:13px;font-style:normal}
+.ad-input{display:block;width:100%;height:40px;padding:0 12px;border:1px solid var(--slate);background:#fff;color:var(--navy);font:inherit;font-size:14px;border-radius:0}
+.ad-input:focus-visible{outline:0;border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.ad-input:disabled{background:var(--bg);color:var(--slate)}
+.ad-dialog .ad-hint+.ad-input{margin-top:12px}
+.ad-check{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:14px}
+.ad-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:24px}
+.ad-actions-left{display:flex;flex-wrap:wrap;gap:8px;margin-right:auto}
+
+.ad-members{margin:19px 0 0;padding:0;list-style:none}
+.ad-member{display:grid;grid-template-columns:253px 423px 274px 1fr;align-items:center;min-height:48px;font-size:14px}
+.ad-empty-row{min-height:48px;display:flex;align-items:center;color:var(--slate);font-size:14px}
+
+.ad-matrix{margin-top:10px;width:100%;overflow-x:auto}
+.ad-matrix-head,.ad-matrix-row{display:grid;grid-template-columns:200px minmax(260px,1fr) 100px 100px 100px;align-items:center;min-width:760px;padding:0 14px 0 16px;font-size:14px}
+.ad-matrix-head{height:38px;background:var(--bg);font-weight:600;color:var(--slate)}
+.ad-matrix-row{min-height:56px;margin-top:8px}
+.ad-matrix-row .area{font-weight:600}
+.ad-matrix-row .incl{font-weight:500}
+.ad-matrix .c{display:flex;justify-content:center}
+.ad-radio{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;border-radius:50%;border:2px solid var(--blue);background:transparent;cursor:pointer}
+.ad-radio:checked{background:var(--blue);box-shadow:inset 0 0 0 2px #fff}
+.ad-radio:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
 @media (max-width:900px){
+  .ad-member{grid-template-columns:1fr auto;gap:2px 12px;padding:8px 0}
   .ad-roles{max-width:none}
   .ad-role{grid-template-columns:1fr auto auto;gap:8px}
   .ad-role>*{padding-left:0}

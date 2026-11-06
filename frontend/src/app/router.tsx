@@ -21,7 +21,9 @@ import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/fe
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 import { AdminOrganisationsPage } from '@/features/admin/AdminOrganisationsPage';
+import { AdminOrganisationPage } from '@/features/admin/AdminOrganisationPage';
 import { AdminRolesPage } from '@/features/admin/AdminRolesPage';
+import { AdminRolePage } from '@/features/admin/AdminRolePage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
@@ -93,7 +95,9 @@ export const router = createBrowserRouter([
               { index: true, element: <Navigate to={paths.adminUsers} replace /> },
               { path: 'users', element: <AdminUsersPage /> },
               { path: 'organisations', element: <AdminOrganisationsPage /> },
+              { path: 'organisations/:orgId', element: <AdminOrganisationPage /> },
               { path: 'roles', element: <AdminRolesPage /> },
+              { path: 'roles/:roleId', element: <AdminRolePage /> },
             ],
           },
         ],

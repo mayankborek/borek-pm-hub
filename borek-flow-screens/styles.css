@@ -1,0 +1,64 @@
+/* Borek Flow – admin screens (designed at 1440 × 1024) */
+:root{
+  --navy:#0D1240; --blue:#124F94; --muted:#5C6178;
+  --line:#E2E4EC; --soft:#F3F4F8; --white:#fff;
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);font-size:15px;color:var(--navy);background:var(--white);min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+.app{display:grid;grid-template-columns:216px 1fr;min-height:100vh}
+
+/* ---------- sidebar ---------- */
+.sidebar{border-right:1px solid var(--line);padding:24px 24px 0}
+.brand img{display:block;width:112px;height:26px}
+.brand-product{display:block;margin-top:10px;font-size:15px;color:var(--blue);line-height:1.2}
+.nav{margin-top:28px;display:flex;flex-direction:column;gap:4px}
+.nav a{position:relative;display:flex;align-items:center;height:40px;padding-left:32px;font-size:14px;color:var(--muted);white-space:nowrap}
+.nav a.active{background:var(--soft);color:var(--blue);font-weight:600}
+.nav a.active::before{content:"";position:absolute;left:16px;top:10px;width:3px;height:20px;background:var(--blue)}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;height:70px;padding:0 32px 0 32px}
+.page-title{position:relative;height:70px;padding-top:24px;padding-right:32px;font-size:26px;font-weight:500;line-height:1.2;min-width:286px}
+.page-title::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--navy)}
+.top-actions{display:flex;align-items:center;margin-top:21.5px}
+.lang{display:flex;height:32px;border:1px solid var(--line)}
+.lang button{width:34px;font-size:13px;font-weight:600;color:var(--muted)}
+.lang button.on{background:var(--soft);color:var(--blue)}
+.divider{width:1px;height:24px;background:var(--soft);margin:0 8px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:13px;font-weight:600}
+.user-name{margin-left:8px;font-size:15px;font-weight:500;margin-right:0}
+
+/* ---------- content ---------- */
+.content{padding:0 32px 48px}
+.back{display:inline-flex;align-items:center;gap:6px;margin-top:25px;font-size:15px}
+.back svg{width:16px;height:16px}
+.back.strong{font-weight:500}
+.heading-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;min-height:40px}
+.heading-row h2{font-size:24px;font-weight:400}
+.heading-row h2.bold{font-weight:600}
+.btn-primary{height:40px;width:118px;background:var(--navy);color:#fff;font-size:15px}
+.link-btn{color:var(--blue);font-size:15px;font-weight:500}
+.lead{margin-top:18px;font-size:15px}
+.lead.strong{font-weight:500}
+
+/* ---------- members list ---------- */
+.members{margin-top:19px}
+.member-row{display:grid;grid-template-columns:253px 423px 274px 1fr;align-items:center;height:48px;font-size:15px}
+
+/* ---------- permissions matrix ---------- */
+.matrix{margin-top:10px;width:100%}
+.matrix-head,.matrix-row{display:grid;grid-template-columns:200px 1fr 120px 120px 120px;align-items:center}
+.matrix-head{height:38px;background:var(--soft);font-size:15px;font-weight:500;padding-left:16px;padding-right:14px}
+.matrix-row{height:56px;margin-top:8px;padding-left:16px;padding-right:14px;font-size:15px}
+.matrix-row .area{font-weight:600}
+.matrix-row .incl{font-weight:500}
+.matrix .c{display:flex;justify-content:center}
+.matrix-head .c{padding-right:0}
+/* column centres sit at x = 1094/1214/1334 in the 1440 design */
+.radio{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;border-radius:50%;border:2px solid var(--blue);background:transparent;cursor:pointer}
+.radio:checked{background:var(--blue)}
+.radio:focus-visible{outline:2px solid var(--blue);outline-offset:3px}

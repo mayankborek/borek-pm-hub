@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Role access – Borek Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css"></head>
+<body><div class="app">
+<aside class="sidebar">
+  <a class="brand" href="#"><img src="logo.svg" alt="Borek Solutions Group"><span class="brand-product">Borek Flow</span></a>
+  <nav class="nav"><a href="users.html">Users</a><a href="client-organisation.html">Client organisations</a><a href="role-administrator.html" class="active">Role access</a></nav>
+</aside>
+<main>
+  <header class="topbar">
+    <h1 class="page-title">Role access</h1>
+    <div class="top-actions">
+      <div class="lang"><button>DE</button><button class="on">EN</button></div>
+      <span class="divider"></span>
+      <span class="avatar">AD</span><span class="user-name">Administrator</span>
+    </div>
+  </header>
+  <div class="content">
+    <a class="back strong" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1"><path d="M13 8H3m4.5-4.5L3 8l4.5 4.5"/></svg>All roles</a>
+    <div class="heading-row"><h2 class="bold">Project Manager permissions</h2><button class="link-btn">Reset to default</button></div>
+    <p class="lead strong">Choose one access level for each area.</p>
+    <div class="matrix">
+      <div class="matrix-head"><span>Area</span><span>Includes</span><span class="c">View</span><span class="c">Edit</span><span class="c">Denied</span></div>
+      <div class="matrix-row"><span class="area">Projects</span><span class="incl">Project details, health and progress</span><span class="c"><input class="radio" type="radio" name="projects" value="view" aria-label="Projects: view"></span><span class="c"><input class="radio" type="radio" name="projects" value="edit" aria-label="Projects: edit" checked></span><span class="c"><input class="radio" type="radio" name="projects" value="denied" aria-label="Projects: denied"></span></div>
+      <div class="matrix-row"><span class="area">Tasks</span><span class="incl">Tasks, assignments, status, comments and files</span><span class="c"><input class="radio" type="radio" name="tasks" value="view" aria-label="Tasks: view"></span><span class="c"><input class="radio" type="radio" name="tasks" value="edit" aria-label="Tasks: edit" checked></span><span class="c"><input class="radio" type="radio" name="tasks" value="denied" aria-label="Tasks: denied"></span></div>
+      <div class="matrix-row"><span class="area">Milestones</span><span class="incl">Milestone dates, progress and linked work</span><span class="c"><input class="radio" type="radio" name="milestones" value="view" aria-label="Milestones: view"></span><span class="c"><input class="radio" type="radio" name="milestones" value="edit" aria-label="Milestones: edit" checked></span><span class="c"><input class="radio" type="radio" name="milestones" value="denied" aria-label="Milestones: denied"></span></div>
+      <div class="matrix-row"><span class="area">Change requests</span><span class="incl">Submitted changes, attachments and request status</span><span class="c"><input class="radio" type="radio" name="change-requests" value="view" aria-label="Change requests: view"></span><span class="c"><input class="radio" type="radio" name="change-requests" value="edit" aria-label="Change requests: edit" checked></span><span class="c"><input class="radio" type="radio" name="change-requests" value="denied" aria-label="Change requests: denied"></span></div>
+      <div class="matrix-row"><span class="area">Reports</span><span class="incl">Project reports, drafts and publication</span><span class="c"><input class="radio" type="radio" name="reports" value="view" aria-label="Reports: view"></span><span class="c"><input class="radio" type="radio" name="reports" value="edit" aria-label="Reports: edit" checked></span><span class="c"><input class="radio" type="radio" name="reports" value="denied" aria-label="Reports: denied"></span></div>
+      <div class="matrix-row"><span class="area">Stakeholders</span><span class="incl">Stakeholder names, responsibilities and contacts</span><span class="c"><input class="radio" type="radio" name="stakeholders" value="view" aria-label="Stakeholders: view"></span><span class="c"><input class="radio" type="radio" name="stakeholders" value="edit" aria-label="Stakeholders: edit" checked></span><span class="c"><input class="radio" type="radio" name="stakeholders" value="denied" aria-label="Stakeholders: denied"></span></div>
+      <div class="matrix-row"><span class="area">Access</span><span class="incl">Project members, invitations and client access</span><span class="c"><input class="radio" type="radio" name="access" value="view" aria-label="Access: view"></span><span class="c"><input class="radio" type="radio" name="access" value="edit" aria-label="Access: edit" checked></span><span class="c"><input class="radio" type="radio" name="access" value="denied" aria-label="Access: denied"></span></div>
+      <div class="matrix-row"><span class="area">Administration</span><span class="incl">User accounts, roles and platform configuration</span><span class="c"><input class="radio" type="radio" name="administration" value="view" aria-label="Administration: view"></span><span class="c"><input class="radio" type="radio" name="administration" value="edit" aria-label="Administration: edit"></span><span class="c"><input class="radio" type="radio" name="administration" value="denied" aria-label="Administration: denied" checked></span></div>
+    </div>
+  </div>
+</main></div></body></html>
