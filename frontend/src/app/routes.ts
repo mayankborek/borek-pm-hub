@@ -32,6 +32,8 @@ export const paths = {
   clientChangeRequests: (id: string) => `/client/projects/${id}/change-requests`,
   clientContacts: (id: string) => `/client/projects/${id}/contacts`,
   adminUsers: '/admin/users',
+  adminUser: (id: string) => `/admin/users/${id}`,
+  adminUserInvitation: (id: string) => `/admin/users/${id}/invitation`,
   adminOrganisations: '/admin/organisations',
   adminOrganisation: (id: string) => `/admin/organisations/${id}`,
   adminRoles: '/admin/roles',

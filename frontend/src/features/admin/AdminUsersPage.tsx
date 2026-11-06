@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { useToast } from '@/shared/ui/Toast';
 import {
   ASSIGNABLE_ROLES,
   ROLE_LABEL,
   useAdminUsers,
   useCreateUser,
-  useNewInvite,
-  useSetUserActive,
-  useUpdateUser,
-  type AdminUser,
   type AssignableRole,
   type CreatedUser,
   type StatusFilter,
@@ -33,8 +30,8 @@ export function AdminUsersPage() {
   const [role, setRole] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [dialog, setDialog] = useState<'new' | AdminUser | null>(null);
-  const [invite, setInvite] = useState<CreatedUser | null>(null);
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
 
   const list = useAdminUsers(useDebounced(q), role, status);
   const users = list.data?.items ?? [];
@@ -44,7 +41,7 @@ export function AdminUsersPage() {
     <>
       <div className="ad-head">
         <h2 className="ad-title">{t('User directory')}</h2>
-        <button type="button" className="ad-btn" onClick={() => setDialog('new')}>{t('Add employee')}</button>
+        <button type="button" className="ad-btn" onClick={() => setAdding(true)}>{t('Add employee')}</button>
       </div>
       <p className="ad-meta">
         {list.data ? t('{n} users · {a} active', { n: list.data.total, a: list.data.active_total }) : ' '}
@@ -101,7 +98,7 @@ export function AdminUsersPage() {
             {list.data && !users.length && <tr><td className="ad-empty" colSpan={6}>{t('No users match your search.')}</td></tr>}
             {users.map((u) => (
               <tr key={u.id} className={u.is_active ? undefined : 'ad-off'}>
-                <td><button type="button" className="ad-link" onClick={() => setDialog(u)}>{u.name}</button></td>
+                <td><Link to={paths.adminUser(u.id)}>{u.name}</Link></td>
                 <td>{u.email}</td>
                 <td>{t(ROLE_LABEL[u.role] ?? u.role)}</td>
                 <td>{u.projects.map((p) => p.name).join(', ') || '–'}</td>
@@ -109,40 +106,30 @@ export function AdminUsersPage() {
                   {t(u.is_active ? 'Active' : 'Inactive')}
                   {u.is_active && u.invite_pending && <span className="ad-tag">{t('Invited')}</span>}
                 </td>
-                <td><button type="button" className="ad-link" onClick={() => setDialog(u)}>{t('Manage')}</button></td>
+                <td><Link to={paths.adminUser(u.id)}>{t('Manage')}</Link></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {dialog && (
-        <UserDialog
-          user={dialog === 'new' ? null : dialog}
-          onClose={() => setDialog(null)}
-          onInvite={(c) => {
-            setDialog(null);
-            setInvite(c);
-          }}
+      {adding && (
+        <AddEmployeeDialog
+          onClose={() => setAdding(false)}
+          onCreated={(created) => navigate(paths.adminUserInvitation(created.user.id), { state: { created } })}
         />
       )}
-      {invite && <InviteDialog created={invite} onClose={() => setInvite(null)} />}
     </>
   );
 }
 
-function UserDialog({ user, onClose, onInvite }: { user: AdminUser | null; onClose: () => void; onInvite: (c: CreatedUser) => void }) {
+function AddEmployeeDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (c: CreatedUser) => void }) {
   const { t } = usePrefs();
-  const toast = useToast();
   const create = useCreateUser();
-  const update = useUpdateUser();
-  const setActive = useSetUserActive();
-  const newInvite = useNewInvite();
-
-  const [name, setName] = useState(user?.name ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [role, setRole] = useState<string>(user?.role ?? 'developer');
-  const [joinDate, setJoinDate] = useState(user?.join_date ?? '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<string>('developer');
+  const [joinDate, setJoinDate] = useState('');
   const [tried, setTried] = useState(false);
   const [error, setError] = useState('');
 
@@ -150,113 +137,42 @@ function UserDialog({ user, onClose, onInvite }: { user: AdminUser | null; onClo
     name: name.trim() ? '' : 'Enter a name.',
     email: EMAIL_RE.test(email.trim()) ? '' : 'Enter a valid email address.',
   };
-  const busy = create.isPending || update.isPending || setActive.isPending || newInvite.isPending;
-  // Roles outside the assignable set (e.g. client) are shown but cannot be changed here.
-  const roleLocked = !!user && !ASSIGNABLE_ROLES.includes(user.role as AssignableRole);
-
-  const fail = (e: unknown) => setError(describeApiError(e, t('That didn’t work. Try again.')));
 
   const save = async () => {
     setTried(true);
     setError('');
     if (errors.name || errors.email) return;
-    const body = { name: name.trim(), email: email.trim(), role: role as AssignableRole, join_date: joinDate || null };
     try {
-      if (!user) {
-        onInvite(await create.mutateAsync(body));
-      } else {
-        await update.mutateAsync({ id: user.id, name: body.name, email: body.email, join_date: body.join_date, ...(roleLocked ? {} : { role: body.role }) });
-        toast.success('User updated.');
-        onClose();
-      }
+      onCreated(await create.mutateAsync({ name: name.trim(), email: email.trim(), role: role as AssignableRole, join_date: joinDate || null }));
     } catch (e) {
-      fail(e);
-    }
-  };
-
-  const toggle = async () => {
-    if (!user) return;
-    setError('');
-    try {
-      await setActive.mutateAsync({ id: user.id, active: !user.is_active });
-      toast.success(user.is_active ? 'User deactivated.' : 'User activated.');
-      onClose();
-    } catch (e) {
-      fail(e);
-    }
-  };
-
-  const resend = async () => {
-    if (!user) return;
-    setError('');
-    try {
-      onInvite(await newInvite.mutateAsync(user.id));
-    } catch (e) {
-      fail(e);
+      setError(describeApiError(e, t('That didn’t work. Try again.')));
     }
   };
 
   return (
-    <Dialog title={user ? 'Manage user' : 'Add employee'} onClose={onClose} onSubmit={save}>
-      <Field label="Name" error={tried ? errors.name : ''}>
+    <Dialog title="Add employee" onClose={onClose} onSubmit={save}>
+      <Field label="Full name" error={tried ? errors.name : ''}>
         <input className="ad-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} autoComplete="off" />
       </Field>
-      <Field label="Email" error={tried ? errors.email : ''}>
+      <Field label="Work email" error={tried ? errors.email : ''}>
         <input className="ad-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={320} autoComplete="off" />
-      </Field>
-      <Field label="Role">
-        <select className="ad-input" value={role} onChange={(e) => setRole(e.target.value)} disabled={roleLocked}>
-          {roleLocked && <option value={role}>{t(ROLE_LABEL[role] ?? role)}</option>}
-          {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r])}</option>)}
-        </select>
       </Field>
       <Field label="Joining date">
         <input className="ad-input" type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} />
       </Field>
-      <Field label="Account status">
-        <input className="ad-input" readOnly value={t(!user ? 'Pending activation' : user.is_active ? 'Active' : 'Inactive')} />
+      <Field label="Role">
+        <select className="ad-input" value={role} onChange={(e) => setRole(e.target.value)}>
+          {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r])}</option>)}
+        </select>
       </Field>
-      {!user && <p className="ad-hint">{t('We’ll create the account and give you a one-time sign-in link to share.')}</p>}
+      <Field label="Account status">
+        <input className="ad-input" readOnly value={t('Pending activation')} />
+      </Field>
+      <p className="ad-hint">{t('We’ll create the account and give you a one-time sign-in link to share.')}</p>
       {error && <p className="ad-error" role="alert">{error}</p>}
       <div className="ad-actions">
-        {user && (
-          <div className="ad-actions-left">
-            <button type="button" className="ad-btn ad-btn--ghost" disabled={busy} onClick={resend}>{t('New sign-in link')}</button>
-            <button type="button" className="ad-btn ad-btn--ghost ad-btn--danger" disabled={busy} onClick={toggle}>
-              {t(user.is_active ? 'Deactivate' : 'Activate')}
-            </button>
-          </div>
-        )}
         <button type="button" className="ad-btn ad-btn--ghost" onClick={onClose}>{t('Cancel')}</button>
-        <button type="submit" className="ad-btn" disabled={busy}>{t(user ? 'Save changes' : 'Create account')}</button>
-      </div>
-    </Dialog>
-  );
-}
-
-function InviteDialog({ created, onClose }: { created: CreatedUser; onClose: () => void }) {
-  const { t, lang } = usePrefs();
-  const [copied, setCopied] = useState(false);
-  const expires = new Date(created.invite.expires_at).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(created.invite.url);
-      setCopied(true);
-    } catch {
-      /* clipboard blocked: the link stays selectable in the field */
-    }
-  };
-
-  return (
-    <Dialog title="Sign-in link" onClose={onClose}>
-      <p className="ad-hint">
-        {t('Share this link with {name}. It works once and expires on {date}. It won’t be shown again.', { name: created.user.name, date: expires })}
-      </p>
-      <input className="ad-input" readOnly value={created.invite.url} aria-label={t('Sign-in link')} onFocus={(e) => e.currentTarget.select()} />
-      <div className="ad-actions">
-        <button type="button" className="ad-btn ad-btn--ghost" onClick={copy}>{t(copied ? 'Copied' : 'Copy link')}</button>
-        <button type="button" className="ad-btn" onClick={onClose}>{t('Done')}</button>
+        <button type="submit" className="ad-btn" disabled={create.isPending}>{t('Create account')}</button>
       </div>
     </Dialog>
   );

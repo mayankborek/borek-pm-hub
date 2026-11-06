@@ -102,3 +102,14 @@
 .ad-pick .cp-avatar{width:32px;height:32px;font-size:11px}
 .ad-pick-text{display:flex;flex-direction:column;gap:4px;font-size:14px}
 .ad-pick-email{color:var(--slate);font-size:12px}
+
+.ad-card{margin-top:20px;border:1px solid var(--line);background:#fff}
+.ad-card h3{font-size:20px;font-weight:600;line-height:24px}
+.ad-card--form{max-width:520px;padding:24px;border-radius:10px}
+.ad-card--form .ad-actions{align-items:center;gap:28px}
+.ad-card--link{max-width:760px;padding:24px}
+.ad-card-sub{margin-top:16px;font-size:16px}
+.ad-card-status{margin-top:8px;font-size:13px;font-weight:600}
+.ad-copy{display:flex;gap:12px;margin-top:16px}
+.ad-copy-field{flex:1;min-width:0;height:44px;padding:0 14px;border:0;background:var(--bg);color:var(--navy);font:inherit;font-size:15px}
+.ad-copy .ad-btn{height:44px}

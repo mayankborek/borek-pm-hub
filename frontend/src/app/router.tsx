@@ -20,6 +20,8 @@ import { ClientProfilePage } from '@/features/client/ClientProfilePage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
+import { AdminUserPage } from '@/features/admin/AdminUserPage';
+import { AdminInvitationPage } from '@/features/admin/AdminInvitationPage';
 import { AdminOrganisationsPage } from '@/features/admin/AdminOrganisationsPage';
 import { AdminOrganisationPage } from '@/features/admin/AdminOrganisationPage';
 import { AdminRolesPage } from '@/features/admin/AdminRolesPage';
@@ -94,6 +96,8 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <Navigate to={paths.adminUsers} replace /> },
               { path: 'users', element: <AdminUsersPage /> },
+              { path: 'users/:userId', element: <AdminUserPage /> },
+              { path: 'users/:userId/invitation', element: <AdminInvitationPage /> },
               { path: 'organisations', element: <AdminOrganisationsPage /> },
               { path: 'organisations/:orgId', element: <AdminOrganisationPage /> },
               { path: 'roles', element: <AdminRolesPage /> },
