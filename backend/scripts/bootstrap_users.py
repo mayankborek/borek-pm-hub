@@ -7,6 +7,7 @@ that account.
 
   BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_ADMIN_PASSWORD   (default email admin@borek.test;
                                                       BOOTSTRAP_ADMIN_NAME sets the display name)
+  BOOTSTRAP_MANAGER_EMAIL / BOOTSTRAP_MANAGER_PASSWORD   (default email qa.manager@borek.test)
   BOOTSTRAP_PM_EMAIL / BOOTSTRAP_PM_PASSWORD     (default email qa.pm@borek.test)
   BOOTSTRAP_DEV_EMAIL / BOOTSTRAP_DEV_PASSWORD   (default email qa.dev@borek.test)
   --reset-passwords   also set the password of accounts that already exist
@@ -57,6 +58,14 @@ ACCOUNTS = [
         "BOOTSTRAP_DEV_EMAIL",
         "qa.dev@borek.test",
         "BOOTSTRAP_DEV_PASSWORD",
+    ),
+    (
+        uuid.UUID("00000000-0000-4000-8000-000000000023"),
+        "QA Manager",
+        GlobalRole.MANAGER,
+        "BOOTSTRAP_MANAGER_EMAIL",
+        "qa.manager@borek.test",
+        "BOOTSTRAP_MANAGER_PASSWORD",
     ),
 ]
 

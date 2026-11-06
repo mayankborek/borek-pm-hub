@@ -19,11 +19,11 @@ async def list_users(
     user: CurrentUser,
     session: SessionDep,
     q: Annotated[str | None, Query(max_length=100, description="Search name or email")] = None,
-    role: Annotated[GlobalRole | None, Query(description="pm or developer")] = None,
+    role: Annotated[GlobalRole | None, Query(description="pm, manager or developer")] = None,
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> UserListOut:
-    """Active PMs and developers, for the assignee picker (PM only). Administrators and the other
+    """Active PMs, Managers and developers, for the assignee picker (PMs and Managers). The other
     roles do no project work, so they are not listed."""
     require(user, Action.USER_LIST)
     conditions: list[ColumnElement[bool]] = [User.is_active.is_(True), works_on_tasks_condition()]

@@ -7,12 +7,13 @@ from fastapi import APIRouter, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.auth.permissions import Action, Resource, require, sees_all_projects
+from app.auth.permissions import Action, require
 from app.common.enums import ProjectStatus
 from app.common.validation import PageParam, PageSizeParam
 from app.core.database import SessionDep
+from app.organisations.schemas import OrganisationBrief
 from app.projects import service
-from app.projects.membership import is_member
+from app.projects.membership import project_access
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import (
     MemberIn,
@@ -30,7 +31,11 @@ from app.users.models import User
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-def _project_out(project: Project, summary: TaskSummary | None = None) -> ProjectOut:
+def _project_out(
+    project: Project,
+    summary: TaskSummary | None = None,
+    client_organisation: OrganisationBrief | None = None,
+) -> ProjectOut:
     return ProjectOut(
         id=project.id,
         code=project.code,
@@ -43,6 +48,8 @@ def _project_out(project: Project, summary: TaskSummary | None = None) -> Projec
         created_at=project.created_at,
         updated_at=project.updated_at,
         archived_at=project.archived_at,
+        archived_by=project.archived_by,
+        client_organisation=client_organisation,
         version=project.version,
         task_summary=summary or TaskSummary(),
     )
@@ -61,17 +68,18 @@ def _member_out(member: ProjectMember, user: User) -> MemberOut:
 async def _detail(session: AsyncSession, project: Project) -> ProjectDetailOut:
     summaries = await service.task_summaries(session, [project.id])
     members = await service.list_members(session, project.id)
-    base = _project_out(project, summaries.get(project.id))
+    clients = await service.client_organisations(session, [project])
+    base = _project_out(
+        project, summaries.get(project.id), clients.get(project.client_organisation_id)
+    )
     return ProjectDetailOut(**base.model_dump(), members=[_member_out(m, u) for m, u in members])
 
 
 async def _require_view(session: AsyncSession, user: User, project_id: uuid.UUID) -> Project:
     """Load the project and apply the view rule: non-members get 404, never a hint it exists."""
     project = await service.get_project(session, project_id)
-    member = await is_member(session, user.id, project_id)
-    require(user, Action.PROJECT_VIEW, Resource(project_id=project_id, is_member=member))
-    if project.archived_at is not None and not sees_all_projects(user):
-        raise service.not_found()
+    access = await project_access(session, user, project)
+    require(user, Action.PROJECT_VIEW, access.resource(project_id))
     return project
 
 
@@ -91,7 +99,9 @@ async def list_projects(
     session: SessionDep,
     q: Annotated[str | None, Query(max_length=100, description="Search name or code")] = None,
     status: ProjectStatus | None = None,
-    include_archived: Annotated[bool, Query(description="PM only; ignored for developers")] = False,
+    include_archived: Annotated[
+        bool, Query(description="Manager: all. PM: those they led or archived. Developers: ignored")
+    ] = False,
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> ProjectListOut:
@@ -106,8 +116,12 @@ async def list_projects(
         page_size=page_size,
     )
     summaries = await service.task_summaries(session, [p.id for p in projects])
+    clients = await service.client_organisations(session, projects)
     return ProjectListOut(
-        items=[_project_out(p, summaries.get(p.id)) for p in projects],
+        items=[
+            _project_out(p, summaries.get(p.id), clients.get(p.client_organisation_id))
+            for p in projects
+        ],
         total=total,
         page=page,
         page_size=page_size,
@@ -127,7 +141,7 @@ async def update_project(
     project_id: uuid.UUID, body: ProjectUpdate, user: CurrentUser, session: SessionDep
 ) -> ProjectDetailOut:
     await _require_manage(session, user, project_id, Action.PROJECT_UPDATE)
-    project = await service.update_project(session, project_id, body)
+    project = await service.update_project(session, project_id, body, user)
     return await _detail(session, project)
 
 
@@ -135,16 +149,16 @@ async def update_project(
 async def archive_project(project_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> None:
     """Archive (soft delete). The project and its tasks stay in the database."""
     await _require_manage(session, user, project_id, Action.PROJECT_ARCHIVE)
-    await service.archive_project(session, project_id)
+    await service.archive_project(session, project_id, user)
 
 
 async def _require_manage(
     session: AsyncSession, user: User, project_id: uuid.UUID, action: Action
 ) -> None:
-    """PM-only actions on an existing project. Developers: 404 if not a member, else 403."""
-    member = await is_member(session, user.id, project_id)
-    require(user, action, Resource(project_id=project_id, is_member=member))
-    await service.get_project(session, project_id)  # 404 for an unknown ID (PM)
+    """Lead-only actions on an existing project: 404 if not a member, 403 if a plain member."""
+    project = await service.get_project(session, project_id)
+    access = await project_access(session, user, project)
+    require(user, action, access.resource(project_id))
 
 
 @router.get("/{project_id}/members", response_model=list[MemberOut])
@@ -176,7 +190,7 @@ async def change_member_role(
     await _require_manage(session, user, project_id, Action.MEMBER_MANAGE)
     await service.get_writable_project(session, project_id)
     member, member_user = await service.change_member_role(
-        session, project_id, user_id, body.project_role
+        session, project_id, user_id, body.project_role, user
     )
     return _member_out(member, member_user)
 

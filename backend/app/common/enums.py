@@ -7,15 +7,59 @@ class GlobalRole(StrEnum):
     ADMIN = "admin"
     PM = "pm"
     DEVELOPER = "developer"
-    # Manager, Account Manager and Client exist so the database accepts them, but they have no
-    # views or rights yet (`can()` denies them everything), so the admin API does not offer them.
     MANAGER = "manager"
     ACCOUNT_MANAGER = "account_manager"
+    # Client exists so the database accepts it, but it has no views or rights yet (`can()` denies
+    # it everything), so the admin API does not offer it.
     CLIENT = "client"
 
 
 # The roles an administrator may give today (Sprint 02-26 plan, Admin Accounts Plan).
-ASSIGNABLE_GLOBAL_ROLES = (GlobalRole.ADMIN, GlobalRole.PM, GlobalRole.DEVELOPER)
+ASSIGNABLE_GLOBAL_ROLES = (
+    GlobalRole.ADMIN,
+    GlobalRole.MANAGER,
+    GlobalRole.ACCOUNT_MANAGER,
+    GlobalRole.PM,
+    GlobalRole.DEVELOPER,
+)
+
+
+# How the roles are called on screen (names from the design).
+GLOBAL_ROLE_LABELS = {
+    GlobalRole.ADMIN: "Administrator",
+    GlobalRole.MANAGER: "Manager",
+    GlobalRole.ACCOUNT_MANAGER: "Account Manager",
+    GlobalRole.PM: "Project Manager",
+    GlobalRole.DEVELOPER: "Developer",
+    GlobalRole.CLIENT: "Client",
+}
+
+
+class OrganisationType(StrEnum):
+    INTERNAL = "internal"
+    CLIENT = "client"
+
+
+class RagStatus(StrEnum):
+    GREEN = "green"
+    AMBER = "amber"
+    RED = "red"
+
+
+class ReportState(StrEnum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+
+
+class StakeholderInfluence(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class FinanceEntryKind(StrEnum):
+    PAYMENT = "payment"  # money the client paid
+    SPEND = "spend"  # money spent on the project
 
 
 class ProjectStatus(StrEnum):

@@ -38,6 +38,135 @@
         "title": "AcceptInviteOut",
         "type": "object"
       },
+      "AccessOverviewOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccessPerson"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "AccessOverviewOut",
+        "type": "object"
+      },
+      "AccessPerson": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/AccessProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "is_active",
+          "projects"
+        ],
+        "title": "AccessPerson",
+        "type": "object"
+      },
+      "AccessProject": {
+        "properties": {
+          "project_code": {
+            "title": "Project Code",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "project_role": {
+            "description": "project_lead, developer or account_manager.",
+            "title": "Project Role",
+            "type": "string"
+          },
+          "source": {
+            "description": "invitation, task_assignment or client_assignment.",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "project_code",
+          "project_name",
+          "project_role",
+          "source"
+        ],
+        "title": "AccessProject",
+        "type": "object"
+      },
+      "AccountManagersUpdate": {
+        "additionalProperties": false,
+        "description": "The complete list: people left out stop being account managers of this organisation.",
+        "properties": {
+          "user_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "user_ids"
+        ],
+        "title": "AccountManagersUpdate",
+        "type": "object"
+      },
       "ActivityListOut": {
         "properties": {
           "items": {
@@ -133,6 +262,42 @@
         "title": "AdminProjectOut",
         "type": "object"
       },
+      "AdminRoleOut": {
+        "properties": {
+          "active_users": {
+            "title": "Active Users",
+            "type": "integer"
+          },
+          "assignable": {
+            "description": "False: exists, but cannot be given to anyone yet.",
+            "title": "Assignable",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "The value stored on users and sent as `role`.",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "users": {
+            "description": "Accounts with this role, active or not.",
+            "title": "Users",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "users",
+          "active_users",
+          "assignable"
+        ],
+        "title": "AdminRoleOut",
+        "type": "object"
+      },
       "AdminUserCreate": {
         "additionalProperties": false,
         "properties": {
@@ -157,6 +322,18 @@
             "maxLength": 200,
             "title": "Name",
             "type": "string"
+          },
+          "organisation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation Id"
           },
           "role": {
             "$ref": "#/components/schemas/GlobalRole"
@@ -265,6 +442,16 @@
             "title": "Name",
             "type": "string"
           },
+          "organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "password_set": {
             "description": "False until the person has used an invite link.",
             "title": "Password Set",
@@ -290,6 +477,7 @@
           "role",
           "is_active",
           "join_date",
+          "organisation",
           "password_set",
           "invite_pending",
           "projects",
@@ -337,6 +525,18 @@
               }
             ],
             "title": "Name"
+          },
+          "organisation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation Id"
           },
           "role": {
             "anyOf": [
@@ -495,6 +695,157 @@
         "title": "AttentionList",
         "type": "object"
       },
+      "AuditEventListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "AuditEventListOut",
+        "type": "object"
+      },
+      "AuditEventOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "entity_id": {
+            "format": "uuid",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "action",
+          "entity_type",
+          "entity_id",
+          "project_id",
+          "before",
+          "after",
+          "request_id"
+        ],
+        "title": "AuditEventOut",
+        "type": "object"
+      },
+      "AuditPerson": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "title": "AuditPerson",
+        "type": "object"
+      },
       "BoardColumn": {
         "properties": {
           "status": {
@@ -569,6 +920,42 @@
           "file"
         ],
         "title": "Body_upload_file_api_v1_tasks__task_id__attachments_post",
+        "type": "object"
+      },
+      "BudgetSet": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "maximum": 999999999999.99,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "default": "EUR",
+            "description": "Three capital letters, for example EUR.",
+            "title": "Currency",
+            "type": "string"
+          },
+          "version": {
+            "description": "`version` from GET /finance; 0 for the first budget.",
+            "minimum": 0.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "amount"
+        ],
+        "title": "BudgetSet",
         "type": "object"
       },
       "ChangePasswordIn": {
@@ -666,6 +1053,225 @@
         ],
         "title": "EstimateUnit",
         "type": "string"
+      },
+      "FinanceEntryCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 999999999999.99,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "description": {
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "entry_date": {
+            "format": "date",
+            "title": "Entry Date",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FinanceEntryKind"
+          }
+        },
+        "required": [
+          "kind",
+          "amount",
+          "entry_date",
+          "description"
+        ],
+        "title": "FinanceEntryCreate",
+        "type": "object"
+      },
+      "FinanceEntryKind": {
+        "enum": [
+          "payment",
+          "spend"
+        ],
+        "title": "FinanceEntryKind",
+        "type": "string"
+      },
+      "FinanceEntryListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FinanceEntryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "FinanceEntryListOut",
+        "type": "object"
+      },
+      "FinanceEntryOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "entry_date": {
+            "format": "date",
+            "title": "Entry Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FinanceEntryKind"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "amount",
+          "entry_date",
+          "description",
+          "created_by",
+          "created_at"
+        ],
+        "title": "FinanceEntryOut",
+        "type": "object"
+      },
+      "FinanceOut": {
+        "description": "Planned against spent, as in OpenProject's budgets, plus what the client has paid.",
+        "properties": {
+          "balance": {
+            "description": "Received minus spent.",
+            "title": "Balance",
+            "type": "string"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Empty until a budget is set.",
+            "title": "Budget"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "over_budget": {
+            "title": "Over Budget",
+            "type": "boolean"
+          },
+          "received": {
+            "description": "Sum of client payments.",
+            "title": "Received",
+            "type": "string"
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Budget minus spent; negative = over budget.",
+            "title": "Remaining"
+          },
+          "spent": {
+            "description": "Sum of spending.",
+            "title": "Spent",
+            "type": "string"
+          },
+          "spent_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Spent as a share of the budget, rounded.",
+            "title": "Spent Percent"
+          },
+          "version": {
+            "description": "Send it back when changing the budget; 0 = no budget yet.",
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "budget",
+          "currency",
+          "version",
+          "received",
+          "spent",
+          "remaining",
+          "balance",
+          "spent_percent",
+          "over_budget"
+        ],
+        "title": "FinanceOut",
+        "type": "object"
       },
       "GlobalRole": {
         "enum": [
@@ -1149,6 +1755,184 @@
         "title": "MyDashboard",
         "type": "object"
       },
+      "OrganisationBrief": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "OrganisationBrief",
+        "type": "object"
+      },
+      "OrganisationCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OrganisationType",
+            "default": "client"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OrganisationCreate",
+        "type": "object"
+      },
+      "OrganisationListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrganisationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "OrganisationListOut",
+        "type": "object"
+      },
+      "OrganisationOut": {
+        "properties": {
+          "account_managers": {
+            "items": {
+              "$ref": "#/components/schemas/PersonBrief"
+            },
+            "title": "Account Managers",
+            "type": "array"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OrganisationType"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "archived_at",
+          "version",
+          "created_at",
+          "account_managers"
+        ],
+        "title": "OrganisationOut",
+        "type": "object"
+      },
+      "OrganisationType": {
+        "enum": [
+          "internal",
+          "client"
+        ],
+        "title": "OrganisationType",
+        "type": "string"
+      },
+      "OrganisationUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "description": "Version from the last read (optimistic locking).",
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "name"
+        ],
+        "title": "OrganisationUpdate",
+        "type": "object"
+      },
+      "PersonBrief": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "title": "PersonBrief",
+        "type": "object"
+      },
       "PmDashboard": {
         "description": "All active projects. Archived projects and tasks are not counted.",
         "properties": {
@@ -1190,6 +1974,181 @@
           "overdue"
         ],
         "title": "PmDashboard",
+        "type": "object"
+      },
+      "PortfolioOut": {
+        "properties": {
+          "by_rag": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Matching projects per RAG, except cancelled ones; `none` = no report yet.",
+            "title": "By Rag",
+            "type": "object"
+          },
+          "by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Matching projects per status (all pages).",
+            "title": "By Status",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioProject"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/TaskSummary",
+            "description": "Tasks of all matching projects except cancelled."
+          },
+          "total": {
+            "description": "Projects matching the filters.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "by_status",
+          "by_rag",
+          "summary"
+        ],
+        "title": "PortfolioOut",
+        "type": "object"
+      },
+      "PortfolioProject": {
+        "properties": {
+          "client_organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "finance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Empty until money is entered."
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leads": {
+            "items": {
+              "$ref": "#/components/schemas/PersonBrief"
+            },
+            "title": "Leads",
+            "type": "array"
+          },
+          "member_count": {
+            "title": "Member Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rag": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RagStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From the newest published status report."
+          },
+          "rag_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The date of that report.",
+            "title": "Rag Date"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "target_end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target End Date"
+          },
+          "tasks": {
+            "$ref": "#/components/schemas/TaskSummary"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "start_date",
+          "target_end_date",
+          "client_organisation",
+          "leads",
+          "member_count",
+          "tasks",
+          "rag",
+          "rag_date",
+          "finance"
+        ],
+        "title": "PortfolioProject",
         "type": "object"
       },
       "ProjectCard": {
@@ -1262,6 +2221,18 @@
       "ProjectCreate": {
         "additionalProperties": false,
         "properties": {
+          "client_organisation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Organisation Id"
+          },
           "code": {
             "description": "Unique short identifier, 2-20 chars (A-Z, 0-9, _ -). Immutable.",
             "maxLength": 40,
@@ -1342,6 +2313,28 @@
               }
             ],
             "title": "Archived At"
+          },
+          "archived_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By"
+          },
+          "client_organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "code": {
             "title": "Code",
@@ -1436,6 +2429,8 @@
           "created_at",
           "updated_at",
           "archived_at",
+          "archived_by",
+          "client_organisation",
           "version",
           "task_summary",
           "members"
@@ -1487,6 +2482,28 @@
               }
             ],
             "title": "Archived At"
+          },
+          "archived_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By"
+          },
+          "client_organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "code": {
             "title": "Code",
@@ -1574,6 +2591,8 @@
           "created_at",
           "updated_at",
           "archived_at",
+          "archived_by",
+          "client_organisation",
           "version",
           "task_summary"
         ],
@@ -1603,6 +2622,19 @@
         "additionalProperties": false,
         "description": "PATCH body. `code` is not accepted (immutable). Send only the fields that change.",
         "properties": {
+          "client_organisation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer; null removes it.",
+            "title": "Client Organisation Id"
+          },
           "description": {
             "anyOf": [
               {
@@ -1674,6 +2706,15 @@
         "title": "ProjectUpdate",
         "type": "object"
       },
+      "RagStatus": {
+        "enum": [
+          "green",
+          "amber",
+          "red"
+        ],
+        "title": "RagStatus",
+        "type": "string"
+      },
       "ReadyResponse": {
         "properties": {
           "database": {
@@ -1690,6 +2731,313 @@
           "database"
         ],
         "title": "ReadyResponse",
+        "type": "object"
+      },
+      "ReportState": {
+        "enum": [
+          "draft",
+          "published"
+        ],
+        "title": "ReportState",
+        "type": "string"
+      },
+      "StakeholderCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 320,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "influence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StakeholderInfluence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "StakeholderCreate",
+        "type": "object"
+      },
+      "StakeholderInfluence": {
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "title": "StakeholderInfluence",
+        "type": "string"
+      },
+      "StakeholderOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StakeholderInfluence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "name",
+          "organisation",
+          "role_title",
+          "email",
+          "phone",
+          "influence",
+          "notes",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "StakeholderOut",
+        "type": "object"
+      },
+      "StakeholderUpdate": {
+        "additionalProperties": false,
+        "description": "Send only the fields that change; null clears an optional field.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 320,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "influence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StakeholderInfluence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "StakeholderUpdate",
         "type": "object"
       },
       "StatusBrief": {
@@ -1798,6 +3146,303 @@
           "task_count"
         ],
         "title": "StatusOut",
+        "type": "object"
+      },
+      "StatusReportCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "achievements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Achievements"
+          },
+          "next_steps": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Steps"
+          },
+          "rag": {
+            "$ref": "#/components/schemas/RagStatus"
+          },
+          "report_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Empty: today.",
+            "title": "Report Date"
+          },
+          "risks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risks"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rag",
+          "summary"
+        ],
+        "title": "StatusReportCreate",
+        "type": "object"
+      },
+      "StatusReportListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StatusReportOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "StatusReportListOut",
+        "type": "object"
+      },
+      "StatusReportOut": {
+        "properties": {
+          "achievements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Achievements"
+          },
+          "author": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "next_steps": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Steps"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rag": {
+            "$ref": "#/components/schemas/RagStatus"
+          },
+          "report_date": {
+            "format": "date",
+            "title": "Report Date",
+            "type": "string"
+          },
+          "risks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risks"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReportState"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "rag",
+          "summary",
+          "achievements",
+          "next_steps",
+          "risks",
+          "report_date",
+          "state",
+          "published_at",
+          "published_by",
+          "author",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "StatusReportOut",
+        "type": "object"
+      },
+      "StatusReportUpdate": {
+        "additionalProperties": false,
+        "description": "Only drafts can change. Send only the fields that change.",
+        "properties": {
+          "achievements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Achievements"
+          },
+          "next_steps": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Steps"
+          },
+          "rag": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RagStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Date"
+          },
+          "risks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risks"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "StatusReportUpdate",
         "type": "object"
       },
       "StatusUpdate": {
@@ -2546,6 +4191,401 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/access-overview": {
+      "get": {
+        "description": "Manager: who reaches which active project, and why (membership or client assignment).",
+        "operationId": "access_overview_api_v1_access_overview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GlobalRole"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Role"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Access Overview",
+        "tags": [
+          "portfolio"
+        ]
+      }
+    },
+    "/api/v1/access-overview/export": {
+      "get": {
+        "description": "The access overview (same filters) as a CSV file.",
+        "operationId": "export_access_overview_api_v1_access_overview_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GlobalRole"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Role"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "CSV file"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Access Overview",
+        "tags": [
+          "portfolio"
+        ]
+      }
+    },
+    "/api/v1/admin/audit-events": {
+      "get": {
+        "description": "Who changed what, newest first.",
+        "operationId": "list_audit_events_api_v1_admin_audit_events_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "actor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 50,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entity_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Audit Events",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/roles": {
+      "get": {
+        "description": "The roles in the system and how many accounts hold each. The list is fixed: rights are\ndefined in the code, so an administrator gives roles to people but does not invent new ones.",
+        "operationId": "list_roles_api_v1_admin_roles_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminRoleOut"
+                  },
+                  "title": "Response List Roles Api V1 Admin Roles Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Roles",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/admin/users": {
       "get": {
         "operationId": "list_users_api_v1_admin_users_get",
@@ -3089,7 +5129,7 @@
     },
     "/api/v1/dashboard": {
       "get": {
-        "description": "PM only: metrics for every active project plus the blocked and overdue tasks.",
+        "description": "PMs and Managers: metrics for active projects plus the blocked and overdue tasks. A PM gets\ntheir own projects, a Manager all of them.",
         "operationId": "pm_dashboard_api_v1_dashboard_get",
         "parameters": [
           {
@@ -3424,13 +5464,13 @@
             }
           },
           {
-            "description": "PM only; ignored for developers",
+            "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
             "required": false,
             "schema": {
               "default": false,
-              "description": "PM only; ignored for developers",
+              "description": "Managers, and PMs on projects they lead; ignored for others",
               "title": "Include Archived",
               "type": "boolean"
             }
@@ -3461,6 +5501,478 @@
         "summary": "My Tasks",
         "tags": [
           "tasks"
+        ]
+      }
+    },
+    "/api/v1/organisations": {
+      "get": {
+        "operationId": "list_organisations_api_v1_organisations_get",
+        "parameters": [
+          {
+            "description": "Search the name",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search the name",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "internal or client",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrganisationType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "internal or client",
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Organisations",
+        "tags": [
+          "organisations"
+        ]
+      },
+      "post": {
+        "operationId": "create_organisation_api_v1_organisations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganisationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Organisation",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisation_id}": {
+      "delete": {
+        "description": "Archive, refused while active users or projects belong to it. Nothing is deleted.",
+        "operationId": "archive_organisation_api_v1_organisations__organisation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Organisation",
+        "tags": [
+          "organisations"
+        ]
+      },
+      "get": {
+        "operationId": "get_organisation_api_v1_organisations__organisation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Organisation",
+        "tags": [
+          "organisations"
+        ]
+      },
+      "patch": {
+        "operationId": "update_organisation_api_v1_organisations__organisation_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganisationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Organisation",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisation_id}/account-managers": {
+      "put": {
+        "description": "Replace the account managers of a client. They see that client's projects, read-only.",
+        "operationId": "set_account_managers_api_v1_organisations__organisation_id__account_managers_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountManagersUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PersonBrief"
+                  },
+                  "title": "Response Set Account Managers Api V1 Organisations  Organisation Id  Account Managers Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Account Managers",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/portfolio": {
+      "get": {
+        "description": "Active projects with leads, task counts, current RAG and money: all of them for a Manager,\nthose of the assigned clients for an Account Manager.",
+        "operationId": "portfolio_api_v1_portfolio_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "client_organisation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Organisation Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RagStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "code",
+              "enum": [
+                "code",
+                "name",
+                "target_end_date",
+                "-code",
+                "-name",
+                "-target_end_date"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Portfolio",
+        "tags": [
+          "portfolio"
         ]
       }
     },
@@ -3504,13 +6016,13 @@
             }
           },
           {
-            "description": "PM only; ignored for developers",
+            "description": "Manager: all. PM: those they led or archived. Developers: ignored",
             "in": "query",
             "name": "include_archived",
             "required": false,
             "schema": {
               "default": false,
-              "description": "PM only; ignored for developers",
+              "description": "Manager: all. PM: those they led or archived. Developers: ignored",
               "title": "Include Archived",
               "type": "boolean"
             }
@@ -3736,6 +6248,269 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/finance": {
+      "get": {
+        "description": "Budget, received, spent and remaining.",
+        "operationId": "get_finance_api_v1_projects__project_id__finance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Finance",
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/finance/budget": {
+      "put": {
+        "operationId": "set_budget_api_v1_projects__project_id__finance_budget_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Budget",
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/finance/entries": {
+      "get": {
+        "operationId": "list_entries_api_v1_projects__project_id__finance_entries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceEntryListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Entries",
+        "tags": [
+          "finance"
+        ]
+      },
+      "post": {
+        "description": "A client payment or money spent, entered by hand.",
+        "operationId": "add_entry_api_v1_projects__project_id__finance_entries_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinanceEntryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinanceEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Entry",
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/finance/entries/{entry_id}": {
+      "delete": {
+        "description": "A wrong entry is archived and no longer counted. Nothing is deleted.",
+        "operationId": "archive_entry_api_v1_projects__project_id__finance_entries__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Entry",
+        "tags": [
+          "finance"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/members": {
       "get": {
         "operationId": "list_members_api_v1_projects__project_id__members_get",
@@ -3939,6 +6714,562 @@
         "summary": "Change Member Role",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/stakeholders": {
+      "get": {
+        "description": "Contact details, so only people who manage the register can read it.",
+        "operationId": "list_stakeholders_api_v1_projects__project_id__stakeholders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StakeholderOut"
+                  },
+                  "title": "Response List Stakeholders Api V1 Projects  Project Id  Stakeholders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Stakeholders",
+        "tags": [
+          "reporting"
+        ]
+      },
+      "post": {
+        "operationId": "create_stakeholder_api_v1_projects__project_id__stakeholders_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StakeholderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Stakeholder",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/stakeholders/{stakeholder_id}": {
+      "delete": {
+        "operationId": "archive_stakeholder_api_v1_projects__project_id__stakeholders__stakeholder_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stakeholder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Stakeholder Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Stakeholder",
+        "tags": [
+          "reporting"
+        ]
+      },
+      "patch": {
+        "operationId": "update_stakeholder_api_v1_projects__project_id__stakeholders__stakeholder_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stakeholder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Stakeholder Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StakeholderUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Stakeholder",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/status-reports": {
+      "get": {
+        "description": "Newest first. Everyone who sees the project reads published reports; those who write\nreports also see drafts.",
+        "operationId": "list_status_reports_api_v1_projects__project_id__status_reports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReportState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusReportListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Status Reports",
+        "tags": [
+          "reporting"
+        ]
+      },
+      "post": {
+        "description": "Creates a draft.",
+        "operationId": "create_status_report_api_v1_projects__project_id__status_reports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusReportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Status Report",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/status-reports/{report_id}": {
+      "delete": {
+        "description": "Drafts only. The row stays in the database.",
+        "operationId": "archive_status_report_api_v1_projects__project_id__status_reports__report_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Status Report",
+        "tags": [
+          "reporting"
+        ]
+      },
+      "get": {
+        "operationId": "get_status_report_api_v1_projects__project_id__status_reports__report_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Status Report",
+        "tags": [
+          "reporting"
+        ]
+      },
+      "patch": {
+        "description": "Drafts only: a published report is history.",
+        "operationId": "update_status_report_api_v1_projects__project_id__status_reports__report_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusReportUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Status Report",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/status-reports/{report_id}/publish": {
+      "post": {
+        "description": "Makes the report visible to everyone in the project and its RAG the project's current one.",
+        "operationId": "publish_status_report_api_v1_projects__project_id__status_reports__report_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Status Report",
+        "tags": [
+          "reporting"
         ]
       }
     },
@@ -4473,13 +7804,13 @@
             }
           },
           {
-            "description": "PM only; ignored for developers",
+            "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
             "required": false,
             "schema": {
               "default": false,
-              "description": "PM only; ignored for developers",
+              "description": "Managers, and PMs on projects they lead; ignored for others",
               "title": "Include Archived",
               "type": "boolean"
             }
@@ -4762,13 +8093,13 @@
             }
           },
           {
-            "description": "PM only; ignored for developers",
+            "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
             "required": false,
             "schema": {
               "default": false,
-              "description": "PM only; ignored for developers",
+              "description": "Managers, and PMs on projects they lead; ignored for others",
               "title": "Include Archived",
               "type": "boolean"
             }
@@ -4870,7 +8201,7 @@
     },
     "/api/v1/tasks": {
       "get": {
-        "description": "PMs see tasks of every active project, developers those of their projects.",
+        "description": "Managers see tasks of every active project, everyone else those of their projects.",
         "operationId": "list_tasks_api_v1_tasks_get",
         "parameters": [
           {
@@ -5109,13 +8440,13 @@
             }
           },
           {
-            "description": "PM only; ignored for developers",
+            "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
             "required": false,
             "schema": {
               "default": false,
-              "description": "PM only; ignored for developers",
+              "description": "Managers, and PMs on projects they lead; ignored for others",
               "title": "Include Archived",
               "type": "boolean"
             }
@@ -5346,13 +8677,13 @@
             }
           },
           {
-            "description": "PM only; ignored for developers",
+            "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
             "required": false,
             "schema": {
               "default": false,
-              "description": "PM only; ignored for developers",
+              "description": "Managers, and PMs on projects they lead; ignored for others",
               "title": "Include Archived",
               "type": "boolean"
             }
@@ -5792,7 +9123,7 @@
     },
     "/api/v1/tasks/{task_id}/attachments/{attachment_id}": {
       "delete": {
-        "description": "Archive an attachment. The uploader or a PM can.",
+        "description": "Archive an attachment. The uploader or someone with lead rights in the project can.",
         "operationId": "delete_attachment_api_v1_tasks__task_id__attachments__attachment_id__delete",
         "parameters": [
           {
@@ -5989,7 +9320,7 @@
     },
     "/api/v1/tasks/{task_id}/comments/{comment_id}": {
       "delete": {
-        "description": "Archive a comment. The author or a PM can.",
+        "description": "Archive a comment. The author or someone with lead rights in the project can.",
         "operationId": "delete_comment_api_v1_tasks__task_id__comments__comment_id__delete",
         "parameters": [
           {
@@ -6098,7 +9429,7 @@
     },
     "/api/v1/users": {
       "get": {
-        "description": "Active PMs and developers, for the assignee picker (PM only). Administrators and the other\nroles do no project work, so they are not listed.",
+        "description": "Active PMs, Managers and developers, for the assignee picker (PMs and Managers). The other\nroles do no project work, so they are not listed.",
         "operationId": "list_users_api_v1_users_get",
         "parameters": [
           {
@@ -6121,7 +9452,7 @@
             }
           },
           {
-            "description": "pm or developer",
+            "description": "pm, manager or developer",
             "in": "query",
             "name": "role",
             "required": false,
@@ -6134,7 +9465,7 @@
                   "type": "null"
                 }
               ],
-              "description": "pm or developer",
+              "description": "pm, manager or developer",
               "title": "Role"
             }
           },

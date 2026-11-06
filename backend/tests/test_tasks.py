@@ -834,7 +834,11 @@ async def test_assignee_must_be_an_active_user(
         assert response.json()["error"]["details"][0]["issue"] == "unknown_user"
     await session.refresh(task)
     assert task.assignee_id is None and task.version == 1
-    assert await member_ids(session, world.project) == {world.dev.id, world.other_dev.id}
+    assert await member_ids(session, world.project) == {
+        world.dev.id,
+        world.other_dev.id,
+        world.pm.id,
+    }
 
 
 async def member_ids(session: AsyncSession, project: Project) -> set[uuid.UUID]:
@@ -901,7 +905,11 @@ async def test_assigning_an_existing_member_does_not_add_a_second_row(
         json={"version": 1, "assignee_id": str(world.dev.id)},
     )
     assert response.status_code == 200
-    assert await member_ids(session, world.project) == {world.dev.id, world.other_dev.id}
+    assert await member_ids(session, world.project) == {
+        world.dev.id,
+        world.other_dev.id,
+        world.pm.id,
+    }
 
 
 async def test_assignment_needs_pm_and_current_version(

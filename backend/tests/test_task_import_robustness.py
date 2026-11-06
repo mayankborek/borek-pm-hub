@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 
 from app.common.enums import GlobalRole
+from app.projects.models import ProjectMember
 from app.tasks.models import Task, TaskComment
 from tests.conftest import make_project, make_user
 from tests.test_auth import build_app, client_for
@@ -31,13 +32,19 @@ from tests.test_task_import import (
 )
 
 
-async def test_every_pm_can_import_and_the_tasks_record_who_did_it(
+async def test_every_lead_can_import_and_the_tasks_record_who_did_it(
     client: httpx.AsyncClient,
     session: AsyncSession,
     world: World,
 ) -> None:
-    """A second PM (not the project's creator, not a member) imports with the same result."""
+    """A second PM imports with the same result, once they lead the project (not before)."""
     other_pm = named(await make_user(session, GlobalRole.PM), "Second PM")
+    outside = await post_import(client, world.project, other_pm, FILE, dry_run=False)
+    assert outside.status_code == 404
+    session.add(
+        ProjectMember(project_id=world.project.id, user_id=other_pm.id, project_role="project_lead")
+    )
+    await session.flush()
     response = await post_import(client, world.project, other_pm, FILE, dry_run=False)
     assert response.status_code == 200, response.text
     assert response.json()["created"] == 3

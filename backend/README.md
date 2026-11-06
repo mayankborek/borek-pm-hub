@@ -163,9 +163,10 @@ docker compose up --build
 | `local` | Email + password. `POST /auth/login` returns a bearer token (Argon2 hashes, 5 wrong passwords lock the account for 15 minutes). Needs `SECRET_KEY` (32+ characters). | Staging, pilot, and for people outside the Microsoft tenant. |
 | `entra` | Microsoft Entra ID. Not built yet (returns 501). | Later. |
 
-**QA accounts (one PM, one developer).** Set `BOOTSTRAP_PM_PASSWORD` and `BOOTSTRAP_DEV_PASSWORD`
-(12+ characters, your own choice) in `backend/.env`. `docker compose up` then creates
-`qa.pm@borek.test` and `qa.dev@borek.test` on every start if they are missing
+**QA accounts (one Manager, one PM, one developer).** Set `BOOTSTRAP_MANAGER_PASSWORD`,
+`BOOTSTRAP_PM_PASSWORD` and `BOOTSTRAP_DEV_PASSWORD` (12+ characters, your own choice) in
+`backend/.env`. `docker compose up` then creates `qa.manager@borek.test`, `qa.pm@borek.test` and
+`qa.dev@borek.test` on every start if they are missing
 (`python -m scripts.bootstrap_users`; add `--reset-passwords` to overwrite). On a server run the same
 command after `alembic upgrade head`, with the variables set in that environment.
 

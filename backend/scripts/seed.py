@@ -14,37 +14,54 @@ import asyncio
 import os
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import hash_password
 from app.common.enums import (
+    FinanceEntryKind,
     GlobalRole,
     MembershipSource,
+    OrganisationType,
     ProjectRole,
     ProjectStatus,
+    RagStatus,
+    ReportState,
+    StakeholderInfluence,
     TaskPriority,
 )
 from app.core.config import get_settings
 from app.core.database import get_engine, get_sessionmaker
+from app.finance.models import FinanceEntry, ProjectBudget
+from app.organisations.models import Organisation, OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
+from app.reporting.models import Stakeholder, StatusReport
 from app.tasks import statuses
 from app.tasks.models import Task
 from app.users.models import User
 
 # Fixed IDs so the dev user picker (X-Dev-User-Id) stays stable across resets.
 PM_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+MANAGER_ID = uuid.UUID("00000000-0000-4000-8000-000000000002")
+ACCOUNT_MANAGER_ID = uuid.UUID("00000000-0000-4000-8000-000000000003")
 DEV1_ID = uuid.UUID("00000000-0000-4000-8000-000000000011")
 DEV2_ID = uuid.UUID("00000000-0000-4000-8000-000000000012")
 DEV3_ID = uuid.UUID("00000000-0000-4000-8000-000000000013")
 
 USERS = [
+    (MANAGER_ID, "Test Manager", "manager@borek.test", GlobalRole.MANAGER),
+    (ACCOUNT_MANAGER_ID, "Test Account Manager", "am@borek.test", GlobalRole.ACCOUNT_MANAGER),
     (PM_ID, "Test PM", "pm@borek.test", GlobalRole.PM),
     (DEV1_ID, "Dev One", "dev1@borek.test", GlobalRole.DEVELOPER),
     (DEV2_ID, "Dev Two", "dev2@borek.test", GlobalRole.DEVELOPER),
     (DEV3_ID, "Dev Three", "dev3@borek.test", GlobalRole.DEVELOPER),
 ]
+
+INTERNAL_NAME = "Borek Solutions Group"
+CLIENT_NAME = "Sample Client GmbH"
+CLIENT_PROJECTS = {"ALPHA", "DELTA"}  # the projects the seeded Account Manager follows
 
 # (code, name, status, start offset days, end offset days, members: {user_id: role})
 PROJECTS = [
@@ -256,7 +273,7 @@ def read_seed_password() -> str | None:
 async def reset(session: AsyncSession) -> None:
     await session.execute(
         text(
-            "TRUNCATE tasks, project_statuses, project_members, projects, users "
+            "TRUNCATE tasks, project_statuses, project_members, projects, users, organisations "
             "RESTART IDENTITY CASCADE"
         )
     )
@@ -270,12 +287,28 @@ async def seed(
     if (await session.execute(select(Project.id).limit(1))).first() is not None:
         raise SystemExit("The database already has data. Use --reset to replace it.")
 
+    borek = await session.scalar(select(Organisation).where(Organisation.name == INTERNAL_NAME))
+    if borek is None:  # the migration creates it, a reset removes it
+        borek = Organisation(name=INTERNAL_NAME, type=OrganisationType.INTERNAL.value)
+        session.add(borek)
+    client = Organisation(name=CLIENT_NAME, type=OrganisationType.CLIENT.value)
+    session.add(client)
+    await session.flush()
+
     password_hash = hash_password(password) if password else None
     session.add_all(
-        User(id=uid, name=name, email=email, global_role=role.value, password_hash=password_hash)
+        User(
+            id=uid,
+            name=name,
+            email=email,
+            global_role=role.value,
+            password_hash=password_hash,
+            organisation_id=borek.id,
+        )
         for uid, name, email, role in USERS
     )
     await session.flush()
+    session.add(OrganisationAccountManager(organisation_id=client.id, user_id=ACCOUNT_MANAGER_ID))
 
     projects: dict[str, Project] = {}
     status_ids: dict[str, dict[str, uuid.UUID]] = {}
@@ -287,6 +320,7 @@ async def seed(
             status=status.value,
             start_date=today + timedelta(days=start),
             target_end_date=today + timedelta(days=end),
+            client_organisation_id=client.id if code in CLIENT_PROJECTS else None,
             created_by=PM_ID,
         )
         session.add(project)
@@ -295,7 +329,7 @@ async def seed(
         status_ids[code] = {
             status.name: status.id for status in await statuses.create_defaults(session, project.id)
         }
-        for user_id, role in members.items():
+        for user_id, role in {PM_ID: ProjectRole.PROJECT_LEAD, **members}.items():
             session.add(
                 ProjectMember(
                     project_id=project.id,
@@ -327,6 +361,51 @@ async def seed(
                 archived_at=now if title in ARCHIVED_TITLES else None,
             )
         )
+    await session.flush()
+
+    # What an Account Manager sees on ALPHA: a published report, a stakeholder, money.
+    alpha = projects["ALPHA"].id
+    session.add_all(
+        [
+            StatusReport(
+                project_id=alpha,
+                rag=RagStatus.AMBER.value,
+                summary="Login is on track; the payment API waits for client credentials.",
+                next_steps="Get the API credentials from the client.",
+                report_date=today - timedelta(days=2),
+                state=ReportState.PUBLISHED.value,
+                published_at=now,
+                published_by=PM_ID,
+                created_by=PM_ID,
+            ),
+            Stakeholder(
+                project_id=alpha,
+                name="Sam Sponsor",
+                organisation=CLIENT_NAME,
+                role_title="Sponsor",
+                email="sam.sponsor@client.test",
+                influence=StakeholderInfluence.HIGH.value,
+                created_by=PM_ID,
+            ),
+            ProjectBudget(project_id=alpha, amount=Decimal("50000.00"), currency="EUR"),
+            FinanceEntry(
+                project_id=alpha,
+                kind=FinanceEntryKind.PAYMENT.value,
+                amount=Decimal("20000.00"),
+                entry_date=today - timedelta(days=30),
+                description="First instalment",
+                created_by=ACCOUNT_MANAGER_ID,
+            ),
+            FinanceEntry(
+                project_id=alpha,
+                kind=FinanceEntryKind.SPEND.value,
+                amount=Decimal("12500.00"),
+                entry_date=today - timedelta(days=5),
+                description="Development, first month",
+                created_by=ACCOUNT_MANAGER_ID,
+            ),
+        ]
+    )
     await session.flush()
 
 

@@ -15,6 +15,7 @@ from app.dashboard.schemas import (
     ProjectCard,
 )
 from app.projects import service as project_service
+from app.projects.membership import visible_project_ids
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import TaskSummary
 from app.tasks import service as task_service
@@ -71,12 +72,13 @@ async def _attention(
     return AttentionList(total=total, items=items)
 
 
-async def pm_dashboard(session: AsyncSession, limit: int) -> PmDashboard:
-    projects = list(
-        await session.scalars(
-            select(Project).where(Project.archived_at.is_(None)).order_by(Project.code)
-        )
-    )
+async def pm_dashboard(session: AsyncSession, user: User, limit: int) -> PmDashboard:
+    """A Manager sees every active project, a PM the ones they are a member of."""
+    scope = None if sees_all_projects(user) else task_service.scope_for_member(user)
+    query = select(Project).where(Project.archived_at.is_(None)).order_by(Project.code)
+    if not sees_all_projects(user):
+        query = query.where(Project.id.in_(visible_project_ids(user)))
+    projects = list(await session.scalars(query))
     # Cancelled projects keep their card (so the PM can find and reopen them) but count for
     # nothing: not in the totals, not in the task numbers.
     live = [p for p in projects if p.status != ProjectStatus.CANCELLED.value]
@@ -86,13 +88,13 @@ async def pm_dashboard(session: AsyncSession, limit: int) -> PmDashboard:
         projects_total=len(live),
         summary=_total(list(summaries.values())),
         projects=[_card(p, summaries.get(p.id)) for p in projects],
-        blocked=await _attention(session, limit, category=StatusCategory.BLOCKED),
-        overdue=await _attention(session, limit, overdue=True),
+        blocked=await _attention(session, limit, category=StatusCategory.BLOCKED, scope=scope),
+        overdue=await _attention(session, limit, overdue=True, scope=scope),
     )
 
 
 async def my_dashboard(session: AsyncSession, user: User, limit: int) -> MyDashboard:
-    scope = None if sees_all_projects(user) else task_service.scope_for_developer(user)
+    scope = None if sees_all_projects(user) else task_service.scope_for_member(user)
     mine = [
         Task.assignee_id == user.id,
         Task.archived_at.is_(None),

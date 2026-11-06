@@ -17,9 +17,10 @@ Limit = Annotated[int, Query(ge=1, le=50, description="Tasks per attention list"
 
 @router.get("", response_model=PmDashboard)
 async def pm_dashboard(user: CurrentUser, session: SessionDep, limit: Limit = 10) -> PmDashboard:
-    """PM only: metrics for every active project plus the blocked and overdue tasks."""
+    """PMs and Managers: metrics for active projects plus the blocked and overdue tasks. A PM gets
+    their own projects, a Manager all of them."""
     require(user, Action.DASHBOARD_VIEW)
-    return await service.pm_dashboard(session, limit)
+    return await service.pm_dashboard(session, user, limit)
 
 
 @router.get("/me", response_model=MyDashboard)

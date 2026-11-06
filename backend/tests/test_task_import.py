@@ -572,7 +572,7 @@ async def test_dry_run_is_the_default_and_writes_nothing(
     members = await session.scalars(
         select(ProjectMember.user_id).where(ProjectMember.project_id == world.project.id)
     )
-    assert set(members) == {world.jaya.id}
+    assert set(members) == {world.jaya.id, world.pm.id}  # the PM leads the project
 
 
 async def test_real_import_creates_tasks_in_jira_order(
@@ -640,7 +640,7 @@ async def test_assignees_join_the_project_pms_as_leads(
         )
     ).all()
     by_user = {row.user_id: row for row in rows}
-    assert set(by_user) == {world.jaya.id, world.rina.id}  # Jana was a member already
+    assert set(by_user) == {world.jaya.id, world.rina.id, world.pm.id}  # Jana was already in
     assert by_user[world.rina.id].project_role == "project_lead"  # a global PM
     assert by_user[world.rina.id].source == "task_assignment"
     assert by_user[world.rina.id].granted_by == world.pm.id
@@ -977,7 +977,7 @@ async def test_a_failure_while_saving_leaves_nothing_behind(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     await session.commit()  # the test data is saved; only the import below may be undone
-    jaya_id, project_id = world.jaya.id, world.project.id  # a rollback expires the objects
+    jaya_id, pm_id, project_id = world.jaya.id, world.pm.id, world.project.id  # rollback expires
     calls = 0
     real = importer.activity.record
 
@@ -999,7 +999,7 @@ async def test_a_failure_while_saving_leaves_nothing_behind(
     members = await session.scalars(
         select(ProjectMember.user_id).where(ProjectMember.project_id == project_id)
     )
-    assert set(members) == {jaya_id}  # Rita was not added either
+    assert set(members) == {jaya_id, pm_id}  # Rita was not added either
 
 
 async def test_the_report_is_capped_but_counts_are_complete(

@@ -49,7 +49,7 @@ async def test_seed_refuses_to_run_twice(session: AsyncSession) -> None:
     await seed(session)
     with pytest.raises(SystemExit):
         await seed(session)
-    assert (await session.execute(select(func.count()).select_from(User))).scalar_one() == 4
+    assert (await session.execute(select(func.count()).select_from(User))).scalar_one() == 6
 
 
 def test_seed_refuses_production(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -84,7 +84,7 @@ async def test_seed_users_can_sign_in_when_a_password_is_given(session: AsyncSes
 
     await seed(session, password="a-long-enough-password")
     users = (await session.execute(select(User))).scalars().all()
-    assert len(users) == 4
+    assert len(users) == 6
     assert all(
         u.password_hash and verify_password("a-long-enough-password", u.password_hash)
         for u in users
