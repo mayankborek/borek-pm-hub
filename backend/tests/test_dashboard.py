@@ -184,7 +184,7 @@ async def test_developer_dashboard_shows_own_work_and_team_counts(
     }
     assert [p["code"] for p in body["projects"]] == ["ALP"]  # not Beta: not a member
     members = {m["user"]["name"]: m for m in body["projects"][0]["members"]}
-    assert set(members) == {"Dana Dev", "Omar Other"}
+    assert set(members) == {"Dana Dev", "Omar Other", world.pm.name}  # the creator leads
     assert members["Dana Dev"]["tasks"]["total"] == 3
     assert members["Omar Other"]["tasks"]["overdue"] == 1
     assert [t["title"] for t in body["blocked"]["items"]] == ["Stuck"]

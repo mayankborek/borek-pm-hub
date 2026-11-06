@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.common.enums import ASSIGNABLE_GLOBAL_ROLES, GlobalRole
 from app.common.validation import check_date, clean_email, clean_text
+from app.organisations.schemas import OrganisationBrief
 
 
 def _assignable(role: GlobalRole) -> GlobalRole:
@@ -21,6 +22,7 @@ class AdminUserCreate(BaseModel):
     email: str = Field(max_length=320)
     role: GlobalRole
     join_date: date | None = None
+    organisation_id: uuid.UUID | None = None
 
     @field_validator("name")
     @classmethod
@@ -52,6 +54,7 @@ class AdminUserUpdate(BaseModel):
     email: str | None = Field(default=None, max_length=320)
     role: GlobalRole | None = None
     join_date: date | None = None
+    organisation_id: uuid.UUID | None = None
 
     @field_validator("name")
     @classmethod
@@ -94,6 +97,7 @@ class AdminUserOut(BaseModel):
     role: str
     is_active: bool
     join_date: date | None
+    organisation: OrganisationBrief | None
     password_set: bool = Field(description="False until the person has used an invite link.")
     invite_pending: bool = Field(description="A link exists that has not been used or expired.")
     projects: list[AdminProjectOut] = Field(description="Active projects the person belongs to.")
@@ -106,6 +110,14 @@ class AdminUserListOut(BaseModel):
     active_total: int = Field(description="Of those, how many are active.")
     page: int
     page_size: int
+
+
+class AdminRoleOut(BaseModel):
+    id: str = Field(description="The value stored on users and sent as `role`.")
+    name: str
+    users: int = Field(description="Accounts with this role, active or not.")
+    active_users: int
+    assignable: bool = Field(description="False: exists, but cannot be given to anyone yet.")
 
 
 class InviteOut(BaseModel):

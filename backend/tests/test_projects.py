@@ -62,9 +62,10 @@ async def test_pm_creates_project_with_members(
     assert body["version"] == 1
     assert body["created_by"] == str(pm.id)
     assert body["task_summary"]["total"] == 0
-    assert [(m["user_id"], m["project_role"]) for m in body["members"]] == [
-        (str(dev.id), "project_lead")
-    ]
+    assert {(m["user_id"], m["project_role"]) for m in body["members"]} == {
+        (str(dev.id), "project_lead"),
+        (str(pm.id), "project_lead"),  # the creator always leads the project
+    }
     assert response.headers["location"] == f"{URL}/{body['id']}"
 
 
@@ -448,7 +449,7 @@ async def test_member_lifecycle(client: httpx.AsyncClient, session: AsyncSession
     assert promoted.json()["project_role"] == "project_lead"
 
     listing = await client.get(base, headers=as_user(dev.id))  # members may see the team
-    assert [m["user_id"] for m in listing.json()] == [str(dev.id)]
+    assert {m["user_id"] for m in listing.json()} == {str(dev.id), str(pm.id)}
 
     assert (await client.delete(f"{base}/{dev.id}", headers=headers)).status_code == 204
     assert (await client.delete(f"{base}/{dev.id}", headers=headers)).status_code == 404

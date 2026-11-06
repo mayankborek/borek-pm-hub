@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.common.enums import ProjectRole, ProjectStatus
 from app.common.validation import check_date, clean_optional_text, clean_text
+from app.organisations.schemas import OrganisationBrief
 
 _CODE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$", re.ASCII)
 MAX_DESCRIPTION = 20_000
@@ -75,6 +76,7 @@ class ProjectCreate(BaseModel):
     status: ProjectStatus = ProjectStatus.PLANNED
     start_date: date | None = None
     target_end_date: date | None = None
+    client_organisation_id: uuid.UUID | None = None
     members: list[MemberIn] = Field(default_factory=list, max_length=MAX_MEMBERS)
 
     _clean_desc = field_validator("description")(_clean_description)
@@ -112,6 +114,9 @@ class ProjectUpdate(BaseModel):
     status: ProjectStatus | None = None
     start_date: date | None = None
     target_end_date: date | None = None
+    client_organisation_id: uuid.UUID | None = Field(
+        default=None, description="The customer; null removes it."
+    )
 
     @field_validator("name")
     @classmethod
@@ -135,6 +140,8 @@ class ProjectOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None
+    archived_by: uuid.UUID | None
+    client_organisation: OrganisationBrief | None
     version: int
     task_summary: TaskSummary
 

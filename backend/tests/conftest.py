@@ -20,9 +20,9 @@ from sqlalchemy.pool import NullPool
 
 from alembic import command
 from alembic.config import Config
-from app.common.enums import GlobalRole
+from app.common.enums import GlobalRole, ProjectRole
 from app.core.config import get_settings
-from app.projects.models import Project
+from app.projects.models import Project, ProjectMember
 from app.tasks import statuses
 from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
@@ -79,7 +79,7 @@ async def session(test_db_url: str) -> AsyncIterator[AsyncSession]:
         await connection.execute(
             text(
                 "TRUNCATE task_activity, task_attachments, task_comments, tasks, "
-                "project_statuses, project_members, projects, users "
+                "project_statuses, project_members, projects, users, organisations "
                 "RESTART IDENTITY CASCADE"
             )
         )
@@ -106,6 +106,14 @@ async def make_project(session: AsyncSession, created_by: uuid.UUID, code: str =
     session.add(project)
     await session.flush()
     await statuses.create_defaults(session, project.id)  # like POST /projects does
+    creator = await session.get(User, created_by)
+    if creator is not None and creator.global_role in (GlobalRole.PM, GlobalRole.MANAGER):
+        session.add(  # like POST /projects does: the creator leads the project
+            ProjectMember(
+                project_id=project.id, user_id=created_by, project_role=ProjectRole.PROJECT_LEAD
+            )
+        )
+        await session.flush()
     return project
 
 

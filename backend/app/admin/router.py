@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin import service
 from app.admin.schemas import (
+    AdminRoleOut,
     AdminUserCreate,
     AdminUserCreatedOut,
     AdminUserListOut,
@@ -26,6 +27,7 @@ from app.core.database import SessionDep
 from app.users.models import User
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
+roles_router = APIRouter(prefix="/admin/roles", tags=["admin"])
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
@@ -52,6 +54,14 @@ async def _with_invite(
         user=await _one(session, user),
         invite=InviteOut(url=invite_url(token, settings), expires_at=expires_at),
     )
+
+
+@roles_router.get("", response_model=list[AdminRoleOut])
+async def list_roles(actor: CurrentUser, session: SessionDep) -> list[AdminRoleOut]:
+    """The roles in the system and how many accounts hold each. The list is fixed: rights are
+    defined in the code, so an administrator gives roles to people but does not invent new ones."""
+    require(actor, Action.ADMIN_USERS)
+    return await service.list_roles(session)
 
 
 @router.get("", response_model=AdminUserListOut)

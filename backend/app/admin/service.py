@@ -14,13 +14,22 @@ from typing import Literal
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.admin.schemas import AdminProjectOut, AdminUserCreate, AdminUserOut, AdminUserUpdate
+from app.admin.schemas import (
+    AdminProjectOut,
+    AdminRoleOut,
+    AdminUserCreate,
+    AdminUserOut,
+    AdminUserUpdate,
+)
+from app.audit.service import record_audit
 from app.auth.invites import issue_invite, pending_invite_user_ids
 from app.auth.permissions import admin_condition, is_admin
-from app.common.enums import GlobalRole
+from app.common.enums import ASSIGNABLE_GLOBAL_ROLES, GLOBAL_ROLE_LABELS, GlobalRole
 from app.common.validation import like_escape
 from app.core.config import Settings
 from app.core.errors import AppError
+from app.organisations.models import Organisation
+from app.organisations.schemas import OrganisationBrief
 from app.projects.models import Project, ProjectMember
 from app.users.models import User
 
@@ -43,6 +52,23 @@ async def _email_taken(session: AsyncSession, email: str, *, except_id: uuid.UUI
     if except_id is not None:
         query = query.where(User.id != except_id)
     return await session.scalar(query) is not None
+
+
+async def _check_organisation(session: AsyncSession, organisation_id: uuid.UUID) -> None:
+    organisation = await session.get(Organisation, organisation_id)
+    if organisation is None or organisation.archived_at is not None:
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "The request is not valid.",
+            [
+                {
+                    "field": "organisation_id",
+                    "issue": "unknown_organisation",
+                    "message": "This is not an active organisation.",
+                }
+            ],
+        )
 
 
 def _email_conflict() -> AppError:
@@ -82,6 +108,13 @@ async def to_out(session: AsyncSession, users: list[User]) -> list[AdminUserOut]
         for user_id, project_id, code, name in rows:
             projects[user_id].append(AdminProjectOut(id=project_id, code=code, name=name))
     pending = await pending_invite_user_ids(session, ids)
+    organisation_ids = {u.organisation_id for u in users if u.organisation_id}
+    organisations: dict[uuid.UUID | None, OrganisationBrief] = {}
+    if organisation_ids:
+        found = await session.execute(
+            select(Organisation.id, Organisation.name).where(Organisation.id.in_(organisation_ids))
+        )
+        organisations = {r.id: OrganisationBrief(id=r.id, name=r.name) for r in found.all()}
     return [
         AdminUserOut(
             id=u.id,
@@ -90,6 +123,7 @@ async def to_out(session: AsyncSession, users: list[User]) -> list[AdminUserOut]
             role=u.global_role,
             is_active=u.is_active,
             join_date=u.join_date,
+            organisation=organisations.get(u.organisation_id),
             password_set=u.password_hash is not None,
             invite_pending=u.id in pending,
             projects=projects[u.id],
@@ -138,7 +172,34 @@ async def list_users(
     return list(rows), total, active_total
 
 
+async def list_roles(session: AsyncSession) -> list[AdminRoleOut]:
+    """Every role the database accepts, with how many accounts hold it (zero included)."""
+    rows = await session.execute(
+        select(
+            User.global_role,
+            func.count(User.id),
+            func.count(User.id).filter(User.is_active.is_(True)),
+        ).group_by(User.global_role)
+    )
+    counts = {role: (total, active) for role, total, active in rows.all()}
+    return [
+        AdminRoleOut(
+            id=role.value,
+            name=GLOBAL_ROLE_LABELS[role],
+            users=counts.get(role.value, (0, 0))[0],
+            active_users=counts.get(role.value, (0, 0))[1],
+            assignable=role in ASSIGNABLE_GLOBAL_ROLES,
+        )
+        for role in GlobalRole
+    ]
+
+
 # --- writing ------------------------------------------------------------------------------------
+
+
+def _audit_value(value: object) -> str | None:
+    """Dates and ids as text, so the values fit in JSON."""
+    return None if value is None else str(value)
 
 
 async def create_user(
@@ -147,12 +208,26 @@ async def create_user(
     """Create an account without a password and its first invite link. Commits."""
     if await _email_taken(session, data.email, except_id=None):
         raise _email_conflict()
+    if data.organisation_id:
+        await _check_organisation(session, data.organisation_id)
     user = User(
-        name=data.name, email=data.email, global_role=data.role.value, join_date=data.join_date
+        name=data.name,
+        email=data.email,
+        global_role=data.role.value,
+        join_date=data.join_date,
+        organisation_id=data.organisation_id,
     )
     session.add(user)
     await session.flush()
     token, expires_at = await issue_invite(session, user, actor, settings)
+    record_audit(
+        session,
+        actor,
+        "user.created",
+        "user",
+        user.id,
+        after={"name": user.name, "email": user.email, "role": user.global_role},
+    )
     await session.commit()
     return user, token, expires_at
 
@@ -162,6 +237,8 @@ async def update_user(
 ) -> User:
     user = await get_user(session, user_id)
     changes = data.model_dump(exclude_unset=True)
+    tracked = ("name", "email", "global_role", "join_date", "organisation_id")
+    before = {field: _audit_value(getattr(user, field)) for field in tracked}
     if "role" in changes and changes["role"].value != user.global_role:
         if user.id == actor.id:
             raise AppError(409, "CANNOT_CHANGE_OWN_ROLE", "You cannot change your own role.")
@@ -176,6 +253,21 @@ async def update_user(
         user.name = changes["name"]
     if "join_date" in changes:
         user.join_date = changes["join_date"]
+    if "organisation_id" in changes:
+        if changes["organisation_id"]:
+            await _check_organisation(session, changes["organisation_id"])
+        user.organisation_id = changes["organisation_id"]
+    after = {field: _audit_value(getattr(user, field)) for field in tracked}
+    if after != before:
+        record_audit(
+            session,
+            actor,
+            "user.updated",
+            "user",
+            user.id,
+            before={k: v for k, v in before.items() if after[k] != v},
+            after={k: v for k, v in after.items() if before[k] != v},
+        )
     await session.commit()
     return user
 
@@ -191,6 +283,9 @@ async def set_active(
             raise AppError(409, "CANNOT_DEACTIVATE_SELF", "You cannot deactivate your own account.")
         if is_admin(user):
             await _ensure_another_admin(session, user)
+    if user.is_active != active:
+        action = "user.activated" if active else "user.deactivated"
+        record_audit(session, actor, action, "user", user.id)
     user.is_active = active
     await session.commit()
     return user
@@ -204,5 +299,6 @@ async def new_invite(
     if not user.is_active:
         raise AppError(409, "USER_INACTIVE", "Activate the user before creating a link.")
     token, expires_at = await issue_invite(session, user, actor, settings)
+    record_audit(session, actor, "user.invite_created", "user", user.id)  # never the token
     await session.commit()
     return user, token, expires_at

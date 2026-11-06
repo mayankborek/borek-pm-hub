@@ -17,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.common.enums import GlobalRole, sql_in
 from app.core.database import Base, IdMixin, TimestampMixin
+from app.organisations import models as _organisations  # noqa: F401  (the table users points at)
 
 
 class User(IdMixin, TimestampMixin, Base):
@@ -34,11 +35,18 @@ class User(IdMixin, TimestampMixin, Base):
         Integer, nullable=False, default=0, server_default=text("0")
     )
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Part of every access token; raising it (sign out, password reset) ends all older tokens.
+    token_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0")
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )
     # Optional: the day the person joined (set by the administrator).
     join_date: Mapped[date | None] = mapped_column(Date)
+    organisation_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("organisations.id"), index=True
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.email} ({self.global_role})>"

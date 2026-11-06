@@ -14,7 +14,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.permissions import has_lead_rights
+from app.auth.permissions import may_lead_projects, works_on_tasks_condition
 from app.common.enums import (
     AttachmentKind,
     MembershipSource,
@@ -69,7 +69,7 @@ def normalize_name(value: str) -> str:
 
 
 class UserIndex:
-    """Active users by e-mail and by name."""
+    """Active users who can work on projects, by e-mail and by name."""
 
     def __init__(self, users: list[User]) -> None:
         self._by_email = {user.email.lower(): user for user in users}
@@ -163,7 +163,15 @@ async def import_tasks(
             )
         )
     )
-    users = UserIndex(list((await session.scalars(select(User).where(User.is_active))).all()))
+    users = UserIndex(
+        list(
+            (
+                await session.scalars(
+                    select(User).where(User.is_active, works_on_tasks_condition())
+                )
+            ).all()
+        )
+    )
     member_ids = set(
         await session.scalars(
             select(ProjectMember.user_id).where(ProjectMember.project_id == project.id)
@@ -289,7 +297,7 @@ async def _save(
     first = last - len(ordered) + 1
 
     for user in new_members:  # D4: assignees join the project, as the import is the only way in
-        role = ProjectRole.PROJECT_LEAD if has_lead_rights(user) else ProjectRole.DEVELOPER
+        role = ProjectRole.PROJECT_LEAD if may_lead_projects(user) else ProjectRole.DEVELOPER
         session.add(
             ProjectMember(
                 project_id=project.id,

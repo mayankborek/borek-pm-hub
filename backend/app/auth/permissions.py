@@ -38,6 +38,14 @@ class Action(StrEnum):
     DASHBOARD_VIEW = "dashboard:view"
     USER_LIST = "user:list"  # search users for the assignee picker
     ADMIN_USERS = "admin:users"  # create, edit, deactivate users; invite links (admin only)
+    AUDIT_VIEW = "audit:view"  # read the audit log (admin only)
+    ORGANISATION_MANAGE = "organisation:manage"  # create, edit, archive; account managers
+    ORGANISATION_VIEW = "organisation:view"  # read, for example to pick a project's client
+    PORTFOLIO_VIEW = "portfolio:view"  # overview across projects (Manager, Account Manager)
+    ACCESS_OVERVIEW = "access:overview"  # who is in which project (Manager)
+    STATUS_REPORT_MANAGE = "status_report:manage"  # write and publish; see drafts
+    STAKEHOLDER_MANAGE = "stakeholder:manage"  # read and change the register (contact details)
+    FINANCE_MANAGE = "finance:manage"  # read and change budget and entries
 
 
 @dataclass(frozen=True)
@@ -47,6 +55,7 @@ class Resource:
     project_id: uuid.UUID | None = None
     is_member: bool = False
     is_project_lead: bool = False
+    is_account_manager: bool = False  # the project's client is assigned to this Account Manager
     assignee_id: uuid.UUID | None = None
     creator_id: uuid.UUID | None = None
 
@@ -65,13 +74,33 @@ _PM_ONLY = frozenset(
         Action.USER_LIST,
     }
 )
+# A PM has these without being in any project; every other right depends on the project role.
+_PM_WITHOUT_PROJECT = frozenset(
+    {Action.PROJECT_CREATE, Action.DASHBOARD_VIEW, Action.USER_LIST, Action.ORGANISATION_VIEW}
+)
+# Oversight across projects and money: never part of a project lead's rights.
+NOT_FOR_LEADS = frozenset({Action.PORTFOLIO_VIEW, Action.ACCESS_OVERVIEW, Action.FINANCE_MANAGE})
+# Account Managers read, and handle reports, stakeholders and money; on a project only when its
+# client is assigned to them.
+_ACCOUNT_MANAGER_ANYWHERE = frozenset(
+    {Action.PROJECT_LIST, Action.PORTFOLIO_VIEW, Action.ORGANISATION_VIEW}
+)
+_ACCOUNT_MANAGER_ON_PROJECT = frozenset(
+    {
+        Action.PROJECT_VIEW,
+        Action.TASK_VIEW,
+        Action.STATUS_REPORT_MANAGE,
+        Action.STAKEHOLDER_MANAGE,
+        Action.FINANCE_MANAGE,
+    }
+)
 # Developers need project membership for these.
 _MEMBER_ACTIONS = frozenset(
     {Action.PROJECT_VIEW, Action.TASK_VIEW, Action.TASK_CREATE, Action.TASK_COMMENT}
 )
 _ANY_USER = frozenset({Action.PROJECT_LIST, Action.MY_TASKS})
 # The administrator can do these and nothing else; nobody else can do them (not even a PM).
-_ADMIN_ONLY = frozenset({Action.ADMIN_USERS})
+ADMIN_ONLY = frozenset({Action.ADMIN_USERS, Action.AUDIT_VIEW, Action.ORGANISATION_MANAGE})
 
 
 # --- role helpers -------------------------------------------------------------------------------
@@ -81,17 +110,31 @@ _ADMIN_ONLY = frozenset({Action.ADMIN_USERS})
 
 def sees_all_projects(user: User) -> bool:
     """Sees every project, including archived ones, in lists, dashboards and project pages."""
-    return user.global_role == GlobalRole.PM
+    return user.global_role == GlobalRole.MANAGER
 
 
-def has_lead_rights(user: User) -> bool:
-    """May do the lead's work on other people's items: assign tasks to anyone on creation,
-    archive comments and attachments of others."""
-    return user.global_role == GlobalRole.PM
+def may_lead_projects(user: User) -> bool:
+    """A role that can run projects: a PM where they are project lead, a Manager everywhere."""
+    return user.global_role in (GlobalRole.PM, GlobalRole.MANAGER)
+
+
+def has_lead_rights(user: User, *, is_project_lead: bool = False) -> bool:
+    """May do the lead's work in this project: edit and assign tasks, manage members, archive
+    comments and attachments of others. A developer who is project lead only manages statuses."""
+    return sees_all_projects(user) or (user.global_role == GlobalRole.PM and is_project_lead)
 
 
 def is_admin(user: User) -> bool:
     return user.global_role == GlobalRole.ADMIN
+
+
+def is_account_manager(user: User) -> bool:
+    return user.global_role == GlobalRole.ACCOUNT_MANAGER
+
+
+def account_manager_condition() -> ColumnElement[bool]:
+    """SQL condition for "is an Account Manager" (only they can be assigned to a client)."""
+    return User.global_role == GlobalRole.ACCOUNT_MANAGER.value
 
 
 def admin_condition() -> ColumnElement[bool]:
@@ -101,21 +144,36 @@ def admin_condition() -> ColumnElement[bool]:
 
 def works_on_tasks_condition() -> ColumnElement[bool]:
     """SQL condition for the roles that do project work, so the assignee picker lists only them."""
-    return User.global_role.in_([GlobalRole.PM.value, GlobalRole.DEVELOPER.value])
+    return User.global_role.in_(
+        [GlobalRole.PM.value, GlobalRole.DEVELOPER.value, GlobalRole.MANAGER.value]
+    )
 
 
 def can(user: User, action: Action, resource: Resource | None = None) -> bool:
     if not user.is_active:
         return False
     if is_admin(user):
-        return action in _ADMIN_ONLY  # no project data: denied by default
-    if action in _ADMIN_ONLY:
+        # No project data: denied by default.
+        return action in ADMIN_ONLY or action is Action.ORGANISATION_VIEW
+    if action in ADMIN_ONLY:
         return False
-    if has_lead_rights(user):
+    if sees_all_projects(user):
         return True
-    if user.global_role != GlobalRole.DEVELOPER:
-        return False
     resource = resource or Resource()
+    if is_account_manager(user):
+        if action in _ACCOUNT_MANAGER_ON_PROJECT:
+            return resource.is_account_manager
+        return action in _ACCOUNT_MANAGER_ANYWHERE
+    if action in NOT_FOR_LEADS:
+        return False
+    if user.global_role == GlobalRole.PM:
+        if action in _PM_WITHOUT_PROJECT:
+            return True
+        if resource.is_member and has_lead_rights(user, is_project_lead=resource.is_project_lead):
+            return True
+        # Otherwise rights follow the project role: a plain member is treated like a developer.
+    elif user.global_role != GlobalRole.DEVELOPER:
+        return False
     if action in _ANY_USER:
         return True
     if action in _MEMBER_ACTIONS:
@@ -147,6 +205,7 @@ def require(user: User, action: Action, resource: Resource | None = None) -> Non
         and resource.project_id is not None
         and not sees_all_projects(user)
         and not resource.is_member
+        and not resource.is_account_manager
     ):
         raise AppError(404, "NOT_FOUND", "Project not found.")
     raise AppError(403, "FORBIDDEN", "You do not have permission to do this.")

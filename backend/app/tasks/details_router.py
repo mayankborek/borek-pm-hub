@@ -13,6 +13,7 @@ from app.common.validation import PageParam, PageSizeParam
 from app.core import storage
 from app.core.database import SessionDep
 from app.core.errors import AppError
+from app.projects.membership import lead_rights_in
 from app.tasks import details
 from app.tasks.details_schemas import (
     ActivityListOut,
@@ -79,9 +80,10 @@ async def edit_comment(
 async def delete_comment(
     task_id: uuid.UUID, comment_id: uuid.UUID, user: CurrentUser, session: SessionDep
 ) -> None:
-    """Archive a comment. The author or a PM can."""
-    await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
-    await details.archive_comment(session, task_id, comment_id, user)
+    """Archive a comment. The author or someone with lead rights in the project can."""
+    task = await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
+    lead_rights = await lead_rights_in(session, user, task.project_id)
+    await details.archive_comment(session, task_id, comment_id, user, lead_rights=lead_rights)
 
 
 # --- attachments ------------------------------------------------------------------------------
@@ -140,6 +142,7 @@ async def download_file(
 async def delete_attachment(
     task_id: uuid.UUID, attachment_id: uuid.UUID, user: CurrentUser, session: SessionDep
 ) -> None:
-    """Archive an attachment. The uploader or a PM can."""
-    await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
-    await details.archive_attachment(session, task_id, attachment_id, user)
+    """Archive an attachment. The uploader or someone with lead rights in the project can."""
+    task = await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
+    lead_rights = await lead_rights_in(session, user, task.project_id)
+    await details.archive_attachment(session, task_id, attachment_id, user, lead_rights=lead_rights)

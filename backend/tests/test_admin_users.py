@@ -269,7 +269,6 @@ async def test_duplicate_emails_are_refused_whatever_the_case(
         {"name": "   "},
         {"name": "bad\x00name"},
         {"role": "client"},  # exists, but the admin screens do not offer it yet
-        {"role": "manager"},
         {"role": "superuser"},
         {"join_date": "1999-12-31"},
         {"join_date": "2101-01-01"},
@@ -370,7 +369,7 @@ async def test_list_shows_projects_counts_search_and_filters(
     assert [p["code"] for p in by_name["Noah Patel"]["projects"]] == ["WEB"]  # archived left out
     assert set(by_name["Alex Morgan"]) == {
         "id", "name", "email", "role", "is_active", "join_date", "password_set",
-        "invite_pending", "projects", "created_at",
+        "invite_pending", "projects", "created_at", "organisation",
     }  # fmt: skip
 
     async def names_for(**params: str) -> list[str]:
@@ -484,7 +483,7 @@ async def test_a_role_that_has_no_views_yet_cannot_be_given(
     target = await make_user(session, GlobalRole.DEVELOPER)
 
     response = await client.patch(
-        f"{URL}/{target.id}", json={"role": "account_manager"}, headers=headers(admin)
+        f"{URL}/{target.id}", json={"role": "client"}, headers=headers(admin)
     )
 
     assert response.status_code == 422

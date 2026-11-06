@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import StaleDataError
 
+from app.auth.permissions import works_on_tasks_condition
 from app.common.enums import (
     ProjectStatus,
     StatusCategory,
@@ -17,6 +18,7 @@ from app.common.enums import (
 )
 from app.common.validation import like_escape
 from app.core.errors import AppError
+from app.projects.membership import visible_project_ids
 from app.projects.models import Project, ProjectMember
 from app.tasks import activity, statuses
 from app.tasks.models import Task, WorkflowStatus
@@ -234,13 +236,9 @@ def _order_by(sort: TaskSort) -> list[Any]:
     return [primary, Task.created_at.desc(), Task.id]
 
 
-def scope_for_developer(user: User) -> ColumnElement[bool]:
-    """Developers see tasks of the active projects they are members of."""
-    return Task.project_id.in_(
-        select(ProjectMember.project_id)
-        .join(Project, Project.id == ProjectMember.project_id)
-        .where(ProjectMember.user_id == user.id, Project.archived_at.is_(None))
-    )
+def scope_for_member(user: User) -> ColumnElement[bool]:
+    """Tasks of the active projects the user reaches (member, or account manager of the client)."""
+    return Task.project_id.in_(visible_project_ids(user))
 
 
 def _list_conditions(
@@ -335,9 +333,15 @@ async def board(
 async def _check_assignee(session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID) -> None:
     """The assignee must be an active user AND a member of the project (add them as a member
     first). Assigning never adds anyone to the project."""
-    is_active = await session.scalar(select(User.is_active).where(User.id == user_id))
-    if not is_active:
-        raise _invalid("assignee_id", "unknown_user", "The assignee must be an active user.")
+    eligible = await session.scalar(
+        select(User.id).where(
+            User.id == user_id, User.is_active.is_(True), works_on_tasks_condition()
+        )
+    )
+    if eligible is None:
+        raise _invalid(
+            "assignee_id", "unknown_user", "The assignee must be an active project worker."
+        )
     member_id = await session.scalar(
         select(ProjectMember.id).where(
             ProjectMember.project_id == project_id, ProjectMember.user_id == user_id

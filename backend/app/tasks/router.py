@@ -6,17 +6,18 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from sqlalchemy import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.auth.permissions import Action, Resource, has_lead_rights, require, sees_all_projects
-from app.common.enums import ProjectRole, StatusCategory, TaskPriority
+from app.auth.permissions import Action, may_lead_projects, require, sees_all_projects
+from app.common.enums import StatusCategory, TaskPriority
 from app.common.validation import PageParam, PageSizeParam
 from app.core.config import get_settings
 from app.core.database import SessionDep
 from app.core.errors import AppError
 from app.projects import service as project_service
-from app.projects.membership import project_role
+from app.projects.membership import lead_rights_in, project_access
 from app.projects.models import Project
 from app.tasks import csv_import, importer, service, statuses, transfer
 from app.tasks.models import Task
@@ -52,22 +53,12 @@ async def _project_for(
     creator_id: uuid.UUID | None = None,
     writable: bool = False,
 ) -> Project:
-    """Load the project and apply `action`: developers who are not members get 404."""
+    """Load the project and apply `action`: people who cannot see the project get 404."""
     project = await project_service.get_project(session, project_id)
-    role = await project_role(session, user.id, project_id)
+    access = await project_access(session, user, project)
     require(
-        user,
-        action,
-        Resource(
-            project_id=project_id,
-            is_member=role is not None,
-            is_project_lead=role == ProjectRole.PROJECT_LEAD.value,
-            assignee_id=assignee_id,
-            creator_id=creator_id,
-        ),
+        user, action, access.resource(project_id, assignee_id=assignee_id, creator_id=creator_id)
     )
-    if project.archived_at is not None and not sees_all_projects(user):
-        raise project_service.not_found()
     if writable:
         project_service.ensure_writable(project)  # archived or cancelled: read-only
     return project
@@ -87,11 +78,27 @@ async def _task_for(
         writable=writable,
     )
     if task.archived_at is not None:
-        if not sees_all_projects(user):
+        if not await lead_rights_in(session, user, task.project_id):
             raise service.not_found()
         if writable:
             raise AppError(409, "TASK_ARCHIVED", "The task is archived.")
     return task
+
+
+def _cross_project_scope(user: User, filters: service.TaskFilters) -> ColumnElement[bool] | None:
+    """Visibility for lists across projects. Archived tasks there are for Managers only; a PM asks
+    for them per project, where lead rights can be checked."""
+    if sees_all_projects(user):
+        return None
+    filters.include_archived = False
+    return service.scope_for_member(user)
+
+
+async def _limit_archived_to_leads(
+    session: AsyncSession, user: User, project_id: uuid.UUID, filters: service.TaskFilters
+) -> None:
+    if filters.include_archived and not await lead_rights_in(session, user, project_id):
+        filters.include_archived = False
 
 
 def task_filters(
@@ -106,7 +113,9 @@ def task_filters(
     due_before: Annotated[date | None, Query(description="Due strictly before this date")] = None,
     due_after: Annotated[date | None, Query(description="Due strictly after this date")] = None,
     overdue: Annotated[bool, Query(description="Past due and not in a done status")] = False,
-    include_archived: Annotated[bool, Query(description="PM only; ignored for developers")] = False,
+    include_archived: Annotated[
+        bool, Query(description="Managers, and PMs on projects they lead; ignored for others")
+    ] = False,
 ) -> service.TaskFilters:
     if due_before and due_after and due_after >= due_before:
         raise AppError(
@@ -132,7 +141,7 @@ def task_filters(
         due_before=due_before,
         due_after=due_after,
         overdue=overdue,
-        include_archived=include_archived and sees_all_projects(user),
+        include_archived=include_archived and may_lead_projects(user),
     )
 
 
@@ -208,9 +217,8 @@ async def create_task(
     response: Response,
 ) -> TaskOut:
     project = await _project_for(session, user, project_id, Action.TASK_CREATE, writable=True)
-    task = await service.create_task(
-        session, project, user, body, lead_rights=has_lead_rights(user)
-    )
+    lead_rights = await lead_rights_in(session, user, project_id)
+    task = await service.create_task(session, project, user, body, lead_rights=lead_rights)
     response.headers["Location"] = f"/api/v1/tasks/{task.id}"
     return task
 
@@ -267,6 +275,7 @@ async def list_project_tasks(
     page_size: PageSizeParam = 50,
 ) -> TaskListOut | BoardOut:
     await _project_for(session, user, project_id, Action.TASK_VIEW)
+    await _limit_archived_to_leads(session, user, project_id, filters)
     filters.project_id = project_id
     if view == "board":
         return await service.board(session, project_id, filters, sort)
@@ -289,10 +298,10 @@ async def list_tasks(
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> TaskListOut:
-    """PMs see tasks of every active project, developers those of their projects."""
+    """Managers see tasks of every active project, everyone else those of their projects."""
     require(user, Action.PROJECT_LIST)  # roles without project views get 403, even as members
     filters.project_id = project_id
-    scope = None if sees_all_projects(user) else service.scope_for_developer(user)
+    scope = _cross_project_scope(user, filters)
     items, total = await service.list_tasks(
         session, filters, sort=sort, page=page, page_size=page_size, scope=scope
     )
@@ -319,6 +328,7 @@ async def export_project_tasks(
     """Download the tasks of one project (same filters as the list) as a CSV file. The file can
     be imported again, into this or another project."""
     project = await _project_for(session, user, project_id, Action.TASK_VIEW)
+    await _limit_archived_to_leads(session, user, project_id, filters)
     filters.project_id = project_id
     tasks = await service.export_tasks(session, filters)
     name = f"tasks-{project.code}-{datetime.now(UTC).date().isoformat()}.csv"
@@ -335,7 +345,7 @@ async def export_tasks(
     """Download what `GET /tasks` lists (same filters, same visibility) as a CSV file."""
     require(user, Action.PROJECT_LIST)
     filters.project_id = project_id
-    scope = None if sees_all_projects(user) else service.scope_for_developer(user)
+    scope = _cross_project_scope(user, filters)
     tasks = await service.export_tasks(session, filters, scope=scope)
     name = f"tasks-all-{datetime.now(UTC).date().isoformat()}.csv"
     return _csv_response(transfer.build_csv(tasks), name)
@@ -356,7 +366,7 @@ async def my_tasks(
     filters.project_id = project_id
     filters.assignee_id = user.id  # always the caller; the `assignee_id` and `unassigned` filters
     filters.unassigned = False  # do not apply here
-    scope = None if sees_all_projects(user) else service.scope_for_developer(user)
+    scope = _cross_project_scope(user, filters)
     items, total = await service.list_tasks(
         session, filters, sort=sort, page=page, page_size=page_size, scope=scope
     )
