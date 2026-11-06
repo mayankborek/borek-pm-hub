@@ -11,6 +11,7 @@ const TITLES: Record<string, string> = {
   [paths.adminUsers]: 'Users',
   [paths.adminOrganisations]: 'Client organisations',
   [paths.adminRoles]: 'Role access',
+  [paths.adminProfile]: 'Profile',
 };
 
 const NAV = [
@@ -52,7 +53,7 @@ export function AdminLayout() {
                 EN
               </button>
             </div>
-            <Link className="cp-user" to={paths.profile}>
+            <Link className="cp-user" to={paths.adminProfile}>
               <div className="cp-avatar" aria-hidden="true">
                 {initialsOf(user.name)}
               </div>

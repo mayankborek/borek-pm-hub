@@ -40,7 +40,7 @@ export function ProfilePage() {
     .join('')
     .slice(0, 2)
     .toUpperCase();
-  const roleLabel = t(user.role === 'pm' ? 'Project Manager' : 'Developer');
+  const roleLabel = t(user.role === 'pm' ? 'Project Manager' : user.role === 'admin' ? 'Administrator' : 'Developer');
 
   const save = (e?: React.FormEvent) => {
     e?.preventDefault();

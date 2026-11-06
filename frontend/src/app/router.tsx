@@ -102,6 +102,7 @@ export const router = createBrowserRouter([
               { path: 'organisations/:orgId', element: <AdminOrganisationPage /> },
               { path: 'roles', element: <AdminRolesPage /> },
               { path: 'roles/:roleId', element: <AdminRolePage /> },
+              { path: 'profile', element: <ProfilePage /> },
             ],
           },
         ],
