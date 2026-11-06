@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { paths } from './routes';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { SetPasswordPage } from '@/features/auth/SetPasswordPage';
 import { ClientLoginPage } from '@/features/auth/client/ClientLoginPage';
 import {
   ClientAccessUnavailablePage,
@@ -42,6 +43,9 @@ import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';
 import { RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly } from './guards';
 
 export const router = createBrowserRouter([
+  // Public, reachable even while signed in (an administrator may open a link in their own browser)
+  { path: 'set-password', element: <SetPasswordPage /> },
+
   // Public
   {
     element: <RedirectIfAuthed />,

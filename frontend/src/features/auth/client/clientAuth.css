@@ -1,6 +1,6 @@
 /* Invite-based client flow: extends login.css (same shell) with the extra elements from borek-flow-auth. */
 .login-page {
-  input[type=text]{width:100%;height:38px;border:1px solid var(--l-border);border-radius:0;padding:0 16px;font:400 12px Inter,sans-serif;color:var(--l-navy);background:#fff}
+  input[type=text]{width:100%;height:38px;border:1px solid var(--l-border);border-radius:0;padding:0 16px;font:400 12px Inter,sans-serif;color:var(--l-navy);background:var(--l-field)}
   input[type=text]:disabled,input[readonly]{color:var(--l-text-secondary)}
   .field-hint{font-size:11px;line-height:14px;color:var(--l-text-secondary);margin:4px 0 0}
 
@@ -17,9 +17,9 @@
   .card .meta{font-size:12px;line-height:15px}
 
   a.btn{text-decoration:none;color:#fff}
-  .btn.secondary{background:#fff;color:var(--l-navy);border-color:var(--l-navy)}
+  .btn.secondary{background:var(--l-field);color:var(--l-navy);border-color:var(--l-navy)}
   a.btn.secondary{color:var(--l-navy)}
-  .btn.secondary:hover{background:#f3f4f8}
+  .btn.secondary:hover{background:var(--surface-2)}
   .btn + .btn,.btn + a.btn,a.btn + a.btn{margin-top:12px}
 
   .alt{margin:8px 0 0;font-size:12px;line-height:15px;color:var(--l-text-secondary);text-align:center}
