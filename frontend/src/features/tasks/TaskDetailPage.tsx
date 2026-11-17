@@ -303,7 +303,7 @@ export function TaskDetailPage() {
                   className={tab === k ? 'td-tab on' : 'td-tab'}
                   onClick={() => setTab(k)}
                 >
-                  {t(k === 'all' ? 'All' : k === 'comments' ? 'Comments' : 'History')}
+                  {t(k === 'all' ? 'All' : k === 'comments' ? 'Comments' : 'Audit log')}
                 </button>
               ))}
             </div>
@@ -333,7 +333,7 @@ export function TaskDetailPage() {
                 )}
               </ul>
             ) : tab !== 'comments' && activity.isError ? (
-              <p className="td-empty">{t('History could not be loaded.')}</p>
+              <p className="td-empty">{t('Audit log could not be loaded.')}</p>
             ) : (
               !comments.isPending &&
               !activity.isPending && <p className="td-none">{t(tab === 'history' ? 'No activity recorded yet.' : 'No comments yet.')}</p>
