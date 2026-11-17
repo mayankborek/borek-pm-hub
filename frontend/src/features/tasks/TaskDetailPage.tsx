@@ -91,6 +91,11 @@ export function TaskDetailPage() {
   const activity = useActivity(taskId);
   const addComment = useAddComment(taskId);
   const [comment, setComment] = useState('');
+  const [tab, setTab] = useState<'all' | 'comments' | 'history'>('all');
+  const entries = [
+    ...(tab === 'history' ? [] : (comments.data ?? []).map((c) => ({ kind: 'comment' as const, c, at: c.created_at }))),
+    ...(tab === 'comments' ? [] : (activity.data?.items ?? []).map((a) => ({ kind: 'audit' as const, a, at: a.created_at }))),
+  ].sort((x, y) => (x.at < y.at ? 1 : -1));
   const picker = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState('');
   // Attachments save as soon as they are picked, but the Save button stays active so the page can be confirmed.
@@ -286,67 +291,77 @@ export function TaskDetailPage() {
             </div>
           </section>
 
-          <section className="td-card" aria-labelledby="td-comments-h">
-            <h3 id="td-comments-h">{t('Comments')}</h3>
-            {comments.data?.length ? (
-              <ul className="td-comments">
-                {comments.data.map((c) => (
-                  <li key={c.id} className="td-comment">
-                    <Avatar user={c.author} round />
-                    <div>
-                      <strong>{c.author.name}</strong> <span>{stamp(c.created_at)}</span>
-                      <p>{c.body}</p>
-                    </div>
-                  </li>
-                ))}
+          <section className="td-card" aria-labelledby="td-activity-h">
+            <h3 id="td-activity-h">{t('Activity')}</h3>
+            <div className="td-tabs" role="tablist" aria-label={t('Activity')}>
+              {(['all', 'comments', 'history'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === k}
+                  className={tab === k ? 'td-tab on' : 'td-tab'}
+                  onClick={() => setTab(k)}
+                >
+                  {t(k === 'all' ? 'All' : k === 'comments' ? 'Comments' : 'History')}
+                </button>
+              ))}
+            </div>
+            {entries.length ? (
+              <ul className="td-comments td-scroll">
+                {entries.map((e) =>
+                  e.kind === 'comment' ? (
+                    <li key={`c-${e.c.id}`} className="td-comment">
+                      <Avatar user={e.c.author} round />
+                      <div>
+                        <strong>{e.c.author.name}</strong> <span>{stamp(e.c.created_at)}</span>
+                        <p>{e.c.body}</p>
+                      </div>
+                    </li>
+                  ) : (
+                    <li key={`a-${e.a.id}`} className="td-comment">
+                      <Avatar user={e.a.actor} round />
+                      <div>
+                        <strong>{e.a.actor.name}</strong> <span>{stamp(e.a.created_at)}</span>
+                        <p>{t(e.a.action.replace(/_/g, ' '))}</p>
+                        {Object.entries(e.a.changes).map(([field, change]) => (
+                          <p key={field}>{changeText(field, change, t)}</p>
+                        ))}
+                      </div>
+                    </li>
+                  ),
+                )}
               </ul>
-            ) : (
-              !comments.isPending && <p className="td-none">{t('No comments yet.')}</p>
-            )}
-            <form
-              className="td-composer"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const body = comment.trim();
-                if (!body) return;
-                addComment.mutate(body, {
-                  onSuccess: () => setComment(''),
-                  onError: () => toast.error(t('Could not post your comment.')),
-                });
-              }}
-            >
-              <input
-                aria-label={t('Add a comment')}
-                placeholder={t('Add a comment…')}
-                maxLength={5000}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-              <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
-                {t(addComment.isPending ? 'Sending…' : 'Send')}
-              </button>
-            </form>
-          </section>
-
-          <section className="td-card" aria-labelledby="td-audit-h">
-            <h3 id="td-audit-h">{t('Activity & audit log')}</h3>
-            <p className="td-sub">{t('Task updates')}</p>
-            {activity.data?.items.length ? (
-              <ul className="td-comments td-history">
-                {activity.data.items.map((a) => (
-                  <li key={a.id}>
-                    <strong>{a.actor.name}</strong> <span>{stamp(a.created_at)}</span>
-                    <p>{t(a.action.replace(/_/g, ' '))}</p>
-                    {Object.entries(a.changes).map(([field, change]) => (
-                      <p key={field}>{changeText(field, change, t)}</p>
-                    ))}
-                  </li>
-                ))}
-              </ul>
-            ) : activity.isError ? (
+            ) : tab !== 'comments' && activity.isError ? (
               <p className="td-empty">{t('History could not be loaded.')}</p>
             ) : (
-              !activity.isPending && <p className="td-empty">{t('No activity recorded yet.')}</p>
+              !comments.isPending &&
+              !activity.isPending && <p className="td-none">{t(tab === 'history' ? 'No activity recorded yet.' : 'No comments yet.')}</p>
+            )}
+            {tab !== 'history' && (
+              <form
+                className="td-composer"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const body = comment.trim();
+                  if (!body) return;
+                  addComment.mutate(body, {
+                    onSuccess: () => setComment(''),
+                    onError: () => toast.error(t('Could not post your comment.')),
+                  });
+                }}
+              >
+                <input
+                  aria-label={t('Add a comment')}
+                  placeholder={t('Add a comment…')}
+                  maxLength={5000}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
+                <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
+                  {t(addComment.isPending ? 'Sending…' : 'Send')}
+                </button>
+              </form>
             )}
           </section>
         </div>

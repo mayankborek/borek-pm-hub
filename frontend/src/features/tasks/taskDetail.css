@@ -36,6 +36,11 @@
 .td-comment { display: flex; gap: 10px; align-items: flex-start; }
 .td-comment > div { min-width: 0; overflow-wrap: anywhere; }
 .td-history { margin-bottom: 0; }
+.td-scroll { max-height: 320px; overflow-y: auto; padding-right: 4px; }
+.td-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; overflow-x: auto; }
+.td-tab { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 8px 12px; font: 600 13px Inter, sans-serif; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.td-tab:hover { color: var(--ink); }
+.td-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
 .td-composer { display: flex; gap: 12px; }
 .td-composer input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid var(--field); background: var(--surface); font: 400 14px Inter, sans-serif; }
 .td-composer .btn { height: 44px; }
