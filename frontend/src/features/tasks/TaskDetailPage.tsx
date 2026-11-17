@@ -63,9 +63,9 @@ function Description({ value, onChange, onSubmit, readOnly }: { value: string; o
       rows={6}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      // Enter adds a new line here, so Ctrl/Cmd+Enter saves.
+      // Enter saves; Shift+Enter adds a new line.
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
           e.preventDefault();
           onSubmit();
         }
