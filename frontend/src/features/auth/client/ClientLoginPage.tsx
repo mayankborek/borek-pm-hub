@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { homeFor, paths, withInvitation } from '@/app/routes';
-import { usePrefs } from '@/shared/prefs/PrefsContext';
 import ms365Logo from '@/assets/ms365-logo.png';
 import { useAuth } from '../AuthContext';
 import { InvalidCredentialsError, NoAccessError, signInWithMicrosoft, signInWithPassword } from '../authService';
@@ -19,7 +18,6 @@ const eyeProps = { viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', s
 /** Sign-in for invited clients: same credentials flow as staff, with invitation context and a way to create an account. */
 export function ClientLoginPage() {
   const { signIn } = useAuth();
-  const { setTheme } = usePrefs();
   const navigate = useNavigate();
   const from = (useLocation().state as { from?: string } | null)?.from;
   const { lang, changeLang, t, login } = useClientLang();
@@ -40,7 +38,6 @@ export function ClientLoginPage() {
   const busy = view === 'signing-in';
 
   const finish = (user: User) => {
-    setTheme('light'); // every session starts in the default light theme
     signIn(user);
     navigate(from ?? homeFor(user.role), { replace: true });
   };

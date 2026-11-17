@@ -12,7 +12,6 @@ import type { User } from './types';
 import borekLogo from '@/assets/borek-logo.png';
 import ms365Logo from '@/assets/ms365-logo.png';
 import heroArt from '@/assets/login-hero.jpg';
-import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { writeCookie } from '@/shared/prefs/cookies';
 import { LOGIN_STRINGS, initialLang, type Lang } from './loginStrings';
 import './login.css';
@@ -24,7 +23,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
   const { signIn } = useAuth();
-  const { setTheme } = usePrefs();
   const navigate = useNavigate();
   const from = (useLocation().state as { from?: string } | null)?.from;
 
@@ -54,7 +52,6 @@ export function LoginPage() {
   const busy = view === 'signing-in';
 
   const finish = (user: User) => {
-    setTheme('light'); // every session starts in the default light theme
     signIn(user);
     navigate(from ?? homeFor(user.role), { replace: true });
   };
