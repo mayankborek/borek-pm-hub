@@ -397,6 +397,8 @@ export const DE: Record<string, string> = {
   '+ Attach files': '+ Dateien anhängen',
   'Activity & audit log': 'Aktivitäten & Änderungsprotokoll',
   'Comments and updates': 'Kommentare und Aktualisierungen',
+  Comments: 'Kommentare',
+  'Task updates': 'Aufgabenaktualisierungen',
   'No comments yet.': 'Noch keine Kommentare.',
   'History could not be loaded.': 'Der Verlauf konnte nicht geladen werden.',
   'No activity recorded yet.': 'Noch keine Aktivität aufgezeichnet.',

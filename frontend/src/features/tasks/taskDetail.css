@@ -33,6 +33,9 @@
 .td-comments { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--ink); }
 .td-comments span { color: var(--muted); }
 .td-comments p { margin: 2px 0 0; white-space: pre-wrap; }
+.td-comment { display: flex; gap: 10px; align-items: flex-start; }
+.td-comment > div { min-width: 0; overflow-wrap: anywhere; }
+.td-history { margin-bottom: 0; }
 .td-composer { display: flex; gap: 12px; }
 .td-composer input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid var(--field); background: var(--surface); font: 400 14px Inter, sans-serif; }
 .td-composer .btn { height: 44px; }
