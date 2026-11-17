@@ -289,7 +289,7 @@ export function TaskDetailPage() {
           <section className="td-card" aria-labelledby="td-comments-h">
             <h3 id="td-comments-h">{t('Comments')}</h3>
             {comments.data?.length ? (
-              <ul className="td-comments td-scroll">
+              <ul className="td-comments">
                 {comments.data.map((c) => (
                   <li key={c.id} className="td-comment">
                     <Avatar user={c.author} round />
@@ -326,6 +326,28 @@ export function TaskDetailPage() {
                 {t(addComment.isPending ? 'Sending…' : 'Send')}
               </button>
             </form>
+          </section>
+
+          <section className="td-card" aria-labelledby="td-audit-h">
+            <h3 id="td-audit-h">{t('Activity & audit log')}</h3>
+            <p className="td-sub">{t('Task updates')}</p>
+            {activity.data?.items.length ? (
+              <ul className="td-comments td-history">
+                {activity.data.items.map((a) => (
+                  <li key={a.id}>
+                    <strong>{a.actor.name}</strong> <span>{stamp(a.created_at)}</span>
+                    <p>{t(a.action.replace(/_/g, ' '))}</p>
+                    {Object.entries(a.changes).map(([field, change]) => (
+                      <p key={field}>{changeText(field, change, t)}</p>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            ) : activity.isError ? (
+              <p className="td-empty">{t('History could not be loaded.')}</p>
+            ) : (
+              !activity.isPending && <p className="td-empty">{t('No activity recorded yet.')}</p>
+            )}
           </section>
         </div>
 
@@ -488,28 +510,6 @@ export function TaskDetailPage() {
                 </span>
               </div>
             ))}
-          </section>
-
-          <section className="td-card" aria-labelledby="td-audit-h">
-            <h3 id="td-audit-h">{t('Activity & audit log')}</h3>
-            <p className="td-sub">{t('Task updates')}</p>
-            {activity.data?.items.length ? (
-              <ul className="td-comments td-history td-scroll">
-                {activity.data.items.map((a) => (
-                  <li key={a.id}>
-                    <strong>{a.actor.name}</strong> <span>{stamp(a.created_at)}</span>
-                    <p>{t(a.action.replace(/_/g, ' '))}</p>
-                    {Object.entries(a.changes).map(([field, change]) => (
-                      <p key={field}>{changeText(field, change, t)}</p>
-                    ))}
-                  </li>
-                ))}
-              </ul>
-            ) : activity.isError ? (
-              <p className="td-empty">{t('History could not be loaded.')}</p>
-            ) : (
-              !activity.isPending && <p className="td-empty">{t('No activity recorded yet.')}</p>
-            )}
           </section>
         </div>
       </div>
