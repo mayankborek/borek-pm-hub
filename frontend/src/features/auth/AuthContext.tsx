@@ -35,7 +35,7 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
-  const { t } = usePrefs();
+  const { t, bindUser } = usePrefs();
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<Status>(() => (hasStoredCredentials() ? 'loading' : 'ready'));
   const [attempt, setAttempt] = useState(0);
@@ -59,6 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await logoutOnServer();
     clearSession();
   }, [clearSession]);
+
+  // Each user gets back the theme they last chose, on sign-in and when a session resumes.
+  const userId = user?.id ?? null;
+  useEffect(() => bindUser(userId), [userId, bindUser]);
 
   useEffect(() => {
     setUnauthorizedHandler(clearSession);
