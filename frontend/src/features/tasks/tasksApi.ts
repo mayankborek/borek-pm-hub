@@ -188,6 +188,19 @@ export const useUpdateTask = (task?: TaskDetail) => {
   });
 };
 
+/** Changes priority or assignee straight from a board card (PATCH with the card's version). */
+export const usePatchTask = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ task, patch }: { task: Task; patch: Pick<TaskPatch, 'priority' | 'assignee_id'> }) =>
+      api<TaskDetail>(`/tasks/${task.id}`, { method: 'PATCH', body: JSON.stringify({ ...patch, version: task.version }) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['projects', 'members'] });
+      return qc.invalidateQueries({ queryKey: taskKeys.all });
+    },
+  });
+};
+
 /** Moves a board card to another status (PATCH status_id with the card's version); a blocked status needs a reason. */
 export const useMoveTask = () => {
   const qc = useQueryClient();

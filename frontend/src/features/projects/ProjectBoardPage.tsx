@@ -4,35 +4,23 @@ import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
-import { Avatar, TaskFilters } from '@/features/tasks/TaskParts';
+import { TaskFilters } from '@/features/tasks/TaskParts';
 import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
 import {
   useProjectStatuses,
   useStatusActions,
   useMoveTask,
+  usePatchTask,
   useProjectTasks,
   type StatusCategory,
   type Task,
-  type TaskPriority,
 } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
+import { CardAssignee, CardPriority } from './CardPickers';
 import { QuickCreate } from './QuickCreate';
 import { errorText, RenameInput, StatusCreator, StatusMenu } from './StatusParts';
-import highestIcon from './assets/priority-highest.svg';
-import highIcon from './assets/priority-high.svg';
-import mediumIcon from './assets/priority-medium.svg';
-import lowIcon from './assets/priority-low.svg';
-import lowestIcon from './assets/priority-lowest.svg';
 import gripDots from './assets/grip-dots.svg';
 import './board.css';
-
-const PRIORITY: Record<TaskPriority, { label: string; icon: string }> = {
-  highest: { label: 'Highest', icon: highestIcon },
-  high: { label: 'High', icon: highIcon },
-  medium: { label: 'Medium', icon: mediumIcon },
-  low: { label: 'Low', icon: lowIcon },
-  lowest: { label: 'Lowest', icon: lowestIcon },
-};
 
 /** Named workflow states keep the design's heading colours; other statuses use their category colour. */
 const NAME_TONE: Record<string, string> = { 'code review': 'review', testing: 'testing' };
@@ -65,6 +53,9 @@ export function ProjectBoardPage() {
   const moveTask = useMoveTask();
   // Mirrors the backend: a PM moves any card, a developer only the tasks assigned to them.
   const canMove = (t: Task) => isPm || t.assignee?.id === user?.id;
+  const patchTask = usePatchTask();
+  const edit = (task: Task, patch: Parameters<typeof patchTask.mutate>[0]['patch']) =>
+    patchTask.mutate({ task, patch }, { onError: (e) => setActionError(errorText(e, tr('Could not update the task. Try again.'))) });
   const actions = useStatusActions(project.id);
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
   const { data: statuses } = useProjectStatuses(project.id);
@@ -236,20 +227,8 @@ export function ProjectBoardPage() {
                       >
                         <span className="kcard-title">{t.title}</span>
                         <span className="kcard-meta">
-                          {t.assignee ? (
-                            <Avatar user={t.assignee} round />
-                          ) : (
-                            <span className="avatar round unassigned" title={tr('Unassigned')} aria-label={tr('Unassigned')}>
-                              ?
-                            </span>
-                          )}
-                          <img
-                            src={PRIORITY[t.priority].icon}
-                            alt={tr(PRIORITY[t.priority].label)}
-                            title={tr(PRIORITY[t.priority].label)}
-                            width={16}
-                            height={16}
-                          />
+                          <CardAssignee task={t} editable={isPm} onChange={(assignee_id) => edit(t, { assignee_id })} />
+                          <CardPriority task={t} editable={canMove(t)} onChange={(priority) => edit(t, { priority })} />
                         </span>
                         <span className="kcard-due">{t.due_date ? tr('Due {date}', { date: shortDate(t.due_date) }) : tr('No due date')}</span>
                       </Link>
