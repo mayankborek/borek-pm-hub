@@ -8,6 +8,9 @@ import { useMoveTask, useProjectStatuses, useProjectTasks, type Task } from '@/f
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
+import { useAuth } from '@/features/auth/AuthContext';
+import { exportFilter, exportTasks } from '@/features/tasks/jiraApi';
+import { JiraImportDialog } from '@/features/tasks/JiraImportDialog';
 import { useProjectContext } from './ProjectLayout';
 
 const BOARD_PAGE = 6;
@@ -28,6 +31,16 @@ export function ProjectListPage() {
   const { t: tr } = usePrefs();
   const toast = useToast();
   const moveTask = useMoveTask();
+  const isPm = useAuth().user?.role === 'pm';
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const runExport = () => {
+    setExporting(true);
+    exportTasks({ project_id: project.id, filter: exportFilter(applied) })
+      .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
+      .finally(() => setExporting(false));
+  };
 
   // A planned task starts in the first "To do" status, else the first non-Backlog status on the Board.
   const boardStatuses = [...(statuses ?? [])].filter((s) => s.category !== 'backlog').sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -98,6 +111,17 @@ export function ProjectListPage() {
 
   return (
     <div className="task-list-page">
+      {isPm && (
+        <div className="page-actions">
+          <button type="button" className="btn secondary" onClick={() => setImporting(true)}>
+            {tr('Import')}
+          </button>
+          <button type="button" className="btn secondary" disabled={exporting || data.items.length === 0} onClick={runExport}>
+            {tr(exporting ? 'Exporting…' : 'Export')}
+          </button>
+        </div>
+      )}
+      {importing && <JiraImportDialog projects={[project]} defaultProjectId={project.id} onClose={() => setImporting(false)} />}
       <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
       <TaskGroup
         title="Board"
