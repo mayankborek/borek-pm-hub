@@ -1,10 +1,13 @@
-.kanban { display: flex; gap: 13px; align-items: flex-start; overflow-x: auto; padding-bottom: 4px; }
+.kanban { display: flex; gap: 13px; align-items: stretch; overflow-x: auto; padding-bottom: 4px; }
 .kcol {
-  flex: 1 1 0; min-width: 170px; min-height: 517px; padding: 0 4px 12px;
+  display: flex; flex-direction: column; flex: 1 1 0; min-width: 170px; min-height: 517px; padding: 0 4px 12px;
   background: var(--surface-2); border: 1px solid var(--line);
 }
 .kcol-head { margin: 0; height: 32px; display: flex; align-items: center; padding: 0 12px; font-size: 13px; font-weight: 400; letter-spacing: .1px; color: var(--muted); }
-.kcol-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.kcol-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.kcol-list > li { flex: none; }
+.kcol-bar, .kcol-link, .qc-wrap { flex: none; }
+@media (max-width: 720px) { .kcol-list { max-height: 60vh; } }
 .kcard {
   display: flex; flex-direction: column; gap: 0; padding: 13px 12px; min-height: 104px; background: var(--surface); border: 1px solid var(--line);
   color: var(--ink); text-decoration: none;
