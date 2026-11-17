@@ -115,8 +115,11 @@ def test_a_file_without_summary_column_is_refused_with_a_hint() -> None:
         parse_file(b"Titel,Status\nA,B\n", "x.csv")
 
 
-def test_only_csv_files_are_accepted() -> None:
-    with pytest.raises(ImportFileError, match="csv"):
+def test_only_csv_and_xlsx_files_are_accepted() -> None:
+    for name in ("tasks.xls", "tasks.txt", "tasks.pdf"):
+        with pytest.raises(ImportFileError, match=r"\.csv and \.xlsx"):
+            parse_file(b"Summary\nA\n", name)
+    with pytest.raises(ImportFileError, match="Excel"):  # CSV text with an .xlsx name
         parse_file(b"Summary\nA\n", "tasks.xlsx")
     assert parse_file(b"Summary\nA\n", "TASKS.CSV").total_rows == 1
 
@@ -941,7 +944,8 @@ async def test_archived_and_cancelled_projects_are_read_only(
         (b"", "a.csv", "empty"),
         (b"Titel,Status\nA,B\n", "a.csv", "Summary"),
         (b"PK\x03\x04", "a.csv", "not a CSV"),
-        (b"Summary\nA\n", "tasks.xlsx", "csv"),
+        (b"Summary\nA\n", "tasks.xls", ".csv and .xlsx"),
+        (b"Summary\nA\n", "tasks.xlsx", "Excel"),
         (("Summary\n" + "x\n" * 5001).encode(), "a.csv", "5000"),
     ],
 )

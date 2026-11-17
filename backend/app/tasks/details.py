@@ -7,7 +7,7 @@ from pathlib import PurePath
 from urllib.parse import urlsplit
 
 from fastapi import UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.enums import AttachmentKind
@@ -15,6 +15,7 @@ from app.common.validation import has_control_chars
 from app.core import storage
 from app.core.config import get_settings
 from app.core.errors import AppError
+from app.projects.models import ProjectMember
 from app.tasks import activity
 from app.tasks.details_schemas import (
     ActivityOut,
@@ -22,7 +23,13 @@ from app.tasks.details_schemas import (
     CommentOut,
     LinkIn,
 )
-from app.tasks.models import Task, TaskActivity, TaskAttachment, TaskComment
+from app.tasks.models import (
+    Task,
+    TaskActivity,
+    TaskAttachment,
+    TaskComment,
+    TaskCommentMention,
+)
 from app.tasks.schemas import UserBrief
 from app.users.models import User
 
@@ -73,25 +80,45 @@ async def list_activity(
 # --- comments ---------------------------------------------------------------------------------
 
 
-def _comment_out(comment: TaskComment, author: User) -> CommentOut:
+def _comment_out(comment: TaskComment, author: User, mentioned: list[User]) -> CommentOut:
     return CommentOut(
         id=comment.id,
         task_id=comment.task_id,
         author=_brief(author),
         body=comment.body,
+        mentions=[_brief(u) for u in sorted(mentioned, key=lambda u: (u.name.lower(), u.id))],
         created_at=comment.created_at,
         edited_at=comment.edited_at,
     )
 
 
-async def list_comments(session: AsyncSession, task_id: uuid.UUID) -> list[CommentOut]:
+async def _mentioned_by_comment(
+    session: AsyncSession, comment_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[User]]:
+    found: dict[uuid.UUID, list[User]] = {comment_id: [] for comment_id in comment_ids}
+    if not comment_ids:
+        return found
     rows = await session.execute(
-        select(TaskComment, User)
-        .join(User, User.id == TaskComment.author_id)
-        .where(TaskComment.task_id == task_id, TaskComment.archived_at.is_(None))
-        .order_by(TaskComment.created_at, TaskComment.id)
+        select(TaskCommentMention.comment_id, User)
+        .join(User, User.id == TaskCommentMention.user_id)
+        .where(TaskCommentMention.comment_id.in_(comment_ids))
     )
-    return [_comment_out(comment, author) for comment, author in rows.all()]
+    for comment_id, user in rows.all():
+        found[comment_id].append(user)
+    return found
+
+
+async def list_comments(session: AsyncSession, task_id: uuid.UUID) -> list[CommentOut]:
+    rows = (
+        await session.execute(
+            select(TaskComment, User)
+            .join(User, User.id == TaskComment.author_id)
+            .where(TaskComment.task_id == task_id, TaskComment.archived_at.is_(None))
+            .order_by(TaskComment.created_at, TaskComment.id)
+        )
+    ).all()
+    mentioned = await _mentioned_by_comment(session, [comment.id for comment, _ in rows])
+    return [_comment_out(comment, author, mentioned[comment.id]) for comment, author in rows]
 
 
 async def _get_comment(
@@ -103,24 +130,79 @@ async def _get_comment(
     return comment
 
 
-async def add_comment(session: AsyncSession, task: Task, user: User, body: str) -> CommentOut:
+async def _mentionable(
+    session: AsyncSession, project_id: uuid.UUID, user_ids: list[uuid.UUID]
+) -> list[User]:
+    """The people to mention, or 422 naming those who are not active members of the project."""
+    if not user_ids:
+        return []
+    users = list(
+        await session.scalars(
+            select(User)
+            .join(ProjectMember, ProjectMember.user_id == User.id)
+            .where(
+                ProjectMember.project_id == project_id,
+                User.id.in_(user_ids),
+                User.is_active.is_(True),
+            )
+        )
+    )
+    allowed = {u.id for u in users}
+    rejected = [str(user_id) for user_id in user_ids if user_id not in allowed]
+    if rejected:
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "The request is not valid.",
+            [
+                {
+                    "field": "mention_ids",
+                    "issue": "not_a_project_member",
+                    "message": "Only active members of the project can be mentioned: "
+                    + ", ".join(rejected),
+                }
+            ],
+        )
+    return users
+
+
+async def add_comment(
+    session: AsyncSession, task: Task, user: User, body: str, mention_ids: list[uuid.UUID]
+) -> CommentOut:
+    mentioned = await _mentionable(session, task.project_id, mention_ids)
     comment = TaskComment(task_id=task.id, author_id=user.id, body=body)
     session.add(comment)
+    await session.flush()  # the comment id, for the mention rows
+    session.add_all(TaskCommentMention(comment_id=comment.id, user_id=u.id) for u in mentioned)
     activity.record(session, task.id, user.id, "commented")
     await session.commit()
-    return _comment_out(comment, user)
+    return _comment_out(comment, user, mentioned)
 
 
 async def edit_comment(
-    session: AsyncSession, task_id: uuid.UUID, comment_id: uuid.UUID, user: User, body: str
+    session: AsyncSession,
+    task: Task,
+    comment_id: uuid.UUID,
+    user: User,
+    body: str,
+    mention_ids: list[uuid.UUID] | None,
 ) -> CommentOut:
-    comment = await _get_comment(session, task_id, comment_id)
+    """Change the text; `mention_ids` replaces the mentions, None keeps them as they are."""
+    comment = await _get_comment(session, task.id, comment_id)
     if comment.author_id != user.id:
         raise _forbidden()  # even a PM may not put words in someone else's mouth
+    if mention_ids is None:
+        mentioned = (await _mentioned_by_comment(session, [comment.id]))[comment.id]
+    else:
+        mentioned = await _mentionable(session, task.project_id, mention_ids)
+        await session.execute(
+            delete(TaskCommentMention).where(TaskCommentMention.comment_id == comment.id)
+        )
+        session.add_all(TaskCommentMention(comment_id=comment.id, user_id=u.id) for u in mentioned)
     comment.body = body
     comment.edited_at = datetime.now(UTC)
     await session.commit()
-    return _comment_out(comment, user)
+    return _comment_out(comment, user, mentioned)
 
 
 async def archive_comment(

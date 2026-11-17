@@ -8,7 +8,7 @@ from app.api import api_router
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
-from app.core.middleware import RequestIdMiddleware
+from app.core.middleware import NoStoreMiddleware, RequestIdMiddleware
 from app.health.router import router as health_router
 
 
@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    application.add_middleware(NoStoreMiddleware)
     # Added last = outermost, so the request ID exists before CORS and the handlers run.
     application.add_middleware(RequestIdMiddleware)
     register_error_handlers(application)

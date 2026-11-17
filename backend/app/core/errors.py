@@ -116,7 +116,11 @@ async def _unhandled_error_handler(request: Request, exc: Exception) -> JSONResp
         get_request_id(request.scope),
         exc_info=(type(exc), exc, exc.__traceback__),
     )
-    return error_response(request, 500, "INTERNAL_ERROR", "An unexpected error occurred.")
+    response = error_response(request, 500, "INTERNAL_ERROR", "An unexpected error occurred.")
+    # Built outside the app middleware (Starlette's outermost error layer), so NoStoreMiddleware
+    # never sees it: set the header here.
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def register_error_handlers(app: FastAPI) -> None:

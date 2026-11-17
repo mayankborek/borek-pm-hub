@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from sqlalchemy import ColumnElement
+from sqlalchemy import ColumnElement, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
@@ -19,12 +19,13 @@ from app.core.errors import AppError
 from app.projects import service as project_service
 from app.projects.membership import lead_rights_in, project_access
 from app.projects.models import Project
-from app.tasks import csv_import, importer, service, statuses, transfer
-from app.tasks.models import Task
+from app.tasks import csv_import, importer, labels, pdf_export, service, statuses, transfer
+from app.tasks.models import Task, WorkflowStatus
 from app.tasks.schemas import (
     AssigneeUpdate,
     BoardOut,
     ImportResultOut,
+    LabelOut,
     StatusCreate,
     StatusOrder,
     StatusOut,
@@ -246,7 +247,8 @@ async def import_project_tasks(
         bool, Query(description="true (default): check and report only, nothing is saved")
     ] = True,
 ) -> ImportResultOut:
-    """PM only: bring tasks in from a CSV file (a Jira export, or a file from our own export).
+    """PM only: bring tasks in from a CSV or XLSX file (a Jira CSV export, or a file from our
+    own export).
 
     Send the file with `dry_run=true` first to see what would happen, then again with
     `dry_run=false` to save it. Tasks whose issue key is already in the project are skipped, so
@@ -285,6 +287,23 @@ async def list_project_tasks(
     return TaskListOut(items=items, total=total, page=page, page_size=page_size)
 
 
+@router.get("/projects/{project_id}/labels", response_model=list[LabelOut])
+async def list_project_labels(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    q: Annotated[
+        str | None, Query(max_length=30, description="Part of the label, any case")
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=labels.MAX_LABEL_SUGGESTIONS)] = 20,
+) -> list[LabelOut]:
+    """Labels already used on the project's active tasks, most used first, for the label picker.
+    Anyone who may see the project's tasks may read them. To create a label, save it on a task
+    (`PATCH /tasks/{id}` with `labels`)."""
+    await _project_for(session, user, project_id, Action.TASK_VIEW)
+    return await labels.list_labels(session, project_id, q, limit)
+
+
 # --- tasks across projects --------------------------------------------------------------------
 
 
@@ -308,31 +327,114 @@ async def list_tasks(
     return TaskListOut(items=items, total=total, page=page, page_size=page_size)
 
 
-def _csv_response(content: bytes, name: str) -> Response:
+XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+ExportFormat = Annotated[
+    Literal["csv", "xlsx", "pdf"],
+    Query(
+        description="csv (default) or xlsx: can be imported again. pdf: a readable task list "
+        "(not for import)."
+    ),
+]
+
+
+async def _filter_summary(session: AsyncSession, filters: service.TaskFilters) -> list[str]:
+    """The filters in words, for the PDF heading (statuses and assignee by name)."""
+    found: list[str] = []
+    if filters.q:
+        found.append(f'search "{filters.q}"')
+    if filters.status_ids:
+        names = await session.scalars(
+            select(WorkflowStatus.name)
+            .where(WorkflowStatus.id.in_(filters.status_ids))
+            .order_by(WorkflowStatus.position)
+        )
+        found.append("status " + ", ".join(names))
+    if filters.categories:
+        found.append("category " + ", ".join(c.value.replace("_", " ") for c in filters.categories))
+    if filters.priorities:
+        found.append("priority " + ", ".join(p.value for p in filters.priorities))
+    if filters.unassigned:
+        found.append("unassigned")
+    elif filters.assignee_id:
+        assignee = await session.get(User, filters.assignee_id)
+        found.append(f"assignee {assignee.name if assignee else 'unknown'}")
+    if filters.label:
+        found.append(f"label {filters.label}")
+    if filters.due_after:
+        found.append(f"due after {filters.due_after.isoformat()}")
+    if filters.due_before:
+        found.append(f"due before {filters.due_before.isoformat()}")
+    if filters.overdue:
+        found.append("overdue")
+    if filters.include_archived:
+        found.append("including archived")
+    return found
+
+
+async def _export_response(
+    session: AsyncSession,
+    tasks: list[TaskOut],
+    filters: service.TaskFilters,
+    *,
+    name: str,
+    title: str,
+    file_format: str,
+) -> Response:
+    if file_format == "pdf":
+        summary = await _filter_summary(session, filters)
+        content = await run_in_threadpool(
+            pdf_export.build_pdf,
+            tasks,
+            title=title,
+            filters=summary,
+            exported_at=datetime.now(UTC),
+        )
+        media_type = "application/pdf"
+    elif file_format == "xlsx":
+        content, media_type = transfer.build_xlsx(tasks), XLSX_TYPE
+    else:
+        content, media_type = transfer.build_csv(tasks), "text/csv; charset=utf-8"
     return Response(
         content=content,
-        media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{name}.{file_format}"'},
     )
 
 
 _CSV_RESPONSE: dict[int | str, dict[str, object]] = {
-    200: {"description": "CSV file", "content": {"text/csv": {"schema": {"type": "string"}}}}
+    200: {
+        "description": "CSV, XLSX or PDF file",
+        "content": {
+            "text/csv": {"schema": {"type": "string"}},
+            XLSX_TYPE: {"schema": {"type": "string", "format": "binary"}},
+            "application/pdf": {"schema": {"type": "string", "format": "binary"}},
+        },
+    }
 }
 
 
 @router.get("/projects/{project_id}/tasks/export", response_class=Response, responses=_CSV_RESPONSE)
 async def export_project_tasks(
-    project_id: uuid.UUID, user: CurrentUser, session: SessionDep, filters: Filters
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    filters: Filters,
+    format: ExportFormat = "csv",
 ) -> Response:
-    """Download the tasks of one project (same filters as the list) as a CSV file. The file can
-    be imported again, into this or another project."""
+    """Download the tasks of one project (same filters as the list) as a CSV, XLSX or PDF file.
+    CSV and XLSX can be imported again, into this or another project; PDF is for reading."""
     project = await _project_for(session, user, project_id, Action.TASK_VIEW)
     await _limit_archived_to_leads(session, user, project_id, filters)
     filters.project_id = project_id
     tasks = await service.export_tasks(session, filters)
-    name = f"tasks-{project.code}-{datetime.now(UTC).date().isoformat()}.csv"
-    return _csv_response(transfer.build_csv(tasks), name)
+    return await _export_response(
+        session,
+        tasks,
+        filters,
+        name=f"tasks-{project.code}-{datetime.now(UTC).date().isoformat()}",
+        title=f"{project.name} ({project.code})",
+        file_format=format,
+    )
 
 
 @router.get("/tasks/export", response_class=Response, responses=_CSV_RESPONSE)
@@ -341,14 +443,26 @@ async def export_tasks(
     session: SessionDep,
     filters: Filters,
     project_id: uuid.UUID | None = None,
+    format: ExportFormat = "csv",
 ) -> Response:
-    """Download what `GET /tasks` lists (same filters, same visibility) as a CSV file."""
+    """Download what `GET /tasks` lists (same filters, same visibility) as a CSV, XLSX or PDF
+    file."""
     require(user, Action.PROJECT_LIST)
     filters.project_id = project_id
     scope = _cross_project_scope(user, filters)
     tasks = await service.export_tasks(session, filters, scope=scope)
-    name = f"tasks-all-{datetime.now(UTC).date().isoformat()}.csv"
-    return _csv_response(transfer.build_csv(tasks), name)
+    if project_id is None:
+        title = "all projects" if sees_all_projects(user) else "my projects"
+    else:  # named only from tasks the user may see, so an unknown id reveals nothing
+        title = tasks[0].project_name if tasks else "selected project"
+    return await _export_response(
+        session,
+        tasks,
+        filters,
+        name=f"tasks-all-{datetime.now(UTC).date().isoformat()}",
+        title=title,
+        file_format=format,
+    )
 
 
 @router.get("/me/tasks", response_model=TaskListOut)

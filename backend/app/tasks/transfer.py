@@ -1,4 +1,4 @@
-"""CSV export and import of tasks (S2-31, S2-32). Pure functions: no database, no web layer.
+"""CSV and XLSX export of tasks (S2-31, S2-32, BB-05). Pure functions: no database, no web layer.
 
 The export file is also valid input for the import, so tasks can be moved between projects or
 restored. Columns use Jira's names where Jira has an equivalent.
@@ -7,6 +7,9 @@ restored. Columns use Jira's names where Jira has an equivalent.
 import csv
 import io
 from collections.abc import Sequence
+
+from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
 
 from app.tasks.schemas import MAX_LABELS, TaskOut
 
@@ -53,16 +56,14 @@ def _label_columns(tasks: Sequence[TaskOut]) -> int:
     return max(1, min(MAX_LABELS, max((len(task.labels) for task in tasks), default=0)))
 
 
-def build_csv(tasks: Sequence[TaskOut]) -> bytes:
-    """The export file: UTF-8 with BOM, semicolon separated, one header row."""
+def build_table(tasks: Sequence[TaskOut]) -> list[list[str]]:
+    """Header row plus one row per task, every cell made safe for spreadsheets. The same table
+    goes into the CSV and the XLSX file, so both import the same way."""
     label_columns = _label_columns(tasks)
     header = list(EXPORT_COLUMNS)
     labels_at = header.index("Labels")
     header[labels_at : labels_at + 1] = ["Labels"] * label_columns
-
-    out = io.StringIO(newline="")
-    writer = csv.writer(out, delimiter=SEPARATOR, lineterminator="\r\n")
-    writer.writerow(header)
+    table = [header]
     for task in tasks:
         row = [
             task.key,
@@ -83,5 +84,32 @@ def build_csv(tasks: Sequence[TaskOut]) -> bytes:
             task.updated_at.isoformat(timespec="seconds"),
             task.completed_at.isoformat(timespec="seconds") if task.completed_at else "",
         ]
-        writer.writerow([protect_cell(cell) for cell in row])
+        table.append([protect_cell(cell) for cell in row])
+    return table
+
+
+def build_csv(tasks: Sequence[TaskOut]) -> bytes:
+    """The export file: UTF-8 with BOM, semicolon separated, one header row."""
+    out = io.StringIO(newline="")
+    writer = csv.writer(out, delimiter=SEPARATOR, lineterminator="\r\n")
+    writer.writerows(build_table(tasks))
     return (BOM + out.getvalue()).encode("utf-8")
+
+
+def build_xlsx(tasks: Sequence[TaskOut]) -> bytes:
+    """The same table as the CSV, as an Excel workbook with one sheet "Tasks". Every cell is
+    text (dates in ISO form), so nothing is changed by Excel and the file imports again."""
+    workbook = Workbook(write_only=True)
+    sheet = workbook.create_sheet("Tasks")
+    for row in build_table(tasks):
+        cells = []
+        for value in row:
+            cell = WriteOnlyCell(sheet, value=value or None)
+            if value:
+                # Text, never a formula: openpyxl would otherwise write "=..." as a formula.
+                cell.data_type = "s"
+            cells.append(cell)
+        sheet.append(cells)
+    out = io.BytesIO()
+    workbook.save(out)
+    return out.getvalue()

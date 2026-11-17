@@ -24,5 +24,5 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
 [[tool.mypy.overrides]]
-module = ["asyncpg", "asyncpg.*"]
+module = ["asyncpg", "asyncpg.*", "openpyxl", "openpyxl.*", "fpdf", "fpdf.*"]
 ignore_missing_imports = true
