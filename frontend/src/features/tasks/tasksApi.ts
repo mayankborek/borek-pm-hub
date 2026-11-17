@@ -157,7 +157,22 @@ export const useAssignableUsers = (search: string, enabled = true) =>
     staleTime: 30_000,
   });
 
-export const useProjectMembers = (projectId?: string) =>
+export interface LabelSuggestion {
+  name: string;
+  task_count: number;
+}
+
+/** GET /projects/{id}/labels: labels already used in the project, most used first, optionally narrowed by a search. */
+export const useProjectLabels = (projectId: string | undefined, search: string, enabled = true) =>
+  useQuery({
+    queryKey: ['projects', 'labels', projectId, search.trim()],
+    queryFn: () => api<LabelSuggestion[]>(`/projects/${projectId}/labels${qs({ q: search.trim() })}`),
+    enabled: enabled && !!projectId,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+
+export const useProjectMembers =(projectId?: string) =>
   useQuery({
     queryKey: ['projects', 'members', projectId],
     queryFn: () => api<ProjectMember[]>(`/projects/${projectId}/members`),

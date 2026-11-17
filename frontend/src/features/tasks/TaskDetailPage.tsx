@@ -28,6 +28,7 @@ import { Avatar } from './TaskParts';
 import { DatePicker } from './DatePicker';
 import { PrioritySelect } from './PrioritySelect';
 import { StatusSelect } from './StatusSelect';
+import { LabelChips, LabelPicker } from './LabelPicker';
 import './taskDetail.css';
 
 const fileSize = (n: number | null) =>
@@ -40,8 +41,6 @@ const show = (v: unknown) => (v == null || v === '' ? '—' : Array.isArray(v) ?
 
 const changeText = (field: string, [from, to]: [unknown, unknown], t: (s: string) => string) =>
   `${t(field.replace(/_/g, ' '))}: ${show(from)} → ${show(to)}`;
-
-const parseLabels = (text: string) => [...new Set(text.split(',').map((l) => l.trim()).filter(Boolean))];
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   const { t } = usePrefs();
@@ -105,8 +104,6 @@ export function TaskDetailPage() {
   const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
   // Unsaved edits, sent together by the Save button.
   const [draft, setDraft] = useState<TaskPatch>({});
-  // Raw text of the labels input while a PM edits it; null shows the saved labels.
-  const [labelText, setLabelText] = useState<string | null>(null);
 
   if (isPending)
     return (
@@ -166,7 +163,6 @@ export function TaskDetailPage() {
     update.mutate(changes, {
       onSuccess: () => {
         setDraft({});
-        setLabelText(null);
         setFilesChanged(false);
       },
       onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
@@ -485,18 +481,14 @@ export function TaskDetailPage() {
             </Row>
             <Row label="Labels">
               {isPm ? (
-                <input
-                  aria-label={t('Labels')}
-                  placeholder={t('Comma-separated labels')}
-                  value={labelText ?? task.labels.join(', ')}
-                  onKeyDown={saveOnEnter}
-                  onChange={(e) => {
-                    setLabelText(e.target.value);
-                    stage({ labels: parseLabels(e.target.value) });
-                  }}
+                <LabelPicker
+                  projectId={task.project_id}
+                  value={draft.labels ?? task.labels}
+                  onChange={(labels) => stage({ labels })}
+                  onSubmit={() => !missingReason && !update.isPending && save()}
                 />
               ) : (
-                <span className="td-static">{task.labels.join(' · ') || '—'}</span>
+                <LabelChips labels={task.labels} />
               )}
             </Row>
           </section>
