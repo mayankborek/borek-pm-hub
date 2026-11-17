@@ -64,6 +64,11 @@ class StatusBrief(BaseModel):
     category: StatusCategory
 
 
+class LabelOut(BaseModel):
+    name: str = Field(description="Exact spelling, as stored on the tasks.")
+    task_count: int = Field(description="Active tasks in the project with this label.")
+
+
 class StatusOut(StatusBrief):
     position: int
     task_count: int = Field(description="Tasks in this status, archived ones excluded.")

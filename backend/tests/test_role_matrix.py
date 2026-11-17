@@ -154,6 +154,7 @@ def cases(w: World) -> list[Case]:
         # tasks of a project
         Case("GET", f"{p}/tasks", inside_project(READERS)),
         Case("GET", f"{p}/tasks", inside_project(READERS), params={"view": "board"}),
+        Case("GET", f"{p}/labels", inside_project(READERS)),
         Case("POST", f"{p}/tasks", inside_project(WORKERS), {"title": "x"}),
         Case("GET", f"{p}/tasks/export", inside_project(READERS)),
         Case("POST", f"{p}/tasks/import", inside_project(LEADS), files=csv),

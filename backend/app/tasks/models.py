@@ -122,6 +122,21 @@ class TaskComment(IdMixin, TimestampMixin, Base):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class TaskCommentMention(Base):
+    """A person @mentioned in a comment. The comment text only shows "@Name"; who is meant is
+    stored here by id, so it stays right when two people share a name or someone is renamed."""
+
+    __tablename__ = "task_comment_mentions"
+
+    comment_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("task_comments.id"), primary_key=True
+    )
+    # Indexed for "where was I mentioned" (notifications, BB-24).
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("users.id"), primary_key=True, index=True
+    )
+
+
 class TaskAttachment(IdMixin, TimestampMixin, Base):
     """A file (stored by the app) or a link (URL only) attached to a task. Deleting archives it."""
 

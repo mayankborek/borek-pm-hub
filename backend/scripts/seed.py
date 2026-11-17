@@ -1,4 +1,5 @@
-"""Seed demo data: 1 PM, 3 developers, 4 projects, and tasks covering every demo case.
+"""Seed demo data: an administrator, a Manager, an Account Manager, 1 PM, 3 developers, 4 projects,
+and tasks covering every demo case.
 
 Run from the backend folder:  python -m scripts.seed          (adds data to an empty database)
                               python -m scripts.seed --reset  (wipes the data tables first)
@@ -7,6 +8,10 @@ Production-like hosts (AUTH_MODE=local) have no user picker, so the seed users n
 set SEED_USER_PASSWORD (12+ characters, shared by the seed users) and the users can sign in with
 their @borek.test email. Seeding is refused when ENVIRONMENT=production unless --allow-production
 is given, and --reset is never allowed there. --if-empty makes it safe to run on every start.
+
+With --if-empty on a database that already has data, only the seeded administrator and Manager are
+added if they are missing, so an existing installation gets them too. Nothing else is touched, and
+an existing account keeps its password. The administrator then creates everyone else.
 """
 
 import argparse
@@ -16,7 +21,7 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import hash_password
@@ -46,12 +51,16 @@ from app.users.models import User
 PM_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
 MANAGER_ID = uuid.UUID("00000000-0000-4000-8000-000000000002")
 ACCOUNT_MANAGER_ID = uuid.UUID("00000000-0000-4000-8000-000000000003")
+ADMIN_ID = uuid.UUID("00000000-0000-4000-8000-000000000004")
 DEV1_ID = uuid.UUID("00000000-0000-4000-8000-000000000011")
 DEV2_ID = uuid.UUID("00000000-0000-4000-8000-000000000012")
 DEV3_ID = uuid.UUID("00000000-0000-4000-8000-000000000013")
 
+ADMIN_ACCOUNT = (ADMIN_ID, "Test Administrator", "admin@borek.test", GlobalRole.ADMIN)
+MANAGER_ACCOUNT = (MANAGER_ID, "Test Manager", "manager@borek.test", GlobalRole.MANAGER)
 USERS = [
-    (MANAGER_ID, "Test Manager", "manager@borek.test", GlobalRole.MANAGER),
+    ADMIN_ACCOUNT,
+    MANAGER_ACCOUNT,
     (ACCOUNT_MANAGER_ID, "Test Account Manager", "am@borek.test", GlobalRole.ACCOUNT_MANAGER),
     (PM_ID, "Test PM", "pm@borek.test", GlobalRole.PM),
     (DEV1_ID, "Dev One", "dev1@borek.test", GlobalRole.DEVELOPER),
@@ -279,6 +288,36 @@ async def reset(session: AsyncSession) -> None:
     )
 
 
+async def ensure_core_accounts(session: AsyncSession, password: str | None) -> list[str]:
+    """Add the seeded administrator and Manager to a database that lacks them. Safe to run on
+    every start: an account that exists keeps its password, role and name, also if someone changed
+    its email, so it never comes back as a second account."""
+    report: list[str] = []
+    borek_id = await session.scalar(
+        select(Organisation.id).where(Organisation.name == INTERNAL_NAME)
+    )
+    for user_id, name, email, role in (ADMIN_ACCOUNT, MANAGER_ACCOUNT):
+        existing = await session.scalar(
+            select(User.id).where(or_(User.id == user_id, func.lower(User.email) == email))
+        )
+        if existing is not None:
+            report.append(f"kept {email}")
+            continue
+        session.add(
+            User(
+                id=user_id,
+                name=name,
+                email=email,
+                global_role=role.value,
+                password_hash=hash_password(password) if password else None,
+                organisation_id=borek_id,
+            )
+        )
+        report.append(f"created {email} ({role.value})")
+    await session.flush()
+    return report
+
+
 async def seed(
     session: AsyncSession, today: date | None = None, password: str | None = None
 ) -> None:
@@ -414,16 +453,22 @@ async def main(do_reset: bool, allow_production: bool, if_empty: bool) -> None:
     password = read_seed_password()
     if get_settings().environment == "production" and password is None:
         raise SystemExit("SEED_USER_PASSWORD is required in production (no user picker there).")
+    has_data = False
     async with get_sessionmaker()() as session, session.begin():
         if do_reset:
             await reset(session)
-        elif if_empty and (await session.execute(select(Project.id).limit(1))).first():
-            print("Database already has data; seed skipped.")
-            await get_engine().dispose()
-            return
-        await seed(session, password=password)
+        elif if_empty:
+            has_data = (await session.execute(select(Project.id).limit(1))).first() is not None
+        if has_data:
+            for line in await ensure_core_accounts(session, password):
+                print(line)
+        else:
+            await seed(session, password=password)
     await get_engine().dispose()
-    print(f"Seeded {len(USERS)} users, {len(PROJECTS)} projects, {len(TASKS)} tasks.")
+    if has_data:
+        print("Database already has data; demo data skipped.")
+    else:
+        print(f"Seeded {len(USERS)} users, {len(PROJECTS)} projects, {len(TASKS)} tasks.")
 
 
 if __name__ == "__main__":
@@ -433,7 +478,9 @@ if __name__ == "__main__":
         "--allow-production", action="store_true", help="allow seeding when ENVIRONMENT=production"
     )
     parser.add_argument(
-        "--if-empty", action="store_true", help="do nothing (success) when data already exists"
+        "--if-empty",
+        action="store_true",
+        help="when data already exists, only add a missing administrator and Manager",
     )
     args = parser.parse_args()
     asyncio.run(main(args.reset, args.allow_production, args.if_empty))

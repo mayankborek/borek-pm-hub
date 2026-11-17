@@ -15,12 +15,40 @@ def _clean_body(value: str) -> str:
     return clean_text(value, label="The comment", multiline=True)
 
 
+MAX_MENTIONS = 20
+
+
+def _unique_ids(values: list[uuid.UUID] | None) -> list[uuid.UUID] | None:
+    return None if values is None else list(dict.fromkeys(values))
+
+
 class CommentIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     body: str = Field(min_length=1, max_length=5000)
+    mention_ids: list[uuid.UUID] = Field(
+        default_factory=list,
+        max_length=MAX_MENTIONS,
+        description="People @mentioned in the text. Must be active members of the project.",
+    )
 
     _strip = field_validator("body")(_clean_body)
+    _unique = field_validator("mention_ids")(_unique_ids)
+
+
+class CommentEditIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(min_length=1, max_length=5000)
+    mention_ids: list[uuid.UUID] | None = Field(
+        default=None,
+        max_length=MAX_MENTIONS,
+        description="The full new list of mentions (replaces the old one); [] removes all. "
+        "Leave out to keep the current mentions.",
+    )
+
+    _strip = field_validator("body")(_clean_body)
+    _unique = field_validator("mention_ids")(_unique_ids)
 
 
 class CommentOut(BaseModel):
@@ -28,6 +56,7 @@ class CommentOut(BaseModel):
     task_id: uuid.UUID
     author: UserBrief
     body: str
+    mentions: list[UserBrief] = Field(description="People mentioned, sorted by name.")
     created_at: datetime
     edited_at: datetime | None
 

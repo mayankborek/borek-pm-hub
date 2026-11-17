@@ -1,4 +1,5 @@
-"""Reading a task CSV (a Jira export or our own export) for the import (S2-31).
+"""Reading a task file (a Jira CSV export, or our own CSV or XLSX export) for the import
+(S2-31, BB-05).
 
 Pure functions: no database, no web layer. The file is turned into `ImportRow`s plus a list of
 rows that cannot be used and a list of warnings. Matching users and statuses, and saving, is the
@@ -9,10 +10,12 @@ import csv
 import io
 import re
 import unicodedata
+import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 
+from openpyxl import load_workbook
 from pydantic import ValidationError
 
 from app.common.enums import EstimateUnit, TaskPriority
@@ -22,6 +25,8 @@ from app.tasks.schemas import MAX_DESCRIPTION, MAX_ESTIMATE_BY_UNIT, MAX_LABELS
 from app.tasks.transfer import unprotect_cell
 
 MAX_IMPORT_ROWS = 5_000
+MAX_XLSX_COLUMNS = 300  # Jira exports about 150; more is not a task list
+MAX_XLSX_UNPACKED = 100 * 1024 * 1024  # guards against a small file that unpacks huge
 MAX_TITLE = 300
 MAX_LABEL = 30
 MAX_EXTERNAL_KEY = 50
@@ -523,12 +528,77 @@ def _build_row(number: int, row: _Row, names: dict[str, str], parsed: ParsedFile
     )
 
 
+def _xlsx_text(value: object) -> str:
+    """A spreadsheet cell as the text the CSV would have had."""
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        if value.time() == time(0, 0):
+            return value.date().isoformat()
+        return value.isoformat(timespec="seconds")
+    if isinstance(value, date | time):
+        return value.isoformat()
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def read_xlsx(data: bytes) -> tuple[list[str], list[tuple[int, list[str]]]]:
+    """The first sheet of an Excel workbook, like `read_table`. Formulas are read as their last
+    saved value, never run. Refuses workbooks that would unpack to an unreasonable size."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            unpacked = sum(info.file_size for info in archive.infolist())
+    except zipfile.BadZipFile:
+        raise ImportFileError("The file could not be read as an Excel (.xlsx) file.") from None
+    if unpacked > MAX_XLSX_UNPACKED:
+        raise ImportFileError("The Excel file is too large once unpacked. Export it as CSV.")
+    try:
+        workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    except Exception:  # openpyxl raises many kinds for broken or foreign files
+        raise ImportFileError("The file could not be read as an Excel (.xlsx) file.") from None
+    try:
+        sheet = workbook.worksheets[0] if workbook.worksheets else None
+        if sheet is None:
+            raise ImportFileError("The file is empty.")
+        header: list[str] | None = None
+        rows: list[tuple[int, list[str]]] = []
+        for number, values in enumerate(
+            sheet.iter_rows(max_col=MAX_XLSX_COLUMNS, values_only=True), start=1
+        ):
+            cells = [_xlsx_text(value) for value in values]
+            if header is None:
+                if any(cell.strip() for cell in cells):
+                    header = cells
+                continue
+            if any(cell.strip() for cell in cells):
+                if len(rows) >= MAX_IMPORT_ROWS:
+                    raise ImportFileError(
+                        f"The file has more than {MAX_IMPORT_ROWS} tasks. Split it and import "
+                        "it in parts."
+                    )
+                if any(len(cell) > MAX_FIELD_SIZE for cell in cells):
+                    raise ImportFileError(f"Row {number} has a cell that is too long.")
+                rows.append((number, cells))
+    finally:
+        workbook.close()
+    if header is None:
+        raise ImportFileError("The file is empty.")
+    return header, rows
+
+
 def parse_file(data: bytes, file_name: str | None = None) -> ParsedFile:
-    """Read a Jira CSV export or our own export. Raises ImportFileError when the file as a
-    whole cannot be used; rows that cannot be used are listed in `failures`."""
-    if file_name is not None and not file_name.lower().endswith(".csv"):
-        raise ImportFileError("Only .csv files can be imported.")
-    header, records = read_table(decode_text(data))
+    """Read a Jira CSV export, or our own CSV or XLSX export. Raises ImportFileError when the
+    file as a whole cannot be used; rows that cannot be used are listed in `failures`."""
+    name = (file_name or "").lower()
+    if file_name is not None and not name.endswith((".csv", ".xlsx")):
+        raise ImportFileError("Only .csv and .xlsx files can be imported.")
+    if name.endswith(".xlsx") or (file_name is None and data[:2] == b"PK"):
+        if not data.strip():
+            raise ImportFileError("The file is empty.")
+        header, records = read_xlsx(data)
+    else:
+        header, records = read_table(decode_text(data))
     index: dict[str, list[int]] = {}
     for position, name in enumerate(header):
         index.setdefault(_norm(name), []).append(position)

@@ -981,6 +981,39 @@
         "title": "ChangePasswordIn",
         "type": "object"
       },
+      "CommentEditIn": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "mention_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The full new list of mentions (replaces the old one); [] removes all. Leave out to keep the current mentions.",
+            "title": "Mention Ids"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "CommentEditIn",
+        "type": "object"
+      },
       "CommentIn": {
         "additionalProperties": false,
         "properties": {
@@ -989,6 +1022,16 @@
             "minLength": 1,
             "title": "Body",
             "type": "string"
+          },
+          "mention_ids": {
+            "description": "People @mentioned in the text. Must be active members of the project.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Mention Ids",
+            "type": "array"
           }
         },
         "required": [
@@ -1028,6 +1071,14 @@
             "title": "Id",
             "type": "string"
           },
+          "mentions": {
+            "description": "People mentioned, sorted by name.",
+            "items": {
+              "$ref": "#/components/schemas/UserBrief"
+            },
+            "title": "Mentions",
+            "type": "array"
+          },
           "task_id": {
             "format": "uuid",
             "title": "Task Id",
@@ -1039,6 +1090,7 @@
           "task_id",
           "author",
           "body",
+          "mentions",
           "created_at",
           "edited_at"
         ],
@@ -1483,6 +1535,26 @@
           "expires_at"
         ],
         "title": "InviteOut",
+        "type": "object"
+      },
+      "LabelOut": {
+        "properties": {
+          "name": {
+            "description": "Exact spelling, as stored on the tasks.",
+            "title": "Name",
+            "type": "string"
+          },
+          "task_count": {
+            "description": "Active tasks in the project with this label.",
+            "title": "Task Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "task_count"
+        ],
+        "title": "LabelOut",
         "type": "object"
       },
       "LinkIn": {
@@ -6511,6 +6583,85 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/labels": {
+      "get": {
+        "description": "Labels already used on the project's active tasks, most used first, for the label picker.\nAnyone who may see the project's tasks may read them. To create a label, save it on a task\n(`PATCH /tasks/{id}` with `labels`).",
+        "operationId": "list_project_labels_api_v1_projects__project_id__labels_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Part of the label, any case",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of the label, any case",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LabelOut"
+                  },
+                  "title": "Response List Project Labels Api V1 Projects  Project Id  Labels Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Project Labels",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/members": {
       "get": {
         "operationId": "list_members_api_v1_projects__project_id__members_get",
@@ -7905,7 +8056,7 @@
     },
     "/api/v1/projects/{project_id}/tasks/export": {
       "get": {
-        "description": "Download the tasks of one project (same filters as the list) as a CSV file. The file can\nbe imported again, into this or another project.",
+        "description": "Download the tasks of one project (same filters as the list) as a CSV, XLSX or PDF file.\nCSV and XLSX can be imported again, into this or another project; PDF is for reading.",
         "operationId": "export_project_tasks_api_v1_projects__project_id__tasks_export_get",
         "parameters": [
           {
@@ -7915,6 +8066,23 @@
             "schema": {
               "format": "uuid",
               "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "csv (default) or xlsx: can be imported again. pdf: a readable task list (not for import).",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "description": "csv (default) or xlsx: can be imported again. pdf: a readable task list (not for import).",
+              "enum": [
+                "csv",
+                "xlsx",
+                "pdf"
+              ],
+              "title": "Format",
               "type": "string"
             }
           },
@@ -8108,13 +8276,25 @@
         "responses": {
           "200": {
             "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
               "text/csv": {
                 "schema": {
                   "type": "string"
                 }
               }
             },
-            "description": "CSV file"
+            "description": "CSV, XLSX or PDF file"
           },
           "422": {
             "content": {
@@ -8135,7 +8315,7 @@
     },
     "/api/v1/projects/{project_id}/tasks/import": {
       "post": {
-        "description": "PM only: bring tasks in from a CSV file (a Jira export, or a file from our own export).\n\nSend the file with `dry_run=true` first to see what would happen, then again with\n`dry_run=false` to save it. Tasks whose issue key is already in the project are skipped, so\nrunning it twice is safe. Everything is saved in one transaction.",
+        "description": "PM only: bring tasks in from a CSV or XLSX file (a Jira CSV export, or a file from our\nown export).\n\nSend the file with `dry_run=true` first to see what would happen, then again with\n`dry_run=false` to save it. Tasks whose issue key is already in the project are skipped, so\nrunning it twice is safe. Everything is saved in one transaction.",
         "operationId": "import_project_tasks_api_v1_projects__project_id__tasks_import_post",
         "parameters": [
           {
@@ -8482,7 +8662,7 @@
     },
     "/api/v1/tasks/export": {
       "get": {
-        "description": "Download what `GET /tasks` lists (same filters, same visibility) as a CSV file.",
+        "description": "Download what `GET /tasks` lists (same filters, same visibility) as a CSV, XLSX or PDF\nfile.",
         "operationId": "export_tasks_api_v1_tasks_export_get",
         "parameters": [
           {
@@ -8500,6 +8680,23 @@
                 }
               ],
               "title": "Project Id"
+            }
+          },
+          {
+            "description": "csv (default) or xlsx: can be imported again. pdf: a readable task list (not for import).",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "description": "csv (default) or xlsx: can be imported again. pdf: a readable task list (not for import).",
+              "enum": [
+                "csv",
+                "xlsx",
+                "pdf"
+              ],
+              "title": "Format",
+              "type": "string"
             }
           },
           {
@@ -8692,13 +8889,25 @@
         "responses": {
           "200": {
             "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
               "text/csv": {
                 "schema": {
                   "type": "string"
                 }
               }
             },
-            "description": "CSV file"
+            "description": "CSV, XLSX or PDF file"
           },
           "422": {
             "content": {
@@ -9365,7 +9574,7 @@
         ]
       },
       "patch": {
-        "description": "Only the author can edit a comment.",
+        "description": "Only the author can edit a comment. `mention_ids` replaces the mentions when sent.",
         "operationId": "edit_comment_api_v1_tasks__task_id__comments__comment_id__patch",
         "parameters": [
           {
@@ -9393,7 +9602,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CommentIn"
+                "$ref": "#/components/schemas/CommentEditIn"
               }
             }
           },

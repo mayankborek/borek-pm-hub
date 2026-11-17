@@ -18,6 +18,7 @@ from app.tasks import details
 from app.tasks.details_schemas import (
     ActivityListOut,
     AttachmentOut,
+    CommentEditIn,
     CommentIn,
     CommentOut,
     LinkIn,
@@ -60,20 +61,20 @@ async def add_comment(
     task_id: uuid.UUID, body: CommentIn, user: CurrentUser, session: SessionDep
 ) -> CommentOut:
     task = await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
-    return await details.add_comment(session, task, user, body.body)
+    return await details.add_comment(session, task, user, body.body, body.mention_ids)
 
 
 @router.patch("/comments/{comment_id}", response_model=CommentOut)
 async def edit_comment(
     task_id: uuid.UUID,
     comment_id: uuid.UUID,
-    body: CommentIn,
+    body: CommentEditIn,
     user: CurrentUser,
     session: SessionDep,
 ) -> CommentOut:
-    """Only the author can edit a comment."""
-    await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
-    return await details.edit_comment(session, task_id, comment_id, user, body.body)
+    """Only the author can edit a comment. `mention_ids` replaces the mentions when sent."""
+    task = await _task_for(session, user, task_id, Action.TASK_COMMENT, writable=True)
+    return await details.edit_comment(session, task, comment_id, user, body.body, body.mention_ids)
 
 
 @router.delete("/comments/{comment_id}", status_code=204)
