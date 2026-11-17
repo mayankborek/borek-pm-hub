@@ -15,7 +15,7 @@ import './projects.css';
 
 export const useProjectContext = () => useOutletContext<Project>();
 
-/** Import / Export for the Backlog tab, shown next to Edit project. Export follows the tab's active filters. */
+/** Import / Export for the Backlog and Board tabs, shown next to Edit project. Export follows the tab's active filters. */
 function BacklogActions({ project }: { project: Project }) {
   const { t: tr } = usePrefs();
   const toast = useToast();
@@ -66,7 +66,7 @@ export function ProjectLayout() {
     );
   }
 
-  const onBacklog = pathname === paths.projectList(projectId);
+  const onBacklog = pathname === paths.projectList(projectId) || pathname === paths.projectBoard(projectId);
   const tabs = [
     { label: 'Overview', to: paths.project(projectId), end: true },
     { label: 'Backlog', to: paths.projectList(projectId) },
