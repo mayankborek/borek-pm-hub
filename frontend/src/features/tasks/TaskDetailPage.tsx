@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -52,7 +52,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Description({ value, onChange, readOnly }: { value: string; onChange: (d: string) => void; readOnly?: boolean }) {
+function Description({ value, onChange, onSubmit, readOnly }: { value: string; onChange: (d: string) => void; onSubmit: () => void; readOnly?: boolean }) {
   const { t } = usePrefs();
   if (readOnly) return <p className="td-desc-static">{value || t('No description added.')}</p>;
   return (
@@ -63,6 +63,13 @@ function Description({ value, onChange, readOnly }: { value: string; onChange: (
       rows={6}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      // Enter adds a new line here, so Ctrl/Cmd+Enter saves.
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          onSubmit();
+        }
+      }}
     />
   );
 }
@@ -159,6 +166,12 @@ export function TaskDetailPage() {
       onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
     });
   };
+  // Pressing Enter in a single-line field saves, same as the Save button.
+  const saveOnEnter = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    if (!missingReason && !update.isPending) save();
+  };
   const view = {
     description: draft.description !== undefined ? (draft.description ?? '') : (task.description ?? ''),
     priority: draft.priority ?? task.priority,
@@ -209,7 +222,7 @@ export function TaskDetailPage() {
             <h3>{t('Description')}</h3>
             <p className="td-sub">{t('Task context and acceptance criteria')}</p>
             {isPm && <p className="td-hint">{t('Click the text to edit · press Save to apply your changes')}</p>}
-            <Description value={view.description} readOnly={!isPm} onChange={(description) => stage({ description })} />
+            <Description value={view.description} readOnly={!isPm} onChange={(description) => stage({ description })} onSubmit={() => !missingReason && !update.isPending && save()} />
             <div className="td-attach">
               <strong>
                 {t('Attachments')} · {attachments.data?.length ?? 0} {t(attachments.data?.length === 1 ? 'file' : 'files')}
@@ -365,6 +378,7 @@ export function TaskDetailPage() {
                     placeholder={t('Why is this blocked?')}
                     value={reason}
                     onChange={(e) => stage({ blocked_reason: e.target.value })}
+                    onKeyDown={saveOnEnter}
                   />
                 ) : (
                   <span className="td-static">{task.blocked_reason || '—'}</span>
@@ -421,6 +435,7 @@ export function TaskDetailPage() {
                     step={1}
                     aria-label={t('Estimate amount')}
                     value={estimate.value ?? ''}
+                    onKeyDown={saveOnEnter}
                     onChange={(e) => {
                       const n = Math.floor(Number(e.target.value));
                       // Amount and unit travel together: clearing one clears the other.
@@ -450,6 +465,7 @@ export function TaskDetailPage() {
                   aria-label={t('Labels')}
                   placeholder={t('Comma-separated labels')}
                   value={labelText ?? task.labels.join(', ')}
+                  onKeyDown={saveOnEnter}
                   onChange={(e) => {
                     setLabelText(e.target.value);
                     stage({ labels: parseLabels(e.target.value) });
