@@ -639,3 +639,59 @@ async def test_change_password_needs_a_token_and_a_password(
 
     assert anonymous.status_code == 401
     assert no_password.status_code == 400
+
+
+# --- a new password ends older sessions (PT-38 sign-out, ported 18.11.2026) --------------------
+
+
+async def test_changing_the_password_ends_every_session_this_one_too(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    user = await signed_in_user(session)
+    laptop = (await login(client, user.email, PASSWORD)).json()["access_token"]
+    phone = (await login(client, user.email, PASSWORD)).json()["access_token"]
+
+    changed = await client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": PASSWORD, "new_password": "my brand new password"},
+        headers={"Authorization": f"Bearer {laptop}"},
+    )
+
+    assert changed.status_code == 204
+    for token in (laptop, phone):
+        me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert me.status_code == 401
+    fresh = (await login(client, user.email, "my brand new password")).json()["access_token"]
+    me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {fresh}"})
+    assert me.status_code == 200
+
+
+async def test_a_reset_link_ends_the_sessions_made_with_the_old_password(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    admin = await make_admin(session)
+    user = await signed_in_user(session)
+    old = (await login(client, user.email, PASSWORD)).json()["access_token"]
+    link = await client.post(f"{URL}/{user.id}/invite", headers=headers(admin))
+    assert link.status_code == 200, link.text
+
+    assert (
+        await accept(client, token_of(link.json()), "a different long password")
+    ).status_code == 200
+
+    me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {old}"})
+    assert me.status_code == 401
+
+
+async def test_invite_links_share_the_sign_in_rate_limit(session: AsyncSession) -> None:
+    application = build_app(session)
+    limited = SETTINGS.model_copy(update={"login_rate_limit_per_minute": 2})
+    application.dependency_overrides[get_settings] = lambda: limited
+
+    async with client_for(application) as http:
+        answers = [await accept(http, "g" * 43) for _ in range(2)]
+        blocked = await accept(http, "g" * 43)
+
+    assert {r.status_code for r in answers} == {400}
+    assert blocked.status_code == 429
+    assert blocked.json()["error"]["code"] == "RATE_LIMITED"
