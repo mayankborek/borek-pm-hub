@@ -36,3 +36,25 @@
   .register a{font-weight:500;color:var(--l-navy)}
   .register a:hover{text-decoration:underline}
 }
+
+/* 01-invitation.html: dark page, indigo primary button, outlined secondary buttons. */
+.login-page.invite {
+  --l-navy:#e8edf7; --l-text-secondary:#b6c2d5; --l-border:#465773; --l-action:#a9c9ff; --l-field:#171f2f;
+  background:#171f2f;
+  .hero{background:#0d1240}
+  .panel{padding-top:min(200px,22vh)}
+  h1.title{font-size:30px;line-height:36px;font-weight:600;letter-spacing:-.1px;margin:0 0 20px;color:var(--l-navy)}
+  h2.project{font-size:20px;line-height:24px;font-weight:600;margin:0 0 21px;color:var(--l-navy)}
+  .body{font-size:14px;line-height:17px;max-width:420px;margin:0 0 19px}
+  .card{min-height:120px;background:#171f2f;padding:24px;margin:0 0 21px}
+  .card .label{font-size:12px;line-height:16px;color:var(--l-text-secondary)}
+  .card .value{font-size:15px;line-height:20px;margin:11px 0 12px}
+  .card .meta{font-size:12px;line-height:16px;color:var(--l-text-secondary)}
+  .card p + p{margin-top:0}
+  .stack{display:flex;flex-direction:column;gap:20px}
+  .stack .btn{height:44px;border-radius:6px;font-size:14px;margin:0;text-decoration:none}
+  .stack .btn.primary{background:#454aad;border-color:transparent;color:#fff}
+  .stack .btn.primary:hover{background:#5258c4}
+  .stack .btn.outline{background:#171f2f;color:#a9c9ff;border-color:#a9c9ff}
+  .stack .btn.outline:hover{background:#1d2740}
+}

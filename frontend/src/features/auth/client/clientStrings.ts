@@ -12,6 +12,9 @@ interface ClientStrings {
   invitedAccount: string;
   inviteMeta: (role: string, expires: string) => string;
   openInvitation: string;
+  openPrevious: string;
+  inviteHero: string;
+  invitationDetails: string;
   newHere: string;
   // create account
   createTitle: string;
@@ -55,6 +58,9 @@ const en: ClientStrings = {
   invitedAccount: 'Invited account',
   inviteMeta: (role, expires) => `${role} · Expires ${expires}`,
   openInvitation: 'Open invitation',
+  openPrevious: 'Open previous invitation',
+  inviteHero: 'A shared space to review project delivery, published reports and agreed changes.',
+  invitationDetails: 'Invitation details',
   newHere: 'New here? Create an account',
   createTitle: 'Create your account',
   createSub: 'Create your account with your work email.',
@@ -95,6 +101,9 @@ const de: ClientStrings = {
   invitedAccount: 'Eingeladenes Konto',
   inviteMeta: (role, expires) => `${role} · Läuft ab am ${expires}`,
   openInvitation: 'Einladung öffnen',
+  openPrevious: 'Frühere Einladung öffnen',
+  inviteHero: 'Ein gemeinsamer Raum, um Projektlieferung, veröffentlichte Berichte und vereinbarte Änderungen zu prüfen.',
+  invitationDetails: 'Einladungsdetails',
   newHere: 'Neu hier? Konto erstellen',
   createTitle: 'Konto erstellen',
   createSub: 'Erstellen Sie Ihr Konto mit Ihrer geschäftlichen E-Mail-Adresse.',

@@ -19,11 +19,21 @@ interface InvitationOut {
   expires_at: string;
 }
 
+const PREVIEW: Invitation = {
+  projectName: 'Website Development',
+  inviterName: 'Alex Morgan',
+  email: 'jordan.lee@customer.com',
+  roleLabel: 'Client approver',
+  expiresAt: '2026-11-06T00:00:00Z',
+};
+
 /**
  * GET /invitations/{token}: what the invitation grants. 404 (unknown) and 410 (expired or revoked)
  * both mean the link can no longer be used.
  */
 export async function fetchInvitation(token: string): Promise<Invitation> {
+  // Dev only: /client/invitation/preview shows the screen without a backend invitation.
+  if (import.meta.env.DEV && token === 'preview') return PREVIEW;
   try {
     const i = await api<InvitationOut>(`/invitations/${encodeURIComponent(token)}`);
     return {

@@ -24,23 +24,26 @@ export function ClientInvitePage() {
   const data = invitation.data;
 
   return (
-    <ClientAuthShell lang={lang}>
+    <ClientAuthShell lang={lang} invite heroText={t.inviteHero}>
       {invitation.isError ? (
         <p className="body" role="alert">{t.loadFailed}</p>
       ) : !data ? (
         <p className="body" role="status">{t.loading}</p>
       ) : (
         <>
-          <h2 className="title">{t.inviteTitle}</h2>
-          <h3 className="project">{data.projectName}</h3>
+          <h1 className="title">{t.inviteTitle}</h1>
+          <h2 className="project">{data.projectName}</h2>
           <p className="body">{t.inviteBody(data.inviterName)}</p>
-          <div className="card">
+          <section className="card" aria-label={t.invitationDetails}>
             <p className="label">{t.invitedAccount}</p>
             <p className="value">{data.email}</p>
             <p className="meta">{t.inviteMeta(data.roleLabel, formatDate(data.expiresAt, lang))}</p>
+          </section>
+          <div className="stack">
+            <Link className="btn primary" to={withInvitation(paths.clientLogin, token)}>{t.openInvitation}</Link>
+            <Link className="btn outline" to={paths.clientLogin}>{t.openPrevious}</Link>
+            <Link className="btn outline" to={withInvitation(paths.clientCreateAccount, token)}>{t.newHere}</Link>
           </div>
-          <Link className="btn" to={withInvitation(paths.clientLogin, token)}>{t.openInvitation}</Link>
-          <Link className="btn secondary" to={withInvitation(paths.clientCreateAccount, token)}>{t.newHere}</Link>
         </>
       )}
     </ClientAuthShell>

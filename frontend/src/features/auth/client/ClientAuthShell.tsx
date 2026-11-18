@@ -21,25 +21,29 @@ interface ShellProps {
   lang: Lang;
   busy?: boolean;
   help?: string;
+  /** The dark invitation layout (01-invitation.html). */
+  invite?: boolean;
+  /** Replaces the sentence under the hero title. */
+  heroText?: string;
   children: ReactNode;
 }
 
 /** Brand panel plus content panel shared by every screen of the invite-based client flow. */
-export function ClientAuthShell({ lang, busy, help, children }: ShellProps) {
+export function ClientAuthShell({ lang, busy, help, invite, heroText, children }: ShellProps) {
   const t = LOGIN_STRINGS[lang];
 
-  // Like the staff login, these screens are always light; restore the selected theme on leave.
+  // Like the staff login, these screens ignore the selected theme (the invitation is dark, the rest light); restore it on leave.
   useLayoutEffect(() => {
     const root = document.documentElement;
     const previous = root.dataset.theme;
-    root.dataset.theme = 'light';
+    root.dataset.theme = invite ? 'dark' : 'light';
     return () => {
       if (previous) root.dataset.theme = previous;
     };
-  }, []);
+  }, [invite]);
 
   return (
-    <div className="login-page">
+    <div className={invite ? 'login-page invite' : 'login-page'}>
       <div className="page">
         <section className="hero">
           <div className="art" aria-hidden="true" style={{ backgroundImage: `url(${heroArt})` }} />
@@ -49,7 +53,7 @@ export function ClientAuthShell({ lang, busy, help, children }: ShellProps) {
           </div>
           <div className="copy">
             <h1>{t.heroTitle}</h1>
-            <p>{t.heroText}</p>
+            <p>{heroText ?? t.heroText}</p>
           </div>
           <footer>{t.footer}</footer>
         </section>
