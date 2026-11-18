@@ -1,20 +1,16 @@
 import { Link } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { dayMonth } from './format';
+import { dayMonth, initialsOf, longDate, paddedDate } from './format';
 import { nextMilestone } from './clientPortalApi';
-import { CR_LABEL, HEALTH_LABEL, HEALTH_TONE, MILESTONE_BADGE } from './labels';
+import { MILESTONE_BADGE } from './labels';
 import { useProjectContext } from './ClientProjectLayout';
-import { Badge, Bar, Kpi } from './ui';
+import { Icon } from './icons';
+import './clientScreens.css';
 
-const HEALTH_NOTE = {
-  on_track: 'Progressing as planned',
-  at_risk: 'Needs attention',
-  off_track: 'Behind plan',
-} as const;
-
-const R = 87;
-const CIRCUMFERENCE = 2 * Math.PI * R;
+const SEGMENTS = 25;
+const DAY = 86_400_000;
+const daysBetween = (from: string, to: string) => Math.max(0, Math.round((Date.parse(to) - Date.parse(from)) / DAY));
 
 export function ClientOverviewPage() {
   const pp = usePortalPaths();
@@ -22,96 +18,118 @@ export function ClientOverviewPage() {
   const { t, lang } = usePrefs();
 
   const next = nextMilestone(project, today);
-  const inReview = project.changeRequests.filter((c) => c.status === 'in_review').length;
-  const total = project.changeRequests.length;
-  const latestReport = [...project.reports].sort((a, b) => b.createdOn.localeCompare(a.createdOn))[0];
+  const done = project.milestones.filter((m) => m.state === 'done').length;
+  const filled = Math.round((project.progress / 100) * SEGMENTS);
+  const inReview = project.changeRequests.find((c) => c.status === 'in_review');
+  const manager = project.publishedBy;
+  const nextDate = next && dayMonth(lang, next.dueDate).split(' ');
 
   return (
-    <>
-      <div className="cp-grid4" style={{ marginTop: 28 }}>
-        <div className="cp-card cp-kpi cp-o">
-          <div className="cp-l">{t('Project health')}</div>
-          <div style={{ marginTop: 14 }}>
-            <Badge tone={HEALTH_TONE[project.health]}>{t(HEALTH_LABEL[project.health])}</Badge>
+    <div className="cx-ov">
+      <div className="cx-col">
+        <section className="cx-card cx-pp">
+          <div className="cx-hd2">
+            <span className="cx-lh"><Icon name="chart" /> {t('Project progress')}</span>
+            <span className="cx-dt">{paddedDate(lang, project.publishedOn)}</span>
           </div>
-          <div className="cp-d" style={{ marginTop: 18 }}>{t(HEALTH_NOTE[project.health])}</div>
-        </div>
-        <Kpi overview label={t('Published progress')} value={`${project.progress}%`} hint={t('Latest shared delivery progress')} />
-        <Kpi
-          overview
-          label={t('Next milestone')}
-          value={next ? dayMonth(lang, next.dueDate) : '–'}
-          hint={next ? `${next.name} · ${t(MILESTONE_BADGE[next.state].label)}` : t('Nothing planned')}
-        />
-        <Kpi overview label={t('Open change requests')} value={inReview} hint={t('{n} awaiting a published decision', { n: inReview })} />
+          <div className="cx-big">
+            <strong>{project.progress}%</strong>
+            <div>
+              <div className="cx-t">{t('Latest published progress')}</div>
+              <div className="cx-s">{t('Shared by {name}', { name: manager.name })}</div>
+            </div>
+          </div>
+          <div className="cx-segs" role="img" aria-label={t('{n} percent progress', { n: project.progress })}>
+            {Array.from({ length: SEGMENTS }, (_, i) => <i key={i} className={i < filled ? 'cx-f' : undefined} />)}
+          </div>
+          <p className="cx-trend">{t('A progress trend will appear when more updates are shared.')}</p>
+          <hr />
+          <div className="cx-dates">
+            <div><div className="cx-k">{t('Started')}</div><div className="cx-v">{longDate(lang, project.startDate)}</div></div>
+            <div><div className="cx-k">{t('Target completion')}</div><div className="cx-v">{longDate(lang, project.dueDate)}</div></div>
+          </div>
+        </section>
+
+        <section className="cx-card cx-lu">
+          <div className="cx-hd2">
+            <span className="cx-lh"><Icon name="file" /> {t('Latest project update')}</span>
+            {project.latestUpdate && <span className="cx-dt">{paddedDate(lang, project.latestUpdate.date)}</span>}
+          </div>
+          <p>{project.latestUpdate ? project.latestUpdate.text : t('No updates have been shared yet.')}</p>
+          <hr />
+          <div className="cx-by">
+            <div className="cx-who">
+              <span className="cx-avatar" aria-hidden="true">{initialsOf(manager.name)}</span>
+              <div><b>{manager.name}</b><span className="cx-r">{t(manager.role)}</span></div>
+            </div>
+            <Link to={pp.reports(project.id)}>
+              {t('View reports')} <Icon name="arrow" className="cx-ico cx-11" />
+            </Link>
+          </div>
+        </section>
       </div>
-      <div className="cp-ov2">
-        <div className="cp-card" style={{ minHeight: 326 }}>
-          <h4>{t('Delivery progress')}</h4>
-          <p className="cp-sub" style={{ fontSize: 13, marginTop: 14 }}>{t('Latest published progress')}</p>
-          <div className="cp-donut-wrap">
-            <div className="cp-donut">
-              <svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true">
-                <circle cx="100" cy="100" r={R} fill="none" stroke="#F3F4F8" strokeWidth="26" />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={R}
-                  fill="none"
-                  stroke="#124F94"
-                  strokeWidth="26"
-                  strokeDasharray={`${(CIRCUMFERENCE * project.progress) / 100} ${CIRCUMFERENCE}`}
-                  transform="rotate(-90 100 100)"
-                />
-              </svg>
-              <div className="cp-c">
-                <b>{project.progress}%</b>
-                <span>{t('Complete')}</span>
+
+      <div className="cx-col cx-right">
+        <div className="cx-kpis">
+          <div className="cx-card cx-kpi">
+            <Icon name="flag" />
+            <div className="cx-n">{done} / {project.milestones.length}</div>
+            <div className="cx-l">{t('Milestones')}</div>
+            <div className="cx-s">{t('Completed')}</div>
+          </div>
+          <div className="cx-card cx-kpi">
+            <Icon name="calendar" />
+            <div className="cx-n">{daysBetween(today, project.dueDate)}</div>
+            <div className="cx-l">{t('Days left')}</div>
+            <div className="cx-s">{t('Until {date}', { date: dayMonth(lang, project.dueDate) })}</div>
+          </div>
+          <div className="cx-card cx-kpi">
+            <Icon name="check" />
+            <div className="cx-n">{project.clientActions}</div>
+            <div className="cx-l">{t('Client actions')}</div>
+            <div className="cx-s">{project.clientActions ? t('Waiting on you') : t('Nothing pending')}</div>
+          </div>
+        </div>
+
+        <section className="cx-card cx-nm">
+          <h3>{t('Next milestone')}</h3>
+          {next && nextDate ? (
+            <div className="cx-row">
+              <div className="cx-box"><b>{nextDate[0]}</b><small>{(nextDate[1] ?? '').toUpperCase()}</small></div>
+              <div>
+                <div className="cx-t">{next.name}</div>
+                <div className="cx-s">
+                  {next.state === 'planned' ? t('Not started') : t(MILESTONE_BADGE[next.state].label)} · {longDate(lang, next.dueDate)}
+                </div>
               </div>
             </div>
-            <div className="cp-legend">
-              <div>{t('Complete')}<b>{project.progress}%</b></div>
-              <div className="cp-r">{t('Remaining')}<b>{100 - project.progress}%</b></div>
-            </div>
-          </div>
-        </div>
-        <div className="cp-card">
-          <h4>{t('Change requests')}</h4>
-          <p className="cp-sub" style={{ fontSize: 13, marginTop: 14 }}>{t('{n} requests in total', { n: total })}</p>
-          <div className="cp-crs">
-            {(['in_review', 'approved', 'declined'] as const).map((status, i) => {
-              const n = project.changeRequests.filter((c) => c.status === status).length;
-              return (
-                <div key={status}>
-                  <div className="cp-row" style={i ? { marginTop: 18 } : undefined}>
-                    <span>{t(CR_LABEL[status])}</span>
-                    <b>{n}</b>
-                  </div>
-                  <Bar value={total ? (n / total) * 100 : 0} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="cp-card" style={{ minHeight: 148, paddingBottom: 20 }}>
-          <h4>{t('Milestones')}</h4>
-          {project.milestones.map((m, i) => (
-            <div className="cp-mrow" key={m.id} style={i === 0 ? { marginTop: 20 } : undefined}>
-              <span className="cp-dt">{dayMonth(lang, m.dueDate)}</span>
-              <span>{m.name}</span>
-              <Badge tone={MILESTONE_BADGE[m.state].tone}>{t(MILESTONE_BADGE[m.state].label)}</Badge>
-            </div>
-          ))}
-        </div>
-        <div className="cp-card" style={{ minHeight: 148 }}>
-          <h4>{t('Latest report')}</h4>
-          {latestReport ? (
-            <Link className="cp-link-b" to={pp.report(project.id, latestReport.id)}>{latestReport.title}</Link>
           ) : (
-            <p className="cp-sub">{t('No reports have been shared yet.')}</p>
+            <p className="cx-s" style={{ marginTop: 17 }}>{t('Nothing planned')}</p>
           )}
-        </div>
+          <Link className="cx-more" to={pp.milestones(project.id)}>
+            {t('View milestones')} <Icon name="arrow" className="cx-ico cx-11" strokeWidth={2} />
+          </Link>
+        </section>
+
+        <section className="cx-card cx-ra">
+          <div className="cx-hd2">
+            <span className="cx-lh"><Icon name="activity" /> {t('Recent activity')}</span>
+          </div>
+          <div className="cx-box">
+            {inReview ? (
+              <>
+                <div className="cx-t">{t('Change request in review')}</div>
+                <div className="cx-s">{inReview.ref} · {inReview.title}</div>
+                <Link to={pp.changeRequests(project.id)}>
+                  {t('View request')} <Icon name="arrow" className="cx-ico cx-11" strokeWidth={2} />
+                </Link>
+              </>
+            ) : (
+              <div className="cx-s">{t('No recent activity.')}</div>
+            )}
+          </div>
+        </section>
       </div>
-    </>
+    </div>
   );
 }

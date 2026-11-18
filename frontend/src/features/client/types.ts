@@ -49,9 +49,27 @@ export interface ClientNotification {
   unread: boolean;
 }
 
+export interface ClientUpdate {
+  id: string;
+  title: string;
+  meta: string;
+}
+
 export interface ClientProject {
   id: string;
+  /** Reference shown on the projects list, e.g. BF-024. */
+  code: string;
   name: string;
+  category: string;
+  /** ISO dates. */
+  startDate: string;
+  dueDate: string;
+  /** Open items waiting on the client. */
+  clientActions: number;
+  /** Optional line under the progress bar on the dashboard; falls back to the next milestone. */
+  note?: string;
+  /** The PM's latest written update. */
+  latestUpdate?: { text: string; date: string };
   health: ClientHealth;
   /** Latest progress the PM published, not live task data. */
   progress: number;
@@ -66,6 +84,9 @@ export interface ClientProject {
 export interface ClientPortalData {
   /** The date the portal treats as "today" (milestones before it are behind us). */
   today: string;
+  /** The client organisation the projects belong to. */
+  organisation: string;
   notifications: ClientNotification[];
+  updates: ClientUpdate[];
   projects: ClientProject[];
 }

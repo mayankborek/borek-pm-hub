@@ -5,7 +5,9 @@ import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useClientPortal } from './clientPortalApi';
 import type { ClientProject } from './types';
+import { Icon } from './icons';
 import { EmptyCard, PortalPending } from './ui';
+import './clientScreens.css';
 
 export interface ProjectContext {
   project: ClientProject;
@@ -13,12 +15,6 @@ export interface ProjectContext {
 }
 
 export const useProjectContext = () => useOutletContext<ProjectContext>();
-
-const chevron = (
-  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
-    <path d="M1 1l5 5 5-5" stroke="#0D1240" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 /** Project name with a menu to jump to another shared project. */
 function ProjectSwitcher({ current, projects }: { current: ClientProject; projects: ClientProject[] }) {
@@ -41,12 +37,12 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
   }, [open]);
 
   return (
-    <div className="cp-ptitle" ref={ref}>
+    <h1 className="cx-h-proj" ref={ref}>
       <button type="button" aria-haspopup="true" aria-expanded={open} aria-label={t('Switch project')} onClick={() => setOpen((v) => !v)}>
-        {current.name} {chevron}
+        {current.name} <Icon name="chevron" className="cx-ico" strokeWidth={2} />
       </button>
       {open && (
-        <nav className="cp-switch" aria-label={t('Projects')}>
+        <nav className="cx-switch" aria-label={t('Projects')}>
           {projects.map((p) => (
             <Link key={p.id} to={pp.project(p.id)} aria-current={p.id === current.id} onClick={() => setOpen(false)}>
               {p.name}
@@ -54,11 +50,11 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
           ))}
         </nav>
       )}
-    </div>
+    </h1>
   );
 }
 
-/** Breadcrumb, project title and the Overview / Milestones / Reports / Change Requests / Contacts tabs. */
+/** Project title and the Overview / Milestones / Reports / Change Requests / Contacts tabs. */
 export function ClientProjectLayout() {
   const pp = usePortalPaths();
   const isAm = useAuth().user?.role === 'account_manager';
@@ -96,13 +92,10 @@ export function ClientProjectLayout() {
 
   return (
     <>
-      <div className="cp-crumb">
-        <Link to={pp.projects}>{t('Projects')}</Link> / {project.name}
-      </div>
       <ProjectSwitcher current={project} projects={data.projects} />
-      <nav className="cp-tabs" aria-label={t('Project sections')}>
+      <nav className="cx-tabs" aria-label={t('Project sections')}>
         {tabs.map(([to, label, end]) => (
-          <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'cp-on' : undefined)}>
+          <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'cx-on' : undefined)}>
             {t(label)}
           </NavLink>
         ))}
