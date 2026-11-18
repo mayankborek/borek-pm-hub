@@ -33,8 +33,6 @@
   /* Hero */
   .hero{position:relative;background:var(--l-hero);color:#fff;display:flex;flex-direction:column;padding:min(76px,8.4vh) clamp(40px,6.1vw,88px) min(93px,10.3vh);overflow:hidden}
   .art{position:absolute;inset:0 0 auto 0;height:min(523px,57.9vh);background:#070a3a center/cover no-repeat}
-  .hero::before{content:"";position:absolute;left:0;right:0;top:min(390px,43.2vh);height:min(190px,21vh);z-index:1;
-    background:rgba(13,18,64,.82)}
   .hero>*:not(.art){position:relative;z-index:2}
   .art{z-index:0;background-size:cover}
   .logo{display:block;width:182px;height:auto}
