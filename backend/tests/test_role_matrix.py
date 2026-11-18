@@ -17,7 +17,6 @@ from typing import Any
 import httpx
 import pytest
 import pytest_asyncio
-from fastapi.routing import APIRoute
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -74,6 +73,7 @@ NO_ROLE_RULE = {
     ("POST", "/auth/login"),
     ("POST", "/auth/accept-invite"),
     ("POST", "/auth/change-password"),
+    ("POST", "/auth/logout"),
 }
 
 
@@ -415,11 +415,15 @@ def _classify(response: httpx.Response) -> str:
 
 
 def _api_routes() -> set[tuple[str, str]]:
-    found = set()
-    for route in create_app().routes:
-        if isinstance(route, APIRoute) and route.path.startswith(API):
-            found |= {(m, route.path.removeprefix(API)) for m in route.methods}
-    return found
+    # Read from the OpenAPI schema: FastAPI 0.16x nests included routers, so app.routes is no
+    # longer flat. No API route sets include_in_schema=False, so the schema lists them all.
+    paths: dict[str, dict[str, Any]] = create_app().openapi()["paths"]
+    return {
+        (method.upper(), path.removeprefix(API))
+        for path, operations in paths.items()
+        if path.startswith(API)
+        for method in operations
+    }
 
 
 def _route_of(path: str) -> str:

@@ -1,11 +1,14 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import func, select
 
 from app.auth.dependencies import CurrentUser
+from app.auth.events import email_hash, security_event
 from app.auth.invites import accept_invite
+from app.auth.rate_limit import SlidingWindowLimiter, client_ip
 from app.auth.schemas import (
     AcceptInviteIn,
     AcceptInviteOut,
@@ -71,15 +74,34 @@ def _invalid_credentials() -> AppError:
     return AppError(401, "INVALID_CREDENTIALS", "Invalid email or password.")
 
 
+def _check_rate_limit(request: Request, settings: Settings) -> None:
+    limiter: SlidingWindowLimiter = request.app.state.login_limiter
+    client = client_ip(request, settings.trust_proxy_headers)
+    retry_after = limiter.hit(client, settings.login_rate_limit_per_minute)
+    if retry_after is not None:
+        security_event("login_rate_limited", request, retry_after=retry_after)
+        raise AppError(
+            429,
+            "RATE_LIMITED",
+            "Too many sign-in attempts. Please wait a minute and try again.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
 @router.post("/login", response_model=LoginOut)
 async def login(
-    body: LoginIn, session: SessionDep, settings: Annotated[Settings, Depends(get_settings)]
+    body: LoginIn,
+    request: Request,
+    session: SessionDep,
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> LoginOut:
     """Email + password sign-in. Only available when AUTH_MODE=local."""
     if settings.auth_mode != "local":
         raise AppError(404, "NOT_FOUND", "Not found.")
+    _check_rate_limit(request, settings)
+    # Row lock: parallel wrong guesses must not overwrite each other's failure count.
     user = await session.scalar(
-        select(User).where(func.lower(User.email) == body.email.strip().lower())
+        select(User).where(func.lower(User.email) == body.email.strip().lower()).with_for_update()
     )
     now = datetime.now(UTC)
     if (
@@ -89,28 +111,54 @@ async def login(
         or (user.locked_until is not None and user.locked_until > now)
     ):
         burn_password_check(body.password)
+        if user is None:
+            security_event(
+                "login_failed", request, reason="unknown_email", email_hash=email_hash(body.email)
+            )
+        else:
+            reason = (
+                "locked" if user.is_active and user.password_hash else "inactive_or_no_password"
+            )
+            security_event("login_failed", request, user_id=user.id, reason=reason)
         raise _invalid_credentials()
     if not verify_password(body.password, user.password_hash):
         user.failed_login_count += 1
         if user.failed_login_count >= settings.max_failed_logins:
             user.locked_until = now + timedelta(minutes=settings.lockout_minutes)
             user.failed_login_count = 0
+            security_event(
+                "account_locked", request, user_id=user.id, minutes=settings.lockout_minutes
+            )
+        else:
+            security_event(
+                "login_failed",
+                request,
+                user_id=user.id,
+                reason="wrong_password",
+                failures=user.failed_login_count,
+            )
         await session.commit()
         raise _invalid_credentials()
     user.failed_login_count = 0
     user.locked_until = None
     await session.commit()
-    token, expires_in = create_access_token(user.id, settings)
+    token, expires_in = create_access_token(user.id, settings, user.token_version)
+    security_event("login_succeeded", request, level=logging.INFO, user_id=user.id)
     return LoginOut(access_token=token, expires_in=expires_in, user=_to_user_out(user))
 
 
 @router.post("/accept-invite", response_model=AcceptInviteOut)
 async def accept_invite_link(
-    body: AcceptInviteIn, session: SessionDep, settings: Annotated[Settings, Depends(get_settings)]
+    body: AcceptInviteIn,
+    request: Request,
+    session: SessionDep,
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> AcceptInviteOut:
-    """Public. Set the password with the one-use link an administrator handed over."""
+    """Public. Set the password with the one-use link an administrator handed over.
+    Shares the sign-in rate limit per client IP."""
     if settings.auth_mode != "local":
         raise AppError(404, "NOT_FOUND", "Not found.")
+    _check_rate_limit(request, settings)
     user = await accept_invite(session, body.token, body.password)
     return AcceptInviteOut(email=user.email)
 
@@ -118,11 +166,14 @@ async def accept_invite_link(
 @router.post("/change-password", status_code=204)
 async def change_password(
     body: ChangePasswordIn,
+    request: Request,
     user: CurrentUser,
     session: SessionDep,
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> Response:
-    """Signed-in users change their own password. Wrong attempts count towards the lockout."""
+    """Signed-in users change their own password. Wrong attempts count towards the lockout.
+
+    Ends every session of the user, including the one that made the change (sign in again)."""
     if settings.auth_mode != "local":
         raise AppError(404, "NOT_FOUND", "Not found.")
     now = datetime.now(UTC)
@@ -155,5 +206,19 @@ async def change_password(
     user.password_hash = hash_password(body.new_password)
     user.failed_login_count = 0
     user.locked_until = None
+    user.token_version += 1  # a new password ends every session, this one too: sign in again
     await session.commit()
+    security_event("password_changed", request, level=logging.INFO, user_id=user.id)
     return Response(status_code=204)
+
+
+@router.post("/logout", status_code=204)
+async def logout(user: CurrentUser, request: Request, session: SessionDep) -> None:
+    """Sign out everywhere: every token issued to this user so far stops working.
+
+    A user can be signed in on several devices or tabs at once (one token each); this ends
+    all of them. The client also deletes its own copy of the token.
+    """
+    user.token_version += 1
+    await session.commit()
+    security_event("logout_all_sessions", request, level=logging.INFO, user_id=user.id)

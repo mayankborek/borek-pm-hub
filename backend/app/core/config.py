@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     # Sign-in is blocked for `lockout_minutes` after `max_failed_logins` wrong passwords in a row.
     max_failed_logins: int = 5
     lockout_minutes: int = 15
+    # Sign-in attempts per client IP per minute (per worker process); 0 turns the limit off.
+    login_rate_limit_per_minute: int = 10
+    # True only when the API is reachable through a reverse proxy alone (prod compose): then the
+    # client IP is read from X-Forwarded-For instead of the proxy's own address.
+    trust_proxy_headers: bool = False
 
     database_url: str = "postgresql+asyncpg://pmhub:change-me@localhost:5432/pmhub"
     db_pool_size: int = 10

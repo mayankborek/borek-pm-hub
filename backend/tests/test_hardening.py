@@ -316,7 +316,8 @@ async def test_upload_name_and_content_type_are_sanitised(
     assert response.status_code == 201, response.text
     body = response.json()
     assert len(body["name"]) == 255 and body["name"].endswith(".pdf")
-    assert body["content_type"] in ("application/octet-stream", "text/html")
+    # the content type comes from the extension, never from what the client claims
+    assert body["content_type"] == "application/pdf"
 
     empty = await client.post(
         url, headers=world.headers, files={"file": ("a.txt", b"", "text/plain")}
@@ -330,15 +331,16 @@ async def test_upload_name_and_content_type_are_sanitised(
 
 
 def test_file_name_cleaner_drops_paths_and_control_characters() -> None:
-    from app.tasks.details import _clean_content_type, _clean_file_name
+    from app.tasks.details import _clean_file_name, content_type_for
 
     assert _clean_file_name("a" + chr(0) + "b" + chr(7) + ".txt") == "ab.txt"
     assert _clean_file_name("..\\..\\evil.pdf") == "evil.pdf"
     assert _clean_file_name("   ") == "file"
     assert _clean_file_name(None) == "file"
-    assert _clean_content_type("text/plain; charset=utf-8") == "text/plain"
-    assert _clean_content_type("not a type") == "application/octet-stream"
-    assert _clean_content_type(None) == "application/octet-stream"
+    assert content_type_for("notes.TXT") == "text/plain"
+    assert content_type_for("photo.jpeg") == "image/jpeg"
+    assert content_type_for("page.html") == "application/octet-stream"
+    assert content_type_for("noext") == "application/octet-stream"
 
 
 # --- auth and error shape ---------------------------------------------------------------------

@@ -85,6 +85,7 @@ async def accept_invite(session: AsyncSession, token: str, password: str) -> Use
     user.password_hash = hash_password(password)
     user.failed_login_count = 0
     user.locked_until = None
+    user.token_version += 1  # a new password ends the sessions made with the old one
     invite.used_at = now
     await session.commit()
     return user

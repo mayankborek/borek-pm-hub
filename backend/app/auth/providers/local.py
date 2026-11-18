@@ -16,10 +16,13 @@ async def authenticate(request: Request, session: AsyncSession, settings: Settin
     scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise unauthenticated("Missing bearer token.")
-    user_id = read_access_token(token.strip(), settings)
-    if user_id is None:
+    claims = read_access_token(token.strip(), settings)
+    if claims is None:
         raise unauthenticated("Invalid or expired token.")
+    user_id, token_version = claims
     user = await session.get(User, user_id)
     if user is None or not user.is_active:
         raise unauthenticated("Unknown or inactive user.")
+    if token_version != user.token_version:
+        raise unauthenticated("This session has ended. Please sign in again.")
     return user
