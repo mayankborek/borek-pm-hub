@@ -1,4 +1,4 @@
-.amr{--amr-label:300px;background:#fff;border:1px solid #E2E4EC;border-radius:12px;padding:24px 28px;margin-top:24px;color:#0D1240}
+.amr{--amr-label:300px;background:#fff;border:1px solid #E2E4EC;border-radius:0;padding:24px 28px;margin-top:24px;color:#0D1240}
 .amr-head{display:flex;justify-content:space-between;align-items:flex-start}
 .amr-head h2{font-size:24px;font-weight:600;margin:0}
 .amr-head p{margin:6px 0 0;font-size:14px;color:#65708A}
@@ -7,7 +7,7 @@
 .amr-axis,.amr-row{display:grid;grid-template-columns:var(--amr-label) 1fr}
 .amr-axis{position:relative;display:block;height:36px;font-size:13px;color:#65708A}
 .amr-axis span,.amr-axis em{position:absolute;top:8px;margin-left:var(--amr-label);transform:translateX(-50%)}
-.amr-axis em{top:0;font-style:normal;font-weight:600;color:#175DBA;background:#E7EFFB;border-radius:12px;padding:4px 12px;white-space:nowrap;z-index:2}
+.amr-axis em{top:0;font-style:normal;font-weight:600;color:#175DBA;background:#E7EFFB;border-radius:0;padding:4px 12px;white-space:nowrap;z-index:2}
 .amr-row{border-bottom:1px solid #E7EAF0;min-height:49px;align-items:center}
 .amr-label{display:flex;flex-direction:column;gap:2px;font-size:14px;padding:8px 12px 8px 0}
 .amr-kind{font-size:12px;font-weight:600;text-transform:uppercase;color:#65708A}
@@ -20,11 +20,11 @@
 .amr-ms--new i{background:#fff;border:2px solid #175DBA;box-sizing:border-box}
 .amr-span{position:absolute;top:calc(50% + 9px);height:2px;background:#175DBA}
 .amr-dot{color:#5C6178}
-.amr-dot i{width:10px;height:10px;border-radius:50%;margin-left:-5px}
+.amr-dot i{width:10px;height:10px;border-radius:0%;margin-left:-5px}
 .amr-today{position:absolute;top:36px;bottom:0;border-left:1.5px dashed #175DBA;pointer-events:none}
 .amr-legend{display:flex;gap:28px;margin-top:28px;font-size:13px;color:#65708A}
 .amr-legend span{display:flex;align-items:center;gap:8px}
 .amr-sq{width:10px;height:10px;background:#C94734}
-.amr-circ{width:10px;height:10px;border-radius:50%;background:#175DBA}
+.amr-circ{width:10px;height:10px;border-radius:0%;background:#175DBA}
 .amr-dash{width:18px;border-top:1.5px dashed #175DBA}
 @media (max-width:720px){.amr{--amr-label:200px;padding:16px}.amr-axis,.amr-row{min-width:640px}}

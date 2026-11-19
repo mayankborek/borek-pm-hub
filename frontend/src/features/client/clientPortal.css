@@ -30,7 +30,7 @@
 
 /* The page chrome (sidebar, top bar) is the shared staff shell in global.css; .cp only scopes the page content. */
 .cp-bell{width:20px;height:20px;display:grid;place-items:center}
-.cp-avatar{width:32px;height:32px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:600}
+.cp-avatar{width:32px;height:32px;border-radius:0%;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:600}
 .topbar-actions .cp-tools{position:relative;display:flex;align-items:center}
 
 .cp-crumb{font-size:12px;color:var(--slate);margin-top:24px}
@@ -101,7 +101,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-donut .cp-c span{font-size:12px;color:var(--slate);margin-top:6px}
 .cp-legend{flex:1;display:grid;gap:22px}
 .cp-legend div{display:flex;align-items:center;font-size:13px;color:var(--slate)}
-.cp-legend div::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:8px}
+.cp-legend div::before{content:"";width:8px;height:8px;border-radius:0%;background:var(--blue);margin-right:8px}
 .cp-legend div.cp-r::before{background:var(--bg)}
 .cp-legend b{margin-left:auto;font-size:15px;font-weight:600;color:var(--navy);padding-right:28px}
 .cp-crs{margin-top:16px}
@@ -124,7 +124,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-msv .cp-today{position:absolute;font-size:12px;font-weight:600;transform:translateX(-50%);white-space:nowrap}
 .cp-lg{display:flex;gap:24px;font-size:13px;color:var(--slate);position:absolute;left:0;top:478px}
 .cp-lg span{display:flex;align-items:center;gap:10px}
-.cp-lg span::before{content:"";width:28px;height:0;border-top:4px solid var(--blue);border-radius:2px}
+.cp-lg span::before{content:"";width:28px;height:0;border-top:4px solid var(--blue);border-radius:0}
 .cp-lg span.cp-d::before{border-top:3px dashed var(--mute);width:28px}
 
 /* reports */
@@ -238,7 +238,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-dialog-text{font-size:14px;line-height:17px}
 .cp-dialog-row{display:flex;gap:12px}
 .cp-dialog-stack{display:flex;flex-direction:column;gap:16px;width:100%}
-.cp-dbtn{display:flex;align-items:center;justify-content:center;height:43px;min-width:140px;padding:0 16px;border:1px solid var(--navy);border-radius:6px;background:var(--surface);color:var(--navy);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.cp-dbtn{display:flex;align-items:center;justify-content:center;height:43px;min-width:140px;padding:0 16px;border:1px solid var(--navy);border-radius:0;background:var(--surface);color:var(--navy);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
 .cp-dbtn:hover{background:var(--line-soft)}
 
 @media (max-width:900px){

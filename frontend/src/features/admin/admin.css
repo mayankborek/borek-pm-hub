@@ -1,4 +1,5 @@
 /* Admin console. Ported from borek-flow-auth/admin.css; reuses the `cp-` shell and prefixes its own classes `ad-`. */
+.am .ad{--slate:var(--muted);--surface:var(--card);--mute:var(--muted2);--red:var(--bad);--green:var(--ok);font-size:14px}
 .ad-content{padding-top:27px}
 
 .ad-head{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:36px}
@@ -16,7 +17,7 @@
 .ad-filter:hover{background:var(--bg)}
 .ad-filter svg{width:14px;height:14px}
 .ad-filter-menu{position:relative}
-.ad-filter-count{min-width:18px;padding:0 5px;background:var(--blue);color:var(--surface);font-size:11px;line-height:18px;text-align:center;border-radius:9px}
+.ad-filter-count{min-width:18px;padding:0 5px;background:var(--blue);color:var(--surface);font-size:11px;line-height:18px;text-align:center;border-radius:0}
 .ad-filter-panel{position:absolute;top:40px;left:0;z-index:20;width:280px;padding:0 0 8px;background:var(--surface);border:1px solid var(--slate);box-shadow:0 8px 24px rgba(13,18,64,.12)}
 .ad-filter-head{display:flex;align-items:center;gap:12px;padding:12px 14px}
 .ad-filter-head strong{flex:1;font-size:14px;color:var(--navy)}
@@ -26,11 +27,10 @@
 .ad-filter-opt{display:flex;align-items:center;gap:12px;height:36px;font-size:14px;color:var(--navy);cursor:pointer}
 .ad-filter-opt input{width:16px;height:16px;margin:0;accent-color:var(--blue)}
 
-.ad-table-wrap{margin-top:18px;overflow-x:auto}
+.ad-table-wrap{margin-top:18px;overflow-x:auto;border:1px solid var(--line)}
 .ad-table{width:100%;min-width:860px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:14px;line-height:17px}
-.ad-table th{height:38px;padding:0 16px;background:var(--bg);color:var(--slate);font-weight:600;text-align:left}
-.ad-table td{height:54px;padding:24px 16px 0;border-bottom:1px solid var(--bg);vertical-align:top}
-.ad-table tbody tr+tr td{height:64px;padding-top:34px}
+.ad-table th{height:56px;padding:0 16px;background:var(--bg);color:var(--navy);font-weight:600;text-align:left}
+.ad-table td{background:var(--surface);height:56px;padding:0 16px;vertical-align:middle;border-bottom:1px solid var(--line)}
 .ad-table--org{margin-top:0}
 .ad-table--org td,.ad-table--org tbody tr+tr td{height:56px;padding:0 16px;vertical-align:middle}
 .ad-table .ad-empty{height:80px;padding:0 16px;vertical-align:middle;color:var(--slate)}
@@ -115,7 +115,7 @@
 
 .ad-card{margin-top:20px;border:1px solid var(--line);background:var(--surface)}
 .ad-card h3{font-size:20px;font-weight:600;line-height:24px}
-.ad-card--form{max-width:520px;padding:24px;border-radius:10px}
+.ad-card--form{max-width:520px;padding:24px}
 .ad-card--form .ad-actions{align-items:center;gap:28px}
 .ad-card--link{max-width:760px;padding:24px}
 .ad-card-sub{margin-top:16px;font-size:16px}
@@ -125,8 +125,27 @@
 .ad-copy .ad-btn{height:44px}
 
 .ad-overlay--confirm{background:rgba(3,5,18,.72)}
-.ad-dialog--confirm{max-width:528px;padding:25px;border-radius:8px}
+.ad-dialog--confirm{max-width:528px;padding:25px}
 .ad-dialog--confirm h2{margin-bottom:25px;font-size:18px;line-height:1.3}
 .ad-confirm-text{font-size:14px;line-height:1.5}
 .ad-dialog--confirm .ad-actions{margin-top:18px;gap:17px}
 .ad-dialog--confirm .ad-btn{height:43px;padding:0 17px}
+
+/* Table rows link in blue like the report links in the design. */
+.ad-table td a{color:var(--blue);font-weight:600}
+.ad-table td a:hover{text-decoration:underline}
+
+/* Edit form (i2): hairline card, bold labels, boxed fields, text-link actions. */
+.ad-card--form{background:var(--surface);border:1px solid var(--line)}
+.ad-card--form h3{color:var(--blue);font-size:18px}
+.ad-field>span{color:var(--navy);font-weight:600}
+.ad-input{border-color:var(--line);font-weight:600;height:44px}
+.ad-actions .ad-btn:not(.ad-btn--danger-fill),.ad-dialog .ad-actions .ad-btn--ghost{height:auto;padding:0;background:none;border:0;color:var(--blue);font-size:16px;font-weight:600}
+.ad-actions .ad-btn:not(.ad-btn--danger-fill):hover{background:none;text-decoration:underline}
+.ad-dialog{border:1px solid var(--line);box-shadow:none}
+.ad-dialog h2{color:var(--blue);font-size:18px}
+.ad-actions{gap:28px;align-items:center}
+.ad-actions .ad-btn--danger{color:var(--red)}
+
+/* Sharp corners on every box. Circles (avatars, radios, toggles) keep their shape. */
+.am input,.am select,.am button,.am textarea,.ad-card,.ad-dialog,.ad-filter-panel,.ad-tag{border-radius:0}

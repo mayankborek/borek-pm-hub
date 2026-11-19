@@ -52,7 +52,7 @@
   .card .meta{font-size:12px;line-height:16px;color:var(--l-text-secondary)}
   .card p + p{margin-top:0}
   .stack{display:flex;flex-direction:column;gap:20px}
-  .stack .btn{height:44px;border-radius:6px;font-size:14px;margin:0;text-decoration:none}
+  .stack .btn{height:44px;border-radius:0;font-size:14px;margin:0;text-decoration:none}
   .stack .btn.primary{background:#454aad;border-color:transparent;color:#fff}
   .stack .btn.primary:hover{background:#5258c4}
   .stack .btn.outline{background:#171f2f;color:#a9c9ff;border-color:#a9c9ff}

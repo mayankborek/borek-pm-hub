@@ -114,7 +114,7 @@
 
 
 .kpick { display: inline-flex; }
-.kpick-btn { display: inline-flex; align-items: center; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 4px; }
+.kpick-btn { display: inline-flex; align-items: center; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 0; }
 .kpick-btn:hover, .kpick-btn[aria-expanded='true'] { outline: 2px solid var(--link); outline-offset: 1px; }
 .kpick-list { position: fixed; z-index: 1000; width: 220px; max-height: 280px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none; background: var(--surface); border: 1px solid var(--field); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); }
 .kpick-list li { display: flex; align-items: center; min-height: 32px; padding: 0 12px; cursor: pointer; font-size: 14px; color: var(--ink); }

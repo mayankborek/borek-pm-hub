@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -9,12 +9,11 @@ import { useSay } from './AccountManagerLayout';
 /** Account settings frame (borek-flow-portal profile/security/notifications/preferences): left menu and one panel. */
 function Settings({ title, sub, children }: { title: string; sub: string; children: ReactNode }) {
   const { t } = usePrefs();
-  const links: [string, string][] = [
-    [paths.amProfile, 'My profile'],
-    [paths.amSecurity, 'Security'],
-    [paths.amNotifications, 'Notifications'],
-    [paths.amPreferences, 'Preferences'],
-  ];
+  // The administrator console reuses these screens under /admin/profile.
+  const admin = useLocation().pathname.startsWith('/admin');
+  const links: [string, string][] = admin
+    ? [[paths.adminProfile, 'My profile'], [paths.adminSecurity, 'Security'], [paths.adminNotifications, 'Notifications'], [paths.adminPreferences, 'Preferences']]
+    : [[paths.amProfile, 'My profile'], [paths.amSecurity, 'Security'], [paths.amNotifications, 'Notifications'], [paths.amPreferences, 'Preferences']];
   return (
     <div className="settings">
       <h1>{t('Account settings')}</h1>
@@ -25,7 +24,7 @@ function Settings({ title, sub, children }: { title: string; sub: string; childr
           {links.map(([to, label]) => (
             <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t(label)}</NavLink>
           ))}
-          <Link to={paths.amHome} style={{ marginTop: 12 }}>← {t('Back to portal')}</Link>
+          <Link to={admin ? paths.adminUsers : paths.amHome} style={{ marginTop: 12 }}>← {t(admin ? 'Back to admin' : 'Back to portal')}</Link>
         </nav>
         <section className="spanel">
           <h3>{t(title)}</h3>
@@ -51,7 +50,7 @@ export function AmProfilePage() {
     <Settings title="My profile" sub="Your account identity and contact details.">
       <div className="idrow">
         <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
-        <div><h4>{user.name}</h4><p>{t('Account Manager · Borek Solutions')}</p></div>
+        <div><h4>{user.name}</h4><p>{t(user.role === 'admin' ? 'Administrator · Borek Solutions' : 'Account Manager · Borek Solutions')}</p></div>
         {editing ? (
           <button className="btn primary" type="button" onClick={() => { setPhone(draft.trim()); setEditing(false); say(t('Profile updated')); }}>{t('Save changes')}</button>
         ) : (
