@@ -15,6 +15,7 @@ import { ClientHomePage } from '@/features/client/ClientHomePage';
 import { ClientProjectsPage } from '@/features/client/ClientProjectsPage';
 import { ClientProjectLayout } from '@/features/client/ClientProjectLayout';
 import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
+import { AmMilestonesPage } from '@/features/accountManager/AmMilestonesPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientProfilePage } from '@/features/client/ClientProfilePage';
@@ -117,7 +118,7 @@ export const router = createBrowserRouter([
                 element: <AmProjectLayout />,
                 children: [
                   { index: true, element: <AmOverviewPage /> },
-                  { path: 'milestones', element: <ClientMilestonesPage /> },
+                  { path: 'milestones', element: <AmMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
                   { path: 'stakeholders', element: <StakeholdersPage /> },

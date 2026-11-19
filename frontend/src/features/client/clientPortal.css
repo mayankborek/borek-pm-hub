@@ -179,7 +179,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 /* Project contacts */
 .cp-section-title{margin-top:26px;font-size:20px;font-weight:600;line-height:24px}
 .cp-section-sub{margin-top:17px;color:var(--muted);font-size:14px;line-height:17px}
-.cp-contact{width:560px;max-width:100%;margin-top:17px;padding:16px;border:1px solid var(--line)}
+.cp-contact{width:560px;max-width:100%;margin-top:17px;padding:16px;border:1px solid var(--line);background:#fff}
 .cp-contact-head{display:flex;align-items:center;gap:12px}
 .cp-contact-initials{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--line-soft);font-size:16px;font-weight:600;line-height:20px}
 .cp-contact-name{font-size:20px;font-weight:600;line-height:24px}

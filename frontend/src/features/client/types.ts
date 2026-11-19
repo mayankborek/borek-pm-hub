@@ -16,6 +16,19 @@ export interface ClientMilestone {
   changeRequestRef?: string;
 }
 
+export type ProjectTaskStatus = 'To do' | 'In progress' | 'Code review' | 'Testing' | 'Blocked';
+
+/** A task due date shown on the Account Manager roadmap. */
+export interface ProjectTask {
+  id: string;
+  /** Ticket reference, shown before the title when present, e.g. BFL-112. */
+  ref?: string;
+  title: string;
+  status: ProjectTaskStatus;
+  /** ISO date (YYYY-MM-DD). */
+  dueDate: string;
+}
+
 export interface ClientChangeRequest {
   ref: string;
   title: string;
@@ -77,6 +90,7 @@ export interface ClientProject {
   publishedBy: { name: string; role: string };
   contacts: ClientContact[];
   milestones: ClientMilestone[];
+  tasks?: ProjectTask[];
   changeRequests: ClientChangeRequest[];
   reports: ClientReport[];
 }

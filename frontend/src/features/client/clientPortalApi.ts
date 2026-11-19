@@ -45,6 +45,16 @@ const SAMPLE: ClientPortalData = {
         { id: 'content-migration', code: 'M-03', name: 'Content migration', dueDate: '2026-11-16', state: 'in_progress', progress: 40 },
         { id: 'client-handover', code: 'M-04', name: 'Client handover', dueDate: '2026-11-20', state: 'planned', progress: 0 },
       ],
+      tasks: [
+        { id: 't1', title: 'Homepage wireframes', status: 'In progress', dueDate: '2026-10-18' },
+        { id: 't2', ref: 'BFL-112', title: 'API credentials', status: 'Blocked', dueDate: '2026-10-20' },
+        { id: 't3', title: 'Approve visual direction', status: 'Code review', dueDate: '2026-10-27' },
+        { id: 't4', title: 'Redesign project overview', status: 'In progress', dueDate: '2026-10-28' },
+        { id: 't5', ref: 'BFL-121', title: 'Fix sign-in error states', status: 'In progress', dueDate: '2026-10-29' },
+        { id: 't6', title: 'Update brand guidelines', status: 'To do', dueDate: '2026-10-30' },
+        { id: 't7', title: 'Audit mobile navigation', status: 'Testing', dueDate: '2026-10-31' },
+        { id: 't8', title: 'Review homepage copy', status: 'To do', dueDate: '2026-11-02' },
+      ],
       changeRequests: [{ ref: 'CR-02', title: 'Extend delivery review', status: 'in_review' }],
       reports: [
         {
