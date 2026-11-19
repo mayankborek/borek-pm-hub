@@ -9,6 +9,7 @@ from app.auth.router import router as auth_router
 from app.client.router import router as client_router
 from app.dashboard.router import router as dashboard_router
 from app.finance.router import router as finance_router
+from app.milestones.router import router as milestones_router
 from app.organisations.router import router as organisations_router
 from app.portfolio.router import router as portfolio_router
 from app.projects.router import router as projects_router
@@ -34,3 +35,4 @@ api_router.include_router(organisations_router)
 api_router.include_router(portfolio_router)
 api_router.include_router(reporting_router)
 api_router.include_router(finance_router)
+api_router.include_router(milestones_router)
