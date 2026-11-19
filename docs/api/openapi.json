@@ -1052,6 +1052,583 @@
         "title": "ClientContactCreatedOut",
         "type": "object"
       },
+      "ClientContactOut": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role": {
+            "description": "Project Manager, Account Manager or the stakeholder's role.",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role",
+          "email",
+          "phone"
+        ],
+        "title": "ClientContactOut",
+        "type": "object"
+      },
+      "ClientOrganisationOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ClientOrganisationOut",
+        "type": "object"
+      },
+      "ClientPortalOut": {
+        "properties": {
+          "organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientOrganisationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ClientProjectOut"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Projects per health (on_track, at_risk, off_track, none) and `total`.",
+            "title": "Summary",
+            "type": "object"
+          },
+          "updates": {
+            "description": "Newest published reports, at most 10.",
+            "items": {
+              "$ref": "#/components/schemas/ClientUpdateOut"
+            },
+            "title": "Updates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "organisation",
+          "projects",
+          "updates",
+          "summary"
+        ],
+        "title": "ClientPortalOut",
+        "type": "object"
+      },
+      "ClientProjectDetailOut": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/ClientContactOut"
+            },
+            "title": "Contacts",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The project's target end date.",
+            "title": "Due Date"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_track",
+                  "at_risk",
+                  "off_track"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From the newest published status report (green/amber/red); null until the first report is published.",
+            "title": "Health"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "latest_update": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatestUpdate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "progress": {
+            "description": "Share of the project's tasks that are done, 0-100.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedBy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Date of the newest published status report.",
+            "title": "Published On"
+          },
+          "reports": {
+            "description": "Published reports, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/ClientReportBrief"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "category",
+          "status",
+          "start_date",
+          "due_date",
+          "health",
+          "progress",
+          "published_on",
+          "published_by",
+          "latest_update",
+          "description",
+          "contacts",
+          "reports"
+        ],
+        "title": "ClientProjectDetailOut",
+        "type": "object"
+      },
+      "ClientProjectOut": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The project's target end date.",
+            "title": "Due Date"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_track",
+                  "at_risk",
+                  "off_track"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From the newest published status report (green/amber/red); null until the first report is published.",
+            "title": "Health"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "latest_update": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatestUpdate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "progress": {
+            "description": "Share of the project's tasks that are done, 0-100.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedBy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Date of the newest published status report.",
+            "title": "Published On"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "category",
+          "status",
+          "start_date",
+          "due_date",
+          "health",
+          "progress",
+          "published_on",
+          "published_by",
+          "latest_update"
+        ],
+        "title": "ClientProjectOut",
+        "type": "object"
+      },
+      "ClientReportBrief": {
+        "properties": {
+          "health": {
+            "enum": [
+              "on_track",
+              "at_risk",
+              "off_track"
+            ],
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "report_date": {
+            "format": "date",
+            "title": "Report Date",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "report_date",
+          "health",
+          "summary",
+          "published_at"
+        ],
+        "title": "ClientReportBrief",
+        "type": "object"
+      },
+      "ClientReportOut": {
+        "properties": {
+          "achievements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Achievements"
+          },
+          "health": {
+            "enum": [
+              "on_track",
+              "at_risk",
+              "off_track"
+            ],
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "next_steps": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Steps"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedBy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report_date": {
+            "format": "date",
+            "title": "Report Date",
+            "type": "string"
+          },
+          "risks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risks"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "report_date",
+          "health",
+          "summary",
+          "published_at",
+          "achievements",
+          "next_steps",
+          "risks",
+          "published_by",
+          "project_id",
+          "project_name"
+        ],
+        "title": "ClientReportOut",
+        "type": "object"
+      },
+      "ClientUpdateOut": {
+        "description": "A recent published report, for the dashboard's \"latest updates\".",
+        "properties": {
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "report_id": {
+            "format": "uuid",
+            "title": "Report Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_id",
+          "project_id",
+          "project_name",
+          "title",
+          "published_at"
+        ],
+        "title": "ClientUpdateOut",
+        "type": "object"
+      },
       "CommentEditIn": {
         "additionalProperties": false,
         "properties": {
@@ -1704,6 +2281,32 @@
           "task_count"
         ],
         "title": "LabelOut",
+        "type": "object"
+      },
+      "LatestUpdate": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "report_id": {
+            "format": "uuid",
+            "title": "Report Id",
+            "type": "string"
+          },
+          "text": {
+            "description": "Summary of the newest published status report.",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "date",
+          "report_id"
+        ],
+        "title": "LatestUpdate",
         "type": "object"
       },
       "LinkIn": {
@@ -2588,6 +3191,91 @@
         "title": "PortfolioProject",
         "type": "object"
       },
+      "ProfileOut": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "job_title",
+          "phone",
+          "organisation"
+        ],
+        "title": "ProfileOut",
+        "type": "object"
+      },
+      "ProfileUpdate": {
+        "additionalProperties": false,
+        "description": "Only the phone number is the person's own to change; name, email, role and job title are\nmanaged by the administrator.",
+        "properties": {
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null or \"\" clears it.",
+            "title": "Phone"
+          }
+        },
+        "title": "ProfileUpdate",
+        "type": "object"
+      },
       "ProjectCard": {
         "properties": {
           "code": {
@@ -3424,6 +4112,25 @@
           "version"
         ],
         "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "PublishedBy": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "description": "For example Project Manager.",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "PublishedBy",
         "type": "object"
       },
       "RagStatus": {
@@ -5930,6 +6637,179 @@
         ]
       }
     },
+    "/api/v1/client/portal": {
+      "get": {
+        "description": "Dashboard and project list: the organisation, its projects with published health and\nprogress, the newest published reports and a health summary.",
+        "operationId": "get_portal_api_v1_client_portal_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPortalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Portal",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}": {
+      "get": {
+        "description": "Project overview with its contacts and published reports.",
+        "operationId": "get_project_api_v1_client_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientProjectDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/reports/{report_id}": {
+      "get": {
+        "operationId": "get_report_api_v1_client_projects__project_id__reports__report_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Report",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/reports/{report_id}/pdf": {
+      "get": {
+        "description": "The published report as a PDF file.",
+        "operationId": "download_report_api_v1_client_projects__project_id__reports__report_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Report",
+        "tags": [
+          "client"
+        ]
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "description": "PMs and Managers: metrics for active projects plus the blocked and overdue tasks. A PM gets\ntheir own projects, a Manager all of them.",
@@ -6023,6 +6903,68 @@
         "summary": "My Dashboard",
         "tags": [
           "dashboard"
+        ]
+      }
+    },
+    "/api/v1/me/profile": {
+      "get": {
+        "description": "The signed-in person's own profile (any role, clients included).",
+        "operationId": "get_profile_api_v1_me_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Profile",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "description": "Change your own phone number. Everything else is set by the administrator.",
+        "operationId": "update_profile_api_v1_me_profile_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Profile",
+        "tags": [
+          "users"
         ]
       }
     },

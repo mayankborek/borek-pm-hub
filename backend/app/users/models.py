@@ -46,6 +46,8 @@ class User(IdMixin, TimestampMixin, Base):
     join_date: Mapped[date | None] = mapped_column(Date)
     # Optional, free text set by the administrator, for example "Backend Developer".
     job_title: Mapped[str | None] = mapped_column(String(100))
+    # Optional, set by the person themselves on their profile.
+    phone: Mapped[str | None] = mapped_column(String(50))
     organisation_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("organisations.id"), index=True
     )

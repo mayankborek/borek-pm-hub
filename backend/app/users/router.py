@@ -2,16 +2,20 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 from sqlalchemy import ColumnElement, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
 from app.auth.permissions import Action, require, works_on_tasks_condition
 from app.common.enums import GlobalRole
 from app.common.validation import PageParam, PageSizeParam, like_escape
 from app.core.database import SessionDep
+from app.organisations.models import Organisation
+from app.organisations.schemas import OrganisationBrief
 from app.users.models import User
-from app.users.schemas import UserListItem, UserListOut
+from app.users.schemas import ProfileOut, ProfileUpdate, UserListItem, UserListOut
 
 router = APIRouter(prefix="/users", tags=["users"])
+me_router = APIRouter(prefix="/me", tags=["users"])
 
 
 @router.get("", response_model=UserListOut)
@@ -48,3 +52,35 @@ async def list_users(
         page=page,
         page_size=page_size,
     )
+
+
+async def _profile(session: AsyncSession, user: User) -> ProfileOut:
+    organisation = (
+        await session.get(Organisation, user.organisation_id) if user.organisation_id else None
+    )
+    return ProfileOut(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        role=user.global_role,
+        job_title=user.job_title,
+        phone=user.phone,
+        organisation=(
+            OrganisationBrief(id=organisation.id, name=organisation.name) if organisation else None
+        ),
+    )
+
+
+@me_router.get("/profile", response_model=ProfileOut)
+async def get_profile(user: CurrentUser, session: SessionDep) -> ProfileOut:
+    """The signed-in person's own profile (any role, clients included)."""
+    return await _profile(session, user)
+
+
+@me_router.patch("/profile", response_model=ProfileOut)
+async def update_profile(body: ProfileUpdate, user: CurrentUser, session: SessionDep) -> ProfileOut:
+    """Change your own phone number. Everything else is set by the administrator."""
+    if "phone" in body.model_fields_set:
+        user.phone = body.phone
+        await session.commit()
+    return await _profile(session, user)

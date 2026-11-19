@@ -1,4 +1,3 @@
-import re
 import uuid
 from datetime import date, datetime
 from typing import Self
@@ -6,11 +5,16 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.common.enums import RagStatus, ReportState, StakeholderInfluence
-from app.common.validation import check_date, clean_email, clean_optional_text, clean_text
+from app.common.validation import (
+    check_date,
+    clean_email,
+    clean_optional_text,
+    clean_phone,
+    clean_text,
+)
 from app.organisations.schemas import PersonBrief
 
 MAX_TEXT = 20_000
-_PHONE = re.compile(r"^[0-9+()\-./ ]{3,50}$")
 
 
 def _long_text(value: str | None) -> str | None:
@@ -122,12 +126,7 @@ class StakeholderFields(BaseModel):
     @field_validator("phone")
     @classmethod
     def _phone(cls, value: str | None) -> str | None:
-        if value is None or not value.strip():
-            return None
-        value = value.strip()
-        if not _PHONE.fullmatch(value):
-            raise ValueError("Use digits, spaces and + ( ) - . / in a phone number.")
-        return value
+        return clean_phone(value)
 
 
 class StakeholderCreate(StakeholderFields):

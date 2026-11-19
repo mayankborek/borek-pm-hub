@@ -50,14 +50,17 @@ def make(role: GlobalRole, *, active: bool = True) -> User:
     return User(id=uuid.uuid4(), name="x", email="x@x", global_role=role.value, is_active=active)
 
 
-@pytest.mark.parametrize("action", [a for a in Action if a not in ADMIN_ONLY])
+_STAFF_ACTIONS = [a for a in Action if a not in ADMIN_ONLY and a is not Action.CLIENT_PORTAL]
+
+
+@pytest.mark.parametrize("action", _STAFF_ACTIONS)
 def test_manager_can_do_everything_except_administration_in_any_project(action: Action) -> None:
     assert can(make(GlobalRole.MANAGER), action, OUTSIDER)
 
 
 @pytest.mark.parametrize(
     "action",
-    [a for a in Action if a not in ADMIN_ONLY and a not in NOT_FOR_LEADS],
+    [a for a in _STAFF_ACTIONS if a not in NOT_FOR_LEADS],
 )
 def test_pm_who_leads_the_project_can_do_everything_there(action: Action) -> None:
     assert can(make(GlobalRole.PM), action, LEAD)
@@ -101,9 +104,16 @@ def test_administrator_has_no_access_to_project_data(action: Action) -> None:
     assert not has_lead_rights(admin)
 
 
-def test_client_has_no_views_yet_and_can_do_nothing() -> None:
+def test_client_can_only_use_the_client_portal() -> None:
+    client = make(GlobalRole.CLIENT)
     for action in Action:
-        assert not can(make(GlobalRole.CLIENT), action, MEMBER), action
+        assert can(client, action, MEMBER) is (action is Action.CLIENT_PORTAL), action
+    assert not can(make(GlobalRole.CLIENT, active=False), Action.CLIENT_PORTAL)
+
+
+@pytest.mark.parametrize("role", [r for r in GlobalRole if r is not GlobalRole.CLIENT])
+def test_nobody_but_clients_uses_the_client_portal(role: GlobalRole) -> None:
+    assert not can(make(role), Action.CLIENT_PORTAL, MEMBER)
 
 
 def test_account_manager_only_reads_and_only_their_clients_projects() -> None:

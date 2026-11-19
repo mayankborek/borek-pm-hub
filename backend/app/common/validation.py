@@ -54,6 +54,19 @@ def clean_optional_text(
     return value
 
 
+_PHONE = re.compile(r"^[0-9+()\-./ ]{3,50}$")
+
+
+def clean_phone(value: str | None) -> str | None:
+    """Trimmed; blank means no number. Digits, spaces and + ( ) - . / only, 3-50 characters."""
+    if value is None or not value.strip():
+        return None
+    value = value.strip()
+    if not _PHONE.fullmatch(value):
+        raise ValueError("Use digits, spaces and + ( ) - . / in a phone number.")
+    return value
+
+
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
 
 

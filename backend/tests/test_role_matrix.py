@@ -75,6 +75,8 @@ NO_ROLE_RULE = {
     ("POST", "/auth/invite-info"),
     ("POST", "/auth/change-password"),
     ("POST", "/auth/logout"),
+    ("GET", "/me/profile"),  # your own profile: anyone signed in
+    ("PATCH", "/me/profile"),
 }
 
 
@@ -249,6 +251,13 @@ def cases(w: World) -> list[Case]:
         ),
         Case(
             "DELETE", "/organisations/{organisation_id}/members/{member_id}", everywhere({"admin"})
+        ),
+        # client portal: client contacts only (the client's own external projects)
+        Case("GET", "/client/portal", everywhere({"client"})),
+        Case("GET", "/client/projects/{project_id}", everywhere({"client"})),
+        Case("GET", "/client/projects/{project_id}/reports/{report_id}", everywhere({"client"})),
+        Case(
+            "GET", "/client/projects/{project_id}/reports/{report_id}/pdf", everywhere({"client"})
         ),
         # oversight
         Case("GET", "/portfolio", everywhere({"manager"} | ACCOUNT_MANAGERS)),
