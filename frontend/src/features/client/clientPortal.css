@@ -267,7 +267,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 @media (max-width:1000px){.cp-mcards{grid-template-columns:1fr}}
 
 /* ───── Milestones: project roadmap (04-milestones.html) ───── */
-.cp-rm{margin-top:35px;padding:24px 23px 14px;border-radius:12px}
+.cp-rm{margin-top:35px;padding:24px 23px 14px}
 .cp-rm h2{font-size:20px;line-height:26px;font-weight:600}
 .cp-rm>p{font-size:14px;line-height:20px;color:var(--slate);margin-top:6px}
 .cp-gantt{--gl:200px;margin-top:19px;overflow-x:auto}
@@ -282,7 +282,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-g-track{position:relative;height:100%}
 .cp-g-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
 .cp-g-ov{position:absolute;left:var(--gl);right:0;top:0;bottom:0;pointer-events:none}
-.cp-g-bar{position:absolute;top:4px;height:20px;border-radius:4px;background:var(--mute);overflow:hidden}
+.cp-g-bar{position:absolute;top:4px;height:20px;background:var(--mute);overflow:hidden}
 .cp-g-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--blue)}
 .cp-g-dia{position:absolute;top:7px;width:14px;height:14px;transform:translateX(-50%) rotate(45deg);background:var(--mute);border:2px solid var(--surface);box-sizing:border-box}
 .cp-g-dia.cp-on{background:var(--blue)}
@@ -294,7 +294,7 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-g-today em{position:absolute;top:0;left:50%;transform:translateX(-50%);font-style:normal;font-size:11px;font-weight:600;color:var(--orange);white-space:nowrap}
 .cp-g-legend{display:flex;flex-wrap:wrap;gap:24px;margin-top:20px;font-size:12px;color:var(--slate)}
 .cp-g-legend span{display:flex;align-items:center;gap:8px}
-.cp-g-legend .cp-sq{width:12px;height:12px;border-radius:2px;background:var(--blue)}
+.cp-g-legend .cp-sq{width:12px;height:12px;background:var(--blue)}
 .cp-g-legend .cp-sq.cp-rest{background:var(--mute)}
 .cp-g-legend .cp-dm{width:9px;height:9px;transform:rotate(45deg);background:var(--mute)}
 .cp-g-legend .cp-dm.cp-on{background:var(--blue)}
