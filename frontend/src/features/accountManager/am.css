@@ -211,3 +211,7 @@
 .am .content{padding:32px 28px}
 .am .topbar{padding:0 28px}
 .am .cp-rt{border:1px solid var(--line)}
+
+/* Client portal pages (.cp) rendered inside the .am shell take the Account Manager palette, light and dark. */
+.am .cp.cp{--navy:#0D1240;--slate:#5C6178;--mute:#65708A;--blue:#124F94;--bg:#F3F4F8;--line:#E2E4EC;--surface:#fff;--green-bg:#E0F5E8;--green:#17735E;--red:#AD1F1F;--red-bg:#FCE8E3}
+:root[data-theme=dark] .am .cp.cp{--navy:#E8EAF4;--slate:#A3A9C2;--mute:#8C94B0;--blue:#7DB0FF;--bg:#0A0E30;--line:#2A3060;--surface:#121847;--green-bg:#12372E;--green:#6FD6B5;--red:#FF9C8F;--red-bg:#4A1F1B}
