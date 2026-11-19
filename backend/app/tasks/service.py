@@ -18,6 +18,7 @@ from app.common.enums import (
 )
 from app.common.validation import like_escape
 from app.core.errors import AppError
+from app.milestones import service as milestones
 from app.projects.membership import visible_project_ids
 from app.projects.models import Project, ProjectMember
 from app.tasks import activity, statuses
@@ -50,6 +51,7 @@ DETAIL_FIELDS = frozenset(
         "estimate_value",
         "estimate_unit",
         "assignee_id",
+        "milestone_id",
     }
 )
 # Part of DETAIL_FIELDS, but also editable by a developer on a task they created for themselves.
@@ -120,6 +122,7 @@ def _to_out(
         estimate_unit=task.estimate_unit,
         assignee=_brief(assignee) if assignee else None,
         reporter=_brief(reporter),
+        milestone_id=task.milestone_id,
         blocked_reason=task.blocked_reason,
         blocked_at=task.blocked_at,
         completed_at=task.completed_at,
@@ -160,6 +163,7 @@ class TaskFilters:
         due_before: date | None = None,
         due_after: date | None = None,
         overdue: bool = False,
+        milestone_id: uuid.UUID | None = None,
         project_id: uuid.UUID | None = None,
         include_archived: bool = False,
     ) -> None:
@@ -173,6 +177,7 @@ class TaskFilters:
         self.due_before = due_before
         self.due_after = due_after
         self.overdue = overdue
+        self.milestone_id = milestone_id
         self.project_id = project_id
         self.include_archived = include_archived
 
@@ -192,6 +197,8 @@ class TaskFilters:
             found.append(Task.assignee_id == self.assignee_id)
         if self.unassigned:
             found.append(Task.assignee_id.is_(None))
+        if self.milestone_id:
+            found.append(Task.milestone_id == self.milestone_id)
         if self.label:
             found.append(Task.labels.contains([self.label]))
         if self.due_before:
@@ -382,6 +389,10 @@ async def create_task(
         assignee_id = user.id
     if assignee_id is not None:
         await _check_assignee(session, project.id, assignee_id)
+    if data.milestone_id is not None:
+        if not lead_rights:
+            raise AppError(403, "FORBIDDEN", "Only project leads link tasks to milestones.")
+        await milestones.check_milestone(session, project.id, data.milestone_id)
 
     if data.status_id is not None:
         status = await statuses.get_status(session, project.id, data.status_id)
@@ -409,6 +420,7 @@ async def create_task(
         estimate_value=data.estimate_value,
         estimate_unit=data.estimate_unit.value if data.estimate_unit else None,
         assignee_id=assignee_id,
+        milestone_id=data.milestone_id,
         created_by=user.id,
     )
     apply_status(task, status, data.blocked_reason)
@@ -478,6 +490,8 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
         too_large = estimate_too_large(estimate_value, estimate_unit)
         if too_large:
             raise _invalid("estimate_value", "too_large", too_large)
+    if changes.get("milestone_id") is not None and changes["milestone_id"] != task.milestone_id:
+        await milestones.check_milestone(session, task.project_id, changes["milestone_id"])
     new_assignee_id = changes.get("assignee_id")
     if new_assignee_id is not None and new_assignee_id != task.assignee_id:
         await _check_assignee(session, task.project_id, new_assignee_id)

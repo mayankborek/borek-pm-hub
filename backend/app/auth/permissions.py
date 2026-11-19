@@ -46,6 +46,9 @@ class Action(StrEnum):
     STATUS_REPORT_MANAGE = "status_report:manage"  # write and publish; see drafts
     STAKEHOLDER_MANAGE = "stakeholder:manage"  # read and change the register (contact details)
     FINANCE_MANAGE = "finance:manage"  # read and change budget and entries
+    # Create, change, complete and archive phases and milestones (the roadmap). Reading the
+    # roadmap is PROJECT_VIEW.
+    MILESTONE_MANAGE = "milestone:manage"
     # The client portal (/client/...): client contacts only, and only their organisation's
     # external projects. Nobody else, not even the Manager, uses these routes.
     CLIENT_PORTAL = "client:portal"
@@ -73,6 +76,7 @@ _PM_ONLY = frozenset(
         Action.TASK_ASSIGN,
         Action.TASK_ARCHIVE,
         Action.TASK_IMPORT,
+        Action.MILESTONE_MANAGE,
         Action.DASHBOARD_VIEW,
         Action.USER_LIST,
     }

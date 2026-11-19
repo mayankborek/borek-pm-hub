@@ -114,6 +114,9 @@ def task_filters(
     due_before: Annotated[date | None, Query(description="Due strictly before this date")] = None,
     due_after: Annotated[date | None, Query(description="Due strictly after this date")] = None,
     overdue: Annotated[bool, Query(description="Past due and not in a done status")] = False,
+    milestone_id: Annotated[
+        uuid.UUID | None, Query(description="Tasks linked to this milestone")
+    ] = None,
     include_archived: Annotated[
         bool, Query(description="Managers, and PMs on projects they lead; ignored for others")
     ] = False,
@@ -142,6 +145,7 @@ def task_filters(
         due_before=due_before,
         due_after=due_after,
         overdue=overdue,
+        milestone_id=milestone_id,
         include_archived=include_archived and may_lead_projects(user),
     )
 

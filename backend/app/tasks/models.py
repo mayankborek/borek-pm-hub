@@ -51,6 +51,12 @@ class Task(IdMixin, TimestampMixin, Base):
             ["project_statuses.id", "project_statuses.project_id"],
             name="fk_tasks_status_id_project_statuses",
         ),
+        # A task can only link to a milestone of its own project.
+        ForeignKeyConstraint(
+            ["milestone_id", "project_id"],
+            ["milestones.id", "milestones.project_id"],
+            name="fk_tasks_milestone_id_milestones",
+        ),
         CheckConstraint(sql_in("priority", TaskPriority), name="priority"),
         CheckConstraint(sql_in("estimate_unit", EstimateUnit), name="estimate_unit"),
         CheckConstraint("estimate_value IS NULL OR estimate_value > 0", name="estimate_positive"),
@@ -63,6 +69,7 @@ class Task(IdMixin, TimestampMixin, Base):
         Index("ix_tasks_assignee_id_status_id", "assignee_id", "status_id"),
         Index("ix_tasks_project_id_due_date", "project_id", "due_date"),
         Index("ix_tasks_project_id_updated_at", "project_id", "updated_at"),
+        Index("ix_tasks_milestone_id", "milestone_id"),
         # One task per outside key in a project (import skips what it already has).
         Index(
             "uq_tasks_project_id_external_key",
@@ -81,6 +88,8 @@ class Task(IdMixin, TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    # The milestone this task delivers (roadmap progress counts it). Optional.
+    milestone_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     priority: Mapped[str] = mapped_column(
         String(20), nullable=False, default=TaskPriority.MEDIUM.value, server_default="medium"
     )

@@ -155,6 +155,9 @@ class TaskCreate(BaseModel):
     assignee_id: uuid.UUID | None = Field(
         default=None, description="Developers can only assign tasks to themselves."
     )
+    milestone_id: uuid.UUID | None = Field(
+        default=None, description="A milestone of the project (project leads only)."
+    )
     blocked_reason: str | None = None
 
     _strip_title = field_validator("title")(_clean_title)
@@ -192,6 +195,9 @@ class TaskUpdate(BaseModel):
     estimate_value: int | None = Field(default=None, gt=0, le=MAX_ESTIMATE)
     estimate_unit: EstimateUnit | None = None
     assignee_id: uuid.UUID | None = None
+    milestone_id: uuid.UUID | None = Field(
+        default=None, description="Project leads only; null removes the link."
+    )
     blocked_reason: str | None = None
 
     @field_validator("title")
@@ -257,6 +263,7 @@ class TaskOut(BaseModel):
     estimate_unit: str | None
     assignee: UserBrief | None
     reporter: UserBrief
+    milestone_id: uuid.UUID | None = Field(default=None, description="The linked milestone.")
     blocked_reason: str | None
     blocked_at: datetime | None
     completed_at: datetime | None
