@@ -23,7 +23,7 @@ function titleFor(pathname: string) {
 export function ClientLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const { lang, setLang, t } = usePrefs();
+  const { t } = usePrefs();
   if (!user) return null;
 
   return (
@@ -47,11 +47,6 @@ export function ClientLayout() {
                 <Notifications />
               </span>
               <ThemeToggle />
-              <div className="lang-switch" role="group" aria-label={t('Language')}>
-                <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
-                <i />
-                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
-              </div>
               <Link to={paths.clientProfile} className="user">
                 <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
                 {user.name}

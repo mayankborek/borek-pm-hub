@@ -26,7 +26,7 @@ const NAV = [
 export function AdminLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const { lang, setLang, t, theme } = usePrefs();
+  const { t, theme } = usePrefs();
   const section = `/${pathname.split('/').slice(1, 3).join('/')}`;
   if (!user) return null;
 
@@ -52,11 +52,6 @@ export function AdminLayout() {
             <h1 className="topbar-title">{t(TITLES[section] ?? 'Users')}</h1>
             <div className="topbar-actions">
               <ThemeToggle />
-              <div className="lang-switch" role="group" aria-label={t('Language')}>
-                <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
-                <i />
-                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
-              </div>
               <i className="topbar-divider" />
               <Link to={paths.adminProfile} className="user">
                 <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>

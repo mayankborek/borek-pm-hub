@@ -10,7 +10,7 @@ import { DevProjectsNav } from './DevProjectsNav';
 export function AppLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const { lang, setLang, t, theme } = usePrefs();
+  const { t, theme } = usePrefs();
   if (!user) return null;
 
   const initials = user.name
@@ -59,11 +59,6 @@ export function AppLayout() {
             <h1 className="topbar-title">{t(title)}</h1>
             <div className="topbar-actions">
               <ThemeToggle />
-              <div className="lang-switch" role="group" aria-label={t('Language')}>
-                <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
-                <i />
-                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
-              </div>
               <i className="topbar-divider" />
               <Link to={paths.profile} className="user">
                 <span className="avatar" aria-hidden="true">{initials}</span>
