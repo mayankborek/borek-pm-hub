@@ -72,6 +72,7 @@ NO_ROLE_RULE = {
     ("GET", "/auth/me"),
     ("POST", "/auth/login"),
     ("POST", "/auth/accept-invite"),
+    ("POST", "/auth/invite-info"),
     ("POST", "/auth/change-password"),
     ("POST", "/auth/logout"),
 }
@@ -233,6 +234,21 @@ def cases(w: World) -> list[Case]:
             everywhere({"admin"}),
             {"user_ids": [v["am_own"]]},
         ),
+        Case("GET", "/organisations/{organisation_id}/members", everywhere({"admin"})),
+        Case(
+            "POST",
+            "/organisations/{organisation_id}/members",
+            everywhere({"admin"}),
+            {"name": "Contact", "email": "contact@matrix.example"},
+        ),
+        Case(
+            "POST",
+            "/organisations/{organisation_id}/members/{member_id}/invite",
+            everywhere({"admin"}),
+        ),
+        Case(
+            "DELETE", "/organisations/{organisation_id}/members/{member_id}", everywhere({"admin"})
+        ),
         # oversight
         Case("GET", "/portfolio", everywhere({"manager"} | ACCOUNT_MANAGERS)),
         Case("GET", "/access-overview", everywhere({"manager"})),
@@ -320,6 +336,9 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
         s.add(org)
         await s.flush()
         s.add(OrganisationAccountManager(organisation_id=org.id, user_id=ids["am_own"]))
+        client = await s.get(User, ids["client"])
+        assert client is not None
+        client.organisation_id = org.id  # the client contact of the organisation
         project = Project(
             code="MTX", name="Matrix", created_by=ids["pm_lead"], client_organisation_id=org.id
         )
@@ -384,6 +403,7 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "organisation_id": org.id,
             "status_id": rows[1].id,
             "user_id": ids["dev_other"],
+            "member_id": ids["client"],
         }
         values = {name: str(value) for name, value in ids.items()}
         values["status_order"] = ",".join(str(r.id) for r in rows)
@@ -427,7 +447,7 @@ def _api_routes() -> set[tuple[str, str]]:
 
 
 def _route_of(path: str) -> str:
-    return path.replace("{draft_id}", "{report_id}")
+    return path.replace("{draft_id}", "{report_id}").replace("{member_id}", "{user_id}")
 
 
 def test_a_rule_exists_for_every_route(world_paths: set[tuple[str, str]]) -> None:

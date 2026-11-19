@@ -7,12 +7,14 @@ from sqlalchemy import func, select
 
 from app.auth.dependencies import CurrentUser
 from app.auth.events import email_hash, security_event
-from app.auth.invites import accept_invite
+from app.auth.invites import accept_invite, usable_invite
 from app.auth.rate_limit import SlidingWindowLimiter, client_ip
 from app.auth.schemas import (
     AcceptInviteIn,
     AcceptInviteOut,
     ChangePasswordIn,
+    InviteInfoIn,
+    InviteInfoOut,
     LoginIn,
     LoginOut,
     MembershipOut,
@@ -25,9 +27,11 @@ from app.auth.security import (
     hash_password,
     verify_password,
 )
+from app.common.enums import GLOBAL_ROLE_LABELS, GlobalRole
 from app.core.config import Settings, get_settings
 from app.core.database import SessionDep
 from app.core.errors import AppError
+from app.organisations.models import Organisation
 from app.projects.membership import list_memberships
 from app.users.models import User
 
@@ -161,6 +165,37 @@ async def accept_invite_link(
     _check_rate_limit(request, settings)
     user = await accept_invite(session, body.token, body.password)
     return AcceptInviteOut(email=user.email)
+
+
+@router.post("/invite-info", response_model=InviteInfoOut)
+async def invite_info(
+    body: InviteInfoIn,
+    request: Request,
+    session: SessionDep,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> InviteInfoOut:
+    """Public. Who an invite link is for, so the page can greet the person before they set a
+    password. Does not use the link up. The token travels in the body, never in the URL, so it
+    stays out of access logs. Every failure is the same 400 `INVALID_INVITE` as accept-invite.
+    Shares the sign-in rate limit per client IP."""
+    if settings.auth_mode != "local":
+        raise AppError(404, "NOT_FOUND", "Not found.")
+    _check_rate_limit(request, settings)
+    invite, user = await usable_invite(session, body.token)
+    inviter = await session.get(User, invite.created_by) if invite.created_by else None
+    organisation = (
+        await session.get(Organisation, user.organisation_id) if user.organisation_id else None
+    )
+    role = GlobalRole(user.global_role)
+    return InviteInfoOut(
+        email=user.email,
+        name=user.name,
+        role=role.value,
+        role_label=GLOBAL_ROLE_LABELS[role],
+        organisation_name=organisation.name if organisation else None,
+        inviter_name=inviter.name if inviter else None,
+        expires_at=invite.expires_at,
+    )
 
 
 @router.post("/change-password", status_code=204)

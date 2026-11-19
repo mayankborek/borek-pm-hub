@@ -66,6 +66,24 @@ def invalid_invite() -> AppError:
     )
 
 
+async def usable_invite(session: AsyncSession, token: str) -> tuple[UserInvite, User]:
+    """The open link and its active account, or the one `invalid_invite` error. Reads only."""
+    invite = await session.scalar(
+        select(UserInvite).where(UserInvite.token_hash == hash_token(token))
+    )
+    if (
+        invite is None
+        or invite.used_at is not None
+        or invite.revoked_at is not None
+        or invite.expires_at <= datetime.now(UTC)
+    ):
+        raise invalid_invite()
+    user = await session.get(User, invite.user_id)
+    if user is None or not user.is_active:
+        raise invalid_invite()
+    return invite, user
+
+
 async def accept_invite(session: AsyncSession, token: str, password: str) -> User:
     """Set the password of the person the link belongs to and use the link up. Commits."""
     invite = await session.scalar(

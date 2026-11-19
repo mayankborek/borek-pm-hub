@@ -1517,6 +1517,84 @@
         "title": "ImportResultOut",
         "type": "object"
       },
+      "InviteInfoIn": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "InviteInfoIn",
+        "type": "object"
+      },
+      "InviteInfoOut": {
+        "description": "What the invite page shows before the person sets a password.",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "inviter_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who created the link.",
+            "title": "Inviter Name"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organisation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The person's organisation, if any.",
+            "title": "Organisation Name"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "role_label": {
+            "description": "For example Client or Developer.",
+            "title": "Role Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "role",
+          "role_label",
+          "organisation_name",
+          "inviter_name",
+          "expires_at"
+        ],
+        "title": "InviteInfoOut",
+        "type": "object"
+      },
       "InviteOut": {
         "properties": {
           "expires_at": {
@@ -1720,6 +1798,26 @@
         "title": "MemberIn",
         "type": "object"
       },
+      "MemberInviteOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "description": "Hand this to the person. It is shown only once.",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "MemberInviteOut",
+        "type": "object"
+      },
       "MemberOut": {
         "properties": {
           "email": {
@@ -1894,6 +1992,150 @@
           "page_size"
         ],
         "title": "OrganisationListOut",
+        "type": "object"
+      },
+      "OrganisationMemberCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "OrganisationMemberCreate",
+        "type": "object"
+      },
+      "OrganisationMemberCreatedOut": {
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/MemberInviteOut"
+          },
+          "member": {
+            "$ref": "#/components/schemas/OrganisationMemberOut"
+          }
+        },
+        "required": [
+          "member",
+          "invite"
+        ],
+        "title": "OrganisationMemberCreatedOut",
+        "type": "object"
+      },
+      "OrganisationMemberListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrganisationMemberOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "OrganisationMemberListOut",
+        "type": "object"
+      },
+      "OrganisationMemberOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invite_pending": {
+            "title": "Invite Pending",
+            "type": "boolean"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "join_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join Date"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "password_set": {
+            "title": "Password Set",
+            "type": "boolean"
+          },
+          "role": {
+            "description": "`client` for contacts added here.",
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "description": "invited: link open, no password yet; invite_expired: no password and no usable link (create a new one); active: password set; deactivated: removed.",
+            "enum": [
+              "invited",
+              "invite_expired",
+              "active",
+              "deactivated"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "status",
+          "is_active",
+          "password_set",
+          "invite_pending",
+          "join_date",
+          "created_at"
+        ],
+        "title": "OrganisationMemberOut",
         "type": "object"
       },
       "OrganisationOut": {
@@ -5143,6 +5385,48 @@
         ]
       }
     },
+    "/api/v1/auth/invite-info": {
+      "post": {
+        "description": "Public. Who an invite link is for, so the page can greet the person before they set a\npassword. Does not use the link up. The token travels in the body, never in the URL, so it\nstays out of access logs. Every failure is the same 400 `INVALID_INVITE` as accept-invite.\nShares the sign-in rate limit per client IP.",
+        "operationId": "invite_info_api_v1_auth_invite_info_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteInfoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invite Info",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "description": "Email + password sign-in. Only available when AUTH_MODE=local.",
@@ -5923,6 +6207,234 @@
           }
         },
         "summary": "Set Account Managers",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisation_id}/members": {
+      "get": {
+        "description": "Contacts of a client organisation with their invite status, active people first.",
+        "operationId": "list_members_api_v1_organisations__organisation_id__members_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationMemberListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Members",
+        "tags": [
+          "organisations"
+        ]
+      },
+      "post": {
+        "description": "Creates a `client` account in this organisation and its invite link at once (shown only\nonce; no email is sent yet). Clients see nothing in the hub until the client views exist.",
+        "operationId": "add_member_api_v1_organisations__organisation_id__members_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganisationMemberCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationMemberCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Member",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisation_id}/members/{user_id}": {
+      "delete": {
+        "description": "Deactivates the contact's account (nothing is deleted). Activate it again in Users.",
+        "operationId": "remove_member_api_v1_organisations__organisation_id__members__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationMemberOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Member",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisation_id}/members/{user_id}/invite": {
+      "post": {
+        "description": "A new invite link (for example after the first expired); older unused links stop working.",
+        "operationId": "renew_member_invite_api_v1_organisations__organisation_id__members__user_id__invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationMemberCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Renew Member Invite",
         "tags": [
           "organisations"
         ]
