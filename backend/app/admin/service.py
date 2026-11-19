@@ -123,6 +123,7 @@ async def to_out(session: AsyncSession, users: list[User]) -> list[AdminUserOut]
             role=u.global_role,
             is_active=u.is_active,
             join_date=u.join_date,
+            job_title=u.job_title,
             organisation=organisations.get(u.organisation_id),
             password_set=u.password_hash is not None,
             invite_pending=u.id in pending,
@@ -138,6 +139,7 @@ async def list_users(
     *,
     q: str | None,
     role: GlobalRole | None,
+    organisation_id: uuid.UUID | None,
     status: StatusFilter,
     page: int,
     page_size: int,
@@ -146,6 +148,8 @@ async def list_users(
     conditions: list[ColumnElement[bool]] = []
     if role is not None:
         conditions.append(User.global_role == role.value)
+    if organisation_id is not None:
+        conditions.append(User.organisation_id == organisation_id)
     if status == "active":
         conditions.append(User.is_active.is_(True))
     elif status == "inactive":
@@ -216,6 +220,7 @@ async def create_user(
         global_role=data.role.value,
         join_date=data.join_date,
         organisation_id=data.organisation_id,
+        job_title=data.job_title,
     )
     session.add(user)
     await session.flush()
@@ -237,7 +242,7 @@ async def update_user(
 ) -> User:
     user = await get_user(session, user_id)
     changes = data.model_dump(exclude_unset=True)
-    tracked = ("name", "email", "global_role", "join_date", "organisation_id")
+    tracked = ("name", "email", "global_role", "join_date", "organisation_id", "job_title")
     before = {field: _audit_value(getattr(user, field)) for field in tracked}
     if "role" in changes and changes["role"].value != user.global_role:
         if user.id == actor.id:
@@ -253,6 +258,8 @@ async def update_user(
         user.name = changes["name"]
     if "join_date" in changes:
         user.join_date = changes["join_date"]
+    if "job_title" in changes:
+        user.job_title = changes["job_title"]
     if "organisation_id" in changes:
         if changes["organisation_id"]:
             await _check_organisation(session, changes["organisation_id"])
