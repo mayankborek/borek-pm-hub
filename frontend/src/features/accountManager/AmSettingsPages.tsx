@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -25,7 +25,6 @@ function Settings({ title, sub, children }: { title: string; sub: string; childr
           {links.map(([to, label]) => (
             <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t(label)}</NavLink>
           ))}
-          <Link to={paths.amHome} style={{ marginTop: 12 }}>← {t('Back to portal')}</Link>
         </nav>
         <section className="spanel">
           <h3>{t(title)}</h3>
