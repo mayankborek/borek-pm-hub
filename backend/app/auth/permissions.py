@@ -132,6 +132,14 @@ def is_account_manager(user: User) -> bool:
     return user.global_role == GlobalRole.ACCOUNT_MANAGER
 
 
+# The role given to contacts added to a client organisation.
+CLIENT_CONTACT_ROLE = GlobalRole.CLIENT
+
+
+def is_client(user: User) -> bool:
+    return user.global_role == GlobalRole.CLIENT
+
+
 def account_manager_condition() -> ColumnElement[bool]:
     """SQL condition for "is an Account Manager" (only they can be assigned to a client)."""
     return User.global_role == GlobalRole.ACCOUNT_MANAGER.value

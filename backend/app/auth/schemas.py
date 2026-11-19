@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -54,6 +55,24 @@ class AcceptInviteIn(BaseModel):
 
 class AcceptInviteOut(BaseModel):
     email: str = Field(description="The account's email, so the login page can be pre-filled.")
+
+
+class InviteInfoIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=20, max_length=200)
+
+
+class InviteInfoOut(BaseModel):
+    """What the invite page shows before the person sets a password."""
+
+    email: str
+    name: str
+    role: str
+    role_label: str = Field(description="For example Client or Developer.")
+    organisation_name: str | None = Field(description="The person's organisation, if any.")
+    inviter_name: str | None = Field(description="Who created the link.")
+    expires_at: datetime
 
 
 class ChangePasswordIn(BaseModel):
