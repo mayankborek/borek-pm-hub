@@ -16,7 +16,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.common.enums import MembershipSource, ProjectRole, ProjectStatus, sql_in
+from app.common.enums import (
+    MembershipSource,
+    ProjectRole,
+    ProjectStatus,
+    ProjectType,
+    TaskPriority,
+    sql_in,
+)
 from app.core.database import Base, IdMixin, TimestampMixin
 
 
@@ -29,6 +36,13 @@ class Project(IdMixin, TimestampMixin, Base):
             name="dates_order",
         ),
         CheckConstraint("task_counter >= 0", name="task_counter_non_negative"),
+        CheckConstraint(sql_in("project_type", ProjectType), name="project_type"),
+        CheckConstraint(sql_in("priority", TaskPriority), name="priority"),
+        # External projects always have a client; internal ones never do.
+        CheckConstraint(
+            "(project_type = 'external') = (client_organisation_id IS NOT NULL)",
+            name="client_matches_type",
+        ),
     )
 
     # Entered by the PM; must not change after creation (enforced in the service layer).
@@ -54,6 +68,15 @@ class Project(IdMixin, TimestampMixin, Base):
     # The customer this project is for; its account managers follow the project.
     client_organisation_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("organisations.id"), index=True
+    )
+    project_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=ProjectType.INTERNAL.value, server_default="internal"
+    )
+    # Free text for now (suggested from the categories already used); a picklist later.
+    category: Mapped[str | None] = mapped_column(String(100))
+    # The same five levels as tasks.
+    priority: Mapped[str] = mapped_column(
+        String(10), nullable=False, default=TaskPriority.MEDIUM.value, server_default="medium"
     )
 
     __mapper_args__ = {"version_id_col": version}

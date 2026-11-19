@@ -46,6 +46,9 @@ class Action(StrEnum):
     STATUS_REPORT_MANAGE = "status_report:manage"  # write and publish; see drafts
     STAKEHOLDER_MANAGE = "stakeholder:manage"  # read and change the register (contact details)
     FINANCE_MANAGE = "finance:manage"  # read and change budget and entries
+    # The client portal (/client/...): client contacts only, and only their organisation's
+    # external projects. Nobody else, not even the Manager, uses these routes.
+    CLIENT_PORTAL = "client:portal"
 
 
 @dataclass(frozen=True)
@@ -160,6 +163,9 @@ def works_on_tasks_condition() -> ColumnElement[bool]:
 def can(user: User, action: Action, resource: Resource | None = None) -> bool:
     if not user.is_active:
         return False
+    if action is Action.CLIENT_PORTAL or is_client(user):
+        # Clients get the portal and nothing else; the portal is for clients only.
+        return action is Action.CLIENT_PORTAL and is_client(user)
     if is_admin(user):
         # No project data: denied by default.
         return action in ADMIN_ONLY or action is Action.ORGANISATION_VIEW

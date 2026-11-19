@@ -360,6 +360,7 @@ async def seed(
             start_date=today + timedelta(days=start),
             target_end_date=today + timedelta(days=end),
             client_organisation_id=client.id if code in CLIENT_PROJECTS else None,
+            project_type="external" if code in CLIENT_PROJECTS else "internal",
             created_by=PM_ID,
         )
         session.add(project)

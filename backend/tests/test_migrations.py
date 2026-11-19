@@ -106,6 +106,39 @@ def test_project_creators_become_leads_when_upgrading(test_db_url: str) -> None:
     assert rows == [("NOMEMBER", "project_lead"), ("PLAIN", "project_lead")]
 
 
+def test_projects_with_a_client_become_external_when_upgrading(test_db_url: str) -> None:
+    """0020: the new rule "external = has a client" must hold for the projects already there."""
+    config = alembic_config(test_db_url)
+    wipe = "TRUNCATE projects, users, organisations CASCADE"
+    command.downgrade(config, "0019")
+    try:
+        asyncio.run(
+            _run(
+                test_db_url,
+                wipe,
+                """INSERT INTO users (id, name, email, global_role) VALUES
+                   ('00000000-0000-4000-8000-0000000000a1', 'P', 'p@x', 'pm')""",
+                """INSERT INTO organisations (id, name, type) VALUES
+                   ('00000000-0000-4000-8000-0000000000c1', 'Acme', 'client')""",
+                """INSERT INTO projects (code, name, created_by, client_organisation_id) VALUES
+                   ('CLIENT', 'c', '00000000-0000-4000-8000-0000000000a1',
+                    '00000000-0000-4000-8000-0000000000c1'),
+                   ('OWN', 'o', '00000000-0000-4000-8000-0000000000a1', NULL)""",
+            )
+        )
+        command.upgrade(config, "head")
+        rows = asyncio.run(
+            _run(
+                test_db_url,
+                "SELECT code, project_type, priority, category FROM projects ORDER BY code",
+            )
+        )[0]
+    finally:
+        command.upgrade(config, "head")
+        asyncio.run(_run(test_db_url, wipe))
+    assert rows == [("CLIENT", "external", "medium", None), ("OWN", "internal", "medium", None)]
+
+
 def test_models_and_migrations_are_in_sync(test_db_url: str) -> None:
     """Fails if a model changed without a new Alembic migration."""
     command.check(alembic_config(test_db_url))

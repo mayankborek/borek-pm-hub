@@ -75,6 +75,8 @@ NO_ROLE_RULE = {
     ("POST", "/auth/invite-info"),
     ("POST", "/auth/change-password"),
     ("POST", "/auth/logout"),
+    ("GET", "/me/profile"),  # your own profile: anyone signed in
+    ("PATCH", "/me/profile"),
 }
 
 
@@ -114,6 +116,7 @@ def cases(w: World) -> list[Case]:
         # projects
         Case("GET", "/projects", everywhere(LIST_USERS)),
         Case("POST", "/projects", everywhere({"manager"} | PMS), {"code": "NEW", "name": "New"}),
+        Case("GET", "/projects/categories", everywhere({"manager"} | PMS)),
         Case("GET", p, inside_project(READERS)),
         Case("PATCH", p, inside_project(LEADS), {"version": 999, "name": "x"}),
         Case("DELETE", p, inside_project(LEADS)),
@@ -249,6 +252,13 @@ def cases(w: World) -> list[Case]:
         Case(
             "DELETE", "/organisations/{organisation_id}/members/{member_id}", everywhere({"admin"})
         ),
+        # client portal: client contacts only (the client's own external projects)
+        Case("GET", "/client/portal", everywhere({"client"})),
+        Case("GET", "/client/projects/{project_id}", everywhere({"client"})),
+        Case("GET", "/client/projects/{project_id}/reports/{report_id}", everywhere({"client"})),
+        Case(
+            "GET", "/client/projects/{project_id}/reports/{report_id}/pdf", everywhere({"client"})
+        ),
         # oversight
         Case("GET", "/portfolio", everywhere({"manager"} | ACCOUNT_MANAGERS)),
         Case("GET", "/access-overview", everywhere({"manager"})),
@@ -340,7 +350,11 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
         assert client is not None
         client.organisation_id = org.id  # the client contact of the organisation
         project = Project(
-            code="MTX", name="Matrix", created_by=ids["pm_lead"], client_organisation_id=org.id
+            code="MTX",
+            name="Matrix",
+            created_by=ids["pm_lead"],
+            client_organisation_id=org.id,
+            project_type="external",
         )
         s.add(project)
         await s.flush()

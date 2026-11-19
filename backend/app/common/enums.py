@@ -40,6 +40,13 @@ class OrganisationType(StrEnum):
     CLIENT = "client"
 
 
+class ProjectType(StrEnum):
+    """Internal work, or work for a customer (external: always has a client organisation)."""
+
+    INTERNAL = "internal"
+    EXTERNAL = "external"
+
+
 class RagStatus(StrEnum):
     GREEN = "green"
     AMBER = "amber"

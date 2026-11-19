@@ -120,6 +120,16 @@ async def list_organisations(
 async def create_organisation(
     session: AsyncSession, actor: User, data: OrganisationCreate
 ) -> Organisation:
+    organisation = await insert_organisation(session, actor, data)
+    await session.commit()
+    await session.refresh(organisation)
+    return organisation
+
+
+async def insert_organisation(
+    session: AsyncSession, actor: User, data: OrganisationCreate
+) -> Organisation:
+    """Add the organisation and its audit entry without committing (callers commit)."""
     if await _name_taken(session, data.name):
         raise _duplicate_name()
     organisation = Organisation(name=data.name, type=data.type.value)
@@ -137,8 +147,6 @@ async def create_organisation(
         organisation.id,
         after={"name": data.name, "type": data.type.value},
     )
-    await session.commit()
-    await session.refresh(organisation)
     return organisation
 
 

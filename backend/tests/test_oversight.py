@@ -72,6 +72,7 @@ async def world(session: AsyncSession) -> World:
     w.internal = await make_project(session, w.pm.id, "INT")
     w.served.client_organisation_id = w.client_org.id
     w.unserved.client_organisation_id = w.other_org.id
+    w.served.project_type = w.unserved.project_type = "external"
     await session.flush()
     for project in (w.served, w.unserved, w.internal):
         await session.refresh(project)
@@ -276,7 +277,12 @@ async def test_a_project_gets_a_client_only_from_active_client_organisations(
     good = await client.post(
         PROJECTS,
         headers=headers,
-        json={"code": "CLI", "name": "c", "client_organisation_id": str(world.client_org.id)},
+        json={
+            "code": "CLI",
+            "name": "c",
+            "type": "external",
+            "client_organisation_id": str(world.client_org.id),
+        },
     )
     assert good.status_code == 201
     assert good.json()["client_organisation"] == {"id": str(world.client_org.id), "name": "Acme"}
@@ -284,7 +290,12 @@ async def test_a_project_gets_a_client_only_from_active_client_organisations(
     bad = await client.post(
         PROJECTS,
         headers=headers,
-        json={"code": "BAD", "name": "c", "client_organisation_id": str(internal_org.id)},
+        json={
+            "code": "BAD",
+            "name": "c",
+            "type": "external",
+            "client_organisation_id": str(internal_org.id),
+        },
     )
     assert bad.status_code == 422
 
@@ -292,7 +303,11 @@ async def test_a_project_gets_a_client_only_from_active_client_organisations(
     changed = await client.patch(
         url,
         headers=headers,
-        json={"version": world.internal.version, "client_organisation_id": str(world.other_org.id)},
+        json={
+            "version": world.internal.version,
+            "type": "external",
+            "client_organisation_id": str(world.other_org.id),
+        },
     )
     assert changed.status_code == 200
     assert changed.json()["client_organisation"]["name"] == "Globex"
@@ -302,7 +317,11 @@ async def test_a_project_gets_a_client_only_from_active_client_organisations(
     cleared = await client.patch(
         url,
         headers=headers,
-        json={"version": world.internal.version, "client_organisation_id": None},
+        json={
+            "version": world.internal.version,
+            "type": "internal",
+            "client_organisation_id": None,
+        },
     )
     assert cleared.status_code == 200 and cleared.json()["client_organisation"] is None
 

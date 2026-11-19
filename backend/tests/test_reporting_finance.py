@@ -68,6 +68,7 @@ async def world(session: AsyncSession) -> World:
     session.add(OrganisationAccountManager(organisation_id=w.org.id, user_id=w.am.id))
     w.project = await make_project(session, w.pm.id, "RPT")
     w.project.client_organisation_id = w.org.id
+    w.project.project_type = "external"
     for person in (w.pm_member, w.dev):
         session.add(
             ProjectMember(project_id=w.project.id, user_id=person.id, project_role="developer")
