@@ -369,7 +369,7 @@ async def test_list_shows_projects_counts_search_and_filters(
     assert [p["code"] for p in by_name["Noah Patel"]["projects"]] == ["WEB"]  # archived left out
     assert set(by_name["Alex Morgan"]) == {
         "id", "name", "email", "role", "is_active", "join_date", "password_set",
-        "invite_pending", "projects", "created_at", "organisation",
+        "invite_pending", "projects", "created_at", "organisation", "job_title",
     }  # fmt: skip
 
     async def names_for(**params: str) -> list[str]:

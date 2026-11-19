@@ -49,6 +49,7 @@ async def to_out(session: AsyncSession, users: list[User]) -> list[OrganisationM
             is_active=u.is_active,
             password_set=u.password_set,
             invite_pending=u.invite_pending,
+            job_title=u.job_title,
             join_date=u.join_date,
             created_at=u.created_at,
         )
@@ -117,6 +118,7 @@ async def add_member(
         email=data.email,
         global_role=CLIENT_CONTACT_ROLE.value,
         organisation_id=organisation.id,
+        job_title=data.job_title,
     )
     session.add(user)
     await session.flush()

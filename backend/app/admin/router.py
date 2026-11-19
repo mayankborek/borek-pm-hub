@@ -70,6 +70,9 @@ async def list_users(
     session: SessionDep,
     q: Annotated[str | None, Query(max_length=100, description="Search name or email")] = None,
     role: Annotated[GlobalRole | None, Query(description="Filter by role")] = None,
+    organisation_id: Annotated[
+        uuid.UUID | None, Query(description="Only people of this organisation (client contacts)")
+    ] = None,
     status: Annotated[
         service.StatusFilter, Query(description="active, inactive or all (default)")
     ] = "all",
@@ -78,7 +81,13 @@ async def list_users(
 ) -> AdminUserListOut:
     require(actor, Action.ADMIN_USERS)
     users, total, active_total = await service.list_users(
-        session, q=q, role=role, status=status, page=page, page_size=page_size
+        session,
+        q=q,
+        role=role,
+        organisation_id=organisation_id,
+        status=status,
+        page=page,
+        page_size=page_size,
     )
     return AdminUserListOut(
         items=await service.to_out(session, users),

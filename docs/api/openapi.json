@@ -306,6 +306,18 @@
             "title": "Email",
             "type": "string"
           },
+          "job_title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
           "join_date": {
             "anyOf": [
               {
@@ -426,6 +438,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
           "join_date": {
             "anyOf": [
               {
@@ -477,6 +500,7 @@
           "role",
           "is_active",
           "join_date",
+          "job_title",
           "organisation",
           "password_set",
           "invite_pending",
@@ -501,6 +525,19 @@
               }
             ],
             "title": "Email"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null or \"\" clears it.",
+            "title": "Job Title"
           },
           "join_date": {
             "anyOf": [
@@ -2002,6 +2039,18 @@
             "title": "Email",
             "type": "string"
           },
+          "job_title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
           "name": {
             "maxLength": 200,
             "title": "Name",
@@ -2086,6 +2135,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
           "join_date": {
             "anyOf": [
               {
@@ -2132,6 +2192,7 @@
           "is_active",
           "password_set",
           "invite_pending",
+          "job_title",
           "join_date",
           "created_at"
         ],
@@ -4946,6 +5007,25 @@
               ],
               "description": "Filter by role",
               "title": "Role"
+            }
+          },
+          {
+            "description": "Only people of this organisation (client contacts)",
+            "in": "query",
+            "name": "organisation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only people of this organisation (client contacts)",
+              "title": "Organisation Id"
             }
           },
           {

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.common.enums import ASSIGNABLE_GLOBAL_ROLES, GlobalRole
 from app.common.validation import check_date, clean_email, clean_text
-from app.organisations.schemas import OrganisationBrief
+from app.organisations.schemas import OrganisationBrief, clean_job_title
 
 
 def _assignable(role: GlobalRole) -> GlobalRole:
@@ -23,6 +23,7 @@ class AdminUserCreate(BaseModel):
     role: GlobalRole
     join_date: date | None = None
     organisation_id: uuid.UUID | None = None
+    job_title: str | None = Field(default=None, max_length=100)
 
     @field_validator("name")
     @classmethod
@@ -44,6 +45,11 @@ class AdminUserCreate(BaseModel):
     def _join_date(cls, value: date | None) -> date | None:
         return check_date(value, "join_date")
 
+    @field_validator("job_title")
+    @classmethod
+    def _job_title(cls, value: str | None) -> str | None:
+        return clean_job_title(value)
+
 
 class AdminUserUpdate(BaseModel):
     """Only the fields that are sent change. `join_date: null` clears the date."""
@@ -55,6 +61,7 @@ class AdminUserUpdate(BaseModel):
     role: GlobalRole | None = None
     join_date: date | None = None
     organisation_id: uuid.UUID | None = None
+    job_title: str | None = Field(default=None, max_length=100, description='null or "" clears it.')
 
     @field_validator("name")
     @classmethod
@@ -75,6 +82,11 @@ class AdminUserUpdate(BaseModel):
     @classmethod
     def _join_date(cls, value: date | None) -> date | None:
         return check_date(value, "join_date")
+
+    @field_validator("job_title")
+    @classmethod
+    def _job_title(cls, value: str | None) -> str | None:
+        return clean_job_title(value)
 
     @model_validator(mode="after")
     def _required_fields_not_null(self) -> "AdminUserUpdate":
@@ -97,6 +109,7 @@ class AdminUserOut(BaseModel):
     role: str
     is_active: bool
     join_date: date | None
+    job_title: str | None
     organisation: OrganisationBrief | None
     password_set: bool = Field(description="False until the person has used an invite link.")
     invite_pending: bool = Field(description="A link exists that has not been used or expired.")

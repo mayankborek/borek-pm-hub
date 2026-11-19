@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.common.enums import OrganisationType
-from app.common.validation import clean_email, clean_text
+from app.common.validation import clean_email, clean_optional_text, clean_text
 
 MAX_ACCOUNT_MANAGERS = 50
 
@@ -25,6 +25,11 @@ class PersonBrief(BaseModel):
 
 def _clean_name(value: str) -> str:
     return clean_text(value, label="Name")
+
+
+def clean_job_title(value: str | None) -> str | None:
+    """Trimmed, one line; empty means no job title."""
+    return clean_optional_text(value, max_length=100, label="Job title", multiline=False)
 
 
 class OrganisationCreate(BaseModel):
@@ -78,8 +83,10 @@ class OrganisationMemberCreate(BaseModel):
 
     name: str = Field(max_length=200)
     email: str = Field(max_length=320)
+    job_title: str | None = Field(default=None, max_length=100)
 
     _name = field_validator("name")(_clean_name)
+    _job_title = field_validator("job_title")(clean_job_title)
 
     @field_validator("email")
     @classmethod
@@ -99,6 +106,7 @@ class OrganisationMemberOut(BaseModel):
     is_active: bool
     password_set: bool
     invite_pending: bool
+    job_title: str | None
     join_date: date | None
     created_at: datetime
 
