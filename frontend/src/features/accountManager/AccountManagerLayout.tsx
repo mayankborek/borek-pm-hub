@@ -61,15 +61,12 @@ export function AccountManagerLayout() {
   const { pathname } = useLocation();
   const { t } = usePrefs();
   if (!user) return null;
-  // Profile and its settings pages have no sidebar.
-  const settings = SETTINGS.includes(pathname);
 
   return (
     <div className="am">
       <Toast>
-        <div className={settings ? 'shell no-side' : 'shell'}>
-          {!settings && (
-            <aside className="sidebar">
+        <div className="shell">
+          <aside className="sidebar">
               <Link to={paths.amHome} aria-label={t('Borek Flow home')}>
                 <img className="logo" src={logo} alt="BOREK Solutions Group" />
               </Link>
@@ -79,7 +76,6 @@ export function AccountManagerLayout() {
                 <NavLink to={paths.amProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
               </nav>
             </aside>
-          )}
           <div className="main">
             <header className="topbar">
               <h2>{t(titleFor(pathname))}</h2>
@@ -91,7 +87,7 @@ export function AccountManagerLayout() {
                 </Link>
               </div>
             </header>
-            <main className="content" style={settings ? { maxWidth: 'none' } : undefined}>
+            <main className="content">
               <Outlet />
             </main>
           </div>
