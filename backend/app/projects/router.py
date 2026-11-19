@@ -3,23 +3,29 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
+from app.auth.invites import invite_url
 from app.auth.permissions import Action, require
-from app.common.enums import ProjectStatus
+from app.common.enums import ProjectStatus, ProjectType, TaskPriority
 from app.common.validation import PageParam, PageSizeParam
+from app.core.config import Settings, get_settings
 from app.core.database import SessionDep
-from app.organisations.schemas import OrganisationBrief
+from app.organisations import members as organisation_members
+from app.organisations.schemas import MemberInviteOut, OrganisationBrief
 from app.projects import service
 from app.projects.membership import project_access
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import (
+    CategoryOut,
+    ClientContactCreatedOut,
     MemberIn,
     MemberOut,
     MemberRoleUpdate,
     ProjectCreate,
+    ProjectCreatedOut,
     ProjectDetailOut,
     ProjectListOut,
     ProjectOut,
@@ -29,6 +35,9 @@ from app.projects.schemas import (
 from app.users.models import User
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+MAX_CATEGORY_SUGGESTIONS = 100
 
 
 def _project_out(
@@ -44,6 +53,9 @@ def _project_out(
         status=project.status,
         start_date=project.start_date,
         target_end_date=project.target_end_date,
+        type=project.project_type,
+        category=project.category,
+        priority=project.priority,
         created_by=project.created_by,
         created_at=project.created_at,
         updated_at=project.updated_at,
@@ -83,14 +95,43 @@ async def _require_view(session: AsyncSession, user: User, project_id: uuid.UUID
     return project
 
 
-@router.post("", response_model=ProjectDetailOut, status_code=201)
+@router.post("", response_model=ProjectCreatedOut, status_code=201)
 async def create_project(
-    body: ProjectCreate, user: CurrentUser, session: SessionDep, response: Response
-) -> ProjectDetailOut:
+    body: ProjectCreate,
+    user: CurrentUser,
+    session: SessionDep,
+    settings: SettingsDep,
+    response: Response,
+) -> ProjectCreatedOut:
+    """`type: external` needs `client_organisation_id` (an existing client) or `new_client`
+    (a new client organisation, optionally with a first contact who gets a client account and
+    an invite link, returned once in `client_contact`). Everything is saved together or not."""
     require(user, Action.PROJECT_CREATE)
-    project = await service.create_project(session, user, body)
+    project, contact = await service.create_project(session, user, body, settings)
     response.headers["Location"] = f"/api/v1/projects/{project.id}"
-    return await _detail(session, project)
+    created = ProjectCreatedOut(**(await _detail(session, project)).model_dump())
+    if contact is not None:
+        response.headers["Cache-Control"] = "no-store"  # the link works once
+        created.client_contact = ClientContactCreatedOut(
+            member=(await organisation_members.to_out(session, [contact.user]))[0],
+            invite=MemberInviteOut(
+                url=invite_url(contact.token, settings), expires_at=contact.expires_at
+            ),
+        )
+    return created
+
+
+@router.get("/categories", response_model=list[CategoryOut])
+async def list_categories(
+    user: CurrentUser,
+    session: SessionDep,
+    q: Annotated[str | None, Query(max_length=100, description="Part of the name")] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_CATEGORY_SUGGESTIONS)] = 20,
+) -> list[CategoryOut]:
+    """Categories already used on active projects, most used first: suggestions for the
+    project form. A new category is made simply by saving it on a project."""
+    require(user, Action.PROJECT_CREATE)
+    return await service.list_categories(session, q, limit)
 
 
 @router.get("", response_model=ProjectListOut)
@@ -99,6 +140,11 @@ async def list_projects(
     session: SessionDep,
     q: Annotated[str | None, Query(max_length=100, description="Search name or code")] = None,
     status: ProjectStatus | None = None,
+    type: Annotated[ProjectType | None, Query(description="internal or external")] = None,
+    priority: TaskPriority | None = None,
+    category: Annotated[
+        str | None, Query(max_length=100, description="Exact category, any letter case")
+    ] = None,
     include_archived: Annotated[
         bool, Query(description="Manager: all. PM: those they led or archived. Developers: ignored")
     ] = False,
@@ -114,6 +160,9 @@ async def list_projects(
         include_archived=include_archived,
         page=page,
         page_size=page_size,
+        project_type=type.value if type else None,
+        priority=priority.value if priority else None,
+        category=category,
     )
     summaries = await service.task_summaries(session, [p.id for p in projects])
     clients = await service.client_organisations(session, projects)

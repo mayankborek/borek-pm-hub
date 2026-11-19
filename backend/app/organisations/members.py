@@ -110,6 +110,19 @@ async def add_member(
 ) -> tuple[User, str, datetime]:
     """Create the client account and its first invite link. Commits."""
     organisation = await _client_organisation(session, organisation_id, for_change=True)
+    user, token, expires_at = await insert_member(session, actor, organisation, data, settings)
+    await session.commit()
+    return user, token, expires_at
+
+
+async def insert_member(
+    session: AsyncSession,
+    actor: User,
+    organisation: Organisation,
+    data: OrganisationMemberCreate,
+    settings: Settings,
+) -> tuple[User, str, datetime]:
+    """Add the client account, its invite link and the audit entry without committing."""
     taken = await session.scalar(select(User.id).where(func.lower(User.email) == data.email))
     if taken is not None:
         raise AppError(409, "EMAIL_TAKEN", "A user with this email already exists.")
@@ -131,7 +144,6 @@ async def add_member(
         organisation.id,
         after={"user_id": str(user.id), "name": user.name, "email": user.email},
     )
-    await session.commit()
     return user, token, expires_at
 
 

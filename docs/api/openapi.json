@@ -995,6 +995,24 @@
         "title": "BudgetSet",
         "type": "object"
       },
+      "CategoryOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "project_count": {
+            "title": "Project Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "project_count"
+        ],
+        "title": "CategoryOut",
+        "type": "object"
+      },
       "ChangePasswordIn": {
         "additionalProperties": false,
         "properties": {
@@ -1016,6 +1034,22 @@
           "new_password"
         ],
         "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "ClientContactCreatedOut": {
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/MemberInviteOut"
+          },
+          "member": {
+            "$ref": "#/components/schemas/OrganisationMemberOut"
+          }
+        },
+        "required": [
+          "member",
+          "invite"
+        ],
+        "title": "ClientContactCreatedOut",
         "type": "object"
       },
       "CommentEditIn": {
@@ -1962,6 +1996,34 @@
         "title": "MyDashboard",
         "type": "object"
       },
+      "NewClientIn": {
+        "additionalProperties": false,
+        "description": "A client organisation made together with an external project, with its first contact.",
+        "properties": {
+          "contact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationMemberCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First contact: gets a client account and an invite link."
+          },
+          "name": {
+            "description": "Name of the new client organisation.",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NewClientIn",
+        "type": "object"
+      },
       "OrganisationBrief": {
         "properties": {
           "id": {
@@ -2596,6 +2658,18 @@
       "ProjectCreate": {
         "additionalProperties": false,
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "client_organisation_id": {
             "anyOf": [
               {
@@ -2606,6 +2680,7 @@
                 "type": "null"
               }
             ],
+            "description": "An existing client (external projects only).",
             "title": "Client Organisation Id"
           },
           "code": {
@@ -2639,6 +2714,21 @@
             "title": "Name",
             "type": "string"
           },
+          "new_client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NewClientIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Or a new client, made in the same step (external projects only)."
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority",
+            "default": "medium"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -2666,6 +2756,10 @@
               }
             ],
             "title": "Target End Date"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProjectType",
+            "default": "internal"
           }
         },
         "required": [
@@ -2675,7 +2769,7 @@
         "title": "ProjectCreate",
         "type": "object"
       },
-      "ProjectDetailOut": {
+      "ProjectCreatedOut": {
         "properties": {
           "archived_at": {
             "anyOf": [
@@ -2700,6 +2794,28 @@
               }
             ],
             "title": "Archived By"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "client_contact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContactCreatedOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only when `new_client.contact` was sent: hand `invite.url` to the person (shown once, no email is sent yet)."
           },
           "client_organisation": {
             "anyOf": [
@@ -2752,6 +2868,9 @@
             "title": "Name",
             "type": "string"
           },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -2782,6 +2901,9 @@
           "task_summary": {
             "$ref": "#/components/schemas/TaskSummary"
           },
+          "type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -2805,6 +2927,167 @@
           "updated_at",
           "archived_at",
           "archived_by",
+          "type",
+          "category",
+          "priority",
+          "client_organisation",
+          "version",
+          "task_summary",
+          "members"
+        ],
+        "title": "ProjectCreatedOut",
+        "type": "object"
+      },
+      "ProjectDetailOut": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "archived_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "client_organisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganisationBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "format": "uuid",
+            "title": "Created By",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "target_end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target End Date"
+          },
+          "task_summary": {
+            "$ref": "#/components/schemas/TaskSummary"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "status",
+          "start_date",
+          "target_end_date",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "archived_at",
+          "archived_by",
+          "type",
+          "category",
+          "priority",
           "client_organisation",
           "version",
           "task_summary",
@@ -2870,6 +3153,17 @@
             ],
             "title": "Archived By"
           },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "client_organisation": {
             "anyOf": [
               {
@@ -2914,6 +3208,9 @@
             "title": "Name",
             "type": "string"
           },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -2944,6 +3241,9 @@
           "task_summary": {
             "$ref": "#/components/schemas/TaskSummary"
           },
+          "type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -2967,6 +3267,9 @@
           "updated_at",
           "archived_at",
           "archived_by",
+          "type",
+          "category",
+          "priority",
           "client_organisation",
           "version",
           "task_summary"
@@ -2993,10 +3296,32 @@
         "title": "ProjectStatus",
         "type": "string"
       },
+      "ProjectType": {
+        "description": "Internal work, or work for a customer (external: always has a client organisation).",
+        "enum": [
+          "internal",
+          "external"
+        ],
+        "title": "ProjectType",
+        "type": "string"
+      },
       "ProjectUpdate": {
         "additionalProperties": false,
         "description": "PATCH body. `code` is not accepted (immutable). Send only the fields that change.",
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null or \"\" clears it.",
+            "title": "Category"
+          },
           "client_organisation_id": {
             "anyOf": [
               {
@@ -3007,7 +3332,7 @@
                 "type": "null"
               }
             ],
-            "description": "The customer; null removes it.",
+            "description": "The customer; null removes it. External projects must keep one, internal ones cannot have one (change `type` in the same request).",
             "title": "Client Organisation Id"
           },
           "description": {
@@ -3033,6 +3358,16 @@
               }
             ],
             "title": "Name"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskPriority"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "start_date": {
             "anyOf": [
@@ -3067,6 +3402,16 @@
               }
             ],
             "title": "Target End Date"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "version": {
             "description": "Version from the last read (optimistic locking).",
@@ -6702,6 +7047,59 @@
             }
           },
           {
+            "description": "internal or external",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "internal or external",
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TaskPriority"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "description": "Exact category, any letter case",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact category, any letter case",
+              "title": "Category"
+            }
+          },
+          {
             "description": "Manager: all. PM: those they led or archived. Developers: ignored",
             "in": "query",
             "name": "include_archived",
@@ -6766,6 +7164,7 @@
         ]
       },
       "post": {
+        "description": "`type: external` needs `client_organisation_id` (an existing client) or `new_client`\n(a new client organisation, optionally with a first contact who gets a client account and\nan invite link, returned once in `client_contact`). Everything is saved together or not.",
         "operationId": "create_project_api_v1_projects_post",
         "requestBody": {
           "content": {
@@ -6782,7 +7181,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProjectDetailOut"
+                  "$ref": "#/components/schemas/ProjectCreatedOut"
                 }
               }
             },
@@ -6800,6 +7199,75 @@
           }
         },
         "summary": "Create Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/categories": {
+      "get": {
+        "description": "Categories already used on active projects, most used first: suggestions for the\nproject form. A new category is made simply by saving it on a project.",
+        "operationId": "list_categories_api_v1_projects_categories_get",
+        "parameters": [
+          {
+            "description": "Part of the name",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of the name",
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryOut"
+                  },
+                  "title": "Response List Categories Api V1 Projects Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Categories",
         "tags": [
           "projects"
         ]

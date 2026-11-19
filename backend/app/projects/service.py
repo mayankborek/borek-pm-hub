@@ -1,6 +1,7 @@
 """Project business rules. Routers check permissions; this module checks data and uses the DB."""
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy import ColumnElement, and_, case, func, or_, select, update
@@ -22,15 +23,25 @@ from app.common.enums import (
     OrganisationType,
     ProjectRole,
     ProjectStatus,
+    ProjectType,
     StatusCategory,
 )
 from app.common.validation import like_escape
+from app.core.config import Settings
 from app.core.errors import AppError
+from app.organisations import members as organisation_members
+from app.organisations import service as organisation_service
 from app.organisations.models import Organisation
-from app.organisations.schemas import OrganisationBrief
+from app.organisations.schemas import OrganisationBrief, OrganisationCreate
 from app.projects.membership import project_access, visible_project_ids
 from app.projects.models import Project, ProjectMember
-from app.projects.schemas import MemberIn, ProjectCreate, ProjectUpdate, TaskSummary
+from app.projects.schemas import (
+    CategoryOut,
+    MemberIn,
+    ProjectCreate,
+    ProjectUpdate,
+    TaskSummary,
+)
 from app.tasks import activity, statuses
 from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
@@ -213,6 +224,9 @@ async def list_projects(
     include_archived: bool,
     page: int,
     page_size: int,
+    project_type: str | None = None,
+    priority: str | None = None,
+    category: str | None = None,
 ) -> tuple[list[Project], int]:
     """Managers see every project; everyone else the ones they are a member of. With
     `include_archived` a PM also gets the archived projects they led or archived."""
@@ -233,6 +247,12 @@ async def list_projects(
         conditions.append(Project.archived_at.is_(None))
     if status:
         conditions.append(Project.status == status)
+    if project_type:
+        conditions.append(Project.project_type == project_type)
+    if priority:
+        conditions.append(Project.priority == priority)
+    if category and category.strip():
+        conditions.append(func.lower(Project.category) == category.strip().lower())
     if q:
         pattern = f"%{like_escape(q.strip())}%"
         conditions.append(
@@ -290,13 +310,39 @@ def _duplicate_code(code: str) -> AppError:
     )
 
 
-async def create_project(session: AsyncSession, user: User, data: ProjectCreate) -> Project:
+@dataclass
+class NewContact:
+    """The first client contact made with an external project, with its one-time link."""
+
+    user: User
+    token: str
+    expires_at: datetime
+
+
+async def create_project(
+    session: AsyncSession, user: User, data: ProjectCreate, settings: Settings
+) -> tuple[Project, NewContact | None]:
+    """Create the project; with `new_client` also the client organisation and its first
+    contact, all in one transaction (nothing is saved if any part fails). Commits."""
     await _check_member_users(session, data.members)
     if data.client_organisation_id:
         await _check_client_organisation(session, data.client_organisation_id)
     existing = await session.scalar(select(Project.id).where(Project.code == data.code))
     if existing is not None:
         raise _duplicate_code(data.code)
+
+    client_id = data.client_organisation_id
+    contact: NewContact | None = None
+    if data.new_client is not None:
+        organisation = await organisation_service.insert_organisation(
+            session, user, OrganisationCreate(name=data.new_client.name)
+        )
+        client_id = organisation.id
+        if data.new_client.contact is not None:
+            person, token, expires_at = await organisation_members.insert_member(
+                session, user, organisation, data.new_client.contact, settings
+            )
+            contact = NewContact(person, token, expires_at)
 
     project = Project(
         code=data.code,
@@ -305,7 +351,10 @@ async def create_project(session: AsyncSession, user: User, data: ProjectCreate)
         status=data.status.value,
         start_date=data.start_date,
         target_end_date=data.target_end_date,
-        client_organisation_id=data.client_organisation_id,
+        project_type=data.type.value,
+        category=data.category,
+        priority=data.priority.value,
+        client_organisation_id=client_id,
         created_by=user.id,
     )
     session.add(project)
@@ -338,11 +387,13 @@ async def create_project(session: AsyncSession, user: User, data: ProjectCreate)
         after={
             "code": project.code,
             "name": project.name,
+            "type": project.project_type,
+            "client_organisation_id": _text(client_id),
             "members": {str(user_id): role.value for user_id, role in roles.items()},
         },
     )
     await session.commit()
-    return project
+    return project, contact
 
 
 async def update_project(
@@ -383,7 +434,30 @@ async def update_project(
             ],
         )
 
-    new_client = changes.get("client_organisation_id")
+    for field, label in (("type", "Type"), ("priority", "Priority")):
+        if field in changes and changes[field] is None:
+            raise AppError(
+                422,
+                "VALIDATION_ERROR",
+                "The request is not valid.",
+                [{"field": field, "issue": "required", "message": f"{label} cannot be empty."}],
+            )
+    new_client = changes.get("client_organisation_id", project.client_organisation_id)
+    new_type = changes["type"].value if "type" in changes else project.project_type
+    if (new_type == ProjectType.EXTERNAL.value) != (new_client is not None):
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "The request is not valid.",
+            [
+                {
+                    "field": "client_organisation_id",
+                    "issue": "client_must_match_type",
+                    "message": "An external project needs a client organisation; "
+                    "an internal project cannot have one.",
+                }
+            ],
+        )
     if new_client and new_client != project.client_organisation_id:
         await _check_client_organisation(session, new_client)
     if (
@@ -399,8 +473,21 @@ async def update_project(
             before={"client_organisation_id": _text(project.client_organisation_id)},
             after={"client_organisation_id": _text(new_client)},
         )
+    if new_type != project.project_type:
+        record_audit(
+            session,
+            actor,
+            "project.type_changed",
+            "project",
+            project.id,
+            project_id=project.id,
+            before={"type": project.project_type},
+            after={"type": new_type},
+        )
+    columns = {"type": "project_type"}
     for field, value in changes.items():
-        setattr(project, field, value.value if field == "status" else value)
+        enum_valued = field in ("status", "type", "priority")
+        setattr(project, columns.get(field, field), value.value if enum_valued else value)
     try:
         await session.commit()
     except StaleDataError:
@@ -561,3 +648,19 @@ async def remove_member(
     )
     await session.delete(member)
     await session.commit()
+
+
+async def list_categories(session: AsyncSession, q: str | None, limit: int) -> list[CategoryOut]:
+    """Categories already used on active projects, most used first, so the create form can
+    suggest them. Letter case is ignored when grouping; the most common spelling is shown."""
+    key = func.lower(Project.category)
+    count = func.count(Project.id).label("project_count")
+    stmt = (
+        select(func.mode().within_group(Project.category), count)
+        .where(Project.category.is_not(None), Project.archived_at.is_(None))
+        .group_by(key)
+    )
+    if q and q.strip():
+        stmt = stmt.where(Project.category.ilike(f"%{like_escape(q.strip())}%", escape="\\"))
+    rows = await session.execute(stmt.order_by(count.desc(), key).limit(limit))
+    return [CategoryOut(name=name, project_count=n) for name, n in rows]

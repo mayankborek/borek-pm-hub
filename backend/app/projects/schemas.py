@@ -7,9 +7,14 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.common.enums import ProjectRole, ProjectStatus
+from app.common.enums import ProjectRole, ProjectStatus, ProjectType, TaskPriority
 from app.common.validation import check_date, clean_optional_text, clean_text
-from app.organisations.schemas import OrganisationBrief
+from app.organisations.schemas import (
+    MemberInviteOut,
+    OrganisationBrief,
+    OrganisationMemberCreate,
+    OrganisationMemberOut,
+)
 
 _CODE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$", re.ASCII)
 MAX_DESCRIPTION = 20_000
@@ -26,6 +31,29 @@ def _check_start(value: date | None) -> date | None:
 
 def _check_end(value: date | None) -> date | None:
     return check_date(value, "target_end_date")
+
+
+MAX_CATEGORY = 100
+
+
+def _clean_category(value: str | None) -> str | None:
+    return clean_optional_text(value, max_length=MAX_CATEGORY, label="Category", multiline=False)
+
+
+class NewClientIn(BaseModel):
+    """A client organisation made together with an external project, with its first contact."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(max_length=200, description="Name of the new client organisation.")
+    contact: OrganisationMemberCreate | None = Field(
+        default=None, description="First contact: gets a client account and an invite link."
+    )
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, value: str) -> str:
+        return clean_text(value, label="Name")
 
 
 class MemberIn(BaseModel):
@@ -76,10 +104,20 @@ class ProjectCreate(BaseModel):
     status: ProjectStatus = ProjectStatus.PLANNED
     start_date: date | None = None
     target_end_date: date | None = None
-    client_organisation_id: uuid.UUID | None = None
+    type: ProjectType = ProjectType.INTERNAL
+    category: str | None = Field(default=None, max_length=MAX_CATEGORY)
+    priority: TaskPriority = TaskPriority.MEDIUM
+    client_organisation_id: uuid.UUID | None = Field(
+        default=None, description="An existing client (external projects only)."
+    )
+    new_client: NewClientIn | None = Field(
+        default=None,
+        description="Or a new client, made in the same step (external projects only).",
+    )
     members: list[MemberIn] = Field(default_factory=list, max_length=MAX_MEMBERS)
 
     _clean_desc = field_validator("description")(_clean_description)
+    _clean_cat = field_validator("category")(_clean_category)
     _range_start = field_validator("start_date")(_check_start)
     _range_end = field_validator("target_end_date")(_check_end)
 
@@ -102,6 +140,18 @@ class ProjectCreate(BaseModel):
             raise ValueError("target_end_date must not be before start_date.")
         return self
 
+    @model_validator(mode="after")
+    def _check_client(self) -> Self:
+        has_existing = self.client_organisation_id is not None
+        has_new = self.new_client is not None
+        if self.type == ProjectType.EXTERNAL and has_existing == has_new:
+            raise ValueError(
+                "An external project needs a client: send client_organisation_id or new_client."
+            )
+        if self.type == ProjectType.INTERNAL and (has_existing or has_new):
+            raise ValueError("An internal project has no client organisation.")
+        return self
+
 
 class ProjectUpdate(BaseModel):
     """PATCH body. `code` is not accepted (immutable). Send only the fields that change."""
@@ -114,8 +164,15 @@ class ProjectUpdate(BaseModel):
     status: ProjectStatus | None = None
     start_date: date | None = None
     target_end_date: date | None = None
+    type: ProjectType | None = None
+    category: str | None = Field(
+        default=None, max_length=MAX_CATEGORY, description='null or "" clears it.'
+    )
+    priority: TaskPriority | None = None
     client_organisation_id: uuid.UUID | None = Field(
-        default=None, description="The customer; null removes it."
+        default=None,
+        description="The customer; null removes it. External projects must keep one, "
+        "internal ones cannot have one (change `type` in the same request).",
     )
 
     @field_validator("name")
@@ -126,6 +183,7 @@ class ProjectUpdate(BaseModel):
     _clean_desc = field_validator("description")(_clean_description)
     _range_start = field_validator("start_date")(_check_start)
     _range_end = field_validator("target_end_date")(_check_end)
+    _clean_cat = field_validator("category")(_clean_category)
 
 
 class ProjectOut(BaseModel):
@@ -141,6 +199,9 @@ class ProjectOut(BaseModel):
     updated_at: datetime
     archived_at: datetime | None
     archived_by: uuid.UUID | None
+    type: ProjectType
+    category: str | None
+    priority: TaskPriority
     client_organisation: OrganisationBrief | None
     version: int
     task_summary: TaskSummary
@@ -148,6 +209,24 @@ class ProjectOut(BaseModel):
 
 class ProjectDetailOut(ProjectOut):
     members: list[MemberOut]
+
+
+class ClientContactCreatedOut(BaseModel):
+    member: OrganisationMemberOut
+    invite: MemberInviteOut
+
+
+class ProjectCreatedOut(ProjectDetailOut):
+    client_contact: ClientContactCreatedOut | None = Field(
+        default=None,
+        description="Only when `new_client.contact` was sent: hand `invite.url` to the person "
+        "(shown once, no email is sent yet).",
+    )
+
+
+class CategoryOut(BaseModel):
+    name: str
+    project_count: int
 
 
 class ProjectListOut(BaseModel):

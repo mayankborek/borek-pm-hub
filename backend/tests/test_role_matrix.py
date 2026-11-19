@@ -114,6 +114,7 @@ def cases(w: World) -> list[Case]:
         # projects
         Case("GET", "/projects", everywhere(LIST_USERS)),
         Case("POST", "/projects", everywhere({"manager"} | PMS), {"code": "NEW", "name": "New"}),
+        Case("GET", "/projects/categories", everywhere({"manager"} | PMS)),
         Case("GET", p, inside_project(READERS)),
         Case("PATCH", p, inside_project(LEADS), {"version": 999, "name": "x"}),
         Case("DELETE", p, inside_project(LEADS)),
@@ -340,7 +341,11 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
         assert client is not None
         client.organisation_id = org.id  # the client contact of the organisation
         project = Project(
-            code="MTX", name="Matrix", created_by=ids["pm_lead"], client_organisation_id=org.id
+            code="MTX",
+            name="Matrix",
+            created_by=ids["pm_lead"],
+            client_organisation_id=org.id,
+            project_type="external",
         )
         s.add(project)
         await s.flush()
