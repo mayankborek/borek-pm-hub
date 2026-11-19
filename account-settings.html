@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111827;
+    --topbar: #182030;
+    --card: #172033;
+    --border: #2d3a55;
+    --divider: #223049;
+    --text: #f3f4f8;
+    --muted: #aab3c5;
+    --accent: #4a4fb5;
+    --toggle-on: #4045a8;
+    --nav-indicator: #7db4ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    height: 64px;
+    background: var(--topbar);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+  }
+
+  .topbar__title {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-right: 120px;
+    font-size: 24px;
+    font-weight: 500;
+  }
+  .topbar__title::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+
+  .topbar__right { display: flex; align-items: center; gap: 28px; }
+
+  .icon-btn {
+    background: none;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 6px;
+    border-radius: 8px;
+  }
+  .icon-btn:hover { color: var(--text); background: rgba(255,255,255,.05); }
+
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    padding-right: 80px;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: #121826;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ---------- Page ---------- */
+  .page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 56px 32px 80px;
+  }
+
+  .page__header h1 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .page__header p {
+    margin-top: 6px;
+    font-size: 16px;
+    color: var(--muted);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 40px;
+    margin-top: 48px;
+  }
+
+  /* ---------- Side nav ---------- */
+  .nav__label {
+    font-size: 12px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-left: 8px;
+    margin-bottom: 14px;
+  }
+  .nav ul { list-style: none; display: grid; gap: 14px; }
+  .nav a {
+    position: relative;
+    display: block;
+    padding: 10px 8px 10px 16px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+  .nav a:hover { color: var(--text); }
+  .nav a[aria-current="page"] { color: var(--text); font-weight: 500; }
+  .nav a[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 22px;
+    border-radius: 2px;
+    background: var(--nav-indicator);
+  }
+
+  /* ---------- Card ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 28px 8px;
+  }
+  .card__title { font-size: 24px; font-weight: 600; }
+  .card__subtitle { margin-top: 6px; font-size: 15px; color: var(--muted); }
+
+  .setting {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 26px 0 36px;
+  }
+  .setting + .setting { border-top: 1px solid var(--divider); }
+  .setting:first-of-type { margin-top: 12px; }
+
+  .setting__name { font-size: 17px; font-weight: 600; }
+  .setting__desc { margin-top: 12px; font-size: 15px; color: var(--muted); }
+
+  .setting__control {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    padding-right: 28px;
+  }
+  .setting__state {
+    font-size: 14px;
+    color: var(--muted);
+    min-width: 22px;
+    text-align: right;
+  }
+
+  /* ---------- Toggle switch ---------- */
+  .switch {
+    position: relative;
+    width: 54px; height: 30px;
+    border: 0;
+    border-radius: 999px;
+    background: #374056;
+    cursor: pointer;
+    transition: background .2s ease;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 4px; left: 4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .2s ease;
+  }
+  .switch[aria-checked="true"] { background: var(--toggle-on); }
+  .switch[aria-checked="true"]::after { transform: translateX(24px); }
+  .switch:focus-visible { outline: 2px solid var(--nav-indicator); outline-offset: 3px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 760px) {
+    .topbar { padding: 0 16px; }
+    .topbar__title { padding-right: 24px; font-size: 20px; }
+    .user { padding-right: 0; }
+    .layout { grid-template-columns: 1fr; gap: 24px; }
+    .nav ul { grid-auto-flow: column; overflow-x: auto; gap: 8px; }
+    .setting__control { gap: 16px; padding-right: 0; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar__title">Profile</div>
+    <div class="topbar__right">
+      <button class="icon-btn" aria-label="Notifications">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/>
+          <path d="M10 20h4"/>
+        </svg>
+      </button>
+      <div class="user">
+        <span class="avatar">JL</span>
+        <span>Jordan Lee</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page__header">
+      <h1>Account settings</h1>
+      <p>Manage your profile and portal preferences</p>
+    </div>
+
+    <div class="layout">
+      <nav class="nav" aria-label="Settings">
+        <div class="nav__label">Settings</div>
+        <ul>
+          <li><a href="#">My profile</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#" aria-current="page">Notifications</a></li>
+          <li><a href="#">Preferences</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2 class="card__title">Notifications</h2>
+        <p class="card__subtitle">Choose which project updates you receive.</p>
+
+        <div class="setting">
+          <div>
+            <h3 class="setting__name">Project reports</h3>
+            <p class="setting__desc">New status reports shared by your project manager.</p>
+          </div>
+          <div class="setting__control">
+            <span class="setting__state">On</span>
+            <button class="switch" role="switch" aria-checked="true" aria-label="Project reports"></button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div>
+            <h3 class="setting__name">Milestones</h3>
+            <p class="setting__desc">Changes to milestone dates and completion.</p>
+          </div>
+          <div class="setting__control">
+            <span class="setting__state">On</span>
+            <button class="switch" role="switch" aria-checked="true" aria-label="Milestones"></button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div>
+            <h3 class="setting__name">Change requests</h3>
+            <p class="setting__desc">Updates on requests you submitted.</p>
+          </div>
+          <div class="setting__control">
+            <span class="setting__state">On</span>
+            <button class="switch" role="switch" aria-checked="true" aria-label="Change requests"></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    document.querySelectorAll('.switch').forEach(function (sw) {
+      sw.addEventListener('click', function () {
+        var on = sw.getAttribute('aria-checked') !== 'true';
+        sw.setAttribute('aria-checked', on);
+        sw.parentElement.querySelector('.setting__state').textContent = on ? 'On' : 'Off';
+      });
+    });
+  </script>
+</body>
+</html>

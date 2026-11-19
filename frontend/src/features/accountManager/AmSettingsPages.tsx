@@ -114,14 +114,20 @@ export function AmNotificationsPage() {
   const [on, setOn] = useState<Record<string, boolean>>({});
   return (
     <Settings title="Notifications" sub="Choose which project updates you receive.">
-      <div className="nlist">
+      <div className="nset">
         {TOPICS.map(([name, text]) => {
           const checked = on[name] ?? true;
           return (
-            <label className="nrow" key={name}>
-              <span><b>{t(name)}</b><small>{t(text)}</small></span>
-              <input className="ncheck" type="checkbox" checked={checked} aria-label={t(name)} onChange={() => setOn((s) => ({ ...s, [name]: !checked }))} />
-            </label>
+            <div className="setting" key={name}>
+              <div>
+                <h4 className="setting-name">{t(name)}</h4>
+                <p className="setting-desc">{t(text)}</p>
+              </div>
+              <div className="setting-control">
+                <span className="setting-state">{checked ? t('On') : t('Off')}</span>
+                <button className="switch" type="button" role="switch" aria-checked={checked} aria-label={t(name)} onClick={() => setOn((s) => ({ ...s, [name]: !checked }))} />
+              </div>
+            </div>
           );
         })}
       </div>

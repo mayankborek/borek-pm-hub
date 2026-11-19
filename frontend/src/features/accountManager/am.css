@@ -217,11 +217,14 @@
 .am .cp.cp{--navy:#0D1240;--slate:#5C6178;--mute:#65708A;--blue:#124F94;--bg:#F3F4F8;--line:#E2E4EC;--surface:#fff;--green-bg:#E0F5E8;--green:#17735E;--red:#AD1F1F;--red-bg:#FCE8E3}
 :root[data-theme=dark] .am .cp.cp{--navy:#E8EAF4;--slate:#A3A9C2;--mute:#8C94B0;--blue:#7DB0FF;--bg:#0A0E30;--line:#2A3060;--surface:#121847;--green-bg:#12372E;--green:#6FD6B5;--red:#FF9C8F;--red-bg:#4A1F1B}
 
-/* Notification settings: compact checkbox rows */
-.am .nlist{margin-top:8px;border:1px solid var(--line)}
-.am .nrow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;cursor:pointer}
-.am .nrow+.nrow{border-top:1px solid var(--line)}
-.am .nrow:hover{background:var(--bg)}
-.am .nrow b{display:block;font-size:13px;font-weight:600}
-.am .nrow small{display:block;margin-top:2px;font-size:11px;color:var(--muted)}
-.am .ncheck{flex:none;width:16px;height:16px;margin:0;accent-color:var(--blue);cursor:pointer}
+/* Notification settings (account-settings.html), scaled down to stay compact */
+.am .nset{margin-top:6px}
+.am .setting{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:12px 0}
+.am .setting+.setting{border-top:1px solid var(--line)}
+.am .setting-name{font-size:14px;font-weight:600}
+.am .setting-desc{margin-top:3px;font-size:12px;color:var(--muted)}
+.am .setting-control{display:flex;align-items:center;gap:10px;flex:none;padding-top:1px}
+.am .setting-state{min-width:18px;text-align:right;font-size:12px;color:var(--muted)}
+.am .setting-control .switch{width:40px;height:22px;border-radius:11px}
+.am .setting-control .switch::after{display:block;top:3px;left:3px;width:16px;height:16px}
+.am .setting-control .switch[aria-checked=true]::after{display:block;left:21px}
