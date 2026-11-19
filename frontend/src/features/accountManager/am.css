@@ -174,3 +174,25 @@
 .am .snav a{padding:14px 14px;margin-bottom:12px;font-size:14px}
 .am .spanel{border-radius:0;padding:28px 32px}
 .am .trow{padding:26px 0 40px}
+
+/* Admin-style building blocks (dialogs, fields) read the portal palette inside the Account Manager. */
+.am{--slate:var(--muted);--surface:var(--card);--mute:var(--muted2);--red:var(--bad)}
+
+/* Reports table (i1): grey header row, white rows, blue report links. */
+.am .cp-rt{margin-top:24px;background:var(--card)}
+.am .cp-rt .cp-h,.am .cp-rt .cp-r{grid-template-columns:minmax(0,2.2fr) minmax(0,1.8fr) minmax(0,1.3fr) minmax(0,1fr) 120px;padding:0 28px;font-size:14px}
+.am .cp-rt .cp-h{height:80px;color:var(--navy);font-size:14px}
+.am .cp-rt .cp-r{height:100px;background:var(--card);border-top:1px solid var(--line)}
+.am .cp-rt .cp-r a{color:var(--blue)}
+.am .cp-rt .cp-r b{font-size:20px}
+.am .cp-rt .cp-pub{font-size:14px}
+.am .cp-dl{font-size:16px;background:none;border:0;cursor:pointer}
+
+/* Edit dialog (i2): hairline box, blue title, bold labels, boxed fields, text-link actions. */
+.am .ad-dialog{border:1px solid var(--line);box-shadow:none;border-radius:0}
+.am .ad-dialog h2{color:var(--blue);font-size:18px;font-weight:600}
+.am .ad-field>span{color:var(--navy);font-weight:600}
+.am .ad-input{height:44px;border:1px solid var(--line);font-weight:600;border-radius:0}
+.am .ad-actions{gap:28px;align-items:center}
+.am .ad-actions .ad-btn{height:auto;padding:0;background:none;border:0;color:var(--blue);font-size:16px;font-weight:600}
+.am .ad-actions .ad-btn:hover{background:none;text-decoration:underline}

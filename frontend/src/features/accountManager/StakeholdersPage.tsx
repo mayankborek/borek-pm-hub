@@ -73,7 +73,7 @@ function EditDialog({ person, onClose, onSave }: { person: ClientContact; onClos
       <Field label="Role">
         <input className="ad-input" value={role} onChange={(e) => setRole(e.target.value)} maxLength={120} autoComplete="off" />
       </Field>
-      <Field label="Email" error={tried && invalid ? 'Enter a valid email address.' : ''}>
+      <Field label="Work email" error={tried && invalid ? 'Enter a valid email address.' : ''}>
         <input className="ad-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} autoComplete="off" />
       </Field>
       <Field label="Phone">
@@ -81,7 +81,7 @@ function EditDialog({ person, onClose, onSave }: { person: ClientContact; onClos
       </Field>
       <div className="ad-actions">
         <button type="button" className="ad-btn ad-btn--ghost" onClick={onClose}>{t('Cancel')}</button>
-        <button type="submit" className="ad-btn">{t('Save')}</button>
+        <button type="submit" className="ad-btn">{t('Save changes')}</button>
       </div>
     </Dialog>
   );
