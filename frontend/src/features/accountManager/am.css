@@ -34,7 +34,7 @@
 .am .bell .dot{position:absolute;top:3px;right:4px;width:7px;height:7px;border-radius:50%;background:#C94734}
 .am .user{display:flex;align-items:center;gap:10px;padding-left:16px;border-left:1px solid var(--line);font-weight:600;font-size:12px;border-radius:0}
 .am .avatar{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:9px;font-weight:700;color:var(--ink)}
-.am .content{padding:32px;max-width:1224px}
+.am .content{padding:32px;max-width:none;width:100%}
 .am-page h1{font-size:22px;font-weight:700;color:var(--ink)}
 .am .lead{color:var(--muted);margin-top:6px;font-size:13px}
 .am .card{background:var(--card);border:1px solid var(--line);padding:20px 22px;border-radius:2px}
@@ -162,3 +162,9 @@
 .am .cr .bar,.am .cr .bar>i{display:block}
 .am .sd.err{color:var(--bad)}
 .am .content .fit{max-width:none}
+/* Reset the shared staff shell rules (global.css) that would otherwise stack the top bar and cap its width. */
+.am .topbar{flex-direction:row;justify-content:space-between;align-items:center;gap:0;width:auto;overflow:visible;padding:0 32px}
+.am .topbar h2{margin:0;line-height:normal}
+.am .field{display:block;flex:none}
+.am .field label{font-weight:400}
+.am .settings{max-width:none;margin:0;padding:32px 0 0}
