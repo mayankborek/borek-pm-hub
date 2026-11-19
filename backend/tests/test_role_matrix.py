@@ -25,6 +25,7 @@ from app.core.config import Settings, get_settings
 from app.core.database import get_session
 from app.finance.models import FinanceEntry, ProjectBudget
 from app.main import create_app
+from app.milestones.models import Milestone, ProjectPhase
 from app.organisations.models import Organisation, OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
 from app.reporting.models import Stakeholder, StatusReport
@@ -259,6 +260,30 @@ def cases(w: World) -> list[Case]:
         Case(
             "GET", "/client/projects/{project_id}/reports/{report_id}/pdf", everywhere({"client"})
         ),
+        Case("GET", "/client/projects/{project_id}/roadmap", everywhere({"client"})),
+        # roadmap: everyone who sees the project reads it; leads change it
+        Case("GET", f"{p}/roadmap", inside_project(READERS)),
+        Case("GET", f"{p}/phases", inside_project(READERS)),
+        Case(
+            "POST",
+            f"{p}/phases",
+            inside_project(LEADS),
+            {"name": "x", "start_date": "2026-11-01", "end_date": "2026-11-02"},
+        ),
+        Case("PUT", f"{p}/phases/order", inside_project(LEADS), {"phase_ids": [v["phase_id"]]}),
+        Case("GET", f"{p}/phases/{{phase_id}}", inside_project(READERS)),
+        Case("PATCH", f"{p}/phases/{{phase_id}}", inside_project(LEADS), {"version": 999}),
+        Case("DELETE", f"{p}/phases/{{phase_id}}", inside_project(LEADS)),  # 409: has a milestone
+        Case("GET", f"{p}/milestones", inside_project(READERS)),
+        Case(
+            "POST",
+            f"{p}/milestones",
+            inside_project(LEADS),
+            {"name": "x", "due_date": "2026-11-20"},
+        ),
+        Case("GET", f"{p}/milestones/{{milestone_id}}", inside_project(READERS)),
+        Case("PATCH", f"{p}/milestones/{{milestone_id}}", inside_project(LEADS), {"version": 999}),
+        Case("DELETE", f"{p}/milestones/{{milestone_id}}", inside_project(LEADS)),
         # oversight
         Case("GET", "/portfolio", everywhere({"manager"} | ACCOUNT_MANAGERS)),
         Case("GET", "/access-overview", everywhere({"manager"})),
@@ -404,7 +429,27 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             description="x",
             created_by=ids["manager"],
         )
-        s.add_all([comment, report, draft, stakeholder, budget, entry])
+        phase = ProjectPhase(
+            project_id=project.id,
+            name="Design",
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 11, 10),
+            position=1,
+            client_visible=True,
+            created_by=ids["pm_lead"],
+        )
+        s.add_all([comment, report, draft, stakeholder, budget, entry, phase])
+        await s.flush()
+        milestone = Milestone(
+            project_id=project.id,
+            phase_id=phase.id,
+            code="M-01",
+            name="Design approved",
+            due_date=date(2026, 11, 10),
+            client_visible=True,
+            created_by=ids["pm_lead"],
+        )
+        s.add(milestone)
         await s.commit()
         ids |= {
             "project_id": project.id,
@@ -414,6 +459,8 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "draft_id": draft.id,
             "stakeholder_id": stakeholder.id,
             "entry_id": entry.id,
+            "phase_id": phase.id,
+            "milestone_id": milestone.id,
             "organisation_id": org.id,
             "status_id": rows[1].id,
             "user_id": ids["dev_other"],
@@ -473,7 +520,7 @@ def test_a_rule_exists_for_every_route(world_paths: set[tuple[str, str]]) -> Non
 
 @pytest.fixture
 def world_paths() -> set[tuple[str, str]]:
-    names = ("dev_out", "dev_other", "am_own", "status_id", "status_order", "move_to")
+    names = ("dev_out", "dev_other", "am_own", "status_id", "status_order", "move_to", "phase_id")
     empty = World(None, {}, dict.fromkeys(names, ""))  # type: ignore[arg-type]
     return {(c.method, _route_of(c.path)) for c in cases(empty)}
 

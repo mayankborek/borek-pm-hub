@@ -12,7 +12,12 @@ from app.auth.dependencies import CurrentUser
 from app.auth.permissions import Action, require
 from app.client import service
 from app.client.pdf import build_report_pdf
-from app.client.schemas import ClientPortalOut, ClientProjectDetailOut, ClientReportOut
+from app.client.schemas import (
+    ClientPortalOut,
+    ClientProjectDetailOut,
+    ClientReportOut,
+    ClientRoadmapOut,
+)
 from app.core.database import SessionDep
 
 router = APIRouter(prefix="/client", tags=["client"])
@@ -33,6 +38,16 @@ async def get_project(
     """Project overview with its contacts and published reports."""
     require(user, Action.CLIENT_PORTAL)
     return await service.project_detail(session, user, project_id)
+
+
+@router.get("/projects/{project_id}/roadmap", response_model=ClientRoadmapOut)
+async def get_roadmap(
+    project_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> ClientRoadmapOut:
+    """The project roadmap: visible phases (bars with status and completed share) and visible
+    milestones (diamonds with state), plus the date range and today."""
+    require(user, Action.CLIENT_PORTAL)
+    return await service.project_roadmap(session, user, project_id)
 
 
 @router.get("/projects/{project_id}/reports/{report_id}", response_model=ClientReportOut)

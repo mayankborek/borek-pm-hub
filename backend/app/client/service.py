@@ -11,14 +11,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.client.schemas import (
     HEALTH_OF_RAG,
     ClientContactOut,
+    ClientMilestoneOut,
     ClientOrganisationOut,
+    ClientPhaseOut,
     ClientPortalOut,
     ClientProjectDetailOut,
     ClientProjectOut,
     ClientReportBrief,
     ClientReportOut,
+    ClientRoadmapOut,
+    ClientUpcomingMilestone,
     ClientUpdateOut,
     LatestUpdate,
+    NextMilestone,
     PublishedBy,
 )
 from app.common.enums import (
@@ -29,6 +34,8 @@ from app.common.enums import (
     ReportState,
 )
 from app.core.errors import AppError
+from app.milestones import service as roadmap
+from app.milestones.schemas import MilestoneOut
 from app.organisations.models import Organisation, OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
 from app.projects.service import task_summaries
@@ -36,6 +43,7 @@ from app.reporting.models import Stakeholder, StatusReport
 from app.users.models import User
 
 MAX_UPDATES = 10
+MAX_UPCOMING = 10
 
 
 def _not_found() -> AppError:
@@ -89,6 +97,26 @@ async def _published_reports(
     return list(rows)
 
 
+async def _visible_milestones(
+    session: AsyncSession, project_ids: list[uuid.UUID]
+) -> list[MilestoneOut]:
+    """Milestones marked visible to the client, by due date."""
+    shown = [m for m in await roadmap.active_milestones(session, project_ids) if m.client_visible]
+    return await roadmap.milestones_out(session, shown)
+
+
+def _client_milestone(m: MilestoneOut) -> ClientMilestoneOut:
+    return ClientMilestoneOut(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        due_date=m.due_date,
+        state=m.state,
+        progress=m.progress,
+        completed_on=m.completed_at.date() if m.completed_at else None,
+    )
+
+
 def _brief(report: StatusReport) -> ClientReportBrief:
     assert report.published_at is not None  # published reports always have it
     return ClientReportBrief(
@@ -102,9 +130,16 @@ def _brief(report: StatusReport) -> ClientReportBrief:
 
 
 async def _projects_out(
-    session: AsyncSession, projects: list[Project], reports: list[StatusReport]
+    session: AsyncSession,
+    projects: list[Project],
+    reports: list[StatusReport],
+    milestones: list[MilestoneOut],
 ) -> list[ClientProjectOut]:
     summaries = await task_summaries(session, [p.id for p in projects])
+    upcoming: dict[uuid.UUID, MilestoneOut] = {}
+    for m in milestones:  # by due date, so the first open one per project wins
+        if not m.done:
+            upcoming.setdefault(m.project_id, m)
     newest: dict[uuid.UUID, StatusReport] = {}
     for report in reports:  # newest first, so the first one per project wins
         newest.setdefault(report.project_id, report)
@@ -114,6 +149,7 @@ async def _projects_out(
         latest = newest.get(p.id)
         publisher = publishers.get(latest.published_by) if latest and latest.published_by else None
         summary = summaries.get(p.id)
+        next_one = upcoming.get(p.id)
         out.append(
             ClientProjectOut(
                 id=p.id,
@@ -136,6 +172,17 @@ async def _projects_out(
                     if latest
                     else None
                 ),
+                next_milestone=(
+                    NextMilestone(
+                        id=next_one.id,
+                        code=next_one.code,
+                        name=next_one.name,
+                        due_date=next_one.due_date,
+                        state=next_one.state,
+                    )
+                    if next_one
+                    else None
+                ),
             )
         )
     return out
@@ -150,7 +197,8 @@ async def portal(session: AsyncSession, user: User) -> ClientPortalOut:
         await session.scalars(select(Project).where(_visible(user)).order_by(Project.code))
     )
     reports = await _published_reports(session, [p.id for p in projects])
-    items = await _projects_out(session, projects, reports)
+    milestones = await _visible_milestones(session, [p.id for p in projects])
+    items = await _projects_out(session, projects, reports, milestones)
     names = {p.id: p.name for p in projects}
     health: Counter[str] = Counter(item.health or "none" for item in items)
     return ClientPortalOut(
@@ -160,6 +208,15 @@ async def portal(session: AsyncSession, user: User) -> ClientPortalOut:
             else None
         ),
         projects=items,
+        upcoming_milestones=[
+            ClientUpcomingMilestone(
+                **_client_milestone(m).model_dump(),
+                project_id=m.project_id,
+                project_name=names[m.project_id],
+            )
+            for m in milestones
+            if not m.done
+        ][:MAX_UPCOMING],
         updates=[
             ClientUpdateOut(
                 report_id=r.id,
@@ -248,12 +305,52 @@ async def project_detail(
 ) -> ClientProjectDetailOut:
     project = await get_project(session, user, project_id)
     reports = await _published_reports(session, [project.id])
-    base = (await _projects_out(session, [project], reports))[0]
+    milestones = await _visible_milestones(session, [project.id])
+    base = (await _projects_out(session, [project], reports, milestones))[0]
     return ClientProjectDetailOut(
         **base.model_dump(),
         description=project.description,
         contacts=await contacts(session, project),
         reports=[_brief(r) for r in reports],
+        milestones=[_client_milestone(m) for m in milestones],
+    )
+
+
+async def project_roadmap(
+    session: AsyncSession, user: User, project_id: uuid.UUID
+) -> ClientRoadmapOut:
+    """Only phases and milestones marked visible to the client. A visible milestone in a hidden
+    phase is shown outside any phase. A phase's status and completed share count all of its
+    milestones (a summary; hidden milestones themselves never appear)."""
+    project = await get_project(session, user, project_id)
+    full = await roadmap.build_roadmap(session, project.id)
+    phases = [(phase, out) for phase, out, _ in full.phases if phase.client_visible]
+    shown_phase_ids = {phase.id for phase, _ in phases}
+    visible = [m for m in full.milestones if m.client_visible]
+    dates = [m.due_date for m in visible]
+    for phase, _ in phases:
+        dates += [phase.start_date, phase.end_date]
+    start, end = roadmap.date_range(project, dates)
+    return ClientRoadmapOut(
+        project_id=project.id,
+        today=roadmap.today(),
+        range_start=start,
+        range_end=end,
+        phases=[
+            ClientPhaseOut(
+                id=out.id,
+                name=out.name,
+                start_date=out.start_date,
+                end_date=out.end_date,
+                status=out.status,
+                progress=out.progress,
+                milestones=[_client_milestone(m) for m in visible if m.phase_id == phase.id],
+            )
+            for phase, out in phases
+        ],
+        unphased_milestones=[
+            _client_milestone(m) for m in visible if m.phase_id not in shown_phase_ids
+        ],
     )
 
 

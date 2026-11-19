@@ -1095,6 +1095,61 @@
         "title": "ClientContactOut",
         "type": "object"
       },
+      "ClientMilestoneOut": {
+        "description": "A milestone the PM marked visible to the client. No owner, criteria or task details.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "completed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was reached; null while open.",
+            "title": "Completed On"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "progress": {
+            "description": "0-100.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date",
+          "state",
+          "progress",
+          "completed_on"
+        ],
+        "title": "ClientMilestoneOut",
+        "type": "object"
+      },
       "ClientOrganisationOut": {
         "properties": {
           "id": {
@@ -1112,6 +1167,57 @@
           "name"
         ],
         "title": "ClientOrganisationOut",
+        "type": "object"
+      },
+      "ClientPhaseOut": {
+        "description": "A phase bar on the client's roadmap.",
+        "properties": {
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "milestones": {
+            "description": "Visible milestones, by due date.",
+            "items": {
+              "$ref": "#/components/schemas/ClientMilestoneOut"
+            },
+            "title": "Milestones",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "progress": {
+            "description": "Completed share, 0-100.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PhaseStatus"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "start_date",
+          "end_date",
+          "status",
+          "progress",
+          "milestones"
+        ],
+        "title": "ClientPhaseOut",
         "type": "object"
       },
       "ClientPortalOut": {
@@ -1141,6 +1247,14 @@
             "title": "Summary",
             "type": "object"
           },
+          "upcoming_milestones": {
+            "description": "Visible milestones not done yet, across all projects, by due date (max 10).",
+            "items": {
+              "$ref": "#/components/schemas/ClientUpcomingMilestone"
+            },
+            "title": "Upcoming Milestones",
+            "type": "array"
+          },
           "updates": {
             "description": "Newest published reports, at most 10.",
             "items": {
@@ -1153,6 +1267,7 @@
         "required": [
           "organisation",
           "projects",
+          "upcoming_milestones",
           "updates",
           "summary"
         ],
@@ -1239,9 +1354,28 @@
               }
             ]
           },
+          "milestones": {
+            "description": "Visible milestones, by due date.",
+            "items": {
+              "$ref": "#/components/schemas/ClientMilestoneOut"
+            },
+            "title": "Milestones",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "next_milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextMilestone"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The earliest visible milestone that is not done yet."
           },
           "progress": {
             "description": "Share of the project's tasks that are done, 0-100.",
@@ -1308,9 +1442,11 @@
           "published_on",
           "published_by",
           "latest_update",
+          "next_milestone",
           "description",
           "contacts",
-          "reports"
+          "reports",
+          "milestones"
         ],
         "title": "ClientProjectDetailOut",
         "type": "object"
@@ -1381,6 +1517,17 @@
             "title": "Name",
             "type": "string"
           },
+          "next_milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextMilestone"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The earliest visible milestone that is not done yet."
+          },
           "progress": {
             "description": "Share of the project's tasks that are done, 0-100.",
             "title": "Progress",
@@ -1437,7 +1584,8 @@
           "progress",
           "published_on",
           "published_by",
-          "latest_update"
+          "latest_update",
+          "next_milestone"
         ],
         "title": "ClientProjectOut",
         "type": "object"
@@ -1590,6 +1738,135 @@
           "project_name"
         ],
         "title": "ClientReportOut",
+        "type": "object"
+      },
+      "ClientRoadmapOut": {
+        "properties": {
+          "phases": {
+            "description": "Visible phases, in roadmap order.",
+            "items": {
+              "$ref": "#/components/schemas/ClientPhaseOut"
+            },
+            "title": "Phases",
+            "type": "array"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "range_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range End"
+          },
+          "range_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range Start"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "unphased_milestones": {
+            "description": "Visible milestones outside any visible phase, by due date.",
+            "items": {
+              "$ref": "#/components/schemas/ClientMilestoneOut"
+            },
+            "title": "Unphased Milestones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "project_id",
+          "today",
+          "range_start",
+          "range_end",
+          "phases",
+          "unphased_milestones"
+        ],
+        "title": "ClientRoadmapOut",
+        "type": "object"
+      },
+      "ClientUpcomingMilestone": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "completed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was reached; null while open.",
+            "title": "Completed On"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "progress": {
+            "description": "0-100.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date",
+          "state",
+          "progress",
+          "completed_on",
+          "project_id",
+          "project_name"
+        ],
+        "title": "ClientUpcomingMilestone",
         "type": "object"
       },
       "ClientUpdateOut": {
@@ -2338,6 +2615,64 @@
         "title": "LinkIn",
         "type": "object"
       },
+      "LinkedTaskOut": {
+        "properties": {
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "status_category": {
+            "title": "Status Category",
+            "type": "string"
+          },
+          "status_name": {
+            "title": "Status Name",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "title",
+          "status_name",
+          "status_category",
+          "assignee",
+          "due_date"
+        ],
+        "title": "LinkedTaskOut",
+        "type": "object"
+      },
       "LoginIn": {
         "additionalProperties": false,
         "properties": {
@@ -2568,6 +2903,548 @@
         "title": "MembershipOut",
         "type": "object"
       },
+      "MilestoneCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "at_risk": {
+            "default": false,
+            "title": "At Risk",
+            "type": "boolean"
+          },
+          "client_visible": {
+            "default": false,
+            "description": "Shown on the client's roadmap.",
+            "title": "Client Visible",
+            "type": "boolean"
+          },
+          "completion_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Criteria"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A member of the project.",
+            "title": "Owner Id"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional; a phase of the project.",
+            "title": "Phase Id"
+          }
+        },
+        "required": [
+          "name",
+          "due_date"
+        ],
+        "title": "MilestoneCreate",
+        "type": "object"
+      },
+      "MilestoneDetailOut": {
+        "properties": {
+          "at_risk": {
+            "title": "At Risk",
+            "type": "boolean"
+          },
+          "client_visible": {
+            "title": "Client Visible",
+            "type": "boolean"
+          },
+          "code": {
+            "description": "M-01, M-02 ... per project.",
+            "title": "Code",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completion_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Criteria"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
+          },
+          "progress": {
+            "description": "Done linked tasks / linked tasks, 0-100. Without linked tasks: 100 when done, else 0. Always 100 once done.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          },
+          "tasks": {
+            "description": "Linked tasks (not archived), by key.",
+            "items": {
+              "$ref": "#/components/schemas/LinkedTaskOut"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "tasks_done": {
+            "title": "Tasks Done",
+            "type": "integer"
+          },
+          "tasks_total": {
+            "title": "Tasks Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "phase_id",
+          "code",
+          "name",
+          "description",
+          "completion_criteria",
+          "due_date",
+          "owner",
+          "state",
+          "done",
+          "completed_at",
+          "completed_by",
+          "at_risk",
+          "client_visible",
+          "progress",
+          "tasks_total",
+          "tasks_done",
+          "version",
+          "created_at",
+          "updated_at",
+          "tasks"
+        ],
+        "title": "MilestoneDetailOut",
+        "type": "object"
+      },
+      "MilestoneOut": {
+        "properties": {
+          "at_risk": {
+            "title": "At Risk",
+            "type": "boolean"
+          },
+          "client_visible": {
+            "title": "Client Visible",
+            "type": "boolean"
+          },
+          "code": {
+            "description": "M-01, M-02 ... per project.",
+            "title": "Code",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completion_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Criteria"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
+          },
+          "progress": {
+            "description": "Done linked tasks / linked tasks, 0-100. Without linked tasks: 100 when done, else 0. Always 100 once done.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          },
+          "tasks_done": {
+            "title": "Tasks Done",
+            "type": "integer"
+          },
+          "tasks_total": {
+            "title": "Tasks Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "phase_id",
+          "code",
+          "name",
+          "description",
+          "completion_criteria",
+          "due_date",
+          "owner",
+          "state",
+          "done",
+          "completed_at",
+          "completed_by",
+          "at_risk",
+          "client_visible",
+          "progress",
+          "tasks_total",
+          "tasks_done",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MilestoneOut",
+        "type": "object"
+      },
+      "MilestoneState": {
+        "description": "Worked out when read (first match wins): done, late, at_risk, in_progress, planned.",
+        "enum": [
+          "done",
+          "late",
+          "at_risk",
+          "in_progress",
+          "planned"
+        ],
+        "title": "MilestoneState",
+        "type": "string"
+      },
+      "MilestoneUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus only the fields that change. `done: true` marks the milestone\nreached (by you, now); `done: false` opens it again. Null clears an optional field.",
+        "properties": {
+          "at_risk": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Risk"
+          },
+          "client_visible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Visible"
+          },
+          "completion_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Criteria"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "done": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Done"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "MilestoneUpdate",
+        "type": "object"
+      },
       "MyDashboard": {
         "description": "The signed-in user's tasks and projects (developer landing data).",
         "properties": {
@@ -2625,6 +3502,40 @@
           "name"
         ],
         "title": "NewClientIn",
+        "type": "object"
+      },
+      "NextMilestone": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date",
+          "state"
+        ],
+        "title": "NextMilestone",
         "type": "object"
       },
       "OrganisationBrief": {
@@ -2971,6 +3882,257 @@
           "email"
         ],
         "title": "PersonBrief",
+        "type": "object"
+      },
+      "PhaseCreate": {
+        "additionalProperties": false,
+        "description": "A new phase goes to the end of the roadmap (reorder with PUT /phases/order).",
+        "properties": {
+          "client_visible": {
+            "default": false,
+            "description": "Shown on the client's roadmap.",
+            "title": "Client Visible",
+            "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "start_date",
+          "end_date"
+        ],
+        "title": "PhaseCreate",
+        "type": "object"
+      },
+      "PhaseOrder": {
+        "additionalProperties": false,
+        "properties": {
+          "phase_ids": {
+            "description": "Every active phase of the project, in the new order.",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Phase Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "phase_ids"
+        ],
+        "title": "PhaseOrder",
+        "type": "object"
+      },
+      "PhaseOut": {
+        "properties": {
+          "client_visible": {
+            "title": "Client Visible",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_late": {
+            "description": "End date passed and the phase is not completed.",
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "milestones_done": {
+            "title": "Milestones Done",
+            "type": "integer"
+          },
+          "milestones_total": {
+            "title": "Milestones Total",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "progress": {
+            "description": "Completed share, 0-100: done tasks of the phase's milestones; without linked tasks, the share of its milestones that are done.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PhaseStatus"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "name",
+          "description",
+          "start_date",
+          "end_date",
+          "position",
+          "client_visible",
+          "status",
+          "is_late",
+          "progress",
+          "milestones_total",
+          "milestones_done",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PhaseOut",
+        "type": "object"
+      },
+      "PhaseStatus": {
+        "description": "Shown under the phase name on the roadmap.",
+        "enum": [
+          "not_started",
+          "in_progress",
+          "completed"
+        ],
+        "title": "PhaseStatus",
+        "type": "string"
+      },
+      "PhaseUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus only the fields that change.",
+        "properties": {
+          "client_visible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Visible"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "PhaseUpdate",
         "type": "object"
       },
       "PmDashboard": {
@@ -4168,6 +5330,184 @@
         "title": "ReportState",
         "type": "string"
       },
+      "RoadmapOut": {
+        "description": "Everything the roadmap screen draws, in one call.",
+        "properties": {
+          "phases": {
+            "description": "In roadmap order.",
+            "items": {
+              "$ref": "#/components/schemas/RoadmapPhaseOut"
+            },
+            "title": "Phases",
+            "type": "array"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "range_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest of project target end, phase ends and milestone dates.",
+            "title": "Range End"
+          },
+          "range_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Earliest of project start, phase starts and milestone dates.",
+            "title": "Range Start"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "unphased_milestones": {
+            "description": "Milestones not in any phase, by due date.",
+            "items": {
+              "$ref": "#/components/schemas/MilestoneOut"
+            },
+            "title": "Unphased Milestones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "project_id",
+          "today",
+          "range_start",
+          "range_end",
+          "phases",
+          "unphased_milestones"
+        ],
+        "title": "RoadmapOut",
+        "type": "object"
+      },
+      "RoadmapPhaseOut": {
+        "properties": {
+          "client_visible": {
+            "title": "Client Visible",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_late": {
+            "description": "End date passed and the phase is not completed.",
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "milestones": {
+            "description": "By due date.",
+            "items": {
+              "$ref": "#/components/schemas/MilestoneOut"
+            },
+            "title": "Milestones",
+            "type": "array"
+          },
+          "milestones_done": {
+            "title": "Milestones Done",
+            "type": "integer"
+          },
+          "milestones_total": {
+            "title": "Milestones Total",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "progress": {
+            "description": "Completed share, 0-100: done tasks of the phase's milestones; without linked tasks, the share of its milestones that are done.",
+            "title": "Progress",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PhaseStatus"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "name",
+          "description",
+          "start_date",
+          "end_date",
+          "position",
+          "client_visible",
+          "status",
+          "is_late",
+          "progress",
+          "milestones_total",
+          "milestones_done",
+          "version",
+          "created_at",
+          "updated_at",
+          "milestones"
+        ],
+        "title": "RoadmapPhaseOut",
+        "type": "object"
+      },
       "StakeholderCreate": {
         "additionalProperties": false,
         "properties": {
@@ -4986,6 +6326,19 @@
             "title": "Labels",
             "type": "array"
           },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A milestone of the project (project leads only).",
+            "title": "Milestone Id"
+          },
           "priority": {
             "$ref": "#/components/schemas/TaskPriority",
             "default": "medium"
@@ -5196,6 +6549,19 @@
             "title": "Labels",
             "type": "array"
           },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The linked milestone.",
+            "title": "Milestone Id"
+          },
           "priority": {
             "$ref": "#/components/schemas/TaskPriority"
           },
@@ -5402,6 +6768,19 @@
               }
             ],
             "title": "Labels"
+          },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project leads only; null removes the link.",
+            "title": "Milestone Id"
           },
           "priority": {
             "anyOf": [
@@ -6810,6 +8189,50 @@
         ]
       }
     },
+    "/api/v1/client/projects/{project_id}/roadmap": {
+      "get": {
+        "description": "The project roadmap: visible phases (bars with status and completed share) and visible\nmilestones (diamonds with state), plus the date range and today.",
+        "operationId": "get_roadmap_api_v1_client_projects__project_id__roadmap_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRoadmapOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Roadmap",
+        "tags": [
+          "client"
+        ]
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "description": "PMs and Managers: metrics for active projects plus the blocked and overdue tasks. A PM gets\ntheir own projects, a Manager all of them.",
@@ -7206,6 +8629,25 @@
               "description": "Past due and not in a done status",
               "title": "Overdue",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Tasks linked to this milestone",
+            "in": "query",
+            "name": "milestone_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks linked to this milestone",
+              "title": "Milestone Id"
             }
           },
           {
@@ -8892,6 +10334,634 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/milestones": {
+      "get": {
+        "description": "Active milestones by due date; `phase_id` narrows to one phase.",
+        "operationId": "list_milestones_api_v1_projects__project_id__milestones_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "phase_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Phase Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MilestoneOut"
+                  },
+                  "title": "Response List Milestones Api V1 Projects  Project Id  Milestones Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Milestones",
+        "tags": [
+          "milestones"
+        ]
+      },
+      "post": {
+        "description": "Gets the next code (M-01, M-02 ...). Link tasks with `milestone_id` on the task.",
+        "operationId": "create_milestone_api_v1_projects__project_id__milestones_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Milestone",
+        "tags": [
+          "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/milestones/{milestone_id}": {
+      "delete": {
+        "description": "Archives it; its tasks lose the link. The row stays.",
+        "operationId": "archive_milestone_api_v1_projects__project_id__milestones__milestone_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "milestone_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Milestone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Milestone",
+        "tags": [
+          "milestones"
+        ]
+      },
+      "get": {
+        "description": "With its linked tasks.",
+        "operationId": "get_milestone_api_v1_projects__project_id__milestones__milestone_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "milestone_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Milestone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Milestone",
+        "tags": [
+          "milestones"
+        ]
+      },
+      "patch": {
+        "description": "Also marks it reached (`done: true`) or opens it again (`done: false`).",
+        "operationId": "update_milestone_api_v1_projects__project_id__milestones__milestone_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "milestone_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Milestone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Milestone",
+        "tags": [
+          "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/phases": {
+      "get": {
+        "description": "Active phases in roadmap order.",
+        "operationId": "list_phases_api_v1_projects__project_id__phases_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PhaseOut"
+                  },
+                  "title": "Response List Phases Api V1 Projects  Project Id  Phases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Phases",
+        "tags": [
+          "milestones"
+        ]
+      },
+      "post": {
+        "description": "Added at the end of the roadmap.",
+        "operationId": "create_phase_api_v1_projects__project_id__phases_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Phase",
+        "tags": [
+          "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/phases/order": {
+      "put": {
+        "description": "Send every active phase once, in the new order.",
+        "operationId": "reorder_phases_api_v1_projects__project_id__phases_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhaseOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reorder Phases",
+        "tags": [
+          "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/phases/{phase_id}": {
+      "delete": {
+        "description": "Archives an empty phase (409 PHASE_HAS_MILESTONES otherwise). The row stays.",
+        "operationId": "archive_phase_api_v1_projects__project_id__phases__phase_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "phase_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Phase Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Phase",
+        "tags": [
+          "milestones"
+        ]
+      },
+      "get": {
+        "operationId": "get_phase_api_v1_projects__project_id__phases__phase_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "phase_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Phase Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Phase",
+        "tags": [
+          "milestones"
+        ]
+      },
+      "patch": {
+        "operationId": "update_phase_api_v1_projects__project_id__phases__phase_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "phase_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Phase Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhaseUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhaseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Phase",
+        "tags": [
+          "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/roadmap": {
+      "get": {
+        "description": "The roadmap screen in one call: date range, today, phases in order with their status,\ncompleted share and milestones, and milestones outside any phase.",
+        "operationId": "get_roadmap_api_v1_projects__project_id__roadmap_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoadmapOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Roadmap",
+        "tags": [
+          "milestones"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/stakeholders": {
       "get": {
         "description": "Contact details, so only people who manage the register can read it.",
@@ -9979,6 +12049,25 @@
             }
           },
           {
+            "description": "Tasks linked to this milestone",
+            "in": "query",
+            "name": "milestone_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks linked to this milestone",
+              "title": "Milestone Id"
+            }
+          },
+          {
             "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
@@ -10282,6 +12371,25 @@
               "description": "Past due and not in a done status",
               "title": "Overdue",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Tasks linked to this milestone",
+            "in": "query",
+            "name": "milestone_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks linked to this milestone",
+              "title": "Milestone Id"
             }
           },
           {
@@ -10644,6 +12752,25 @@
             }
           },
           {
+            "description": "Tasks linked to this milestone",
+            "in": "query",
+            "name": "milestone_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks linked to this milestone",
+              "title": "Milestone Id"
+            }
+          },
+          {
             "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
@@ -10895,6 +13022,25 @@
               "description": "Past due and not in a done status",
               "title": "Overdue",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Tasks linked to this milestone",
+            "in": "query",
+            "name": "milestone_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks linked to this milestone",
+              "title": "Milestone Id"
             }
           },
           {
