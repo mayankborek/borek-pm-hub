@@ -23,7 +23,7 @@ const SayContext = createContext<(message: string) => void>(() => undefined);
 /** Shows a short toast, as the design does for actions that have no backend yet. */
 export const useSay = () => useContext(SayContext);
 
-export function Toast({ children }: { children: ReactNode }) {
+function Toast({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState('');
   const [shown, setShown] = useState(false);
   const timer = useRef<number | undefined>(undefined);

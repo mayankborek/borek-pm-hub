@@ -168,3 +168,9 @@
 .am .field{display:block;flex:none}
 .am .field label{font-weight:400}
 .am .settings{max-width:none;margin:0;padding:32px 0 0}
+
+/* Account settings (i3): indented heading, widely spaced menu, square panel. */
+.am .settings{padding-left:56px}
+.am .snav a{padding:14px 14px;margin-bottom:12px;font-size:14px}
+.am .spanel{border-radius:0;padding:28px 32px}
+.am .trow{padding:26px 0 40px}

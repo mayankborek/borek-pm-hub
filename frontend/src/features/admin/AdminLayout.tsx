@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import logo from '@/assets/borek-flow-portal-logo.svg';
 import { initialsOf } from '@/features/client/format';
-import { Toast } from '@/features/accountManager/AccountManagerLayout';
 import '@/features/accountManager/am.css';
 import './admin.css';
 
@@ -31,7 +30,6 @@ export function AdminLayout() {
 
   return (
     <div className="am">
-      <Toast>
       <div className="shell">
         <aside className="sidebar">
           <Link to={paths.adminUsers} aria-label={t('Borek Flow home')}>
@@ -70,7 +68,6 @@ export function AdminLayout() {
           </main>
         </div>
       </div>
-      </Toast>
     </div>
   );
 }
