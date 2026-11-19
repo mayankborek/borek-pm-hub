@@ -7,18 +7,18 @@
 }
 /* Dark mode: same palette as the staff app (global.css). */
 :root[data-theme=dark] .cp{
-  --navy:#e8edf7; --slate:#b6c2d5; --mute:#8d9ab0; --blue:#a9c9ff;
-  --bg:#121a29; --line:#344258;
+  --navy:#f3f4f8; --slate:#aab3c5; --mute:#8d9ab0; --blue:#8fb4f5;
+  --bg:#0d1321; --line:#2d3a55;
   --green-bg:#16382f; --green:#8ce7b9; --red:#ffa7a2; --red-bg:#3f222a; --orange:#ffb199;
-  --field-border:#64748b; --navy-hover:#264fa6;
+  --field-border:#64748b; --navy-hover:#5a60c8;
 }
 :root[data-theme=dark] .cp-badge.cp-success{background:#16382f;color:#8ce7b9}
 :root[data-theme=dark] .cp-badge.cp-warning{background:#3b2d16;color:#f7d794}
 :root[data-theme=dark] .cp-badge.cp-danger{background:#3f222a;color:#ffa7a2}
 :root[data-theme=dark] .cp-badge.cp-info{background:#1d3153;color:#a9c9ff}
-:root[data-theme=dark] .cp-pbtn.cp-primary,:root[data-theme=dark] .ad-btn:not(.ad-btn--ghost){background:#3263c9;border-color:#3263c9;color:#fff}
-:root[data-theme=dark] .cp-pbtn.cp-primary:hover,:root[data-theme=dark] .ad-btn:not(.ad-btn--ghost):hover{background:#264fa6}
-:root[data-theme=dark] .cp-toggle[aria-checked=true]{background:#3263c9}
+:root[data-theme=dark] .cp-pbtn.cp-primary,:root[data-theme=dark] .ad-btn:not(.ad-btn--ghost){background:#4a4fb5;border-color:#4a4fb5;color:#fff}
+:root[data-theme=dark] .cp-pbtn.cp-primary:hover,:root[data-theme=dark] .ad-btn:not(.ad-btn--ghost):hover{background:#5a60c8}
+:root[data-theme=dark] .cp-toggle[aria-checked=true]{background:#4a4fb5}
 :root[data-theme=dark] .cp-toggle:not([aria-checked=true]){background:#526179}
 :root[data-theme=dark] .cp-notif{box-shadow:0 8px 24px rgba(0,0,0,.5)}
 :root[data-theme=dark] .ad-overlay{background:rgba(0,0,0,.6)}
@@ -177,15 +177,25 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 .cp-notif-item:hover .cp-notif-headline{text-decoration:underline}
 
 /* Project contacts */
-.cp-section-title{margin-top:26px;font-size:20px;font-weight:600;line-height:24px}
-.cp-section-sub{margin-top:17px;color:var(--muted);font-size:14px;line-height:17px}
-.cp-contact{width:560px;max-width:100%;margin-top:17px;padding:16px;border:1px solid var(--line);background:#fff}
-.cp-contact-head{display:flex;align-items:center;gap:12px}
-.cp-contact-initials{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--line-soft);font-size:16px;font-weight:600;line-height:20px}
-.cp-contact-name{font-size:20px;font-weight:600;line-height:24px}
-.cp-contact-role{margin-left:21px;color:var(--muted);font-size:14px;line-height:17px}
-.cp-contact-email{display:block;margin-top:14px;font-size:14px;line-height:17px}
-.cp-contact-tel{margin-top:13px;color:var(--muted);font-size:12px;line-height:15px}
+.cp-section-title{margin-top:40px;font-size:26px;font-weight:600;line-height:24px}
+.cp-section-sub{margin-top:22px;color:var(--muted);font-size:17px;line-height:21px}
+.cp-contact{margin-top:22px;display:grid;grid-template-columns:minmax(260px,1fr) 1.9fr;align-items:stretch;padding:28px 40px;border:1px solid var(--line);background:var(--surface)}
+.cp-contact-person{display:flex;align-items:center;gap:28px;padding-right:32px;border-right:1px solid var(--line)}
+.cp-contact-initials{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:56px;height:56px;background:var(--surface-2);font-size:13px;font-weight:600}
+.cp-contact-name{font-size:23px;font-weight:500;line-height:28px}
+.cp-contact-role{margin-top:6px;color:var(--muted);font-size:17px;line-height:21px}
+.cp-contact-details{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 60px 0 48px}
+.cp-contact-label{color:var(--muted);font-size:13px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.cp-contact-email{display:inline-block;margin-top:12px;font-size:19px}
+.cp-contact-tel{margin-top:8px;color:var(--muted);font-size:14px}
+.cp-contact-btn{display:inline-flex;align-items:center;gap:12px;padding:16px 20px;background:#4a4fb5;color:#fff;font-size:17px;font-weight:600;white-space:nowrap;transition:background .15s ease}
+:where(.cp) a.cp-contact-btn{color:#fff}
+.cp-contact-btn:hover{background:#5a60c8;text-decoration:none}
+@media (max-width:860px){
+  .cp-contact{grid-template-columns:1fr;gap:24px;padding:24px}
+  .cp-contact-person{padding:0 0 24px;border-right:0;border-bottom:1px solid var(--line)}
+  .cp-contact-details{flex-direction:column;align-items:flex-start;padding:0}
+}
 
 /* Profile */
 .cp-profile{width:100%;max-width:1040px;margin:0;padding:0 0 32px}

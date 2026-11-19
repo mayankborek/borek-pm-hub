@@ -529,6 +529,7 @@ export const DE: Record<string, string> = {
 
   // Client portal (profile, contacts, notifications)
   'Project contacts': 'Projektkontakte',
+  'Send email': 'E-Mail senden',
   'Contact your Project Manager for delivery questions and shared updates.': 'Wenden Sie sich bei Fragen zur Lieferung und für geteilte Updates an Ihren Projektleiter.',
   'Tel: {phone}': 'Tel.: {phone}',
   'Notifications ({n} unread)': 'Benachrichtigungen ({n} ungelesen)',
