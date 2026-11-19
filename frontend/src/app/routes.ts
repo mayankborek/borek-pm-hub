@@ -49,6 +49,9 @@ export const paths = {
   amReports: (id: string) => `/account-manager/projects/${id}/reports`,
   amReport: (id: string, reportId: string) => `/account-manager/projects/${id}/reports/${reportId}`,
   amStakeholders: (id: string) => `/account-manager/projects/${id}/stakeholders`,
+  amSecurity: '/account-manager/profile/security',
+  amNotifications: '/account-manager/profile/notifications',
+  amPreferences: '/account-manager/profile/preferences',
 } as const;
 
 /** Client pages carry the invitation token in the query string so the flow can resume at any step. */

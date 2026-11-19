@@ -21,6 +21,11 @@ import { ClientProfilePage } from '@/features/client/ClientProfilePage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLayout';
 import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
+import { AmHomePage } from '@/features/accountManager/AmHomePage';
+import { AmProjectsPage } from '@/features/accountManager/AmProjectsPage';
+import { AmProjectLayout } from '@/features/accountManager/AmProjectLayout';
+import { AmOverviewPage } from '@/features/accountManager/AmOverviewPage';
+import { AmNotificationsPage, AmPreferencesPage, AmProfilePage, AmSecurityPage } from '@/features/accountManager/AmSettingsPages';
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 import { AdminUserPage } from '@/features/admin/AdminUserPage';
@@ -101,14 +106,17 @@ export const router = createBrowserRouter([
             path: 'account-manager',
             element: <AccountManagerLayout />,
             children: [
-              { index: true, element: <ClientHomePage /> },
-              { path: 'profile', element: <ClientProfilePage /> },
-              { path: 'projects', element: <ClientProjectsPage /> },
+              { index: true, element: <AmHomePage /> },
+              { path: 'profile', element: <AmProfilePage /> },
+              { path: 'profile/security', element: <AmSecurityPage /> },
+              { path: 'profile/notifications', element: <AmNotificationsPage /> },
+              { path: 'profile/preferences', element: <AmPreferencesPage /> },
+              { path: 'projects', element: <AmProjectsPage /> },
               {
                 path: 'projects/:projectId',
-                element: <ClientProjectLayout />,
+                element: <AmProjectLayout />,
                 children: [
-                  { index: true, element: <ClientOverviewPage /> },
+                  { index: true, element: <AmOverviewPage /> },
                   { path: 'milestones', element: <ClientMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },

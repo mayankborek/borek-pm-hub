@@ -1,76 +1,102 @@
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import borekLogo from '@/assets/borek-logo-nav.svg';
-import borekLogoDark from '@/assets/borek-logo.png';
-import { ThemeToggle } from '@/shared/ui/ThemeToggle';
+import logo from '@/assets/borek-flow-portal-logo.svg';
 import { initialsOf } from '@/features/client/format';
-import '@/features/client/clientPortal.css';
-import '@/features/admin/admin.css';
+import './am.css';
 
-/** Top bar title per screen (borek-flow): Overview and a single report are named, other project tabs say "Account Manager". */
+const SETTINGS: string[] = [paths.amProfile, paths.amSecurity, paths.amNotifications, paths.amPreferences];
+
+/** Top bar title per screen (borek-flow-portal): Home, Projects, a project's Overview, Profile. */
 function titleFor(pathname: string) {
-  if (pathname === paths.amHome) return 'Overview';
-  if (pathname === paths.amProfile) return 'Profile';
+  if (pathname === paths.amHome) return 'Home';
+  if (SETTINGS.includes(pathname)) return 'Profile';
   if (pathname === paths.amProjects) return 'Projects';
   if (/^\/account-manager\/projects\/[^/]+\/?$/.test(pathname)) return 'Overview';
   if (/^\/account-manager\/projects\/[^/]+\/reports\/[^/]+\/?$/.test(pathname)) return 'Report details';
   return 'Account Manager';
 }
 
-/** Account Manager portal. Same shell (sidebar, top bar, theme and language switches) as the client and admin views. */
+const SayContext = createContext<(message: string) => void>(() => undefined);
+/** Shows a short toast, as the design does for actions that have no backend yet. */
+export const useSay = () => useContext(SayContext);
+
+function Toast({ children }: { children: ReactNode }) {
+  const [message, setMessage] = useState('');
+  const [shown, setShown] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const say = useCallback((m: string) => {
+    setMessage(m);
+    setShown(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setShown(false), 1800);
+  }, []);
+  return (
+    <SayContext.Provider value={say}>
+      {children}
+      <div className={shown ? 'toast show' : 'toast'} role="status">{message}</div>
+    </SayContext.Provider>
+  );
+}
+
+function Bell() {
+  const say = useSay();
+  const { t } = usePrefs();
+  return (
+    <button type="button" className="bell" aria-label={t('Notifications')} onClick={() => say(t('No new notifications'))}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+        <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+      </svg>
+    </button>
+  );
+}
+
+/** Account Manager portal shell, built from borek-flow-portal: sidebar (Overview, Projects), top bar with bell and profile. */
 export function AccountManagerLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const { lang, setLang, t, theme } = usePrefs();
+  const { t } = usePrefs();
   if (!user) return null;
+  // Profile and its settings pages have no sidebar.
+  const settings = SETTINGS.includes(pathname);
 
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <Link className="brand" to={paths.amHome} aria-label={t('Borek Flow home')}>
-          <img src={theme === 'dark' ? borekLogoDark : borekLogo} alt="BOREK Solutions Group" width={112} height={26} />
-          <span>Borek Flow</span>
-        </Link>
-        <nav aria-label={t('Main')}>
-          <NavLink to={paths.amHome} end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            {t('Overview')}
-          </NavLink>
-          <NavLink to={paths.amProjects} className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            {t('Projects')}
-          </NavLink>
-        </nav>
-      </aside>
-
-      <div className="main">
-        <header className="topbar">
-          <div className="topbar-row">
-            <h1 className="topbar-title">{t(titleFor(pathname))}</h1>
-            <div className="topbar-actions">
-              <ThemeToggle />
-              <div className="lang-switch" role="group" aria-label={t('Language')}>
-                <button type="button" aria-pressed={lang === 'de'} onClick={() => setLang('de')}>DE</button>
-                <i />
-                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
-              </div>
-              <i className="topbar-divider" />
-              <Link to={paths.amProfile} className="user">
-                <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
-                <span className="user-name">{user.name}</span>
+    <div className="am">
+      <Toast>
+        <div className={settings ? 'shell no-side' : 'shell'}>
+          {!settings && (
+            <aside className="sidebar">
+              <Link to={paths.amHome} aria-label={t('Borek Flow home')}>
+                <img className="logo" src={logo} alt="BOREK Solutions Group" />
               </Link>
-            </div>
+              <div className="sub">Borek Flow</div>
+              <nav className="nav" aria-label={t('Main')}>
+                <NavLink to={paths.amHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Overview')}</NavLink>
+                <NavLink to={paths.amProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
+              </nav>
+            </aside>
+          )}
+          <div className="main">
+            <header className="topbar">
+              <h2>{t(titleFor(pathname))}</h2>
+              <div className="right">
+                <Bell />
+                <Link to={paths.amProfile} className="user">
+                  <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
+                  {user.name}
+                </Link>
+              </div>
+            </header>
+            <main className="content" style={settings ? { maxWidth: 'none' } : undefined}>
+              <Outlet />
+            </main>
           </div>
-          <div className="splash" aria-hidden="true">
-            <i /><i /><i /><i />
-          </div>
-        </header>
-        <main className="content">
-          <div className="fit cp ad">
-            <Outlet />
-          </div>
-        </main>
-      </div>
+        </div>
+      </Toast>
     </div>
   );
 }
