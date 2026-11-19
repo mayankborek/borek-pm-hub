@@ -173,7 +173,9 @@
 .am .settings{padding-left:50px}
 .am .snav a{padding:14px 14px;margin-bottom:12px;font-size:14px}
 .am .spanel{border-radius:8px;padding:28px 32px}
-.am .trow{padding:26px 0 40px}
+.am .trow{padding:16px 0 18px}
+.am .trow p{margin-top:4px}
+.am .spanel:has(.trow){min-height:0}
 
 /* Admin-style building blocks (dialogs, fields) read the portal palette inside the Account Manager. */
 .am{--slate:var(--muted);--surface:var(--card);--mute:var(--muted2);--red:var(--bad)}
