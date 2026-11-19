@@ -78,6 +78,12 @@ export function AdminOrganisationPage() {
 
       <ul className="ad-members">
         {members.isPending && <li className="ad-empty-row">{t('Loading users')}</li>}
+        {members.isError && (
+          <li className="ad-empty-row" role="alert">
+            {describeApiError(members.error, t('We couldn’t load members'))}{' '}
+            <button type="button" className="ad-link" onClick={() => members.refetch()}>{t('Retry')}</button>
+          </li>
+        )}
         {members.data && !people.length && <li className="ad-empty-row">{t('No members yet.')}</li>}
         {people.map((m) => (
           <li className="ad-member" key={m.id}>
