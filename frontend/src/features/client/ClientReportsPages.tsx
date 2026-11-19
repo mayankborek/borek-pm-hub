@@ -1,15 +1,13 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { dateRange, longDate } from './format';
+import { dateRange, longDate, paddedDate } from './format';
+import { Icon } from './icons';
 import { useProjectContext } from './ClientProjectLayout';
 import { EmptyCard } from './ui';
+import './clientScreens.css';
 
-const downloadIcon = (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-    <path d="M7 1.5v8M10 6.5l-3 3-3-3M2 10.5v2h10v-2" stroke="#124F94" strokeWidth="1.4" />
-  </svg>
-);
 const backIcon = (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
     <path d="M10.5 6H1.5M5 2.5L1.5 6 5 9.5" stroke="#124F94" strokeWidth="1.4" />
@@ -20,38 +18,56 @@ export function ClientReportsPage() {
   const pp = usePortalPaths();
   const { project } = useProjectContext();
   const { t, lang } = usePrefs();
+  const [search, setSearch] = useState('');
+
+  const q = search.trim().toLowerCase();
+  const shown = project.reports.filter((r) => !q || r.title.toLowerCase().includes(q));
 
   return (
     <>
-      <h2 className="cp-sec" style={{ fontSize: 20, marginTop: 32 }}>{t('Reports')}</h2>
-      <p className="cp-sub" style={{ marginTop: 10 }}>{t('View published reports shared with your organisation.')}</p>
-      {!project.reports.length && <EmptyCard />}
-      {project.reports.length > 0 && (
-      <div className="cp-rt">
-        <div className="cp-h">
-          <span>{t('Report')}</span>
-          <span>{t('Reporting period')}</span>
-          <span>{t('Created on')}</span>
-          <span>{t('Status')}</span>
-          <span />
-        </div>
-        {project.reports.map((r) => (
-          <div className="cp-r" key={r.id}>
-            <Link to={pp.report(project.id, r.id)}><b>{r.title}</b></Link>
-            <span>{dateRange(lang, r.periodStart, r.periodEnd)}</span>
-            <span>{longDate(lang, r.createdOn)}</span>
-            <span className="cp-pub">{t('Published')}</span>
-            <button type="button" className="cp-dl" onClick={() => window.print()}>
-              {downloadIcon}
-              {t('Download')}
-            </button>
-          </div>
-        ))}
+      <section className="cx-rh">
+        <h1>{t('Reports')}</h1>
+        <p>{t('View reports shared with you by your Project Manager.')}</p>
+      </section>
+      <div className="cx-rf">
+        <span className="cx-rchip">{t('All reports')} <span>{project.reports.length}</span></span>
+        <label className="cx-search">
+          <Icon name="search" className="cx-ico cx-14" />
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search reports…')} aria-label={t('Search reports')} />
+        </label>
       </div>
+      {!project.reports.length ? (
+        <EmptyCard />
+      ) : (
+        <section className="cx-card cx-lib" aria-label={t('Report library')}>
+          <div className="cx-lhd"><b>{t('Report library')}</b><span>{project.name}</span></div>
+          <div className="cx-cols">
+            <span>{t('Report')}</span>
+            <span>{t('Reporting period')}</span>
+            <span>{t('Published')}</span>
+            <span>{t('Status')}</span>
+            <span />
+          </div>
+          {shown.map((r) => (
+            <div className="cx-rr" key={r.id}>
+              <div className="cx-nm2">
+                <span className="cx-ib"><Icon name="file" className="cx-ico cx-18" /></span>
+                <div>
+                  <div className="cx-t"><Link to={pp.report(project.id, r.id)}>{r.title}</Link></div>
+                  <div className="cx-s">{t('Project status · Shared by {name}', { name: project.publishedBy.name })}</div>
+                </div>
+              </div>
+              <div className="cx-d">{dateRange(lang, r.periodStart, r.periodEnd)}</div>
+              <div className="cx-d">{paddedDate(lang, r.createdOn)}</div>
+              <div><span className="cx-st"><i />{t('Published')}</span></div>
+              <button type="button" className="cx-btn cx-dl" onClick={() => window.print()}>
+                <Icon name="download" className="cx-ico cx-14" /> {t('Download')}
+              </button>
+            </div>
+          ))}
+          <div className="cx-cnt">{t('{n} reports', { n: shown.length })}</div>
+        </section>
       )}
-      <p className="cp-small" style={{ marginTop: 16 }}>
-        {t('Reports include only published information shared with your organisation.')}
-      </p>
     </>
   );
 }

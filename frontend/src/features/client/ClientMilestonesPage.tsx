@@ -3,115 +3,85 @@ import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { longDate, shortDate } from './format';
 import { useProjectContext } from './ClientProjectLayout';
-import type { ClientMilestone } from './types';
-import { MILESTONE_BADGE, MILESTONE_STATUS, NODE_FILL } from './labels';
-import { Bar, MilestoneCard } from './ui';
-
-// The curve, node slots and "today" marker are fixed by the design (a 1160x520 canvas with two milestones).
-const SLOTS = [
-  { x: 330, y: 244, left: 311, top: 10 },
-  { x: 850, y: 244, left: 831, top: 66 },
-] as const;
-const TODAY = { x: 473.75, y: 309 };
-const BEFORE_TODAY = 'M0 374C170 374 190 244 330 244C395 244 432.5 276.5 473.75 309';
-const AFTER_TODAY = 'M473.75 309C522 348 572 374 640 374C752 374 752 244 850 244C952 244 1052 270 1160 294';
-const DASH = { stroke: '#7D879C', strokeWidth: 3, strokeDasharray: '7 7' };
-const SOLID = { stroke: '#124F94', strokeWidth: 4, strokeLinecap: 'round' as const };
-
-function Node({ m, n, x, y }: { m: ClientMilestone; n: number; x: number; y: number }) {
-  if (m.state === 'planned') {
-    return (
-      <>
-        <circle cx={x} cy={y} r="18" fill="#fff" stroke="#7D879C" strokeWidth="2.5" strokeDasharray="3 4" />
-        <text x={x} y={y + 6} textAnchor="middle" fill="#5C6178" fontSize="16" fontWeight="500" fontFamily="Inter,sans-serif">{n}</text>
-      </>
-    );
-  }
-  return (
-    <>
-      <circle cx={x} cy={y} r="19" fill={NODE_FILL[m.state]} />
-      <text x={x} y={y + 6} textAnchor="middle" fill="#fff" fontSize="16" fontWeight="600" fontFamily="Inter,sans-serif">{n}</text>
-    </>
-  );
-}
+import { MILESTONE_STATUS } from './labels';
 
 export function ClientMilestonesPage() {
   const pp = usePortalPaths();
   const { project, today } = useProjectContext();
   const { t, lang } = usePrefs();
 
-  const milestones = [...project.milestones].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, SLOTS.length);
-  const passed = milestones.filter((m) => m.state === 'done' || m.dueDate < today).length;
+  const milestones = [...project.milestones].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const manager = project.publishedBy;
 
+  const DAY = 86_400_000;
+  const day = (iso: string) => Date.parse(iso + 'T00:00:00Z') / DAY;
+  const start = Math.min(day(project.startDate), day(today), ...milestones.map((m) => day(m.dueDate)));
+  const end = Math.max(day(project.dueDate), day(today), ...milestones.map((m) => day(m.requestedDate ?? m.dueDate)));
+  const span = Math.max(end - start, 1);
+  const pct = (iso: string) => `${((day(iso) - start) / span) * 100}%`;
+  const ticks = Array.from({ length: 5 }, (_, i) => new Date((start + (span * i) / 4) * DAY).toISOString().slice(0, 10));
+  const range = `${shortDate(lang, new Date(start * DAY).toISOString().slice(0, 10))}–${longDate(lang, new Date(end * DAY).toISOString().slice(0, 10))}`;
+
   return (
-    <>
-      <h2 className="cp-sec" style={{ fontSize: 20, marginTop: 32, fontWeight: 600 }}>{t('Milestones')}</h2>
-      <p className="cp-sub" style={{ marginTop: 0 }}>
+    <section className="cp-card cp-rm" aria-label={t('Project roadmap')}>
+      <h2>{t('Project roadmap')}</h2>
+      <p>{t('Project phases and delivery milestones · {range}', { range })}</p>
+      <div className="cp-gantt">
+        <div className="cp-g-axis">
+          {ticks.map((d, i) => (
+            <span key={d} style={{ left: pct(d), transform: i === 0 ? 'none' : i === ticks.length - 1 ? 'translateX(-100%)' : undefined }}>{shortDate(lang, d)}</span>
+          ))}
+        </div>
+        <div className="cp-g-body">
+          <div className="cp-g-ov">
+            {ticks.map((d) => <i key={d} className="cp-g-grid" style={{ left: pct(d) }} />)}
+            <div className="cp-g-today" style={{ left: pct(today) }}><em>{t('Today · {date}', { date: shortDate(lang, today) })}</em></div>
+          </div>
+          {milestones.map((m, i) => {
+            const status = MILESTONE_STATUS[m.state];
+            const from = i === 0 ? project.startDate : milestones[i - 1].dueDate;
+            const reached = m.state === 'done' || m.dueDate < today;
+            const left = day(from) - start;
+            const width = Math.max(day(m.dueDate) - day(from), 1);
+            const bad = m.state === 'late' || m.state === 'revised';
+            return (
+              <div className="cp-g-row" key={m.id}>
+                <div className="cp-g-label">
+                  <b>{m.name}</b>
+                  <span>{t(status.label)}</span>
+                </div>
+                <div className="cp-g-track">
+                  <div className="cp-g-bar" style={{ left: `${(left / span) * 100}%`, width: `${(width / span) * 100}%` }}>
+                    <i style={{ width: `${m.progress}%` }} />
+                  </div>
+                  <span className={`cp-g-dia${reached ? ' cp-on' : ''}`} style={{ left: pct(m.dueDate) }} />
+                  <div className="cp-g-note" style={{ left: pct(m.dueDate) }}>
+                    <b>{m.name}</b>
+                    <span className={bad ? 'cp-bad' : undefined}>
+                      {shortDate(lang, m.dueDate)}{bad ? ` · ${t(status.label)}` : ''}
+                    </span>
+                    {m.requestedDate && <span>{t('New date requested: {date}', { date: longDate(lang, m.requestedDate) })}</span>}
+                    {m.changeRequestRef && (m.state === 'late' || m.state === 'revised' || m.state === 'in_progress') && (
+                      <Link to={pp.changeRequests(project.id)}>{t('See the change request ({ref})', { ref: m.changeRequestRef })}</Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="cp-g-legend">
+          <span><i className="cp-sq" />{t('Completed share')}</span>
+          <span><i className="cp-sq cp-rest" />{t('Remaining work')}</span>
+          <span><i className="cp-dm cp-on" />{t('Milestone reached')}</span>
+          <span><i className="cp-dm" />{t('Milestone ahead')}</span>
+          <span><i className="cp-tl" />{t('Today')}</span>
+        </div>
+        <p className="cp-g-foot">{t('Phase bars show duration. Diamonds mark milestone due dates.')}</p>
+      </div>
+      <p className="cp-small" style={{ marginTop: 12 }}>
         {t('Where your project stands, in date order · shared by {name}, {role}', { name: manager.name, role: t(manager.role) })}
       </p>
-      <div className="cp-msv">
-        <svg width="1160" height="520" viewBox="0 0 1160 520" fill="none" aria-hidden="true">
-          <path d={BEFORE_TODAY} {...(passed >= 1 ? SOLID : DASH)} />
-          <path d={AFTER_TODAY} {...(passed >= 2 ? SOLID : DASH)} />
-          {milestones.map((m, i) => (
-            <Node key={m.id} m={m} n={i + 1} x={SLOTS[i].x} y={SLOTS[i].y} />
-          ))}
-          {passed === 1 && <circle cx={TODAY.x} cy={TODAY.y} r="7.5" fill="#0D1240" stroke="#fff" strokeWidth="3" />}
-        </svg>
-        {milestones.map((m, i) => {
-          const status = MILESTONE_STATUS[m.state];
-          const open = m.state === 'late' || m.state === 'revised' || m.state === 'in_progress';
-          return (
-            <div className="cp-blk" key={m.id} style={{ left: SLOTS[i].left, top: SLOTS[i].top }}>
-              <h5>{m.name}</h5>
-              <div className="cp-st" style={{ color: status.color, fontWeight: status.weight }}>{t(status.label)}</div>
-              <div className="cp-t">
-                {m.state === 'planned'
-                  ? t('Planned for {date}', { date: longDate(lang, m.dueDate) })
-                  : m.state === 'done'
-                    ? t('Completed on {date}', { date: longDate(lang, m.dueDate) })
-                    : m.state === 'late' || m.state === 'revised'
-                      ? t('Was due {date}', { date: longDate(lang, m.dueDate) })
-                      : t('Due {date}', { date: longDate(lang, m.dueDate) })}
-              </div>
-              {m.requestedDate && m.state !== 'revised' && (
-                <div className="cp-t" style={{ marginTop: 12 }}>
-                  {t('New date requested: {date}', { date: longDate(lang, m.requestedDate) })}
-                </div>
-              )}
-              <div className="cp-pc2">{t('{n}% complete', { n: m.progress })}</div>
-              <Bar value={m.progress} style={{ width: 300, height: 8 }} />
-              {open && m.changeRequestRef && (
-                <div style={{ marginTop: 10, fontSize: 14 }}>
-                  <Link to={pp.changeRequests(project.id)}>
-                    {t('See the change request ({ref})', { ref: m.changeRequestRef })}
-                  </Link>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {passed === 1 && (
-          <div className="cp-today" style={{ left: 416, top: 324 }}>{t('Today · {date}', { date: shortDate(lang, today) })}</div>
-        )}
-        <div className="cp-lg">
-          <span>{t('Done so far')}</span>
-          <span className="cp-d">{t('Still ahead')}</span>
-        </div>
-      </div>
-      <div className="cp-mcards">
-        {project.milestones.map((m) => {
-          const badge = MILESTONE_BADGE[m.state];
-          const meta =
-            m.state === 'revised' && m.requestedDate
-              ? t('Published revision: {from} → {to} · {n}%', { from: shortDate(lang, m.dueDate), to: longDate(lang, m.requestedDate), n: m.progress })
-              : m.requestedDate
-                ? t('Baseline {from} · Proposed {to} · {n}%', { from: longDate(lang, m.dueDate), to: longDate(lang, m.requestedDate), n: m.progress })
-                : t('Due {date} · {n}%', { date: longDate(lang, m.dueDate), n: m.progress });
-          return <MilestoneCard key={m.id} code={m.code} name={m.name} tone={badge.tone} badge={t(badge.label)} meta={meta} progress={m.progress} />;
-        })}
-      </div>
-    </>
+    </section>
   );
 }
