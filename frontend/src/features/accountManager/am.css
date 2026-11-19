@@ -201,6 +201,12 @@
 
 /* Notification switches (i3): flat blue pill with no knob when on. */
 .am .switch{height:20px;border-radius:10px}
+/* Compact notification rows. */
+.am .trow{padding:8px 0}
+.am .trow:first-of-type{padding-top:10px}
+.am .trow b{font-size:13px}
+.am .trow p{font-size:11px;margin-top:2px}
+.am .tg{gap:12px;margin-right:8px}
 .am .switch[aria-checked=true]::after{display:none}
 .am .content{padding:32px 28px}
 .am .topbar{padding:0 28px}
