@@ -4,23 +4,25 @@ import { ProviderUnavailableError } from '../authService';
 export class InvitationUnavailableError extends Error {}
 
 export interface Invitation {
-  projectName: string;
+  organisationName: string;
   inviterName: string;
   email: string;
   roleLabel: string;
   expiresAt: string;
 }
 
-interface InvitationOut {
-  project_name: string;
-  inviter_name: string;
+interface InviteInfoOut {
   email: string;
+  name: string;
+  role: string;
   role_label: string;
+  organisation_name: string | null;
+  inviter_name: string | null;
   expires_at: string;
 }
 
 const PREVIEW: Invitation = {
-  projectName: 'Website Development',
+  organisationName: 'BRECO',
   inviterName: 'Alex Morgan',
   email: 'jordan.lee@customer.com',
   roleLabel: 'Client approver',
@@ -28,23 +30,23 @@ const PREVIEW: Invitation = {
 };
 
 /**
- * GET /invitations/{token}: what the invitation grants. 404 (unknown) and 410 (expired or revoked)
- * both mean the link can no longer be used.
+ * POST /auth/invite-info: who the link is for, without using it up. The token travels in the body so it
+ * stays out of access logs. Any 400 (unknown, used, expired or revoked) means the link can no longer be used.
  */
 export async function fetchInvitation(token: string): Promise<Invitation> {
   // Dev only: /client/invitation/preview shows the screen without a backend invitation.
   if (import.meta.env.DEV && token === 'preview') return PREVIEW;
   try {
-    const i = await api<InvitationOut>(`/invitations/${encodeURIComponent(token)}`);
+    const i = await api<InviteInfoOut>('/auth/invite-info', { method: 'POST', body: JSON.stringify({ token }) });
     return {
-      projectName: i.project_name,
-      inviterName: i.inviter_name,
+      organisationName: i.organisation_name ?? '',
+      inviterName: i.inviter_name ?? 'Borek',
       email: i.email,
       roleLabel: i.role_label,
       expiresAt: i.expires_at,
     };
   } catch (e) {
-    if (e instanceof ApiError && (e.status === 404 || e.status === 410)) throw new InvitationUnavailableError();
+    if (e instanceof ApiError && (e.status === 400 || e.status === 404 || e.status === 410)) throw new InvitationUnavailableError();
     throw e;
   }
 }

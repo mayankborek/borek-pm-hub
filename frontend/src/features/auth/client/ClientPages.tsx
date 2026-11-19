@@ -14,7 +14,9 @@ const formatDate = (iso: string, lang: string) =>
 
 /** 01 · Invitation: the landing page of the emailed link. */
 export function ClientInvitePage() {
-  const { token = '' } = useParams();
+  const params = useParams();
+  // The emailed link keeps the token after `#`; /client/invitation/<token> is kept for the dev preview.
+  const token = params.token ?? new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '';
   const { lang, t } = useClientLang();
   const invitation = useInvitation(token);
 
@@ -32,7 +34,7 @@ export function ClientInvitePage() {
       ) : (
         <>
           <h1 className="title">{t.inviteTitle}</h1>
-          <h2 className="project">{data.projectName}</h2>
+          <h2 className="project">{data.organisationName}</h2>
           <p className="body">{t.inviteBody(data.inviterName)}</p>
           <section className="card" aria-label={t.invitationDetails}>
             <p className="label">{t.invitedAccount}</p>
@@ -40,7 +42,7 @@ export function ClientInvitePage() {
             <p className="meta">{t.inviteMeta(data.roleLabel, formatDate(data.expiresAt, lang))}</p>
           </section>
           <div className="stack">
-            <Link className="btn primary" to={withInvitation(paths.clientLogin, token)}>{t.openInvitation}</Link>
+            <Link className="btn primary" to={{ pathname: paths.setPassword, hash: `#token=${token}` }} state={{ fromInvitation: true }}>{t.openInvitation}</Link>
             <Link className="btn outline" to={paths.clientLogin}>{t.openPrevious}</Link>
             <Link className="btn outline" to={withInvitation(paths.clientCreateAccount, token)}>{t.newHere}</Link>
           </div>

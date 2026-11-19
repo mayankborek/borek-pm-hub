@@ -1,5 +1,6 @@
 import { useLayoutEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { api, ApiError } from '@/shared/api/client';
 import borekLogo from '@/assets/borek-logo.png';
@@ -14,7 +15,17 @@ const readToken = () => new URLSearchParams(window.location.hash.slice(1)).get('
 /** Landing page of the link an administrator hands over: choose a password, then sign in. */
 export function SetPasswordPage() {
   const navigate = useNavigate();
+  const fromInvitation = !!(useLocation().state as { fromInvitation?: boolean } | null)?.fromInvitation;
   const [token] = useState(readToken);
+  // Client contacts get the invitation screen first; staff go straight to the form.
+  const info = useQuery({
+    queryKey: ['invite-role', token],
+    queryFn: () => api<{ role: string }>('/auth/invite-info', { method: 'POST', body: JSON.stringify({ token }) }),
+    enabled: !!token && !fromInvitation,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const isClient = info.data?.role === 'client' || fromInvitation;
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(token ? null : 'This link is invalid. Ask your administrator for a new one.');
@@ -29,6 +40,11 @@ export function SetPasswordPage() {
     };
   }, []);
 
+  if (info.data?.role === 'client' && !fromInvitation) {
+    return <Navigate to={{ pathname: paths.clientInvitationLink, hash: `#token=${token}` }} replace />;
+  }
+  if (token && !fromInvitation && info.isPending) return null;
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (password.length < MIN_LENGTH) return setError(`Use at least ${MIN_LENGTH} characters.`);
@@ -40,7 +56,7 @@ export function SetPasswordPage() {
         method: 'POST',
         body: JSON.stringify({ token, password }),
       });
-      navigate(paths.login, { replace: true, state: { email } });
+      navigate(isClient ? paths.clientLogin : paths.login, { replace: true, state: { email } });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       setBusy(false);

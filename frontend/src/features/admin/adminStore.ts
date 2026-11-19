@@ -1,24 +1,9 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Client organisations and role access have no backend yet, so they live in this browser's
- * localStorage. Swap `read`/`commit` for API calls when the endpoints exist; the hooks and the
- * shapes below are what the pages depend on.
+ * Role access has no backend yet, so it lives in this browser's localStorage. Swap `read`/`commit`
+ * for API calls when the endpoints exist; the hooks and the shapes below are what the pages depend on.
  */
-export interface OrgMember {
-  id: string;
-  name: string;
-  email: string;
-}
-
-export interface AdminOrganisation {
-  id: string;
-  name: string;
-  accountManager: string;
-  active: boolean;
-  members: OrgMember[];
-}
-
 export type Access = 'view' | 'edit' | 'denied';
 
 export const AREAS = [
@@ -62,30 +47,18 @@ export const DEFAULT_PERMISSIONS: Record<string, Permissions> = {
 };
 
 interface State {
-  organisations: AdminOrganisation[];
   permissions: Record<string, Permissions>;
 }
 
 const KEY = 'borek.admin-console';
-const SEED: State = {
-  organisations: [
-    {
-      id: 'o1',
-      name: 'Customer organisation',
-      accountManager: 'Morgan Ellis',
-      active: true,
-      members: [{ id: 'm1', name: 'Jordan Lee', email: 'jordan.lee@customer.com' }],
-    },
-  ],
-  permissions: {},
-};
+const SEED: State = { permissions: {} };
 
 function read(): State {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Partial<State>;
-      if (Array.isArray(s.organisations)) return { organisations: s.organisations, permissions: s.permissions ?? {} };
+      if (s.permissions) return { permissions: s.permissions };
     }
   } catch {
     /* storage unavailable or corrupt: start from the seed */
@@ -113,31 +86,6 @@ const subscribe = (l: () => void) => {
   };
 };
 const useStore = () => useSyncExternalStore(subscribe, () => state);
-
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
-
-export const useOrganisations = () => useStore().organisations;
-export const useOrganisation = (id: string) => useStore().organisations.find((o) => o.id === id);
-
-const mapOrg = (id: string, fn: (o: AdminOrganisation) => AdminOrganisation) =>
-  commit({ ...state, organisations: state.organisations.map((o) => (o.id === id ? fn(o) : o)) });
-
-export const orgActions = {
-  add(name: string, accountManager: string): string {
-    const id = uid();
-    commit({ ...state, organisations: [...state.organisations, { id, name, accountManager, active: true, members: [] }] });
-    return id;
-  },
-  update(id: string, patch: Partial<Pick<AdminOrganisation, 'name' | 'accountManager' | 'active'>>) {
-    mapOrg(id, (o) => ({ ...o, ...patch }));
-  },
-  addMember(id: string, name: string, email: string) {
-    mapOrg(id, (o) => ({ ...o, members: [...o.members, { id: uid(), name, email }] }));
-  },
-  removeMember(id: string, memberId: string) {
-    mapOrg(id, (o) => ({ ...o, members: o.members.filter((m) => m.id !== memberId) }));
-  },
-};
 
 export const usePermissions = (roleId: string): Permissions =>
   useStore().permissions[roleId] ?? DEFAULT_PERMISSIONS[roleId] ?? grid(...AREAS.map((): Access => 'denied'));

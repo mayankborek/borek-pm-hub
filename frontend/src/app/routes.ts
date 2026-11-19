@@ -19,6 +19,7 @@ export const paths = {
   task: (id: string) => `/tasks/${id}`,
   forbidden: '/forbidden',
   clientLogin: '/client/login',
+  clientInvitationLink: '/client/invitation',
   clientInvitation: (token: string) => `/client/invitation/${encodeURIComponent(token)}`,
   clientCreateAccount: '/client/create-account',
   clientAccountReady: '/client/account-ready',

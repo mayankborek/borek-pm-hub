@@ -726,4 +726,10 @@ export const DE: Record<string, string> = {
   'Change request in review': 'Änderungsantrag in Prüfung',
   'View request': 'Antrag ansehen',
   'No recent activity.': 'Keine aktuelle Aktivität.',
+  'We couldn’t load organisations': 'Organisationen konnten nicht geladen werden',
+  'Loading organisations': 'Organisationen werden geladen',
+  'Invite expired': 'Einladung abgelaufen',
+  'New invite link': 'Neuer Einladungslink',
+  'Job title': 'Position',
+  'We’ll create the client account and give you a one-time invitation link to share.': 'Wir erstellen das Kundenkonto und geben Ihnen einen einmaligen Einladungslink zum Teilen.',
 };

@@ -54,6 +54,7 @@ export const router = createBrowserRouter([
     children: [
       { path: 'login', element: <LoginPage /> },
       { path: 'client/login', element: <ClientLoginPage /> },
+      { path: 'client/invitation', element: <ClientInvitePage /> },
       { path: 'client/invitation/:token', element: <ClientInvitePage /> },
       { path: 'client/create-account', element: <ClientCreateAccountPage /> },
       { path: 'client/account-ready', element: <ClientAccountReadyPage /> },

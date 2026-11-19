@@ -1,25 +1,45 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
+import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { EMAIL_RE, ConfirmDialog, Dialog, Field } from './Dialog';
 import { OrganisationDialog } from './AdminOrganisationsPage';
 import { Back } from './Back';
-import { orgActions, useOrganisation, type OrgMember } from './adminStore';
-import { useAdminUsers } from './adminApi';
-import { initialsOf } from '@/features/client/format';
+import {
+  useAddMember,
+  useOrgMembers,
+  useOrganisation,
+  useRemoveMember,
+  useRenewMemberInvite,
+  type CreatedMember,
+  type MemberStatus,
+} from './organisationsApi';
+
+const STATUS_LABEL: Record<MemberStatus, string> = {
+  invited: 'Invited',
+  invite_expired: 'Invite expired',
+  active: 'Active',
+  deactivated: 'Inactive',
+};
 
 export function AdminOrganisationPage() {
   const { t } = usePrefs();
   const toast = useToast();
   const { orgId = '' } = useParams();
-  const org = useOrganisation(orgId);
+  const orgQuery = useOrganisation(orgId);
+  const org = orgQuery.data;
+  const members = useOrgMembers(orgId);
+  const add = useAddMember(orgId);
+  const renew = useRenewMemberInvite(orgId);
+  const remove = useRemoveMember(orgId);
   const [adding, setAdding] = useState(false);
-  const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [link, setLink] = useState<CreatedMember | null>(null);
 
+  if (orgQuery.isPending) return <p className="ad-meta">{t('Loading organisations')}</p>;
   if (!org) {
     return (
       <>
@@ -30,7 +50,16 @@ export function AdminOrganisationPage() {
     );
   }
 
-  const target = org.members.find((m) => m.id === removing);
+  const people = members.data?.items ?? [];
+  const target = people.find((m) => m.id === removing);
+
+  const newLink = async (userId: string) => {
+    try {
+      setLink(await renew.mutateAsync(userId));
+    } catch (e) {
+      toast.error(describeApiError(e, t('That didn’t work. Try again.')));
+    }
+  };
 
   return (
     <>
@@ -39,67 +68,64 @@ export function AdminOrganisationPage() {
         <h2 className="ad-title ad-title--lg">{org.name}</h2>
         <div className="ad-head-actions">
           <button type="button" className="ad-link" onClick={() => setEditing(true)}>{t('Edit details')}</button>
-          <button type="button" className="ad-btn" onClick={() => setPicking(true)}>{t('Add members')}</button>
+          <button type="button" className="ad-btn" onClick={() => setAdding(true)}>{t('Add member')}</button>
         </div>
       </div>
       <p className="ad-meta">
         {t('Members · Manage who belongs to this organisation.')}
-        {!org.active && <span className="ad-tag">{t('Inactive')}</span>}
+        {org.archived_at && <span className="ad-tag">{t('Inactive')}</span>}
       </p>
 
       <ul className="ad-members">
-        {!org.members.length && <li className="ad-empty-row">{t('No members yet.')}</li>}
-        {org.members.map((m) => (
+        {members.isPending && <li className="ad-empty-row">{t('Loading users')}</li>}
+        {members.data && !people.length && <li className="ad-empty-row">{t('No members yet.')}</li>}
+        {people.map((m) => (
           <li className="ad-member" key={m.id}>
             <span>{m.name}</span>
             <span>{m.email}</span>
-            <span>{t('Client contact')}</span>
-            <button type="button" className="ad-link" aria-label={`${t('Remove')} ${m.name}`} onClick={() => setRemoving(m.id)}>{t('Remove')}</button>
+            <span>
+              {t(m.job_title ?? 'Client contact')}
+              <span className="ad-tag">{t(STATUS_LABEL[m.status])}</span>
+            </span>
+            <span>
+              {(m.status === 'invited' || m.status === 'invite_expired') && (
+                <button type="button" className="ad-link" onClick={() => newLink(m.id)}>{t('New invite link')}</button>
+              )}{' '}
+              {m.status !== 'deactivated' && (
+                <button type="button" className="ad-link" aria-label={`${t('Remove')} ${m.name}`} onClick={() => setRemoving(m.id)}>{t('Remove')}</button>
+              )}
+            </span>
           </li>
         ))}
       </ul>
 
-      {picking && (
-        <MembersPicker
-          members={org.members}
-          onClose={() => setPicking(false)}
-          onManual={() => {
-            setPicking(false);
-            setAdding(true);
-          }}
-          onSave={(people) => {
-            people.forEach((p) => orgActions.addMember(org.id, p.name, p.email));
-            toast.success(people.length === 1 ? 'Member added.' : 'Members added.');
-          }}
-        />
-      )}
       {adding && (
         <MemberDialog
-          existing={org.members.map((m) => m.email.toLowerCase())}
+          existing={people.map((m) => m.email.toLowerCase())}
           onClose={() => setAdding(false)}
-          onSave={(name, email) => {
-            orgActions.addMember(org.id, name, email);
-            toast.success('Member added.');
+          onSave={async (name, email, jobTitle) => {
+            setLink(await add.mutateAsync({ name, email, job_title: jobTitle || null }));
+            setAdding(false);
           }}
         />
       )}
-      {editing && (
-        <OrganisationDialog
-          org={org}
-          onClose={() => setEditing(false)}
-          onSave={(name, accountManager, active) => orgActions.update(org.id, { name, accountManager, active })}
-        />
-      )}
+      {link && <InviteLinkDialog created={link} onClose={() => setLink(null)} />}
+      {editing && <OrganisationDialog org={org} onClose={() => setEditing(false)} />}
       {target && (
         <ConfirmDialog
           title="Remove member?"
           text={t('{name} will no longer belong to {org}.', { name: target.name, org: org.name })}
           confirm="Remove"
+          busy={remove.isPending}
           onCancel={() => setRemoving(null)}
-          onConfirm={() => {
-            orgActions.removeMember(org.id, target.id);
+          onConfirm={async () => {
+            try {
+              await remove.mutateAsync(target.id);
+              toast.success('Member removed.');
+            } catch (e) {
+              toast.error(describeApiError(e, t('That didn’t work. Try again.')));
+            }
             setRemoving(null);
-            toast.success('Member removed.');
           }}
         />
       )}
@@ -107,22 +133,39 @@ export function AdminOrganisationPage() {
   );
 }
 
-function MemberDialog({ existing, onClose, onSave }: { existing: string[]; onClose: () => void; onSave: (name: string, email: string) => void }) {
+function MemberDialog({
+  existing,
+  onClose,
+  onSave,
+}: {
+  existing: string[];
+  onClose: () => void;
+  onSave: (name: string, email: string, jobTitle: string) => Promise<void>;
+}) {
   const { t } = usePrefs();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const [tried, setTried] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const errors = {
     name: name.trim() ? '' : 'Enter a name.',
     email: !EMAIL_RE.test(email.trim()) ? 'Enter a valid email address.' : existing.includes(email.trim().toLowerCase()) ? 'This person is already a member.' : '',
   };
 
-  const save = () => {
+  const save = async () => {
     setTried(true);
+    setError('');
     if (errors.name || errors.email) return;
-    onSave(name.trim(), email.trim());
-    onClose();
+    setBusy(true);
+    try {
+      await onSave(name.trim(), email.trim(), jobTitle.trim());
+    } catch (e) {
+      setError(describeApiError(e, t('That didn’t work. Try again.')));
+      setBusy(false);
+    }
   };
 
   return (
@@ -133,67 +176,44 @@ function MemberDialog({ existing, onClose, onSave }: { existing: string[]; onClo
       <Field label="Email" error={tried ? errors.email : ''}>
         <input className="ad-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={320} autoComplete="off" />
       </Field>
+      <Field label="Job title">
+        <input className="ad-input" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} maxLength={100} autoComplete="off" />
+      </Field>
+      <p className="ad-hint">{t('We’ll create the client account and give you a one-time invitation link to share.')}</p>
+      {error && <p className="ad-error" role="alert">{error}</p>}
       <div className="ad-actions">
         <button type="button" className="ad-btn ad-btn--ghost" onClick={onClose}>{t('Cancel')}</button>
-        <button type="submit" className="ad-btn">{t('Add member')}</button>
+        <button type="submit" className="ad-btn" disabled={busy}>{t('Create account')}</button>
       </div>
     </Dialog>
   );
 }
 
-/** Choose existing client contacts to add, with search by name or email. */
-function MembersPicker({
-  members,
-  onClose,
-  onManual,
-  onSave,
-}: {
-  members: OrgMember[];
-  onClose: () => void;
-  onManual: () => void;
-  onSave: (people: { name: string; email: string }[]) => void;
-}) {
-  const { t } = usePrefs();
-  const users = useAdminUsers('', 'client', 'active');
-  const [q, setQ] = useState('');
-  const [picked, setPicked] = useState<string[]>([]);
-  const have = new Set(members.map((m) => m.email.toLowerCase()));
-  const needle = q.trim().toLowerCase();
-  const people = (users.data?.items ?? []).filter(
-    (u) => !have.has(u.email.toLowerCase()) && (!needle || `${u.name} ${u.email}`.toLowerCase().includes(needle)),
-  );
-
-  const save = () => {
-    onSave(people.filter((u) => picked.includes(u.id)).map((u) => ({ name: u.name, email: u.email })));
-    onClose();
+/** The server shows an invitation link once, so this is the only chance to copy it. */
+function InviteLinkDialog({ created, onClose }: { created: CreatedMember; onClose: () => void }) {
+  const { t, lang } = usePrefs();
+  const [copied, setCopied] = useState(false);
+  const expires = new Date(created.invite.expires_at).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(created.invite.url);
+      setCopied(true);
+    } catch {
+      /* clipboard blocked: the link stays selectable in the field */
+    }
   };
 
   return (
-    <Dialog title="Add members" onClose={onClose} onSubmit={save}>
-      <p className="ad-hint">{t('Choose people to add to this organisation.')}</p>
-      <input className="ad-input" type="search" placeholder={t('Search by name or email')} aria-label={t('Search by name or email')} value={q} onChange={(e) => setQ(e.target.value)} />
-      <ul className="ad-picker">
-        {users.isPending && <li className="ad-empty-row">{t('Loading users')}</li>}
-        {users.data && !people.length && <li className="ad-empty-row">{t('No one to add.')}</li>}
-        {people.map((u) => (
-          <li key={u.id}>
-            <label className="ad-pick">
-              <input type="checkbox" checked={picked.includes(u.id)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, u.id] : p.filter((x) => x !== u.id)))} />
-              <span className="cp-avatar" aria-hidden="true">{initialsOf(u.name)}</span>
-              <span className="ad-pick-text">
-                <span>{u.name}</span>
-                <span className="ad-pick-email">{u.email}</span>
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+    <Dialog title="Share invitation link" onClose={onClose}>
+      <p className="ad-card-sub">{created.member.name} · {created.member.email}</p>
+      <div className="ad-copy">
+        <input className="ad-copy-field" readOnly value={created.invite.url} aria-label={t('Sign-in link')} onFocus={(e) => e.currentTarget.select()} />
+        <button type="button" className="ad-btn ad-btn--ghost" onClick={copy}>{t(copied ? 'Copied' : 'Copy')}</button>
+      </div>
+      <p className="ad-hint">{t('Send this to the person yourself: on mail or on Teams.')}</p>
+      <p className="ad-hint">{t('It works once and expires on {date}. It won’t be shown again.', { date: expires })}</p>
       <div className="ad-actions">
-        <div className="ad-actions-left">
-          <button type="button" className="ad-link" onClick={onManual}>{t('Add by email')}</button>
-        </div>
-        <button type="button" className="ad-btn ad-btn--ghost" onClick={onClose}>{t('Cancel')}</button>
-        <button type="submit" className="ad-btn" disabled={!picked.length}>{t('Add members')}</button>
+        <button type="button" className="ad-btn" onClick={onClose}>{t('Done')}</button>
       </div>
     </Dialog>
   );
