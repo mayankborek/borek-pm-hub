@@ -18,7 +18,6 @@ import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
 import { AmMilestonesPage } from '@/features/accountManager/AmMilestonesPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
-import { ClientProfilePage } from '@/features/client/ClientProfilePage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLayout';
 import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
@@ -81,7 +80,10 @@ export const router = createBrowserRouter([
             element: <ClientLayout />,
             children: [
               { index: true, element: <ClientHomePage /> },
-              { path: 'profile', element: <ClientProfilePage /> },
+              { path: 'profile', element: <AmProfilePage /> },
+              { path: 'profile/security', element: <AmSecurityPage /> },
+              { path: 'profile/notifications', element: <AmNotificationsPage /> },
+              { path: 'profile/preferences', element: <AmPreferencesPage /> },
               { path: 'projects', element: <ClientProjectsPage /> },
               {
                 path: 'projects/:projectId',

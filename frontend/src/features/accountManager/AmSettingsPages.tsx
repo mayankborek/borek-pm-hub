@@ -1,19 +1,23 @@
 import { useState, type ReactNode } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { initialsOf } from '@/features/client/format';
+import { useClientPortal } from '@/features/client/clientPortalApi';
 import { useSay } from './AccountManagerLayout';
+
+const useIsClient = () => useLocation().pathname.startsWith(paths.clientHome);
 
 /** Account settings frame (borek-flow-portal profile/security/notifications/preferences): left menu and one panel. */
 function Settings({ title, sub, children }: { title: string; sub: string; children: ReactNode }) {
   const { t } = usePrefs();
+  const client = useIsClient();
   const links: [string, string][] = [
-    [paths.amProfile, 'My profile'],
-    [paths.amSecurity, 'Security'],
-    [paths.amNotifications, 'Notifications'],
-    [paths.amPreferences, 'Preferences'],
+    [client ? paths.clientProfile : paths.amProfile, 'My profile'],
+    [client ? paths.clientSecurity : paths.amSecurity, 'Security'],
+    [client ? paths.clientNotifications : paths.amNotifications, 'Notifications'],
+    [client ? paths.clientPreferences : paths.amPreferences, 'Preferences'],
   ];
   return (
     <div className="settings">
@@ -40,6 +44,8 @@ export function AmProfilePage() {
   const { user } = useAuth();
   const { t } = usePrefs();
   const say = useSay();
+  const client = useIsClient();
+  const organisation = useClientPortal().data?.organisation;
   const [editing, setEditing] = useState(false);
   // Not persisted yet: there is no endpoint for the phone number.
   const [phone, setPhone] = useState('');
@@ -50,7 +56,7 @@ export function AmProfilePage() {
     <Settings title="My profile" sub="Your account identity and contact details.">
       <div className="idrow">
         <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
-        <div><h4>{user.name}</h4><p>{t('Account Manager · Borek Solutions')}</p></div>
+        <div><h4>{user.name}</h4><p>{client ? t('Client · Customer organisation') : t('Account Manager · Borek Solutions')}</p></div>
         {editing ? (
           <button className="btn primary" type="button" onClick={() => { setPhone(draft.trim()); setEditing(false); say(t('Profile updated')); }}>{t('Save changes')}</button>
         ) : (
@@ -60,7 +66,7 @@ export function AmProfilePage() {
       <h5>{t('Contact details')}</h5>
       <div className="fields">
         <div className="field"><label>{t('Email address')}</label><div>{user.email}</div></div>
-        <div className="field"><label>{t('Workspace · Read only')}</label><div>Borek Solutions</div></div>
+        <div className="field"><label>{client ? t('Organisation · Read only') : t('Workspace · Read only')}</label><div>{client ? organisation ?? '–' : 'Borek Solutions'}</div></div>
         <div className="field">
           <label htmlFor="am-phone">{t('Phone number')}</label>
           {editing ? <input id="am-phone" type="tel" autoComplete="tel" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={40} /> : <div>{phone || '–'}</div>}

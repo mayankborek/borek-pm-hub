@@ -6,13 +6,14 @@ import amLogo from '@/assets/borek-flow-portal-logo.svg';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { initialsOf } from './format';
 import { Notifications } from './Notifications';
+import { Toast } from '@/features/accountManager/AccountManagerLayout';
 import '@/features/accountManager/am.css';
 import './clientPortal.css';
 
 /** The design titles every project tab "Client Portal", except Overview and a single report. */
 function titleFor(pathname: string) {
   if (pathname === paths.clientHome) return 'Home';
-  if (pathname === paths.clientProfile) return 'Profile';
+  if (pathname.startsWith(paths.clientProfile)) return 'Profile';
   if (pathname === paths.clientProjects) return 'Projects';
   if (/^\/client\/projects\/[^/]+\/?$/.test(pathname)) return 'Overview';
   if (/^\/client\/projects\/[^/]+\/reports\/[^/]+\/?$/.test(pathname)) return 'Report details';
@@ -55,7 +56,7 @@ export function ClientLayout() {
           </header>
           <main className="content">
             <div className="fit cp">
-              <Outlet />
+              <Toast><Outlet /></Toast>
             </div>
           </main>
         </div>
