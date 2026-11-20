@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.audit.service import record_audit
+from app.change_requests.models import ChangeRequest, ChangeRequestStatus
 from app.common.enums import StatusCategory
 from app.core.errors import AppError
 from app.milestones.models import Milestone, ProjectPhase
@@ -107,6 +108,46 @@ async def _task_counts(
     return {mid: TaskCounts(total, done, started) for mid, total, done, started in rows.all()}
 
 
+@dataclass(frozen=True)
+class DateChange:
+    requested_date: date | None = None
+    code: str | None = None
+
+
+async def _date_changes(
+    session: AsyncSession, milestones: list[Milestone]
+) -> dict[uuid.UUID, DateChange]:
+    """Per milestone: the newest open (pending or in review) request for a new date; else the
+    newest approved one."""
+    ids = [m.id for m in milestones]
+    if not ids:
+        return {}
+    rows = await session.scalars(
+        select(ChangeRequest)
+        .where(
+            ChangeRequest.milestone_id.in_(ids),
+            ChangeRequest.requested_date.is_not(None),
+            ChangeRequest.status.in_(
+                [
+                    ChangeRequestStatus.PENDING.value,
+                    ChangeRequestStatus.IN_REVIEW.value,
+                    ChangeRequestStatus.APPROVED.value,
+                ]
+            ),
+        )
+        .order_by(ChangeRequest.created_at)
+    )
+    found: dict[uuid.UUID, DateChange] = {}
+    for cr in rows:  # oldest first, so newer ones replace older ones
+        assert cr.milestone_id is not None
+        current = found.get(cr.milestone_id)
+        if cr.status != ChangeRequestStatus.APPROVED.value:  # still open
+            found[cr.milestone_id] = DateChange(cr.requested_date, cr.code)
+        elif current is None or current.requested_date is None:
+            found[cr.milestone_id] = DateChange(None, cr.code)
+    return found
+
+
 def milestone_state(
     milestone: Milestone, counts: TaskCounts, phase: ProjectPhase | None, on: date
 ) -> MilestoneState:
@@ -114,6 +155,8 @@ def milestone_state(
         return MilestoneState.DONE
     if milestone.due_date < on:
         return MilestoneState.LATE
+    if milestone.original_due_date is not None:
+        return MilestoneState.REVISED
     if milestone.at_risk:
         return MilestoneState.AT_RISK
     if counts.started or (phase is not None and phase.start_date <= on):
@@ -121,14 +164,18 @@ def milestone_state(
     return MilestoneState.PLANNED
 
 
-def milestone_progress(milestone: Milestone, counts: TaskCounts) -> int:
+def milestone_progress(milestone: Milestone, counts: TaskCounts) -> int | None:
     if milestone.completed_at is not None:
         return 100
-    return round(100 * counts.done / counts.total) if counts.total else 0
+    return round(100 * counts.done / counts.total) if counts.total else None
 
 
-async def milestones_out(session: AsyncSession, milestones: list[Milestone]) -> list[MilestoneOut]:
-    counts = await _task_counts(session, [m.id for m in milestones])
+async def milestones_out(
+    session: AsyncSession, milestones: list[Milestone], *, for_client: bool = False
+) -> list[MilestoneOut]:
+    """With `for_client`, linked tasks are ignored: state and progress follow only what the PM
+    does (done, at risk, dates, approved changes), never developers' task changes."""
+    counts = {} if for_client else await _task_counts(session, [m.id for m in milestones])
     phase_ids = {m.phase_id for m in milestones if m.phase_id}
     phases = (
         {
@@ -145,6 +192,7 @@ async def milestones_out(session: AsyncSession, milestones: list[Milestone]) -> 
         {m.owner_id for m in milestones if m.owner_id}
         | {m.completed_by for m in milestones if m.completed_by},
     )
+    changes = await _date_changes(session, milestones)
     on = today()
     out = []
     for m in milestones:
@@ -159,6 +207,9 @@ async def milestones_out(session: AsyncSession, milestones: list[Milestone]) -> 
                 description=m.description,
                 completion_criteria=m.completion_criteria,
                 due_date=m.due_date,
+                original_due_date=m.original_due_date,
+                requested_date=changes.get(m.id, DateChange()).requested_date,
+                change_request_code=changes.get(m.id, DateChange()).code,
                 owner=people.get(m.owner_id) if m.owner_id else None,
                 state=milestone_state(m, c, phases.get(m.phase_id) if m.phase_id else None, on),
                 done=m.completed_at is not None,
@@ -177,8 +228,11 @@ async def milestones_out(session: AsyncSession, milestones: list[Milestone]) -> 
     return out
 
 
-def phase_out(phase: ProjectPhase, milestones: list[MilestoneOut]) -> PhaseOut:
-    """`milestones`: the phase's active milestones, already worked out."""
+def phase_out(
+    phase: ProjectPhase, milestones: list[MilestoneOut], *, for_client: bool = False
+) -> PhaseOut:
+    """`milestones`: the phase's active milestones, already worked out. With `for_client` the
+    completed share is only known once the phase is completed (100), else null."""
     on = today()
     total = len(milestones)
     done = sum(1 for m in milestones if m.done)
@@ -194,12 +248,15 @@ def phase_out(phase: ProjectPhase, milestones: list[MilestoneOut]) -> PhaseOut:
         status = PhaseStatus.IN_PROGRESS
     else:
         status = PhaseStatus.NOT_STARTED
+    progress: int | None
     if status is PhaseStatus.COMPLETED:
         progress = 100
+    elif for_client:
+        progress = None
     elif tasks_total:
         progress = round(100 * tasks_done / tasks_total)
     else:
-        progress = round(100 * done / total) if total else 0
+        progress = round(100 * done / total) if total else None
     return PhaseOut(
         id=phase.id,
         project_id=phase.project_id,
@@ -269,9 +326,13 @@ class Roadmap:
     milestones: list[MilestoneOut]  # all, by due date
 
 
-async def build_roadmap(session: AsyncSession, project_id: uuid.UUID) -> Roadmap:
+async def build_roadmap(
+    session: AsyncSession, project_id: uuid.UUID, *, for_client: bool = False
+) -> Roadmap:
     phases = await active_phases(session, project_id)
-    milestones = await milestones_out(session, await active_milestones(session, [project_id]))
+    milestones = await milestones_out(
+        session, await active_milestones(session, [project_id]), for_client=for_client
+    )
     active_ids = {p.id for p in phases}
     by_phase: dict[uuid.UUID, list[MilestoneOut]] = defaultdict(list)
     unphased = []
@@ -281,7 +342,9 @@ async def build_roadmap(session: AsyncSession, project_id: uuid.UUID) -> Roadmap
         else:
             unphased.append(m)
     return Roadmap(
-        phases=[(p, phase_out(p, by_phase[p.id]), by_phase[p.id]) for p in phases],
+        phases=[
+            (p, phase_out(p, by_phase[p.id], for_client=for_client), by_phase[p.id]) for p in phases
+        ],
         unphased=unphased,
         milestones=milestones,
     )

@@ -33,7 +33,13 @@ def build_report_pdf(report: ClientReportOut) -> bytes:
     published = f"Published {report.published_at:{DATE}}"
     if report.published_by:
         published += f" by {report.published_by.name} ({report.published_by.role})"
-    pdf.multi_cell(width, 5, printable(f"Health: {HEALTH_LABEL[report.health]}. {published}."))
+    progress = f" Progress: {report.progress}%." if report.progress is not None else ""
+    pdf.multi_cell(
+        width,
+        5,
+        printable(f"Borek Solutions Group. Health: {HEALTH_LABEL[report.health]}.{progress}"),
+    )
+    pdf.multi_cell(width, 5, printable(f"{published}."))
     pdf.set_text_color(0)
 
     for heading, text in (

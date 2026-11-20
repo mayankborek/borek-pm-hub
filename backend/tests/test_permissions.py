@@ -126,6 +126,8 @@ def test_account_manager_only_reads_and_only_their_clients_projects() -> None:
         Action.STATUS_REPORT_MANAGE,
         Action.STAKEHOLDER_MANAGE,
         Action.FINANCE_MANAGE,
+        Action.CHANGE_REQUEST_VIEW,
+        Action.CHANGE_REQUEST_SUBMIT,
     }
     assert {a for a in Action if can(manager, a, assigned)} == anywhere | on_project
     # being listed as a member gives an Account Manager nothing

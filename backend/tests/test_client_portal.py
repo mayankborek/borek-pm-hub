@@ -135,7 +135,7 @@ async def test_portal_lists_only_the_clients_own_external_active_projects(
     assert project["published_on"] == "2026-11-08"
     assert project["published_by"] == {"name": "Alex Morgan", "role": "Project Manager"}
     assert project["latest_update"]["text"] == "Summary 8"
-    assert project["progress"] == 50  # one of two tasks done
+    assert project["progress"] is None  # no report shared a %: task progress never leaks
     assert body["summary"] == {"total": 1, "on_track": 0, "at_risk": 1, "off_track": 0, "none": 0}
     assert [u["report_id"] for u in body["updates"]] == [
         str(world.newer.id),
@@ -415,3 +415,46 @@ async def test_whole_client_flow_with_real_sign_in(session: AsyncSession) -> Non
             await http.get(f"{API}/projects/{project_id}/tasks", headers=as_client)
         ).status_code in (403, 404)
         assert (await http.get(f"{API}/client/portal", headers=as_pm)).status_code == 403
+
+
+async def test_progress_is_what_the_pm_published_not_task_data(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    world.published.progress_percent = 30  # 01.11
+    world.newer.progress_percent = None  # 08.11, newest published, shares no %
+    world.draft.progress_percent = 90  # never shown
+    await session.flush()
+
+    project = (await get(client, world.contact, "/client/portal")).json()["projects"][0]
+    detail = (await get(client, world.contact, f"/client/projects/{world.web.id}")).json()
+
+    assert (project["progress"], project["progress_published_on"]) == (30, "2026-11-01")
+    assert project["published_on"] == "2026-11-08"  # health and update still from the newest
+    assert [r["progress"] for r in detail["reports"]] == [None, 30]
+
+
+async def test_pm_publishes_progress_through_the_api(
+    client: httpx.AsyncClient, world: World
+) -> None:
+    created = await client.post(
+        f"{API}/projects/{world.web.id}/status-reports",
+        headers=as_user(world.pm),
+        json={"rag": "green", "summary": "Going well", "progress_percent": 68},
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["progress_percent"] == 68
+    published = await client.post(
+        f"{API}/projects/{world.web.id}/status-reports/{created.json()['id']}/publish",
+        headers=as_user(world.pm),
+    )
+    assert published.status_code == 200, published.text
+    too_big = await client.post(
+        f"{API}/projects/{world.web.id}/status-reports",
+        headers=as_user(world.pm),
+        json={"rag": "green", "summary": "x", "progress_percent": 101},
+    )
+
+    project = (await get(client, world.contact, "/client/portal")).json()["projects"][0]
+
+    assert project["progress"] == 68
+    assert too_big.status_code == 422

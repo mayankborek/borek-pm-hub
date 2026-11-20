@@ -48,6 +48,7 @@ async def reports_out(session: AsyncSession, reports: list[StatusReport]) -> lis
             id=r.id,
             project_id=r.project_id,
             rag=r.rag,
+            progress_percent=r.progress_percent,
             summary=r.summary,
             achievements=r.achievements,
             next_steps=r.next_steps,
@@ -118,6 +119,7 @@ async def create_report(
     report = StatusReport(
         project_id=project_id,
         rag=data.rag.value,
+        progress_percent=data.progress_percent,
         summary=data.summary,
         achievements=data.achievements,
         next_steps=data.next_steps,

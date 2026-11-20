@@ -40,6 +40,12 @@ class StatusReportCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     rag: RagStatus
+    progress_percent: int | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Progress shared with the client (0-100). Empty: not shared in this report.",
+    )
     summary: str
     achievements: str | None = None
     next_steps: str | None = None
@@ -58,6 +64,7 @@ class StatusReportUpdate(BaseModel):
 
     version: int = Field(ge=1)
     rag: RagStatus | None = None
+    progress_percent: int | None = Field(default=None, ge=0, le=100, description="Null clears.")
     summary: str | None = None
     achievements: str | None = None
     next_steps: str | None = None
@@ -84,6 +91,7 @@ class StatusReportOut(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
     rag: RagStatus
+    progress_percent: int | None
     summary: str
     achievements: str | None
     next_steps: str | None

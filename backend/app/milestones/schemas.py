@@ -20,10 +20,12 @@ class PhaseStatus(StrEnum):
 
 
 class MilestoneState(StrEnum):
-    """Worked out when read (first match wins): done, late, at_risk, in_progress, planned."""
+    """Worked out when read (first match wins): done, late, revised, at_risk, in_progress,
+    planned."""
 
     DONE = "done"  # the PM marked it reached
     LATE = "late"  # due date passed and not done ("Running late")
+    REVISED = "revised"  # an approved change request moved the due date
     AT_RISK = "at_risk"  # the PM's warning flag
     IN_PROGRESS = "in_progress"  # a linked task has started, or its phase has started
     PLANNED = "planned"
@@ -117,9 +119,10 @@ class PhaseOut(BaseModel):
     client_visible: bool
     status: PhaseStatus
     is_late: bool = Field(description="End date passed and the phase is not completed.")
-    progress: int = Field(
+    progress: int | None = Field(
         description="Completed share, 0-100: done tasks of the phase's milestones; without "
-        "linked tasks, the share of its milestones that are done."
+        "linked tasks, the share of its milestones that are done; 100 once completed. Null = "
+        "not available (no milestones yet)."
     )
     milestones_total: int
     milestones_done: int
@@ -189,7 +192,17 @@ class MilestoneOut(BaseModel):
     name: str
     description: str | None
     completion_criteria: str | None
-    due_date: date
+    due_date: date = Field(description="The current due date (after any approved change).")
+    original_due_date: date | None = Field(
+        description="The date before an approved change request moved it (state revised)."
+    )
+    requested_date: date | None = Field(
+        description="A new date asked for by a change request still in review."
+    )
+    change_request_code: str | None = Field(
+        description="The open request asking for `requested_date`, else the approved one that "
+        "moved the date."
+    )
     owner: PersonBrief | None
     state: MilestoneState
     done: bool
@@ -197,9 +210,9 @@ class MilestoneOut(BaseModel):
     completed_by: PersonBrief | None
     at_risk: bool
     client_visible: bool
-    progress: int = Field(
-        description="Done linked tasks / linked tasks, 0-100. Without linked tasks: 100 when "
-        "done, else 0. Always 100 once done."
+    progress: int | None = Field(
+        description="Done linked tasks / linked tasks, 0-100; 100 once done. Null = not "
+        "available (no linked tasks and not done): never show it as 0%."
     )
     tasks_total: int
     tasks_done: int
