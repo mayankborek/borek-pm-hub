@@ -1,5 +1,6 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { ClientPortalData, ClientProject } from './types';
+import type { ClientMilestone, ClientPortalData, ClientProject, MilestoneState } from './types';
 
 // The backend has no client-portal endpoints yet, so these hooks serve the supplied design's sample
 // data. Replace `fetchPortal` with a call to the real API; the pages only depend on ClientPortalData.
@@ -7,7 +8,7 @@ const PM = { name: 'Alex Morgan', role: 'Project Manager' };
 const CONTACTS = [{ name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' }];
 
 const SAMPLE: ClientPortalData = {
-  today: '2026-11-17',
+  today: todayUtc(), // overridden on every read by useClientPortal
   organisation: 'BRECO',
   notifications: [
     { id: 'n1', headline: 'A progress report is available', meta: 'Website Development', to: '/client/projects/website-development/reports/sprint-4-status', unread: true },
@@ -105,8 +106,44 @@ const SAMPLE: ClientPortalData = {
 
 const fetchPortal = async (): Promise<ClientPortalData> => SAMPLE;
 
+/** Today's date (UTC, like the backend's `today()`), as YYYY-MM-DD. */
+function todayUtc() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Re-reads the date every minute so the portal rolls over at midnight without a reload. */
+function useToday() {
+  const [today, setToday] = useState(todayUtc);
+  useEffect(() => {
+    const id = setInterval(() => setToday(todayUtc()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return today;
+}
+
+/** Mirrors the backend: a milestone that is not done and past its due date is late. */
+const stateOn = (m: ClientMilestone, today: string): MilestoneState => {
+  if (m.state === 'done') return 'done';
+  if (m.dueDate < today) return 'late';
+  // Not past due yet: a "late" mark from older data no longer applies.
+  if (m.state === 'late') return m.requestedDate ? 'revised' : 'in_progress';
+  return m.state;
+};
+
 export function useClientPortal() {
-  return useQuery({ queryKey: ['client-portal'], queryFn: fetchPortal });
+  const today = useToday();
+  const select = useCallback(
+    (data: ClientPortalData): ClientPortalData => ({
+      ...data,
+      today,
+      projects: data.projects.map((p) => ({
+        ...p,
+        milestones: p.milestones.map((m) => ({ ...m, state: stateOn(m, today) })),
+      })),
+    }),
+    [today],
+  );
+  return useQuery({ queryKey: ['client-portal'], queryFn: fetchPortal, select });
 }
 
 export function useClientProject(projectId: string | undefined) {
