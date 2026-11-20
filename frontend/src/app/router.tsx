@@ -24,6 +24,7 @@ import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
 import { ManagerLayout } from '@/features/manager/ManagerLayout';
 import { ManagerDashboardPage } from '@/features/manager/ManagerDashboardPage';
 import { ManagerStakeholdersPage } from '@/features/manager/ManagerStakeholdersPage';
+import { ManagerTeamPage } from '@/features/manager/ManagerTeamPage';
 import { AmHomePage } from '@/features/accountManager/AmHomePage';
 import { AmProjectsPage } from '@/features/accountManager/AmProjectsPage';
 import { AmProjectLayout } from '@/features/accountManager/AmProjectLayout';
@@ -159,7 +160,7 @@ export const router = createBrowserRouter([
                   { path: 'stakeholders', element: <ManagerStakeholdersPage /> },
                 ],
               },
-              { path: 'team', element: <ClientPlaceholderPage /> },
+              { path: 'team', element: <ManagerTeamPage /> },
             ],
           },
         ],
