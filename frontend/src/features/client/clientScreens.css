@@ -119,21 +119,21 @@
 .cx-ov{display:grid;grid-template-columns:minmax(0,652fr) minmax(0,1fr);gap:24px;margin-top:35px}
 .cx-ov .cx-col{display:flex;flex-direction:column;gap:24px;min-width:0}
 .cx-ov .cx-col.cx-right{gap:18px}
-.cx-pp{min-height:358px;padding:28px;border-radius:0}
+.cx-pp{min-height:0;padding:22px;border-radius:0}
 .cx-hd2{display:flex;align-items:center;justify-content:space-between;min-height:28px}
 .cx-hd2 .cx-lh{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600}
 .cx-hd2 .cx-lh .cx-ico{color:var(--blue)}
 .cx-hd2 .cx-dt{font-size:12px;color:var(--slate)}
-.cx-big{display:flex;align-items:center;gap:18px;margin-top:25px;min-height:68px}
-.cx-big strong{font-size:55px;line-height:68px;font-weight:500;letter-spacing:-2.4px}
+.cx-big{display:flex;align-items:center;gap:14px;margin-top:16px;min-height:0}
+.cx-big strong{font-size:36px;line-height:44px;font-weight:500;letter-spacing:-1.4px}
 .cx-big .cx-t{font-size:14px;line-height:18px;font-weight:500}
 .cx-big .cx-s{font-size:12px;line-height:16px;color:var(--slate);margin-top:5px}
-.cx-segs{display:grid;grid-template-columns:repeat(25,1fr);gap:5px;margin-top:27px}
-.cx-segs i{height:19px;border-radius:0;background:var(--bg)}
+.cx-segs{display:grid;grid-template-columns:repeat(25,1fr);gap:4px;margin-top:18px}
+.cx-segs i{height:12px;border-radius:0;background:var(--bg)}
 .cx-segs i.cx-f{background:var(--cx-bar)}
-.cx-trend{font-size:12px;line-height:16px;color:var(--slate);margin-top:24px}
-.cx-pp hr,.cx-lu hr{border:0;height:1px;background:var(--line);margin-top:29px}
-.cx-dates{display:grid;grid-template-columns:minmax(0,307px) 1fr;margin-top:23px}
+.cx-trend{font-size:12px;line-height:16px;color:var(--slate);margin-top:14px}
+.cx-pp hr,.cx-lu hr{border:0;height:1px;background:var(--line);margin-top:18px}
+.cx-dates{display:grid;grid-template-columns:minmax(0,307px) 1fr;margin-top:16px}
 .cx-dates .cx-k{font-size:12px;line-height:16px;color:var(--slate)}
 .cx-dates .cx-v{font-size:14px;line-height:20px;font-weight:500;margin-top:6px}
 .cx-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
