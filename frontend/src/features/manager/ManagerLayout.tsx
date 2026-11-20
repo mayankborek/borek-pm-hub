@@ -16,7 +16,7 @@ export function ManagerLayout() {
   if (!user) return null;
 
   return (
-    <div className="am">
+    <div className="am am-slate">
       <div className="shell">
         <aside className="sidebar">
           <Link to={paths.managerHome} aria-label={t('Borek Flow home')}>

@@ -28,7 +28,7 @@ export function ClientLayout() {
   if (!user) return null;
 
   return (
-    <div className="am">
+    <div className="am am-slate">
       <div className="shell">
         <aside className="sidebar">
           <Link to={paths.clientHome} aria-label={t('Borek Flow home')}>
