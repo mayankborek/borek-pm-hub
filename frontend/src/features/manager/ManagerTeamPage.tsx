@@ -34,7 +34,7 @@ export function ManagerTeamPage() {
   const { t } = usePrefs();
   const [tab, setTab] = useState<'capacity' | 'workload'>('capacity');
   return (
-    <>
+    <div className="mg-team">
       <h2 className="cp-section-title">{t(tab === 'capacity' ? 'Team Capacity' : 'Team workload')}</h2>
       <p className="cp-section-sub">
         {t(tab === 'capacity'
@@ -49,7 +49,7 @@ export function ManagerTeamPage() {
         ))}
       </div>
       {tab === 'capacity' ? <Capacity /> : <Workload />}
-    </>
+    </div>
   );
 }
 

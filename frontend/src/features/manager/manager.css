@@ -44,4 +44,15 @@
 .mg-share{height:6px;border-radius:3px;background:#101828}
 .mg-share i{display:block;height:100%;border-radius:3px;background:#8ab8ff}
 .mg-share small{display:block;margin-top:14px}
+/* Team screen: heading, tabs and stat blocks stay fixed; only the last panel scrolls. */
+.mg-team{display:flex;flex-direction:column;height:100%;min-height:0}
+.mg-team .cp-section-title{margin-top:0;font-size:20px;line-height:26px}
+.mg-team .cp-section-sub{margin-top:4px;font-size:13px;line-height:18px}
+.mg-team .mg-tabs{margin-top:12px}
+.mg-team .mg-stats{margin-top:12px;gap:10px}
+.mg-team .mg-stat{gap:2px;padding:8px 14px;border-radius:8px;font-size:11px}
+.mg-team .mg-stat strong{font-size:20px;line-height:24px}
+.mg-team .mg-panel{flex:1;min-height:0;overflow:auto;margin-top:12px;padding:14px 18px}
+.mg-team .mg-cap-h,.mg-team .mg-load-h{position:sticky;top:0;z-index:1;background:var(--card,#1a2233)}
+@media(max-width:800px){.mg-team{height:auto}.mg-team .mg-panel{flex:none;max-height:70vh}}
 @media(max-width:800px){.mg-stats{grid-template-columns:1fr 1fr}}

@@ -17,6 +17,7 @@ import { ClientProjectLayout } from '@/features/client/ClientProjectLayout';
 import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
 import { AmMilestonesPage } from '@/features/accountManager/AmMilestonesPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
+import { ClientChangeRequestsPage } from '@/features/client/ClientChangeRequestsPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLayout';
@@ -97,7 +98,7 @@ export const router = createBrowserRouter([
                   { path: 'milestones', element: <ClientMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
-                  { path: 'change-requests', element: <ClientPlaceholderPage /> },
+                  { path: 'change-requests', element: <ClientChangeRequestsPage /> },
                   { path: 'contacts', element: <ClientContactsPage /> },
                 ],
               },
