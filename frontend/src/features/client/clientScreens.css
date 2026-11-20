@@ -116,7 +116,7 @@
 .cp .cx-ft .cx-btn{width:148px}
 
 /* project overview */
-.cx-ov{display:grid;grid-template-columns:minmax(0,652fr) minmax(0,1fr);gap:24px;margin-top:35px}
+.cx-ov{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px;margin-top:35px}
 .cx-ov .cx-col{display:flex;flex-direction:column;gap:24px;min-width:0}
 .cx-ov .cx-col.cx-right{gap:18px}
 .cx-pp{min-height:0;padding:22px;border-radius:0}
