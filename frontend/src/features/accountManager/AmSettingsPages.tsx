@@ -8,16 +8,19 @@ import { useClientPortal } from '@/features/client/clientPortalApi';
 import { useSay } from './AccountManagerLayout';
 
 const useIsClient = () => useLocation().pathname.startsWith(paths.clientHome);
+const useIsManager = () => useLocation().pathname.startsWith(paths.managerHome);
 
 /** Account settings frame (borek-flow-portal profile/security/notifications/preferences): left menu and one panel. */
 function Settings({ title, sub, children }: { title: string; sub: string; children: ReactNode }) {
   const { t } = usePrefs();
   const client = useIsClient();
+  const manager = useIsManager();
+  const pick = (c: string, m: string, a: string) => (client ? c : manager ? m : a);
   const links: [string, string][] = [
-    [client ? paths.clientProfile : paths.amProfile, 'My profile'],
-    [client ? paths.clientSecurity : paths.amSecurity, 'Security'],
-    [client ? paths.clientNotifications : paths.amNotifications, 'Notifications'],
-    [client ? paths.clientPreferences : paths.amPreferences, 'Preferences'],
+    [pick(paths.clientProfile, paths.managerProfile, paths.amProfile), 'My profile'],
+    [pick(paths.clientSecurity, paths.managerSecurity, paths.amSecurity), 'Security'],
+    [pick(paths.clientNotifications, paths.managerNotifications, paths.amNotifications), 'Notifications'],
+    [pick(paths.clientPreferences, paths.managerPreferences, paths.amPreferences), 'Preferences'],
   ];
   return (
     <div className="settings">
@@ -45,6 +48,7 @@ export function AmProfilePage() {
   const { t } = usePrefs();
   const say = useSay();
   const client = useIsClient();
+  const manager = useIsManager();
   const organisation = useClientPortal().data?.organisation;
   const [editing, setEditing] = useState(false);
   // Not persisted yet: there is no endpoint for the phone number.
@@ -56,7 +60,7 @@ export function AmProfilePage() {
     <Settings title="My profile" sub="Your account identity and contact details.">
       <div className="idrow">
         <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
-        <div><h4>{user.name}</h4><p>{client ? t('Client · Customer organisation') : t('Account Manager · Borek Solutions')}</p></div>
+        <div><h4>{user.name}</h4><p>{client ? t('Client · Customer organisation') : manager ? t('Manager · Borek Solutions') : t('Account Manager · Borek Solutions')}</p></div>
         {editing ? (
           <button className="btn primary" type="button" onClick={() => { setPhone(draft.trim()); setEditing(false); say(t('Profile updated')); }}>{t('Save changes')}</button>
         ) : (

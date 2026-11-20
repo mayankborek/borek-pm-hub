@@ -57,7 +57,9 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
 /** Project title and the Overview / Milestones / Reports / Change Requests / Contacts tabs. */
 export function ClientProjectLayout() {
   const pp = usePortalPaths();
-  const isAm = useAuth().user?.role === 'account_manager';
+  const role = useAuth().user?.role;
+  const isAm = role === 'account_manager';
+  const isManager = role === 'manager';
   const { projectId } = useParams();
   const { t } = usePrefs();
   const query = useClientPortal();
@@ -87,7 +89,7 @@ export function ClientProjectLayout() {
         [pp.milestones(project.id), 'Milestones'],
         [pp.reports(project.id), 'Reports'],
         [pp.changeRequests(project.id), 'Change Requests'],
-        [pp.people(project.id), 'Contacts'],
+        [pp.people(project.id), isManager ? 'Stakeholders' : 'Contacts'],
       ];
 
   return (

@@ -190,6 +190,15 @@
 .am .cp-rt .cp-pub{font-size:14px}
 .am .cp-dl{font-size:16px;background:none;border:0;cursor:pointer}
 
+/* Reports library: size columns to the available width and keep the download button inside the card. */
+.am .cx-lib{width:100%;max-width:100%;box-sizing:border-box}
+.am .cx-cols,.am .cx-rr{grid-template-columns:minmax(0,2.4fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr) 112px;gap:0 16px;padding:0 24px;box-sizing:border-box}
+.am .cx-rr .cx-nm2{min-width:0}
+.am .cx-rr .cx-nm2>div{min-width:0}
+.am .cx-rr .cx-t,.am .cx-rr .cx-s{overflow-wrap:anywhere}
+.am .cx-lhd{padding:0 24px}
+.am .cx-cnt{left:24px}
+
 /* Edit dialog (i2): hairline box, blue title, bold labels, boxed fields, text-link actions. */
 .am .ad-dialog{border:1px solid var(--line);box-shadow:none;border-radius:8px;padding:24px 24px 28px}
 .am .ad-dialog h2{color:var(--blue);font-size:18px;font-weight:600}

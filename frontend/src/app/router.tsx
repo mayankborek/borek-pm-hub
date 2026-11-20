@@ -23,6 +23,7 @@ import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLa
 import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
 import { ManagerLayout } from '@/features/manager/ManagerLayout';
 import { ManagerDashboardPage } from '@/features/manager/ManagerDashboardPage';
+import { ManagerStakeholdersPage } from '@/features/manager/ManagerStakeholdersPage';
 import { AmHomePage } from '@/features/accountManager/AmHomePage';
 import { AmProjectsPage } from '@/features/accountManager/AmProjectsPage';
 import { AmProjectLayout } from '@/features/accountManager/AmProjectLayout';
@@ -132,14 +133,34 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      // Manager: dashboard shell; project and task pages stay in the staff app (data scoped by the backend)
+      // Manager: own shell with the dashboard, project tabs, team and account screens (sample data until the API exists)
       {
         element: <RequireRole roles={['manager']} />,
         children: [
           {
             path: 'manager',
             element: <ManagerLayout />,
-            children: [{ index: true, element: <ManagerDashboardPage /> }],
+            children: [
+              { index: true, element: <ManagerDashboardPage /> },
+              { path: 'profile', element: <AmProfilePage /> },
+              { path: 'profile/security', element: <AmSecurityPage /> },
+              { path: 'profile/notifications', element: <AmNotificationsPage /> },
+              { path: 'profile/preferences', element: <AmPreferencesPage /> },
+              { path: 'projects', element: <ClientProjectsPage /> },
+              {
+                path: 'projects/:projectId',
+                element: <ClientProjectLayout />,
+                children: [
+                  { index: true, element: <ClientOverviewPage /> },
+                  { path: 'milestones', element: <ClientMilestonesPage /> },
+                  { path: 'reports', element: <ClientReportsPage /> },
+                  { path: 'reports/:reportId', element: <ClientReportPage /> },
+                  { path: 'change-requests', element: <ClientPlaceholderPage /> },
+                  { path: 'stakeholders', element: <ManagerStakeholdersPage /> },
+                ],
+              },
+              { path: 'team', element: <ClientPlaceholderPage /> },
+            ],
           },
         ],
       },

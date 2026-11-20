@@ -65,7 +65,7 @@ export function ManagerDashboardPage() {
 
       <div className="cx-sec">
         <h2>{t('My projects')}</h2>
-        <Link to={paths.projects}>{t('View all projects')}</Link>
+        <Link to={paths.managerProjects}>{t('View all projects')}</Link>
       </div>
       <section className="cx-proj-grid">
         {projects.map((p) => {

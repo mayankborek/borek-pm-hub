@@ -5,7 +5,10 @@ import type { ClientMilestone, ClientPortalData, ClientProject, MilestoneState }
 // The backend has no client-portal endpoints yet, so these hooks serve the supplied design's sample
 // data. Replace `fetchPortal` with a call to the real API; the pages only depend on ClientPortalData.
 const PM = { name: 'Alex Morgan', role: 'Project Manager' };
-const CONTACTS = [{ name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' }];
+const CONTACTS = [
+  { name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' },
+  { name: 'Jordan Lee', role: 'Client contact', email: 'jordan.lee@customer.com' },
+];
 
 const SAMPLE: ClientPortalData = {
   today: todayUtc(), // overridden on every read by useClientPortal

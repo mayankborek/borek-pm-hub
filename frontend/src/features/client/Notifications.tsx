@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useClientPortal } from './clientPortalApi';
 
@@ -18,6 +18,7 @@ const bell = (
 /** Bell button with the notifications popover (closes on outside click, Escape or choosing an item). */
 export function Notifications() {
   const { t } = usePrefs();
+  const inManager = useLocation().pathname.startsWith('/manager');
   const { data } = useClientPortal();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
@@ -64,7 +65,7 @@ export function Notifications() {
           <ul className="cp-notif-list">
             {items.map((n) => (
               <li key={n.id}>
-                <Link className={n.unread ? 'cp-notif-item cp-unread' : 'cp-notif-item'} to={n.to} onClick={() => setOpen(false)}>
+                <Link className={n.unread ? 'cp-notif-item cp-unread' : 'cp-notif-item'} to={inManager ? n.to.replace('/client/', '/manager/').replace('/contacts', '/stakeholders') : n.to} onClick={() => setOpen(false)}>
                   <span className="cp-notif-headline">{t(n.headline)}</span>
                   <span className="cp-notif-meta">{n.meta}</span>
                 </Link>
