@@ -685,6 +685,8 @@ export const DE: Record<string, string> = {
   'Summary': 'Übersicht',
   'Your client workspace': 'Ihr Kundenbereich',
   'Currently in delivery': 'Aktuell in Umsetzung',
+  'Your project portfolio': 'Ihr Projektportfolio',
+  'Shared project updates': 'Geteilte Projektupdates',
   'Awaiting your input': 'Wartet auf Ihre Eingabe',
   '{n} items need your input': '{n} Punkte benötigen Ihre Eingabe',
   'No input needed from you': 'Keine Eingabe von Ihnen nötig',

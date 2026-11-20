@@ -21,6 +21,8 @@ import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLayout';
 import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
+import { ManagerLayout } from '@/features/manager/ManagerLayout';
+import { ManagerDashboardPage } from '@/features/manager/ManagerDashboardPage';
 import { AmHomePage } from '@/features/accountManager/AmHomePage';
 import { AmProjectsPage } from '@/features/accountManager/AmProjectsPage';
 import { AmProjectLayout } from '@/features/accountManager/AmProjectLayout';
@@ -127,6 +129,17 @@ export const router = createBrowserRouter([
                 ],
               },
             ],
+          },
+        ],
+      },
+      // Manager: dashboard shell; project and task pages stay in the staff app (data scoped by the backend)
+      {
+        element: <RequireRole roles={['manager']} />,
+        children: [
+          {
+            path: 'manager',
+            element: <ManagerLayout />,
+            children: [{ index: true, element: <ManagerDashboardPage /> }],
           },
         ],
       },

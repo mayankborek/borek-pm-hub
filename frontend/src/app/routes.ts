@@ -44,6 +44,7 @@ export const paths = {
   adminRoles: '/admin/roles',
   adminRole: (id: string) => `/admin/roles/${id}`,
   adminProfile: '/admin/profile',
+  managerHome: '/manager',
   amHome: '/account-manager',
   amProfile: '/account-manager/profile',
   amProjects: '/account-manager/projects',
@@ -61,7 +62,7 @@ export const paths = {
 export const withInvitation = (path: string, token: string | null) =>
   token ? `${path}?invitation=${encodeURIComponent(token)}` : path;
 
-/** Landing page after sign-in: PM -> dashboard, Developer -> My Work, Client -> Home, Admin -> Users, Account Manager -> Overview. */
+/** Landing page after sign-in: PM -> dashboard, Developer -> My Work, Client -> Home, Admin -> Users, Account Manager -> Overview, Manager -> Dashboard. */
 export const homeFor = (role: Role) =>
   role === 'pm'
     ? paths.dashboard
@@ -71,7 +72,9 @@ export const homeFor = (role: Role) =>
         ? paths.adminUsers
         : role === 'account_manager'
           ? paths.amHome
-          : paths.myWork;
+          : role === 'manager'
+            ? paths.managerHome
+            : paths.myWork;
 
 export interface NavItem {
   label: string;
