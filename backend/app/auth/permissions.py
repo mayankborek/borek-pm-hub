@@ -49,6 +49,11 @@ class Action(StrEnum):
     # Create, change, complete and archive phases and milestones (the roadmap). Reading the
     # roadmap is PROJECT_VIEW.
     MILESTONE_MANAGE = "milestone:manage"
+    # Change requests: read them, raise one, and (leads + Managers) fill in impact and decide.
+    # Developers have none of these. Clients raise and read theirs through /client/...
+    CHANGE_REQUEST_VIEW = "change_request:view"
+    CHANGE_REQUEST_SUBMIT = "change_request:submit"
+    CHANGE_REQUEST_DECIDE = "change_request:decide"
     # The client portal (/client/...): client contacts only, and only their organisation's
     # external projects. Nobody else, not even the Manager, uses these routes.
     CLIENT_PORTAL = "client:portal"
@@ -77,6 +82,9 @@ _PM_ONLY = frozenset(
         Action.TASK_ARCHIVE,
         Action.TASK_IMPORT,
         Action.MILESTONE_MANAGE,
+        Action.CHANGE_REQUEST_VIEW,
+        Action.CHANGE_REQUEST_SUBMIT,
+        Action.CHANGE_REQUEST_DECIDE,
         Action.DASHBOARD_VIEW,
         Action.USER_LIST,
     }
@@ -99,6 +107,8 @@ _ACCOUNT_MANAGER_ON_PROJECT = frozenset(
         Action.STATUS_REPORT_MANAGE,
         Action.STAKEHOLDER_MANAGE,
         Action.FINANCE_MANAGE,
+        Action.CHANGE_REQUEST_VIEW,
+        Action.CHANGE_REQUEST_SUBMIT,
     }
 )
 # Developers need project membership for these.

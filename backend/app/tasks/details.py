@@ -331,9 +331,9 @@ def _clean_file_name(raw: str | None) -> str:
     return name or "file"
 
 
-async def add_file(
-    session: AsyncSession, task: Task, user: User, upload: UploadFile
-) -> AttachmentOut:
+async def store_upload(upload: UploadFile) -> tuple[str, str, int]:
+    """Check and store an uploaded file (allowed types, MAX_UPLOAD_MB, not empty); returns
+    (clean file name, storage key, size in bytes). Shared by task and change request files."""
     name = _clean_file_name(upload.filename)
     if PurePath(name).suffix.lower() not in ALLOWED_EXTENSIONS:
         raise AppError(
@@ -362,6 +362,13 @@ async def add_file(
                 "The request is not valid.",
                 [{"field": "file", "issue": "empty", "message": "The file is empty."}],
             )
+    return name, storage_key, size
+
+
+async def add_file(
+    session: AsyncSession, task: Task, user: User, upload: UploadFile
+) -> AttachmentOut:
+    name, storage_key, size = await store_upload(upload)
     item = TaskAttachment(
         task_id=task.id,
         kind=AttachmentKind.FILE.value,

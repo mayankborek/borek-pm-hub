@@ -20,6 +20,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.change_requests.models import ChangeRequest
 from app.common.enums import GlobalRole
 from app.core.config import Settings, get_settings
 from app.core.database import get_session
@@ -60,6 +61,7 @@ ASSIGNEE = LEADS | {"dev_member"}
 OWNERS = LEADS | {"dev_member"}  # lead rights, or the author of the comment or attachment
 REPORTERS = LEADS | {"am_own"}
 MONEY = {"manager", "am_own"}
+CHANGE_PEOPLE = LEADS | {"am_own"}  # read and raise change requests
 
 PMS = {"pm_lead", "pm_member", "pm_out"}
 DEVELOPERS = {"dev_lead", "dev_member", "dev_other", "dev_out"}
@@ -261,6 +263,94 @@ def cases(w: World) -> list[Case]:
             "GET", "/client/projects/{project_id}/reports/{report_id}/pdf", everywhere({"client"})
         ),
         Case("GET", "/client/projects/{project_id}/roadmap", everywhere({"client"})),
+        Case("GET", "/client/projects/{project_id}/change-requests", everywhere({"client"})),
+        Case(
+            "POST",
+            "/client/projects/{project_id}/change-requests",
+            everywhere({"client"}),
+            {"title": "x", "description": "y"},
+        ),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/change-requests/{request_id}",
+            everywhere({"client"}),
+        ),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/change-requests/{request_id}/comments",
+            everywhere({"client"}),
+        ),
+        Case(
+            "POST",
+            "/client/projects/{project_id}/change-requests/{request_id}/comments",
+            everywhere({"client"}),
+            {"body": "x"},
+        ),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/change-requests/{request_id}/attachments",
+            everywhere({"client"}),
+        ),
+        Case(
+            "POST",
+            "/client/projects/{project_id}/change-requests/{request_id}/attachments",
+            everywhere({"client"}),
+            files=txt,
+        ),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/change-requests/{request_id}/attachments/"
+            "{cr_attachment_id}/download",
+            everywhere({"client"}),
+        ),
+        # change requests: leads, Managers and the client's Account Manager; leads decide
+        Case("GET", f"{p}/change-requests/{{request_id}}/comments", inside_project(CHANGE_PEOPLE)),
+        Case(
+            "POST",
+            f"{p}/change-requests/{{request_id}}/comments",
+            inside_project(CHANGE_PEOPLE),
+            {"body": "x", "internal": True},
+        ),
+        Case(
+            "GET", f"{p}/change-requests/{{request_id}}/attachments", inside_project(CHANGE_PEOPLE)
+        ),
+        Case(
+            "POST",
+            f"{p}/change-requests/{{request_id}}/attachments",
+            inside_project(CHANGE_PEOPLE),
+            files=txt,
+        ),
+        Case(
+            "GET",
+            f"{p}/change-requests/{{request_id}}/attachments/{{cr_attachment_id}}/download",
+            inside_project(CHANGE_PEOPLE),
+        ),
+        Case("GET", f"{p}/change-requests", inside_project(CHANGE_PEOPLE)),
+        Case(
+            "POST",
+            f"{p}/change-requests",
+            inside_project(CHANGE_PEOPLE),
+            {"title": "x", "description": "y"},
+        ),
+        Case("GET", f"{p}/change-requests/{{request_id}}", inside_project(CHANGE_PEOPLE)),
+        Case(
+            "PATCH",
+            f"{p}/change-requests/{{request_id}}",
+            inside_project(LEADS),
+            {"version": 999},
+        ),
+        Case(
+            "POST",
+            f"{p}/change-requests/{{request_id}}/start-review",
+            inside_project(LEADS),
+            {"version": 999},
+        ),
+        Case(
+            "POST",
+            f"{p}/change-requests/{{request_id}}/decision",
+            inside_project(LEADS),
+            {"version": 999, "decision": "approved"},
+        ),
         # roadmap: everyone who sees the project reads it; leads change it
         Case("GET", f"{p}/roadmap", inside_project(READERS)),
         Case("GET", f"{p}/phases", inside_project(READERS)),
@@ -450,6 +540,17 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             created_by=ids["pm_lead"],
         )
         s.add(milestone)
+        await s.flush()
+        change_request = ChangeRequest(
+            project_id=project.id,
+            code="CR-01",
+            title="Move review",
+            description="Please move it",
+            milestone_id=milestone.id,
+            requested_date=date(2026, 11, 20),
+            submitted_by=ids["client"],
+        )
+        s.add(change_request)
         await s.commit()
         ids |= {
             "project_id": project.id,
@@ -461,6 +562,7 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "entry_id": entry.id,
             "phase_id": phase.id,
             "milestone_id": milestone.id,
+            "request_id": change_request.id,
             "organisation_id": org.id,
             "status_id": rows[1].id,
             "user_id": ids["dev_other"],
@@ -508,7 +610,11 @@ def _api_routes() -> set[tuple[str, str]]:
 
 
 def _route_of(path: str) -> str:
-    return path.replace("{draft_id}", "{report_id}").replace("{member_id}", "{user_id}")
+    return (
+        path.replace("{draft_id}", "{report_id}")
+        .replace("{member_id}", "{user_id}")
+        .replace("{cr_attachment_id}", "{attachment_id}")
+    )
 
 
 def test_a_rule_exists_for_every_route(world_paths: set[tuple[str, str]]) -> None:
@@ -560,6 +666,16 @@ async def test_every_kind_of_user_gets_the_expected_answer_on_every_route(world:
         await holder.session.close()
         assert uploaded.status_code == 201, uploaded.text
         world.values["attachment_id"] = uploaded.json()["id"]
+        holder.session = _session_on(world.connection)
+        cr_file = await http.post(
+            f"{API}/projects/{world.values['project_id']}/change-requests/"
+            f"{world.values['request_id']}/attachments",
+            headers={HEADER: world.values["pm_lead"]},
+            files={"file": ("cr.txt", b"hello", "text/plain")},
+        )
+        await holder.session.close()
+        assert cr_file.status_code == 201, cr_file.text
+        world.values["cr_attachment_id"] = cr_file.json()["id"]
 
         for case in cases(world):
             for actor, expected in case.expected.items():

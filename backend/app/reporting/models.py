@@ -26,12 +26,17 @@ class StatusReport(IdMixin, TimestampMixin, Base):
     __tablename__ = "status_reports"
     __table_args__ = (
         CheckConstraint(sql_in("rag", RagStatus), name="rag"),
+        CheckConstraint(
+            "progress_percent IS NULL OR progress_percent BETWEEN 0 AND 100", name="progress_range"
+        ),
         CheckConstraint(sql_in("state", ReportState), name="state"),
         Index("ix_status_reports_project_id_report_date", "project_id", "report_date"),
     )
 
     project_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("projects.id"), nullable=False)
     rag: Mapped[str] = mapped_column(String(10), nullable=False)
+    # The progress the PM shares with the client (0-100); clients never see live task data.
+    progress_percent: Mapped[int | None] = mapped_column(Integer)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     achievements: Mapped[str | None] = mapped_column(Text)
     next_steps: Mapped[str | None] = mapped_column(Text)

@@ -81,6 +81,8 @@ class Milestone(IdMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(Text)
     completion_criteria: Mapped[str | None] = mapped_column(Text)
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
+    # The date before the first approved change request moved it; set = "revised".
+    original_due_date: Mapped[date | None] = mapped_column(Date)
     owner_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"))
     # Set by the PM when the milestone is reached ("Milestone reached" on the roadmap).
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

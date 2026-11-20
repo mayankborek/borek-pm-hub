@@ -487,6 +487,9 @@ async def test_client_roadmap_shows_only_visible_phases_and_milestones(
         "state",
         "progress",
         "completed_on",
+        "original_due_date",
+        "requested_date",
+        "change_request_code",
     }
     assert roadmap["range_start"] == day(-5)
     assert roadmap["range_end"] == day(9)
@@ -527,3 +530,37 @@ async def test_client_cannot_see_another_organisations_roadmap(
 
     assert response.status_code == 404
     assert internal.status_code in (403, 404)
+
+
+async def test_progress_is_not_available_rather_than_zero(
+    client: httpx.AsyncClient, world: World
+) -> None:
+    """Handoff: no linked work means "Not available", never 0%."""
+    empty_phase = await phase(client, world, "Later", 30, 40)
+    lonely = await milestone(client, world, "No tasks yet", 10)
+
+    assert lonely["progress"] is None
+    assert empty_phase["progress"] is None
+
+
+async def test_client_roadmap_ignores_task_progress(
+    client: httpx.AsyncClient, session: AsyncSession, world: World
+) -> None:
+    """Developers' task changes stay internal: no task-based % or state for the client."""
+    m = await milestone(client, world, "Ship", 20, client_visible=True)
+    await link(
+        session, await make_task(session, world.project, world.pm.id, status="Done"), m["id"]
+    )
+    await link(session, await make_task(session, world.project, world.pm.id), m["id"])
+    p = await phase(client, world, "Later", 10, 25, client_visible=True)
+    await milestone(client, world, "In phase", 25, phase_id=p["id"], client_visible=True)
+
+    internal = await ok(
+        client, world.pm, "GET", f"/projects/{world.project.id}/milestones/{m['id']}"
+    )
+    shown = await ok(client, world.contact, "GET", f"/client/projects/{world.project.id}/roadmap")
+
+    assert (internal["state"], internal["progress"]) == ("in_progress", 50)
+    client_m = shown["unphased_milestones"][0]
+    assert (client_m["state"], client_m["progress"]) == ("planned", None)
+    assert shown["phases"][0]["progress"] is None

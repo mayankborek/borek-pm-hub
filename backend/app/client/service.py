@@ -1,18 +1,35 @@
 """Client portal data. One rule decides what a client sees (`_visible`): the external, not archived
-projects of the client's own organisation. Everything is read-only, and only published status
-reports leave this module; tasks, effort, activity, drafts and money never do."""
+projects of the client's own organisation. Only what the PM publishes reaches the client: project
+progress comes from published status reports and milestone progress is never task-based here, so
+developers' day-to-day task changes stay internal. Tasks, effort, activity, drafts and money
+never leave this module."""
 
 import uuid
 from collections import Counter
+from datetime import timedelta
 
+from fastapi import UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import ColumnElement, and_, false, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.change_requests import service as change_requests
+from app.change_requests.models import ChangeRequest, ChangeRequestStatus
+from app.change_requests.schemas import AttachmentOut, ChangeRequestCreate, CommentOut
 from app.client.schemas import (
     HEALTH_OF_RAG,
+    ClientAttachmentOut,
+    ClientChangeRequestBrief,
+    ClientChangeRequestListOut,
+    ClientChangeRequestOut,
+    ClientCommentOut,
     ClientContactOut,
+    ClientKpis,
+    ClientLatestReport,
     ClientMilestoneOut,
+    ClientMilestoneRef,
     ClientOrganisationOut,
+    ClientPersonOut,
     ClientPhaseOut,
     ClientPortalOut,
     ClientProjectDetailOut,
@@ -30,20 +47,23 @@ from app.common.enums import (
     GLOBAL_ROLE_LABELS,
     GlobalRole,
     ProjectRole,
+    ProjectStatus,
     ProjectType,
     ReportState,
 )
 from app.core.errors import AppError
 from app.milestones import service as roadmap
+from app.milestones.models import Milestone
 from app.milestones.schemas import MilestoneOut
 from app.organisations.models import Organisation, OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
-from app.projects.service import task_summaries
+from app.projects.service import ensure_writable
 from app.reporting.models import Stakeholder, StatusReport
 from app.users.models import User
 
 MAX_UPDATES = 10
-MAX_UPCOMING = 10
+UPCOMING_DAYS = 14
+CLOSED_PROJECT_STATUSES = (ProjectStatus.COMPLETED.value, ProjectStatus.CANCELLED.value)
 
 
 def _not_found() -> AppError:
@@ -102,7 +122,7 @@ async def _visible_milestones(
 ) -> list[MilestoneOut]:
     """Milestones marked visible to the client, by due date."""
     shown = [m for m in await roadmap.active_milestones(session, project_ids) if m.client_visible]
-    return await roadmap.milestones_out(session, shown)
+    return await roadmap.milestones_out(session, shown, for_client=True)
 
 
 def _client_milestone(m: MilestoneOut) -> ClientMilestoneOut:
@@ -114,7 +134,77 @@ def _client_milestone(m: MilestoneOut) -> ClientMilestoneOut:
         state=m.state,
         progress=m.progress,
         completed_on=m.completed_at.date() if m.completed_at else None,
+        original_due_date=m.original_due_date,
+        requested_date=m.requested_date,
+        change_request_code=m.change_request_code,
     )
+
+
+async def _leads(session: AsyncSession, project_ids: list[uuid.UUID]) -> dict[uuid.UUID, User]:
+    """The first active project lead (by name) of each project."""
+    if not project_ids:
+        return {}
+    rows = await session.execute(
+        select(ProjectMember.project_id, User)
+        .join(User, User.id == ProjectMember.user_id)
+        .where(
+            ProjectMember.project_id.in_(project_ids),
+            ProjectMember.project_role == ProjectRole.PROJECT_LEAD.value,
+            User.is_active.is_(True),
+        )
+        .order_by(User.name, User.id)
+    )
+    found: dict[uuid.UUID, User] = {}
+    for project_id, user in rows.all():
+        found.setdefault(project_id, user)
+    return found
+
+
+def _report_event(report: StatusReport, names: dict[uuid.UUID, str]) -> ClientUpdateOut:
+    assert report.published_at is not None
+    return ClientUpdateOut(
+        kind="report",
+        project_id=report.project_id,
+        project_name=names[report.project_id],
+        title=_title(report),
+        occurred_at=report.published_at,
+        report_id=report.id,
+        change_request_id=None,
+        status=None,
+    )
+
+
+async def _events(
+    session: AsyncSession, reports: list[StatusReport], names: dict[uuid.UUID, str]
+) -> list[ClientUpdateOut]:
+    """Published reports plus change requests raised, taken into review and decided; newest
+    first, at most MAX_UPDATES."""
+    events = [_report_event(r, names) for r in reports if r.published_at is not None]
+    if names:
+        requests = await session.scalars(
+            select(ChangeRequest).where(ChangeRequest.project_id.in_(list(names)))
+        )
+        for cr in requests:
+            steps = [(cr.created_at, ChangeRequestStatus.PENDING)]
+            if cr.review_started_at:
+                steps.append((cr.review_started_at, ChangeRequestStatus.IN_REVIEW))
+            if cr.decided_at:
+                steps.append((cr.decided_at, ChangeRequestStatus(cr.status)))
+            events += [
+                ClientUpdateOut(
+                    kind="change_request",
+                    project_id=cr.project_id,
+                    project_name=names[cr.project_id],
+                    title=f"{cr.code} {cr.title}",
+                    occurred_at=at,
+                    report_id=None,
+                    change_request_id=cr.id,
+                    status=status,
+                )
+                for at, status in steps
+            ]
+    events.sort(key=lambda e: e.occurred_at, reverse=True)
+    return events[:MAX_UPDATES]
 
 
 def _brief(report: StatusReport) -> ClientReportBrief:
@@ -124,6 +214,7 @@ def _brief(report: StatusReport) -> ClientReportBrief:
         title=_title(report),
         report_date=report.report_date,
         health=HEALTH_OF_RAG[report.rag],
+        progress=report.progress_percent,
         summary=report.summary,
         published_at=report.published_at,
     )
@@ -135,21 +226,25 @@ async def _projects_out(
     reports: list[StatusReport],
     milestones: list[MilestoneOut],
 ) -> list[ClientProjectOut]:
-    summaries = await task_summaries(session, [p.id for p in projects])
     upcoming: dict[uuid.UUID, MilestoneOut] = {}
     for m in milestones:  # by due date, so the first open one per project wins
         if not m.done:
             upcoming.setdefault(m.project_id, m)
     newest: dict[uuid.UUID, StatusReport] = {}
+    with_progress: dict[uuid.UUID, StatusReport] = {}
     for report in reports:  # newest first, so the first one per project wins
         newest.setdefault(report.project_id, report)
+        if report.progress_percent is not None:
+            with_progress.setdefault(report.project_id, report)
     publishers = await _people(session, {r.published_by for r in newest.values() if r.published_by})
+    leads = await _leads(session, [p.id for p in projects])
     out = []
     for p in projects:
         latest = newest.get(p.id)
         publisher = publishers.get(latest.published_by) if latest and latest.published_by else None
-        summary = summaries.get(p.id)
+        shared = with_progress.get(p.id)
         next_one = upcoming.get(p.id)
+        lead = leads.get(p.id)
         out.append(
             ClientProjectOut(
                 id=p.id,
@@ -160,7 +255,8 @@ async def _projects_out(
                 start_date=p.start_date,
                 due_date=p.target_end_date,
                 health=HEALTH_OF_RAG[latest.rag] if latest else None,
-                progress=summary.completion_percent if summary else 0,
+                progress=shared.progress_percent if shared else None,
+                progress_published_on=shared.report_date if shared else None,
                 published_on=latest.report_date if latest else None,
                 published_by=(
                     PublishedBy(name=publisher.name, role=_role_label(publisher))
@@ -172,6 +268,7 @@ async def _projects_out(
                     if latest
                     else None
                 ),
+                project_manager=ClientPersonOut(name=lead.name, email=lead.email) if lead else None,
                 next_milestone=(
                     NextMilestone(
                         id=next_one.id,
@@ -201,6 +298,13 @@ async def portal(session: AsyncSession, user: User) -> ClientPortalOut:
     items = await _projects_out(session, projects, reports, milestones)
     names = {p.id: p.name for p in projects}
     health: Counter[str] = Counter(item.health or "none" for item in items)
+    today = roadmap.today()
+    soon = [
+        m
+        for m in milestones
+        if not m.done and today <= m.due_date <= today + timedelta(days=UPCOMING_DAYS)
+    ]
+    newest = max(reports, key=lambda r: r.published_at or r.created_at, default=None)
     return ClientPortalOut(
         organisation=(
             ClientOrganisationOut(id=organisation.id, name=organisation.name)
@@ -208,28 +312,30 @@ async def portal(session: AsyncSession, user: User) -> ClientPortalOut:
             else None
         ),
         projects=items,
+        kpis=ClientKpis(
+            active_projects=sum(1 for p in projects if p.status not in CLOSED_PROJECT_STATUSES),
+            awaiting_input=0,
+            upcoming_milestones=len(soon),
+            shared_reports=len(reports),
+        ),
+        latest_report=(
+            ClientLatestReport(
+                **_brief(newest).model_dump(),
+                project_id=newest.project_id,
+                project_name=names[newest.project_id],
+            )
+            if newest
+            else None
+        ),
         upcoming_milestones=[
             ClientUpcomingMilestone(
                 **_client_milestone(m).model_dump(),
                 project_id=m.project_id,
                 project_name=names[m.project_id],
             )
-            for m in milestones
-            if not m.done
-        ][:MAX_UPCOMING],
-        updates=[
-            ClientUpdateOut(
-                report_id=r.id,
-                project_id=r.project_id,
-                project_name=names[r.project_id],
-                title=_title(r),
-                published_at=r.published_at,
-            )
-            for r in sorted(reports, key=lambda r: r.published_at or r.created_at, reverse=True)[
-                :MAX_UPDATES
-            ]
-            if r.published_at is not None
+            for m in soon
         ],
+        updates=await _events(session, reports, names),
         summary={
             "total": len(items),
             **{key: health.get(key, 0) for key in ("on_track", "at_risk", "off_track", "none")},
@@ -313,6 +419,13 @@ async def project_detail(
         contacts=await contacts(session, project),
         reports=[_brief(r) for r in reports],
         milestones=[_client_milestone(m) for m in milestones],
+        activity=await _events(session, reports, {project.id: project.name}),
+        change_requests=[
+            ClientChangeRequestBrief(
+                id=r.id, code=r.code, title=r.title, status=ChangeRequestStatus(r.status)
+            )
+            for r in (await change_requests.list_requests(session, project.id))[0]
+        ],
     )
 
 
@@ -323,7 +436,7 @@ async def project_roadmap(
     phase is shown outside any phase. A phase's status and completed share count all of its
     milestones (a summary; hidden milestones themselves never appear)."""
     project = await get_project(session, user, project_id)
-    full = await roadmap.build_roadmap(session, project.id)
+    full = await roadmap.build_roadmap(session, project.id, for_client=True)
     phases = [(phase, out) for phase, out, _ in full.phases if phase.client_visible]
     shown_phase_ids = {phase.id for phase, _ in phases}
     visible = [m for m in full.milestones if m.client_visible]
@@ -378,3 +491,157 @@ async def get_report(
         project_id=project.id,
         project_name=project.name,
     )
+
+
+# --- change requests ----------------------------------------------------------------------------
+
+
+async def _requests_out(
+    session: AsyncSession, requests: list[ChangeRequest]
+) -> list[ClientChangeRequestOut]:
+    full = await change_requests.requests_out(session, requests)
+    milestone_ids = {r.milestone_id for r in requests if r.milestone_id}
+    shown = (
+        {
+            m.id
+            for m in await session.scalars(
+                select(Milestone).where(
+                    Milestone.id.in_(milestone_ids), Milestone.client_visible.is_(True)
+                )
+            )
+        }
+        if milestone_ids
+        else set()
+    )
+    return [
+        ClientChangeRequestOut(
+            id=r.id,
+            code=r.code,
+            title=r.title,
+            status=r.status,
+            description=r.description,
+            reason=r.reason,
+            milestone=(
+                ClientMilestoneRef(code=r.milestone.code, name=r.milestone.name)
+                if r.milestone and r.milestone.id in shown
+                else None
+            ),
+            requested_date=r.requested_date if r.milestone and r.milestone.id in shown else None,
+            review_started_at=r.review_started_at,
+            impact_schedule_days=r.impact_schedule_days,
+            impact_scope=r.impact_scope,
+            decision_note=r.decision_note,
+            decided_at=r.decided_at,
+            submitted_by=r.submitted_by.name,
+            submitted_at=r.created_at,
+        )
+        for r in full
+    ]
+
+
+async def list_change_requests(
+    session: AsyncSession, user: User, project_id: uuid.UUID
+) -> ClientChangeRequestListOut:
+    project = await get_project(session, user, project_id)
+    requests, counts = await change_requests.list_requests(session, project.id)
+    return ClientChangeRequestListOut(items=await _requests_out(session, requests), counts=counts)
+
+
+async def get_change_request(
+    session: AsyncSession, user: User, project_id: uuid.UUID, request_id: uuid.UUID
+) -> ClientChangeRequestOut:
+    project = await get_project(session, user, project_id)
+    request = await change_requests.get_request(session, project.id, request_id)
+    return (await _requests_out(session, [request]))[0]
+
+
+async def submit_change_request(
+    session: AsyncSession, user: User, project_id: uuid.UUID, data: ChangeRequestCreate
+) -> ClientChangeRequestOut:
+    """Raised in review; the milestone (if any) must be one shown to the client."""
+    project = await get_project(session, user, project_id)
+    ensure_writable(project)
+    request = await change_requests.create_request(session, user, project.id, data)
+    return (await _requests_out(session, [request]))[0]
+
+
+# --- change request conversation ----------------------------------------------------------------
+
+
+def _client_comment(c: CommentOut) -> ClientCommentOut:
+    return ClientCommentOut(
+        id=c.id,
+        body=c.body,
+        author=c.author.name,
+        from_client=c.author_is_client,
+        created_at=c.created_at,
+    )
+
+
+def _client_attachment(a: AttachmentOut) -> ClientAttachmentOut:
+    return ClientAttachmentOut(
+        id=a.id,
+        name=a.name,
+        content_type=a.content_type,
+        size_bytes=a.size_bytes,
+        uploaded_by=a.uploaded_by.name,
+        created_at=a.created_at,
+    )
+
+
+async def _request_of(
+    session: AsyncSession, user: User, project_id: uuid.UUID, request_id: uuid.UUID
+) -> tuple[Project, ChangeRequest]:
+    project = await get_project(session, user, project_id)
+    return project, await change_requests.get_request(session, project.id, request_id)
+
+
+async def list_comments(
+    session: AsyncSession, user: User, project_id: uuid.UUID, request_id: uuid.UUID
+) -> list[ClientCommentOut]:
+    _, request = await _request_of(session, user, project_id, request_id)
+    found = await change_requests.comments_out(session, request.id, include_internal=False)
+    return [_client_comment(c) for c in found]
+
+
+async def add_comment(
+    session: AsyncSession, user: User, project_id: uuid.UUID, request_id: uuid.UUID, body: str
+) -> ClientCommentOut:
+    project, request = await _request_of(session, user, project_id, request_id)
+    ensure_writable(project)
+    comment = await change_requests.add_comment(session, user, request, body, internal=False)
+    return _client_comment(comment)
+
+
+async def list_attachments(
+    session: AsyncSession, user: User, project_id: uuid.UUID, request_id: uuid.UUID
+) -> list[ClientAttachmentOut]:
+    _, request = await _request_of(session, user, project_id, request_id)
+    return [
+        _client_attachment(a) for a in await change_requests.attachments_out(session, request.id)
+    ]
+
+
+async def add_attachment(
+    session: AsyncSession,
+    user: User,
+    project_id: uuid.UUID,
+    request_id: uuid.UUID,
+    upload: UploadFile,
+) -> ClientAttachmentOut:
+    project, request = await _request_of(session, user, project_id, request_id)
+    ensure_writable(project)
+    return _client_attachment(await change_requests.add_attachment(session, user, request, upload))
+
+
+async def download_attachment(
+    session: AsyncSession,
+    user: User,
+    project_id: uuid.UUID,
+    request_id: uuid.UUID,
+    attachment_id: uuid.UUID,
+) -> FileResponse:
+    """Access is checked again on every download: own organisation's project only."""
+    _, request = await _request_of(session, user, project_id, request_id)
+    item = await change_requests.get_attachment(session, request.id, attachment_id)
+    return change_requests.file_response(item)

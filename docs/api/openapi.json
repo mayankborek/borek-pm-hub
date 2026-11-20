@@ -619,97 +619,6 @@
         "title": "AssigneeUpdate",
         "type": "object"
       },
-      "AttachmentOut": {
-        "properties": {
-          "content_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Content Type"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "download_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Files only; needs the same auth as the API.",
-            "title": "Download Url"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "kind": {
-            "description": "'file' (stored by us) or 'link' (URL only).",
-            "title": "Kind",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "size_bytes": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Size Bytes"
-          },
-          "task_id": {
-            "format": "uuid",
-            "title": "Task Id",
-            "type": "string"
-          },
-          "uploaded_by": {
-            "$ref": "#/components/schemas/UserBrief"
-          },
-          "url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Links only.",
-            "title": "Url"
-          }
-        },
-        "required": [
-          "id",
-          "task_id",
-          "kind",
-          "name",
-          "url",
-          "download_url",
-          "content_type",
-          "size_bytes",
-          "uploaded_by",
-          "created_at"
-        ],
-        "title": "AttachmentOut",
-        "type": "object"
-      },
       "AttentionList": {
         "description": "The first `limit` tasks that need action; `total` is the full count.",
         "properties": {
@@ -944,6 +853,36 @@
         "title": "Body_import_project_tasks_api_v1_projects__project_id__tasks_import_post",
         "type": "object"
       },
+      "Body_upload_attachment_api_v1_projects__project_id__change_requests__request_id__attachments_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "multipart/form-data field 'file'",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_attachment_api_v1_projects__project_id__change_requests__request_id__attachments_post",
+        "type": "object"
+      },
+      "Body_upload_change_request_attachment_api_v1_client_projects__project_id__change_requests__request_id__attachments_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "multipart/form-data field 'file'",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_change_request_attachment_api_v1_client_projects__project_id__change_requests__request_id__attachments_post",
+        "type": "object"
+      },
       "Body_upload_file_api_v1_tasks__task_id__attachments_post": {
         "properties": {
           "file": {
@@ -1036,6 +975,751 @@
         "title": "ChangePasswordIn",
         "type": "object"
       },
+      "ChangeRequestCreate": {
+        "additionalProperties": false,
+        "description": "Raise a request. To move a milestone, send it with the new date you want.",
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The milestone it affects.",
+            "title": "Milestone Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New due date for the milestone; needs milestone_id.",
+            "title": "Requested Date"
+          },
+          "title": {
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ],
+        "title": "ChangeRequestCreate",
+        "type": "object"
+      },
+      "ChangeRequestDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "approved",
+              "declined"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why; shown to the client too.",
+            "title": "Note"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "decision"
+        ],
+        "title": "ChangeRequestDecision",
+        "type": "object"
+      },
+      "ChangeRequestListOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Requests per status (pending, in_review, approved, declined) and `total`, unfiltered.",
+            "title": "Counts",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeRequestOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "counts"
+        ],
+        "title": "ChangeRequestListOut",
+        "type": "object"
+      },
+      "ChangeRequestOut": {
+        "properties": {
+          "code": {
+            "description": "CR-01, CR-02 ... per project.",
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Note"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "impact_effort_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Effort Hours"
+          },
+          "impact_schedule_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Schedule Days"
+          },
+          "impact_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Scope"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MilestoneBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Date"
+          },
+          "review_started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeRequestStatus"
+          },
+          "submitted_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "submitted_by_client": {
+            "description": "Raised by a client contact.",
+            "title": "Submitted By Client",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "code",
+          "title",
+          "description",
+          "reason",
+          "milestone",
+          "requested_date",
+          "status",
+          "review_started_at",
+          "impact_schedule_days",
+          "impact_effort_hours",
+          "impact_scope",
+          "decision_note",
+          "decided_by",
+          "decided_at",
+          "submitted_by",
+          "submitted_by_client",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ChangeRequestOut",
+        "type": "object"
+      },
+      "ChangeRequestStatus": {
+        "description": "pending (just raised) -> in_review (the lead started the review) -> approved | declined.\nThe frontend labels approved as \"Accepted\".",
+        "enum": [
+          "pending",
+          "in_review",
+          "approved",
+          "declined"
+        ],
+        "title": "ChangeRequestStatus",
+        "type": "string"
+      },
+      "ChangeRequestUpdate": {
+        "additionalProperties": false,
+        "description": "Project lead or Manager, while the request is open (pending or in review): correct it\nand fill in the impact. Send `version` plus only the fields that change; null clears an\noptional field.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "impact_effort_hours": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Effort Hours"
+          },
+          "impact_schedule_days": {
+            "anyOf": [
+              {
+                "maximum": 3650.0,
+                "minimum": -3650.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Days the delivery moves (minus = earlier).",
+            "title": "Impact Schedule Days"
+          },
+          "impact_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Scope"
+          },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Milestone Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Date"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "ChangeRequestUpdate",
+        "type": "object"
+      },
+      "ChangeRequestVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "ChangeRequestVersion",
+        "type": "object"
+      },
+      "ClientAttachmentOut": {
+        "properties": {
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "uploaded_by": {
+            "description": "Name of the person who added it.",
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "content_type",
+          "size_bytes",
+          "uploaded_by",
+          "created_at"
+        ],
+        "title": "ClientAttachmentOut",
+        "type": "object"
+      },
+      "ClientChangeRequestBrief": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeRequestStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title",
+          "status"
+        ],
+        "title": "ClientChangeRequestBrief",
+        "type": "object"
+      },
+      "ClientChangeRequestListOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Requests per status (pending, in_review, approved, declined) and `total`.",
+            "title": "Counts",
+            "type": "object"
+          },
+          "items": {
+            "description": "Newest first.",
+            "items": {
+              "$ref": "#/components/schemas/ClientChangeRequestOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "counts"
+        ],
+        "title": "ClientChangeRequestListOut",
+        "type": "object"
+      },
+      "ClientChangeRequestOut": {
+        "description": "No effort hours and no internal people: what the client may see of a request.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decision_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Note"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "impact_schedule_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Days the delivery moves.",
+            "title": "Impact Schedule Days"
+          },
+          "impact_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Scope"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientMilestoneRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only if shown to the client."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Date"
+          },
+          "review_started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For the request timeline.",
+            "title": "Review Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeRequestStatus"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "submitted_by": {
+            "description": "Name of the person who raised it.",
+            "title": "Submitted By",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title",
+          "status",
+          "description",
+          "reason",
+          "milestone",
+          "requested_date",
+          "review_started_at",
+          "impact_schedule_days",
+          "impact_scope",
+          "decision_note",
+          "decided_at",
+          "submitted_by",
+          "submitted_at"
+        ],
+        "title": "ClientChangeRequestOut",
+        "type": "object"
+      },
+      "ClientCommentCreate": {
+        "additionalProperties": false,
+        "description": "A client's message: always part of the shared conversation.",
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "ClientCommentCreate",
+        "type": "object"
+      },
+      "ClientCommentOut": {
+        "description": "A message of the shared conversation (internal team notes never appear).",
+        "properties": {
+          "author": {
+            "description": "Name of the person who wrote it.",
+            "title": "Author",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "from_client": {
+            "description": "Written by a client contact (else by Borek).",
+            "title": "From Client",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "author",
+          "from_client",
+          "created_at"
+        ],
+        "title": "ClientCommentOut",
+        "type": "object"
+      },
       "ClientContactCreatedOut": {
         "properties": {
           "invite": {
@@ -1095,9 +1779,123 @@
         "title": "ClientContactOut",
         "type": "object"
       },
+      "ClientKpis": {
+        "description": "The four dashboard numbers, over the client's authorized projects.",
+        "properties": {
+          "active_projects": {
+            "description": "Not completed and not cancelled.",
+            "title": "Active Projects",
+            "type": "integer"
+          },
+          "awaiting_input": {
+            "description": "Genuine requests for client input. 0 until acceptance exists.",
+            "title": "Awaiting Input",
+            "type": "integer"
+          },
+          "shared_reports": {
+            "description": "Published reports.",
+            "title": "Shared Reports",
+            "type": "integer"
+          },
+          "upcoming_milestones": {
+            "description": "Shared, open, due in the next 14 days.",
+            "title": "Upcoming Milestones",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active_projects",
+          "awaiting_input",
+          "upcoming_milestones",
+          "shared_reports"
+        ],
+        "title": "ClientKpis",
+        "type": "object"
+      },
+      "ClientLatestReport": {
+        "properties": {
+          "health": {
+            "enum": [
+              "on_track",
+              "at_risk",
+              "off_track"
+            ],
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress shared in this report, if any.",
+            "title": "Progress"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "report_date": {
+            "format": "date",
+            "title": "Report Date",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "report_date",
+          "health",
+          "progress",
+          "summary",
+          "published_at",
+          "project_id",
+          "project_name"
+        ],
+        "title": "ClientLatestReport",
+        "type": "object"
+      },
       "ClientMilestoneOut": {
         "description": "A milestone the PM marked visible to the client. No owner, criteria or task details.",
         "properties": {
+          "change_request_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Request Code"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -1129,10 +1927,43 @@
             "title": "Name",
             "type": "string"
           },
+          "original_due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The date before an approved change request moved it (state revised).",
+            "title": "Original Due Date"
+          },
           "progress": {
-            "description": "0-100.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "100 once reached, else null = not available. Never task-based for clients.",
+            "title": "Progress"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A new date asked for by a change request still in review.",
+            "title": "Requested Date"
           },
           "state": {
             "$ref": "#/components/schemas/MilestoneState"
@@ -1145,9 +1976,30 @@
           "due_date",
           "state",
           "progress",
-          "completed_on"
+          "completed_on",
+          "original_due_date",
+          "requested_date",
+          "change_request_code"
         ],
         "title": "ClientMilestoneOut",
+        "type": "object"
+      },
+      "ClientMilestoneRef": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "ClientMilestoneRef",
         "type": "object"
       },
       "ClientOrganisationOut": {
@@ -1167,6 +2019,31 @@
           "name"
         ],
         "title": "ClientOrganisationOut",
+        "type": "object"
+      },
+      "ClientPersonOut": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "ClientPersonOut",
         "type": "object"
       },
       "ClientPhaseOut": {
@@ -1195,9 +2072,16 @@
             "type": "string"
           },
           "progress": {
-            "description": "Completed share, 0-100.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "100 once completed, else null = not available.",
+            "title": "Progress"
           },
           "start_date": {
             "format": "date",
@@ -1222,6 +2106,19 @@
       },
       "ClientPortalOut": {
         "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/ClientKpis"
+          },
+          "latest_report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientLatestReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "organisation": {
             "anyOf": [
               {
@@ -1248,7 +2145,7 @@
             "type": "object"
           },
           "upcoming_milestones": {
-            "description": "Visible milestones not done yet, across all projects, by due date (max 10).",
+            "description": "Shared milestones not done yet, due today to 14 days ahead, by due date.",
             "items": {
               "$ref": "#/components/schemas/ClientUpcomingMilestone"
             },
@@ -1256,7 +2153,7 @@
             "type": "array"
           },
           "updates": {
-            "description": "Newest published reports, at most 10.",
+            "description": "Newest events first, at most 10.",
             "items": {
               "$ref": "#/components/schemas/ClientUpdateOut"
             },
@@ -1267,6 +2164,8 @@
         "required": [
           "organisation",
           "projects",
+          "kpis",
+          "latest_report",
           "upcoming_milestones",
           "updates",
           "summary"
@@ -1276,6 +2175,14 @@
       },
       "ClientProjectDetailOut": {
         "properties": {
+          "activity": {
+            "description": "Newest events first, at most 10.",
+            "items": {
+              "$ref": "#/components/schemas/ClientUpdateOut"
+            },
+            "title": "Activity",
+            "type": "array"
+          },
           "category": {
             "anyOf": [
               {
@@ -1286,6 +2193,14 @@
               }
             ],
             "title": "Category"
+          },
+          "change_requests": {
+            "description": "Newest first.",
+            "items": {
+              "$ref": "#/components/schemas/ClientChangeRequestBrief"
+            },
+            "title": "Change Requests",
+            "type": "array"
           },
           "code": {
             "title": "Code",
@@ -1378,9 +2293,40 @@
             "description": "The earliest visible milestone that is not done yet."
           },
           "progress": {
-            "description": "Share of the project's tasks that are done, 0-100.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress the PM published (newest published report that shares one), 0-100. Null = not published yet (show 'Progress not published yet', never 0%).",
+            "title": "Progress"
+          },
+          "progress_published_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Date of the report that published `progress`.",
+            "title": "Progress Published On"
+          },
+          "project_manager": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The project lead; null = Project Manager not assigned yet."
           },
           "published_by": {
             "anyOf": [
@@ -1439,14 +2385,18 @@
           "due_date",
           "health",
           "progress",
+          "progress_published_on",
           "published_on",
           "published_by",
           "latest_update",
+          "project_manager",
           "next_milestone",
           "description",
           "contacts",
           "reports",
-          "milestones"
+          "milestones",
+          "change_requests",
+          "activity"
         ],
         "title": "ClientProjectDetailOut",
         "type": "object"
@@ -1529,9 +2479,40 @@
             "description": "The earliest visible milestone that is not done yet."
           },
           "progress": {
-            "description": "Share of the project's tasks that are done, 0-100.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress the PM published (newest published report that shares one), 0-100. Null = not published yet (show 'Progress not published yet', never 0%).",
+            "title": "Progress"
+          },
+          "progress_published_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Date of the report that published `progress`.",
+            "title": "Progress Published On"
+          },
+          "project_manager": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The project lead; null = Project Manager not assigned yet."
           },
           "published_by": {
             "anyOf": [
@@ -1582,9 +2563,11 @@
           "due_date",
           "health",
           "progress",
+          "progress_published_on",
           "published_on",
           "published_by",
           "latest_update",
+          "project_manager",
           "next_milestone"
         ],
         "title": "ClientProjectOut",
@@ -1605,6 +2588,18 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress shared in this report, if any.",
+            "title": "Progress"
           },
           "published_at": {
             "format": "date-time",
@@ -1630,6 +2625,7 @@
           "title",
           "report_date",
           "health",
+          "progress",
           "summary",
           "published_at"
         ],
@@ -1673,6 +2669,18 @@
               }
             ],
             "title": "Next Steps"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress shared in this report, if any.",
+            "title": "Progress"
           },
           "project_id": {
             "format": "uuid",
@@ -1728,6 +2736,7 @@
           "title",
           "report_date",
           "health",
+          "progress",
           "summary",
           "published_at",
           "achievements",
@@ -1806,6 +2815,17 @@
       },
       "ClientUpcomingMilestone": {
         "properties": {
+          "change_request_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Request Code"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -1837,10 +2857,30 @@
             "title": "Name",
             "type": "string"
           },
+          "original_due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The date before an approved change request moved it (state revised).",
+            "title": "Original Due Date"
+          },
           "progress": {
-            "description": "0-100.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "100 once reached, else null = not available. Never task-based for clients.",
+            "title": "Progress"
           },
           "project_id": {
             "format": "uuid",
@@ -1850,6 +2890,19 @@
           "project_name": {
             "title": "Project Name",
             "type": "string"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A new date asked for by a change request still in review.",
+            "title": "Requested Date"
           },
           "state": {
             "$ref": "#/components/schemas/MilestoneState"
@@ -1863,6 +2916,9 @@
           "state",
           "progress",
           "completed_on",
+          "original_due_date",
+          "requested_date",
+          "change_request_code",
           "project_id",
           "project_name"
         ],
@@ -1870,8 +2926,34 @@
         "type": "object"
       },
       "ClientUpdateOut": {
-        "description": "A recent published report, for the dashboard's \"latest updates\".",
+        "description": "A client-visible event: a published report, or a change request raised, taken into\nreview or decided. For \"Recent updates\" (dashboard) and \"Recent activity\" (overview).",
         "properties": {
+          "change_request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For kind change_request.",
+            "title": "Change Request Id"
+          },
+          "kind": {
+            "enum": [
+              "report",
+              "change_request"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -1881,29 +2963,67 @@
             "title": "Project Name",
             "type": "string"
           },
-          "published_at": {
-            "format": "date-time",
-            "title": "Published At",
-            "type": "string"
-          },
           "report_id": {
-            "format": "uuid",
-            "title": "Report Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For kind report.",
+            "title": "Report Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeRequestStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For kind change_request: the status this event set (pending = raised)."
           },
           "title": {
+            "description": "Report title, or the request code and title.",
             "title": "Title",
             "type": "string"
           }
         },
         "required": [
-          "report_id",
+          "kind",
           "project_id",
           "project_name",
           "title",
-          "published_at"
+          "occurred_at",
+          "report_id",
+          "change_request_id",
+          "status"
         ],
         "title": "ClientUpdateOut",
+        "type": "object"
+      },
+      "CommentCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "internal": {
+            "default": false,
+            "description": "Staff only: a note for the project team that the client never sees.",
+            "title": "Internal",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "CommentCreate",
         "type": "object"
       },
       "CommentEditIn": {
@@ -1963,63 +3083,6 @@
           "body"
         ],
         "title": "CommentIn",
-        "type": "object"
-      },
-      "CommentOut": {
-        "properties": {
-          "author": {
-            "$ref": "#/components/schemas/UserBrief"
-          },
-          "body": {
-            "title": "Body",
-            "type": "string"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "edited_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Edited At"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "mentions": {
-            "description": "People mentioned, sorted by name.",
-            "items": {
-              "$ref": "#/components/schemas/UserBrief"
-            },
-            "title": "Mentions",
-            "type": "array"
-          },
-          "task_id": {
-            "format": "uuid",
-            "title": "Task Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "task_id",
-          "author",
-          "body",
-          "mentions",
-          "created_at",
-          "edited_at"
-        ],
-        "title": "CommentOut",
         "type": "object"
       },
       "EstimateUnit": {
@@ -2903,6 +3966,36 @@
         "title": "MembershipOut",
         "type": "object"
       },
+      "MilestoneBrief": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date"
+        ],
+        "title": "MilestoneBrief",
+        "type": "object"
+      },
       "MilestoneCreate": {
         "additionalProperties": false,
         "properties": {
@@ -2989,6 +4082,18 @@
             "title": "At Risk",
             "type": "boolean"
           },
+          "change_request_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The open request asking for `requested_date`, else the approved one that moved the date.",
+            "title": "Change Request Code"
+          },
           "client_visible": {
             "title": "Client Visible",
             "type": "boolean"
@@ -3052,6 +4157,7 @@
             "type": "boolean"
           },
           "due_date": {
+            "description": "The current due date (after any approved change).",
             "format": "date",
             "title": "Due Date",
             "type": "string"
@@ -3064,6 +4170,19 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "original_due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The date before an approved change request moved it (state revised).",
+            "title": "Original Due Date"
           },
           "owner": {
             "anyOf": [
@@ -3088,14 +4207,34 @@
             "title": "Phase Id"
           },
           "progress": {
-            "description": "Done linked tasks / linked tasks, 0-100. Without linked tasks: 100 when done, else 0. Always 100 once done.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Done linked tasks / linked tasks, 0-100; 100 once done. Null = not available (no linked tasks and not done): never show it as 0%.",
+            "title": "Progress"
           },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
             "type": "string"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A new date asked for by a change request still in review.",
+            "title": "Requested Date"
           },
           "state": {
             "$ref": "#/components/schemas/MilestoneState"
@@ -3135,6 +4274,9 @@
           "description",
           "completion_criteria",
           "due_date",
+          "original_due_date",
+          "requested_date",
+          "change_request_code",
           "owner",
           "state",
           "done",
@@ -3158,6 +4300,18 @@
           "at_risk": {
             "title": "At Risk",
             "type": "boolean"
+          },
+          "change_request_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The open request asking for `requested_date`, else the approved one that moved the date.",
+            "title": "Change Request Code"
           },
           "client_visible": {
             "title": "Client Visible",
@@ -3222,6 +4376,7 @@
             "type": "boolean"
           },
           "due_date": {
+            "description": "The current due date (after any approved change).",
             "format": "date",
             "title": "Due Date",
             "type": "string"
@@ -3234,6 +4389,19 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "original_due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The date before an approved change request moved it (state revised).",
+            "title": "Original Due Date"
           },
           "owner": {
             "anyOf": [
@@ -3258,14 +4426,34 @@
             "title": "Phase Id"
           },
           "progress": {
-            "description": "Done linked tasks / linked tasks, 0-100. Without linked tasks: 100 when done, else 0. Always 100 once done.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Done linked tasks / linked tasks, 0-100; 100 once done. Null = not available (no linked tasks and not done): never show it as 0%.",
+            "title": "Progress"
           },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
             "type": "string"
+          },
+          "requested_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A new date asked for by a change request still in review.",
+            "title": "Requested Date"
           },
           "state": {
             "$ref": "#/components/schemas/MilestoneState"
@@ -3297,6 +4485,9 @@
           "description",
           "completion_criteria",
           "due_date",
+          "original_due_date",
+          "requested_date",
+          "change_request_code",
           "owner",
           "state",
           "done",
@@ -3315,10 +4506,11 @@
         "type": "object"
       },
       "MilestoneState": {
-        "description": "Worked out when read (first match wins): done, late, at_risk, in_progress, planned.",
+        "description": "Worked out when read (first match wins): done, late, revised, at_risk, in_progress,\nplanned.",
         "enum": [
           "done",
           "late",
+          "revised",
           "at_risk",
           "in_progress",
           "planned"
@@ -4003,9 +5195,16 @@
             "type": "integer"
           },
           "progress": {
-            "description": "Completed share, 0-100: done tasks of the phase's milestones; without linked tasks, the share of its milestones that are done.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Completed share, 0-100: done tasks of the phase's milestones; without linked tasks, the share of its milestones that are done; 100 once completed. Null = not available (no milestones yet).",
+            "title": "Progress"
           },
           "project_id": {
             "format": "uuid",
@@ -5459,9 +6658,16 @@
             "type": "integer"
           },
           "progress": {
-            "description": "Completed share, 0-100: done tasks of the phase's milestones; without linked tasks, the share of its milestones that are done.",
-            "title": "Progress",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Completed share, 0-100: done tasks of the phase's milestones; without linked tasks, the share of its milestones that are done; 100 once completed. Null = not available (no milestones yet).",
+            "title": "Progress"
           },
           "project_id": {
             "format": "uuid",
@@ -5940,6 +7146,20 @@
             ],
             "title": "Next Steps"
           },
+          "progress_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress shared with the client (0-100). Empty: not shared in this report.",
+            "title": "Progress Percent"
+          },
           "rag": {
             "$ref": "#/components/schemas/RagStatus"
           },
@@ -6047,6 +7267,17 @@
             ],
             "title": "Next Steps"
           },
+          "progress_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Percent"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -6114,6 +7345,7 @@
           "id",
           "project_id",
           "rag",
+          "progress_percent",
           "summary",
           "achievements",
           "next_steps",
@@ -6155,6 +7387,20 @@
               }
             ],
             "title": "Next Steps"
+          },
+          "progress_percent": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null clears.",
+            "title": "Progress Percent"
           },
           "rag": {
             "anyOf": [
@@ -6993,6 +8239,232 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "app__change_requests__schemas__AttachmentOut": {
+        "properties": {
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "uploaded_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "content_type",
+          "size_bytes",
+          "uploaded_by",
+          "created_at"
+        ],
+        "title": "AttachmentOut",
+        "type": "object"
+      },
+      "app__change_requests__schemas__CommentOut": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "author_is_client": {
+            "title": "Author Is Client",
+            "type": "boolean"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "internal": {
+            "title": "Internal",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "internal",
+          "author",
+          "author_is_client",
+          "created_at"
+        ],
+        "title": "CommentOut",
+        "type": "object"
+      },
+      "app__tasks__details_schemas__AttachmentOut": {
+        "properties": {
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Files only; needs the same auth as the API.",
+            "title": "Download Url"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "description": "'file' (stored by us) or 'link' (URL only).",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "task_id": {
+            "format": "uuid",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "$ref": "#/components/schemas/UserBrief"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Links only.",
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "task_id",
+          "kind",
+          "name",
+          "url",
+          "download_url",
+          "content_type",
+          "size_bytes",
+          "uploaded_by",
+          "created_at"
+        ],
+        "title": "AttachmentOut",
+        "type": "object"
+      },
+      "app__tasks__details_schemas__CommentOut": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserBrief"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "edited_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mentions": {
+            "description": "People mentioned, sorted by name.",
+            "items": {
+              "$ref": "#/components/schemas/UserBrief"
+            },
+            "title": "Mentions",
+            "type": "array"
+          },
+          "task_id": {
+            "format": "uuid",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "task_id",
+          "author",
+          "body",
+          "mentions",
+          "created_at",
+          "edited_at"
+        ],
+        "title": "CommentOut",
         "type": "object"
       }
     }
@@ -8077,6 +9549,454 @@
           }
         },
         "summary": "Get Project",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/change-requests": {
+      "get": {
+        "description": "The project's change requests, newest first, with counts per status.",
+        "operationId": "list_change_requests_api_v1_client_projects__project_id__change_requests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientChangeRequestListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Change Requests",
+        "tags": [
+          "client"
+        ]
+      },
+      "post": {
+        "description": "Raise a request. To move a milestone, send its id (one shown to you) and the new date.",
+        "operationId": "submit_change_request_api_v1_client_projects__project_id__change_requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Change Request",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/change-requests/{request_id}": {
+      "get": {
+        "operationId": "get_change_request_api_v1_client_projects__project_id__change_requests__request_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Change Request",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/change-requests/{request_id}/attachments": {
+      "get": {
+        "operationId": "list_change_request_attachments_api_v1_client_projects__project_id__change_requests__request_id__attachments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientAttachmentOut"
+                  },
+                  "title": "Response List Change Request Attachments Api V1 Client Projects  Project Id  Change Requests  Request Id  Attachments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Change Request Attachments",
+        "tags": [
+          "client"
+        ]
+      },
+      "post": {
+        "description": "Allowed: documents, spreadsheets, images, PDFs, text, audio; at most MAX_UPLOAD_MB.",
+        "operationId": "upload_change_request_attachment_api_v1_client_projects__project_id__change_requests__request_id__attachments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_change_request_attachment_api_v1_client_projects__project_id__change_requests__request_id__attachments_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAttachmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Change Request Attachment",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/change-requests/{request_id}/attachments/{attachment_id}/download": {
+      "get": {
+        "operationId": "download_change_request_attachment_api_v1_client_projects__project_id__change_requests__request_id__attachments__attachment_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attachment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Change Request Attachment",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/change-requests/{request_id}/comments": {
+      "get": {
+        "description": "The shared conversation, oldest first (internal team notes never appear).",
+        "operationId": "list_change_request_comments_api_v1_client_projects__project_id__change_requests__request_id__comments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientCommentOut"
+                  },
+                  "title": "Response List Change Request Comments Api V1 Client Projects  Project Id  Change Requests  Request Id  Comments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Change Request Comments",
+        "tags": [
+          "client"
+        ]
+      },
+      "post": {
+        "operationId": "add_change_request_comment_api_v1_client_projects__project_id__change_requests__request_id__comments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientCommentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientCommentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Change Request Comment",
         "tags": [
           "client"
         ]
@@ -9783,6 +11703,661 @@
         "summary": "Update Project",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests": {
+      "get": {
+        "description": "Newest first, with counts per status (for the overview card).",
+        "operationId": "list_change_requests_api_v1_projects__project_id__change_requests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChangeRequestStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Change Requests",
+        "tags": [
+          "change requests"
+        ]
+      },
+      "post": {
+        "description": "Starts in review and gets the next code (CR-01, CR-02 ...).",
+        "operationId": "create_change_request_api_v1_projects__project_id__change_requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Change Request",
+        "tags": [
+          "change requests"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests/{request_id}": {
+      "get": {
+        "operationId": "get_change_request_api_v1_projects__project_id__change_requests__request_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Change Request",
+        "tags": [
+          "change requests"
+        ]
+      },
+      "patch": {
+        "description": "While open (pending or in review): correct it and fill in the impact (409\nCHANGE_REQUEST_CLOSED once decided).",
+        "operationId": "update_change_request_api_v1_projects__project_id__change_requests__request_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Change Request",
+        "tags": [
+          "change requests"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests/{request_id}/attachments": {
+      "get": {
+        "operationId": "list_attachments_api_v1_projects__project_id__change_requests__request_id__attachments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/app__change_requests__schemas__AttachmentOut"
+                  },
+                  "title": "Response List Attachments Api V1 Projects  Project Id  Change Requests  Request Id  Attachments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Attachments",
+        "tags": [
+          "change requests"
+        ]
+      },
+      "post": {
+        "description": "Same rules as task files (types, MAX_UPLOAD_MB). The client sees every attachment.",
+        "operationId": "upload_attachment_api_v1_projects__project_id__change_requests__request_id__attachments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_attachment_api_v1_projects__project_id__change_requests__request_id__attachments_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__change_requests__schemas__AttachmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Attachment",
+        "tags": [
+          "change requests"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests/{request_id}/attachments/{attachment_id}/download": {
+      "get": {
+        "operationId": "download_attachment_api_v1_projects__project_id__change_requests__request_id__attachments__attachment_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attachment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Attachment",
+        "tags": [
+          "change requests"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests/{request_id}/comments": {
+      "get": {
+        "description": "Oldest first: the shared conversation and the team's internal notes (`internal`).",
+        "operationId": "list_comments_api_v1_projects__project_id__change_requests__request_id__comments_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/app__change_requests__schemas__CommentOut"
+                  },
+                  "title": "Response List Comments Api V1 Projects  Project Id  Change Requests  Request Id  Comments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Comments",
+        "tags": [
+          "change requests"
+        ]
+      },
+      "post": {
+        "description": "`internal: true` = a note only the project team sees; otherwise the client sees it.",
+        "operationId": "add_comment_api_v1_projects__project_id__change_requests__request_id__comments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__change_requests__schemas__CommentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Comment",
+        "tags": [
+          "change requests"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests/{request_id}/decision": {
+      "post": {
+        "description": "Approve or decline an in-review request (409 REVIEW_NOT_STARTED while pending); final.\nApproving a request with a milestone and a requested date moves the milestone to that date\n(it then shows as revised).",
+        "operationId": "decide_change_request_api_v1_projects__project_id__change_requests__request_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Change Request",
+        "tags": [
+          "change requests"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/change-requests/{request_id}/start-review": {
+      "post": {
+        "description": "pending -> in_review (409 NOT_PENDING otherwise).",
+        "operationId": "start_review_api_v1_projects__project_id__change_requests__request_id__start_review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestVersion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Review",
+        "tags": [
+          "change requests"
         ]
       }
     },
@@ -13368,7 +15943,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/AttachmentOut"
+                    "$ref": "#/components/schemas/app__tasks__details_schemas__AttachmentOut"
                   },
                   "title": "Response List Attachments Api V1 Tasks  Task Id  Attachments Get",
                   "type": "array"
@@ -13423,7 +15998,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AttachmentOut"
+                  "$ref": "#/components/schemas/app__tasks__details_schemas__AttachmentOut"
                 }
               }
             },
@@ -13477,7 +16052,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AttachmentOut"
+                  "$ref": "#/components/schemas/app__tasks__details_schemas__AttachmentOut"
                 }
               }
             },
@@ -13620,7 +16195,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CommentOut"
+                    "$ref": "#/components/schemas/app__tasks__details_schemas__CommentOut"
                   },
                   "title": "Response List Comments Api V1 Tasks  Task Id  Comments Get",
                   "type": "array"
@@ -13674,7 +16249,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommentOut"
+                  "$ref": "#/components/schemas/app__tasks__details_schemas__CommentOut"
                 }
               }
             },
@@ -13783,7 +16358,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommentOut"
+                  "$ref": "#/components/schemas/app__tasks__details_schemas__CommentOut"
                 }
               }
             },
