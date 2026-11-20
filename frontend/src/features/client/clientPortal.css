@@ -314,13 +314,13 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 /* Dark palette of the client screens (manager.png): slate page and cards, indigo progress, soft blue links. */
 :root[data-theme=dark] .am.am-slate{
   --ink:#E8EDF7;--muted:#B6C2D5;--muted2:#B6C2D5;--line:#313F54;--bg:#0E1422;--card:#171F2F;
-  --topbar:#171F2F;--field:#121A29;--blue:#8AB8FF;--blue2:#8AB8FF;--blue-soft:#1A2E4C;--sidebar:#0E1422;
+  --topbar:#171F2F;--field:#121A29;--blue:#8AB8FF;--blue2:#8AB8FF;--blue-soft:#1A2E4C;--sidebar:#0D1240;
   --ok-bg:#16382F;--ok:#8CE7B9;--bad-bg:#3F222A;--bad:#FFA7A2;--navy:#E8EDF7;
 }
 :root[data-theme=dark] .am.am-slate .topbar{border-bottom-color:transparent}
 :root[data-theme=dark] .am.am-slate .topbar h2::after{background:#454AAD}
 :root[data-theme=dark] .am.am-slate .bell{color:#5C6178}
-:root[data-theme=dark] .am.am-slate .nav a.active{background:#171F2F;color:#fff}
+:root[data-theme=dark] .am.am-slate .nav a.active{background:#1A2158;color:#fff}
 :root[data-theme=dark] .am.am-slate .cp.cp{
   --navy:#E8EDF7;--slate:#B6C2D5;--mute:#B6C2D5;--blue:#8AB8FF;--bg:#121A29;--line:#313F54;--surface:#171F2F;
   --green-bg:#16382F;--green:#8CE7B9;--red:#FFA7A2;--red-bg:#3F222A;
