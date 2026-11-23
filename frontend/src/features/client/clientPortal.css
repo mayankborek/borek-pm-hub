@@ -327,3 +327,39 @@ h3.cp-sec{font-size:var(--fs-18);font-weight:600;margin-top:32px}
   --cx-icon-bg:#1A2E4C;--cx-bar:#454AAD;--cx-primary:#454AAD;
 }
 :root[data-theme=dark] .am.am-slate .cx-stat .cx-stat-ico.cx-red{color:#FFA7A2}
+
+/* ───── Tablet (601–1024px): notifications panel and user menu, from notifications-and-user-menu.html ───── */
+.cp-notif-sub,.cp-notif-avatar,.cp-notif-dot,.cp-menu{display:none}
+@media (min-width:601px) and (max-width:1024px){
+  .cp-notif{width:400px;padding:0;border-radius:12px;overflow:hidden}
+  .cp-notif-title{padding:24px 21px 0;font-size:var(--fs-16);line-height:24px}
+  .cp-notif-sub{display:flex;justify-content:space-between;align-items:center;height:54px;padding:0 21px;border-bottom:1px solid var(--line);font-size:var(--fs-12);line-height:16px;color:var(--muted)}
+  .cp-notif-sub button{color:var(--blue);font-weight:500}
+  .cp-notif-sub button:hover{text-decoration:underline}
+  .cp-notif-list{gap:0;margin:0}
+  .cp-notif-list li{border-bottom:1px solid var(--line)}
+  .cp-notif-list li:last-child{border-bottom:0}
+  .cp-notif-item{display:flex;flex-wrap:wrap;column-gap:12px;align-content:flex-start;height:82px;padding:18px 38px 0 21px}
+  .cp-notif-item.cp-unread::before{display:none}
+  .cp-notif-avatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--blue);font-size:var(--fs-9);font-weight:700}
+  .cp-notif-headline,.cp-notif-meta{flex:1 0 calc(100% - 46px);max-width:calc(100% - 46px);font-size:var(--fs-13);line-height:20px;font-weight:400}
+  .cp-notif-headline{margin-left:0}
+  .cp-notif-meta{color:var(--blue);margin-top:2px}
+  .cp-notif-avatar{position:absolute;left:21px;top:18px}
+  .cp-notif-headline,.cp-notif-meta{margin-left:46px}
+  .cp-notif-dot{display:none;position:absolute;top:18px;right:22px;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+  .cp-notif-item.cp-unread .cp-notif-dot{display:block}
+
+  .cp-usermenu-wrap{position:relative;display:flex}
+  .am .topbar .cp-usermenu-wrap>button.user{cursor:pointer}
+  .cp-menu{display:block;position:absolute;top:calc(100% + 8px);right:0;z-index:10;width:247px;padding:18px 12px 12px;background:#202B3D;border:1px solid #465773;border-radius:12px;color:#E8EDF7}
+  .cp-menu-user{display:flex;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid #1D3153}
+  .cp-menu-avatar{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#121A29;font-size:var(--fs-10);font-weight:500}
+  .cp-menu-name{font-size:var(--fs-14);line-height:18px;font-weight:500}
+  .cp-menu-email{font-size:var(--fs-11);line-height:14px;color:#B6C2D5}
+  .cp-menu-item{display:block;width:100%;margin-top:4px;padding:9px 10px;border-radius:6px;text-align:left;font-size:var(--fs-14);line-height:20px;color:#E8EDF7}
+  .cp-menu-user+.cp-menu-item{margin-top:8px}
+  :where(.cp) a.cp-menu-item{color:#E8EDF7}
+  .cp-menu-item:hover{background:rgba(255,255,255,.06);text-decoration:none}
+  .cp-menu-link,:where(.cp) a.cp-menu-link{color:#A9C9FF}
+}

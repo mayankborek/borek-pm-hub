@@ -3,8 +3,8 @@ import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import amLogo from '@/assets/borek-flow-portal-logo.svg';
-import { initialsOf } from './format';
 import { Notifications } from './Notifications';
+import { UserMenu } from './UserMenu';
 import { Toast } from '@/features/accountManager/AccountManagerLayout';
 import '@/features/accountManager/am.css';
 import './clientPortal.css';
@@ -46,10 +46,7 @@ export function ClientLayout() {
               <span className="cp cp-tools">
                 <Notifications />
               </span>
-              <Link to={paths.clientProfile} className="user">
-                <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
-                {user.name}
-              </Link>
+              <UserMenu />
             </div>
           </header>
           <main className="content">

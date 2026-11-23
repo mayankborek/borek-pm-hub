@@ -21,6 +21,7 @@ export function Notifications() {
   const inManager = useLocation().pathname.startsWith('/manager');
   const { data } = useClientPortal();
   const [open, setOpen] = useState(false);
+  const [readAll, setReadAll] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const button = useRef<HTMLButtonElement>(null);
 
@@ -44,7 +45,8 @@ export function Notifications() {
   }, [open]);
 
   const items = data?.notifications ?? [];
-  const unread = items.filter((n) => n.unread).length;
+  const isUnread = (n: { unread: boolean }) => n.unread && !readAll;
+  const unread = items.filter(isUnread).length;
 
   return (
     <span ref={wrap}>
@@ -62,12 +64,18 @@ export function Notifications() {
       {open && (
         <div className="cp-notif" id="cp-notifications" role="region" aria-label={t('Notifications')}>
           <h2 className="cp-notif-title">{t('Notifications')}</h2>
+          <div className="cp-notif-sub">
+            <span>{t('{n} unread', { n: unread })}</span>
+            <button type="button" onClick={() => setReadAll(true)}>{t('Mark all as read')}</button>
+          </div>
           <ul className="cp-notif-list">
             {items.map((n) => (
               <li key={n.id}>
-                <Link className={n.unread ? 'cp-notif-item cp-unread' : 'cp-notif-item'} to={inManager ? n.to.replace('/client/', '/manager/').replace('/contacts', '/stakeholders') : n.to} onClick={() => setOpen(false)}>
+                <Link className={isUnread(n) ? 'cp-notif-item cp-unread' : 'cp-notif-item'} to={inManager ? n.to.replace('/client/', '/manager/').replace('/contacts', '/stakeholders') : n.to} onClick={() => setOpen(false)}>
+                  <span className="cp-notif-avatar" aria-hidden="true">BF</span>
                   <span className="cp-notif-headline">{t(n.headline)}</span>
                   <span className="cp-notif-meta">{n.meta}</span>
+                  <span className="cp-notif-dot" aria-hidden="true" />
                 </Link>
               </li>
             ))}

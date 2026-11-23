@@ -148,10 +148,24 @@
 .am .toast.show{opacity:1;transform:translateX(-50%)}
 
 @media(max-width:1000px){
-.am .shell{grid-template-columns:1fr}
-.am .sidebar{display:none}
 .am .grid4{grid-template-columns:1fr 1fr}
 .am .home-grid,.am .grid2,.am .pcards,.am .sgrid,.am .fields{grid-template-columns:1fr}
+}
+/* Zoomed in / narrow windows: the sidebar stacks above the content as a wrapping nav row (never hidden), the top bar wraps. */
+@media(max-width:860px){
+.am .shell{grid-template-columns:minmax(0,1fr)}
+.am .sidebar{padding:12px 16px;border-right:0;border-bottom:1px solid var(--line)}
+.am .sidebar .sub{margin:4px 0 12px}
+.am .nav{display:flex;flex-wrap:wrap;gap:4px}
+.am .nav a{margin-bottom:0}
+.am .topbar{height:auto;min-height:70px;flex-wrap:wrap;gap:8px;padding:8px 16px;position:static}
+.am .topbar h2{height:auto;min-height:54px}
+.am .topbar .right{gap:12px;flex-wrap:wrap}
+.am .content{padding:16px}
+}
+@media(max-width:600px){
+.am .grid4{grid-template-columns:1fr}
+.am .user{padding-left:0;border-left:0}
 }
 .am .pswitch{position:relative}
 .am .pswitch nav{position:absolute;top:100%;left:0;margin-top:6px;min-width:220px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:6px;z-index:6;box-shadow:0 6px 18px rgba(13,18,64,.12)}
@@ -248,3 +262,7 @@
 .am .setting-control .switch{width:40px;height:22px;border-radius:11px}
 .am .setting-control .switch::after{display:block;top:3px;left:3px;width:16px;height:16px}
 .am .setting-control .switch[aria-checked=true]::after{display:block;left:21px}
+@media(max-width:860px){
+.am .topbar{gap:8px;padding:8px 16px}
+.am .content{padding:16px}
+}
