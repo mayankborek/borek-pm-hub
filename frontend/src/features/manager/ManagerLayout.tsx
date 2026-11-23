@@ -8,6 +8,7 @@ import { Notifications } from '@/features/client/Notifications';
 import { Toast } from '@/features/accountManager/AccountManagerLayout';
 import '@/features/accountManager/am.css';
 import '@/features/client/clientPortal.css';
+import '@/features/client/slateRounded.css';
 
 /** Top bar title per screen (borek_screens.html): the project tabs are titled by their section. */
 function titleFor(pathname: string) {

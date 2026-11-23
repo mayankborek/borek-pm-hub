@@ -8,6 +8,7 @@ import { UserMenu } from './UserMenu';
 import { Toast } from '@/features/accountManager/AccountManagerLayout';
 import '@/features/accountManager/am.css';
 import './clientPortal.css';
+import './slateRounded.css';
 
 /** The design titles every project tab "Client Portal", except Overview and a single report. */
 function titleFor(pathname: string) {

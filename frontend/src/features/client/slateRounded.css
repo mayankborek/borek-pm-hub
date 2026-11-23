@@ -1,0 +1,31 @@
+/* Rounded corners for every screen in the client and manager shells (.am.am-slate).
+   The base sheets are square; this loads last and is scoped so account manager and admin keep their look.
+   Scale: 12px panels and dialogs, 8px controls and chips, pill for bars, 50% for avatars and dots. */
+.am.am-slate{--r-panel:12px;--r-ctl:8px;--r-pill:999px}
+
+/* panels, cards, dialogs, menus */
+.am.am-slate :is(.card,.cx-card,.cx-stat,.cx-latest,.cx-pcard,.cx-lcard,.cx-pr,.cx-pp,.cx-kpi,.cx-nm,.cx-lu,.cx-ra,
+  .cp-card,.cp-contact,.spanel,.state,.table-wrap,.td-card,.td-attach,.amr,.mg-person,.kcard,
+  .cp-dialog,.pf-dialog,.ad-dialog,.cx-switch,.pswitch nav){border-radius:var(--r-panel)}
+.am.am-slate .cx-ra > .cx-box{border-radius:var(--r-ctl)}
+.am.am-slate .cx-switch{overflow:hidden}
+
+/* buttons, fields, chips, tags, badges */
+.am.am-slate :is(.btn,.btn.primary,.btn.blue,.cx-btn,.cx-btn.cx-dl,.cp-pbtn,.cp-dbtn,.cp-select-btn,.cp-pfield-input,
+  .pf-btn,.cx-chip,.cx-tag,.cx-badge,.cx-status,.cx-st,.cx-rchip,.cx-search,.cx-d,.cx-box,.cx-picon,.cx-ib,
+  .pill,.pill.overdue,.badge,.input,.field,.setrow,.toast,.filter-count,.outline-btn,.form-alert,.amr-axis em,
+  .task-group-action button,.nav a,.user,.rename input,.screator input,.kpick-btn){border-radius:var(--r-ctl)}
+.am.am-slate .cp .cx-btn,.am.am-slate .cp .cx-btn.cx-dl{border-radius:var(--r-ctl)}
+.am.am-slate :is(select,textarea,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file])){border-radius:var(--r-ctl)}
+.am.am-slate .pf-field input,.am.am-slate .field input,.am.am-slate .ad-input{border-radius:var(--r-ctl)}
+.am.am-slate .task-list-page .btn,.am.am-slate .dashboard .btn{border-radius:var(--r-ctl)}
+
+/* progress and segmented bars */
+.am.am-slate :is(.cx-bar,.cx-bar i,.cx-pcard .cx-bar,.bar,.bar>i,.pcard .bar,.pcard .bar>i,.cr .bar,
+  .progress-track,.progress-fill,.mg-share,.mg-share i,.mg-bar){border-radius:var(--r-pill)}
+.am.am-slate .cx-segs i{border-radius:4px}
+.am.am-slate .cp-lg span::before{border-radius:2px}
+
+/* avatars, dots, legend swatches */
+.am.am-slate :is(.cp-avatar,.avatar,.bell .dot,.cp-legend div::before,.legend i,.cx-avatar,.cx-st i,.pill .dot,
+  .amr-dot i,.amr-circ,.cp-contact-initials){border-radius:50%}

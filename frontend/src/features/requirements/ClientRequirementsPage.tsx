@@ -4,6 +4,7 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { useProjectContext } from '@/features/client/ClientProjectLayout';
 import { useApiProjectId } from '@/features/client/changeRequestsApi';
+import { longDate } from '@/features/client/format';
 import { Badge, EmptyCard, ErrorCard, LoadingCard } from '@/features/client/ui';
 import type { Tone } from '@/features/client/labels';
 import {
@@ -18,7 +19,6 @@ import {
 import './requirements.css';
 
 const DECISIONS: Decision[] = ['accepted', 'changes_requested', 'rejected'];
-const day = (stamp: string) => stamp.slice(0, 10);
 
 /** Client Requirements: review the published version of each requirement and record the answer. */
 export function ClientRequirementsPage() {
@@ -85,12 +85,12 @@ function RequirementCard({ requirement: r, projectId }: { requirement: ClientReq
 }
 
 function VersionView({ version: v }: { version: ClientVersion }) {
-  const { t } = usePrefs();
+  const { t, lang } = usePrefs();
   return (
     <>
       <div className="req-vhead">
         <b>v{v.number}</b>
-        <small>{t('Published {date}', { date: day(v.published_at) })}</small>
+        <small>{t('Published {date}', { date: longDate(lang, v.published_at.slice(0, 10)) })}</small>
       </div>
       <p>{v.description}</p>
       {v.change_note && <p className="req-note">{t('Changed: {note}', { note: v.change_note })}</p>}
@@ -102,7 +102,7 @@ function VersionView({ version: v }: { version: ClientVersion }) {
       )}
       {v.response && v.responded_at && (
         <p className="req-answer">
-          <b>{t(DECISION_LABEL[v.response])}</b> · {v.responded_by} · {day(v.responded_at)}
+          <b>{t(DECISION_LABEL[v.response])}</b> · {v.responded_by} · {longDate(lang, v.responded_at.slice(0, 10))}
           {v.response_comment && <> — {v.response_comment}</>}
         </p>
       )}
