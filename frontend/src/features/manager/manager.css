@@ -1,5 +1,5 @@
 .mg-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
-.mg-person{background:var(--card,#1a2233);border:1px solid var(--line,#26324a);border-radius:12px;padding:20px 24px}
+.mg-person{background:var(--card,#1a2233);border:1px solid var(--line,#26324a);border-radius:0;padding:20px 24px}
 .mg-kind{display:flex;justify-content:space-between;font-size:var(--fs-10);letter-spacing:.04em;text-transform:uppercase;opacity:.75}
 .mg-who{display:flex;align-items:center;gap:14px;margin:18px 0;padding-bottom:18px;border-bottom:1px solid var(--line,#26324a)}
 .mg-who h3{font-size:var(--fs-18);font-weight:600;margin:0}
