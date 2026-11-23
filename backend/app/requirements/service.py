@@ -22,6 +22,7 @@ from app.common.enums import ProjectType
 from app.core.errors import AppError
 from app.milestones.models import Milestone
 from app.milestones.service import check_milestone
+from app.notifications import events as notifications
 from app.organisations.schemas import PersonBrief
 from app.projects.models import Project, ProjectMember
 from app.requirements.models import (
@@ -413,6 +414,7 @@ async def publish(
         project_id=project.id,
         after={"code": requirement.code, "version": latest.number},
     )
+    await notifications.requirement_published(session, actor, requirement, latest.number)
     await _commit(session)
     await session.refresh(requirement)
     return requirement
@@ -595,6 +597,9 @@ async def respond(
         requirement.id,
         project_id=project_id,
         after={"code": requirement.code, "version": newest.number},
+    )
+    await notifications.requirement_answered(
+        session, actor, requirement, newest.number, data.decision.value
     )
     await _commit(session)
     await session.refresh(requirement)

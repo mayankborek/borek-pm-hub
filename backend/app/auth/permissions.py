@@ -166,6 +166,11 @@ def account_manager_condition() -> ColumnElement[bool]:
     return User.global_role == GlobalRole.ACCOUNT_MANAGER.value
 
 
+def client_condition() -> ColumnElement[bool]:
+    """SQL condition for "is a client contact" (for example, who sees a project in the portal)."""
+    return User.global_role == GlobalRole.CLIENT.value
+
+
 def admin_condition() -> ColumnElement[bool]:
     """SQL condition for "is an administrator" (the last-admin rule counts them)."""
     return User.global_role == GlobalRole.ADMIN.value

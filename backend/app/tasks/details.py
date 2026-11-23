@@ -14,6 +14,7 @@ from app.common.validation import has_control_chars
 from app.core import storage
 from app.core.config import get_settings
 from app.core.errors import AppError
+from app.notifications import events as notifications
 from app.projects.models import ProjectMember
 from app.tasks import activity
 from app.tasks.details_schemas import (
@@ -177,6 +178,7 @@ async def add_comment(
     await session.flush()  # the comment id, for the mention rows
     session.add_all(TaskCommentMention(comment_id=comment.id, user_id=u.id) for u in mentioned)
     activity.record(session, task.id, user.id, "commented")
+    await notifications.task_commented(session, user, task, comment.id, [u.id for u in mentioned])
     await session.commit()
     return _comment_out(comment, user, mentioned)
 
@@ -196,7 +198,10 @@ async def edit_comment(
     if mention_ids is None:
         mentioned = (await _mentioned_by_comment(session, [comment.id]))[comment.id]
     else:
+        before = {u.id for u in (await _mentioned_by_comment(session, [comment.id]))[comment.id]}
         mentioned = await _mentionable(session, task.project_id, mention_ids)
+        added = [u.id for u in mentioned if u.id not in before]
+        await notifications.task_mentioned(session, user, task, comment.id, added)
         await session.execute(
             delete(TaskCommentMention).where(TaskCommentMention.comment_id == comment.id)
         )
@@ -275,6 +280,7 @@ async def add_link(session: AsyncSession, task: Task, user: User, data: LinkIn) 
     )
     session.add(item)
     activity.record(session, task.id, user.id, "attachment_added", {"attachment": [None, name]})
+    await notifications.task_attachment_added(session, user, task, name)
     await session.commit()
     return _attachment_out(item, user)
 
@@ -380,6 +386,7 @@ async def add_file(
     )
     session.add(item)
     activity.record(session, task.id, user.id, "attachment_added", {"attachment": [None, name]})
+    await notifications.task_attachment_added(session, user, task, name)
     await session.commit()
     return _attachment_out(item, user)
 

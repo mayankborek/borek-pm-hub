@@ -19,6 +19,7 @@ from app.common.enums import (
 from app.common.validation import like_escape
 from app.core.errors import AppError
 from app.milestones import service as milestones
+from app.notifications import events as notifications
 from app.projects.membership import visible_project_ids
 from app.projects.models import Project, ProjectMember
 from app.tasks import activity, statuses
@@ -428,6 +429,7 @@ async def create_task(
     try:
         await session.flush()
         activity.record(session, task.id, user.id, "created")
+        await notifications.task_created(session, user, task)
         await session.commit()
     except IntegrityError:
         await session.rollback()
@@ -500,6 +502,7 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
     old_status = await session.get(WorkflowStatus, task.status_id)
     assert old_status is not None
     old_assignee = await _user_name(session, task.assignee_id)
+    old_assignee_id = task.assignee_id
     before = activity.snapshot(task, old_status.name, old_assignee)
     new_assignee = (
         await _user_name(session, changes["assignee_id"])
@@ -525,6 +528,17 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
     )
     if changed:
         activity.record(session, task.id, actor.id, "updated", changed)
+        await notifications.task_changed(
+            session,
+            actor,
+            task,
+            fields=sorted(changed),
+            old_assignee_id=old_assignee_id,
+            status=(new_status or old_status).name if "status" in changed else None,
+            became_blocked=new_status is not None
+            and new_status.category == StatusCategory.BLOCKED.value
+            and old_status.category != StatusCategory.BLOCKED.value,
+        )
 
     try:
         await session.commit()
@@ -548,7 +562,17 @@ async def assign_task(
             await _user_name(session, assignee_id),
         ]
         activity.record(session, task.id, actor.id, "updated", {"assignee": names})
+        old_assignee_id = task.assignee_id
         task.assignee_id = assignee_id
+        await notifications.task_changed(
+            session,
+            actor,
+            task,
+            fields=["assignee"],
+            old_assignee_id=old_assignee_id,
+            status=None,
+            became_blocked=False,
+        )
         try:
             await session.commit()
         except StaleDataError:

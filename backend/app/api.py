@@ -11,6 +11,7 @@ from app.client.router import router as client_router
 from app.dashboard.router import router as dashboard_router
 from app.finance.router import router as finance_router
 from app.milestones.router import router as milestones_router
+from app.notifications.router import router as notifications_router
 from app.organisations.router import router as organisations_router
 from app.portfolio.router import router as portfolio_router
 from app.projects.router import router as projects_router
@@ -29,6 +30,7 @@ api_router.include_router(details_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(users_router)
 api_router.include_router(me_router)
+api_router.include_router(notifications_router)
 api_router.include_router(client_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_roles_router)
