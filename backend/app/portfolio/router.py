@@ -12,7 +12,7 @@ from app.common.enums import GlobalRole, ProjectStatus, RagStatus
 from app.common.validation import PageParam, PageSizeParam
 from app.core.database import SessionDep
 from app.portfolio import service
-from app.portfolio.schemas import AccessOverviewOut, PortfolioOut, PortfolioSort
+from app.portfolio.schemas import AccessOverviewOut, PortfolioOut, PortfolioSort, PortfolioStage
 
 router = APIRouter(tags=["portfolio"])
 
@@ -27,12 +27,14 @@ async def portfolio(
     status: ProjectStatus | None = None,
     client_organisation_id: uuid.UUID | None = None,
     rag: RagStatus | None = None,
+    stage: PortfolioStage | None = None,
     sort: PortfolioSort = "code",
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> PortfolioOut:
-    """Active projects with leads, task counts, current RAG and money: all of them for a Manager,
-    those of the assigned clients for an Account Manager."""
+    """Active projects with leads, task counts, current RAG, published progress, next milestone
+    and money: all of them for a Manager, those of the assigned clients for an Account Manager.
+    `stage`: active (not completed or cancelled) or completed."""
     require(user, Action.PORTFOLIO_VIEW)
     return await service.portfolio(
         session,
@@ -41,6 +43,7 @@ async def portfolio(
         status=status,
         client_organisation_id=client_organisation_id,
         rag=rag,
+        stage=stage,
         sort=sort,
         page=page,
         page_size=page_size,

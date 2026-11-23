@@ -395,6 +395,7 @@ async def test_settings_per_role_and_muting(client: httpx.AsyncClient, world: Wo
         "change_requests",
         "requirements",
         "reports",
+        "milestones",
     ]
     assert all(s["enabled"] for s in staff["settings"])
     assert [s["key"] for s in clients["settings"]] == [

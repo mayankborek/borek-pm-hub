@@ -586,6 +586,7 @@ async def create_milestone(
         project_id=project_id,
         code=await _next_code(session, project_id),
         created_by=actor.id,
+        shared_at=datetime.now(UTC) if data.client_visible else None,
         **data.model_dump(),
     )
     session.add(milestone)
@@ -633,6 +634,8 @@ async def update_milestone(
         milestone.completed_by = None
     for field, value in changes.items():
         setattr(milestone, field, value)
+    if milestone.client_visible != was_visible:
+        milestone.shared_at = datetime.now(UTC) if milestone.client_visible else None
     after: dict[str, object] = {"changed": sorted(changes)}
     if done is not None:
         after["done"] = done

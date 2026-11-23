@@ -6,9 +6,11 @@ from pydantic import BaseModel, Field
 
 from app.common.enums import ProjectStatus, RagStatus
 from app.finance.schemas import FinanceOut
+from app.manager.schemas import NextMilestone, PublishedProgress
 from app.organisations.schemas import OrganisationBrief, PersonBrief
 from app.projects.schemas import TaskSummary
 
+PortfolioStage = Literal["active", "completed"]
 PortfolioSort = Literal["code", "name", "target_end_date", "-code", "-name", "-target_end_date"]
 
 
@@ -26,6 +28,12 @@ class PortfolioProject(BaseModel):
     rag: RagStatus | None = Field(description="From the newest published status report.")
     rag_date: date | None = Field(description="The date of that report.")
     finance: FinanceOut | None = Field(description="Empty until money is entered.")
+    progress: PublishedProgress | None = Field(
+        description="What the PM published (same as the client sees); null = not published yet."
+    )
+    next_milestone: NextMilestone | None = Field(
+        description="Upcoming delivery: the open milestone due first (late ones included)."
+    )
 
 
 class PortfolioOut(BaseModel):

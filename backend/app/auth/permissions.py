@@ -57,6 +57,11 @@ class Action(StrEnum):
     # Requirements: create, edit, publish for client acceptance and archive (leads + Managers).
     # Reading them is PROJECT_VIEW. Clients read and answer through /client/...
     REQUIREMENT_MANAGE = "requirement:manage"
+    # Team capacity (Manager Role Guide): workload and capacity across people (Managers only),
+    # reservations of a project's people (leads + Managers), working schedules (Admin + Managers).
+    TEAM_VIEW = "team:view"
+    RESERVATION_MANAGE = "reservation:manage"
+    SCHEDULE_MANAGE = "schedule:manage"
     # The client portal (/client/...): client contacts only, and only their organisation's
     # external projects. Nobody else, not even the Manager, uses these routes.
     CLIENT_PORTAL = "client:portal"
@@ -89,6 +94,7 @@ _PM_ONLY = frozenset(
         Action.CHANGE_REQUEST_SUBMIT,
         Action.CHANGE_REQUEST_DECIDE,
         Action.REQUIREMENT_MANAGE,
+        Action.RESERVATION_MANAGE,
         Action.DASHBOARD_VIEW,
         Action.USER_LIST,
     }
@@ -98,7 +104,15 @@ _PM_WITHOUT_PROJECT = frozenset(
     {Action.PROJECT_CREATE, Action.DASHBOARD_VIEW, Action.USER_LIST, Action.ORGANISATION_VIEW}
 )
 # Oversight across projects and money: never part of a project lead's rights.
-NOT_FOR_LEADS = frozenset({Action.PORTFOLIO_VIEW, Action.ACCESS_OVERVIEW, Action.FINANCE_MANAGE})
+NOT_FOR_LEADS = frozenset(
+    {
+        Action.PORTFOLIO_VIEW,
+        Action.ACCESS_OVERVIEW,
+        Action.FINANCE_MANAGE,
+        Action.TEAM_VIEW,
+        Action.SCHEDULE_MANAGE,
+    }
+)
 # Account Managers read, and handle reports, stakeholders and money; on a project only when its
 # client is assigned to them.
 _ACCOUNT_MANAGER_ANYWHERE = frozenset(
@@ -171,6 +185,11 @@ def client_condition() -> ColumnElement[bool]:
     return User.global_role == GlobalRole.CLIENT.value
 
 
+def manager_condition() -> ColumnElement[bool]:
+    """SQL condition for "is a Manager" (oversight notifications)."""
+    return User.global_role == GlobalRole.MANAGER.value
+
+
 def admin_condition() -> ColumnElement[bool]:
     """SQL condition for "is an administrator" (the last-admin rule counts them)."""
     return User.global_role == GlobalRole.ADMIN.value
@@ -191,7 +210,7 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
         return action is Action.CLIENT_PORTAL and is_client(user)
     if is_admin(user):
         # No project data: denied by default.
-        return action in ADMIN_ONLY or action is Action.ORGANISATION_VIEW
+        return action in ADMIN_ONLY or action in (Action.ORGANISATION_VIEW, Action.SCHEDULE_MANAGE)
     if action in ADMIN_ONLY:
         return False
     if sees_all_projects(user):

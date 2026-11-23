@@ -3,12 +3,13 @@
 import uuid
 from datetime import UTC, date, datetime
 
-from sqlalchemy import ColumnElement, Select, func, select
+from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
 from app.audit.service import record_audit
 from app.common.enums import ReportState
+from app.common.validation import like_escape
 from app.core.errors import AppError
 from app.notifications import events as notifications
 from app.organisations.schemas import PersonBrief
@@ -75,8 +76,11 @@ async def list_reports(
     state: ReportState | None,
     page: int,
     page_size: int,
+    q: str | None = None,
 ) -> tuple[list[StatusReport], int]:
-    """Newest first. People who cannot manage reports only ever get published ones."""
+    """Newest first. People who cannot manage reports only ever get published ones. `q`
+    searches the text (summary, achievements, next steps, risks) and the report date
+    (DD.MM.YYYY or YYYY-MM-DD, also partly)."""
     conditions: list[ColumnElement[bool]] = [
         StatusReport.project_id == project_id,
         StatusReport.archived_at.is_(None),
@@ -85,6 +89,23 @@ async def list_reports(
         conditions.append(StatusReport.state == ReportState.PUBLISHED.value)
     if state:
         conditions.append(StatusReport.state == state.value)
+    if q and q.strip():
+        pattern = f"%{like_escape(q.strip())}%"
+        conditions.append(
+            or_(
+                *(
+                    column.ilike(pattern, escape="\\")
+                    for column in (
+                        StatusReport.summary,
+                        StatusReport.achievements,
+                        StatusReport.next_steps,
+                        StatusReport.risks,
+                        func.to_char(StatusReport.report_date, "DD.MM.YYYY"),
+                        func.to_char(StatusReport.report_date, "YYYY-MM-DD"),
+                    )
+                )
+            )
+        )
     total = await session.scalar(select(func.count(StatusReport.id)).where(*conditions)) or 0
     rows = await session.scalars(
         select(StatusReport)

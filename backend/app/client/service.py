@@ -183,10 +183,34 @@ def _report_event(report: StatusReport, names: dict[uuid.UUID, str]) -> ClientUp
 async def _events(
     session: AsyncSession, reports: list[StatusReport], names: dict[uuid.UUID, str]
 ) -> list[ClientUpdateOut]:
-    """Published reports plus change requests raised, taken into review and decided; newest
-    first, at most MAX_UPDATES."""
+    """Published reports, change requests raised, taken into review and decided, and shared
+    milestones (shared with the client, reached); newest first, at most MAX_UPDATES."""
     events = [_report_event(r, names) for r in reports if r.published_at is not None]
     if names:
+        milestones = await session.scalars(
+            select(Milestone).where(
+                Milestone.project_id.in_(list(names)),
+                Milestone.client_visible.is_(True),
+                Milestone.archived_at.is_(None),
+            )
+        )
+        for m in milestones:
+            for at, state in ((m.shared_at, "shared"), (m.completed_at, "done")):
+                if at is not None:
+                    events.append(
+                        ClientUpdateOut(
+                            kind="milestone",
+                            project_id=m.project_id,
+                            project_name=names[m.project_id],
+                            title=f"{m.code} {m.name}",
+                            occurred_at=at,
+                            report_id=None,
+                            change_request_id=None,
+                            milestone_id=m.id,
+                            due_date=m.due_date,
+                            status=state,
+                        )
+                    )
         requests = await session.scalars(
             select(ChangeRequest).where(ChangeRequest.project_id.in_(list(names)))
         )
@@ -244,6 +268,7 @@ async def _projects_out(
             with_progress.setdefault(report.project_id, report)
     publishers = await _people(session, {r.published_by for r in newest.values() if r.published_by})
     leads = await _leads(session, [p.id for p in projects])
+    awaiting = await requirements.awaiting_answer_by_project(session, [p.id for p in projects])
     out = []
     for p in projects:
         latest = newest.get(p.id)
@@ -274,6 +299,7 @@ async def _projects_out(
                     if latest
                     else None
                 ),
+                awaiting_input=awaiting.get(p.id, 0),
                 project_manager=ClientPersonOut(name=lead.name, email=lead.email) if lead else None,
                 next_milestone=(
                     NextMilestone(
@@ -487,6 +513,14 @@ async def get_report(
     )
     if report is None:
         raise AppError(404, "NOT_FOUND", "Report not found.")
+    return await report_document(session, report, project)
+
+
+async def report_document(
+    session: AsyncSession, report: StatusReport, project: Project
+) -> ClientReportOut:
+    """The shared, published content of a report: what the client sees and what every PDF
+    download contains (client portal and staff)."""
     publisher = await session.get(User, report.published_by) if report.published_by else None
     return ClientReportOut(
         **_brief(report).model_dump(),

@@ -7,7 +7,7 @@ decide: project leads and Managers. Developers have no access.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, Response, UploadFile
+from fastapi import APIRouter, File, Query, Response, UploadFile
 from fastapi.responses import FileResponse
 
 from app.auth.dependencies import CurrentUser
@@ -37,10 +37,12 @@ async def list_change_requests(
     user: CurrentUser,
     session: SessionDep,
     status: ChangeRequestStatus | None = None,
+    q: Annotated[str | None, Query(max_length=200, description="Code or title.")] = None,
 ) -> ChangeRequestListOut:
-    """Newest first, with counts per status (for the overview card)."""
+    """Newest first, with counts per status over all requests (for the overview card and the
+    filter tabs). `q` searches the code and title."""
     await authorize(session, user, project_id, Action.CHANGE_REQUEST_VIEW)
-    requests, counts = await service.list_requests(session, project_id, status)
+    requests, counts = await service.list_requests(session, project_id, status, q)
     return ChangeRequestListOut(
         items=await service.requests_out(session, requests), total=len(requests), counts=counts
     )

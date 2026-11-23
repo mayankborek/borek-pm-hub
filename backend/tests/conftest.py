@@ -83,6 +83,10 @@ async def session(test_db_url: str) -> AsyncIterator[AsyncSession]:
                 "RESTART IDENTITY CASCADE"
             )
         )
+        # Not linked to users, so the cascade leaves it: back to the seeded default.
+        await connection.execute(
+            text("UPDATE workspace_schedule SET weekly_hours = 40, working_days = '{1,2,3,4,5}'")
+        )
     async with async_sessionmaker(engine, expire_on_commit=False)() as db_session:
         yield db_session
     await engine.dispose()

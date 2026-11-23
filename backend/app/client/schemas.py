@@ -92,6 +92,9 @@ class ClientProjectOut(BaseModel):
     published_on: date | None = Field(description="Date of the newest published status report.")
     published_by: PublishedBy | None
     latest_update: LatestUpdate | None
+    awaiting_input: int = Field(
+        description="Client actions: requirements of this project waiting for your answer."
+    )
     project_manager: ClientPersonOut | None = Field(
         description="The project lead; null = Project Manager not assigned yet."
     )
@@ -127,18 +130,22 @@ class ClientReportOut(ClientReportBrief):
 
 
 class ClientUpdateOut(BaseModel):
-    """A client-visible event: a published report, or a change request raised, taken into
-    review or decided. For "Recent updates" (dashboard) and "Recent activity" (overview)."""
+    """A client-visible event: a published report, a change request raised, taken into review
+    or decided, or a shared milestone shared ("Milestone schedule published") or reached.
+    For "Recent updates" (dashboard) and "Recent activity" (overview)."""
 
-    kind: Literal["report", "change_request"]
+    kind: Literal["report", "change_request", "milestone"]
     project_id: uuid.UUID
     project_name: str
-    title: str = Field(description="Report title, or the request code and title.")
+    title: str = Field(description="Report title, or the code and title / name of the item.")
     occurred_at: datetime
     report_id: uuid.UUID | None = Field(description="For kind report.")
     change_request_id: uuid.UUID | None = Field(description="For kind change_request.")
-    status: ChangeRequestStatus | None = Field(
-        description="For kind change_request: the status this event set (pending = raised)."
+    milestone_id: uuid.UUID | None = Field(default=None, description="For kind milestone.")
+    due_date: date | None = Field(default=None, description="For kind milestone.")
+    status: ChangeRequestStatus | Literal["shared", "done"] | None = Field(
+        description="change_request: the status this event set (pending = raised); "
+        'milestone: shared ("Milestone schedule published") or done; report: null.'
     )
 
 
