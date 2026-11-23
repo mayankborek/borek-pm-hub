@@ -602,3 +602,36 @@ async def test_conversation_stays_inside_the_clients_organisation(
     assert comments.status_code == files.status_code == 404
     assert cross.status_code == 404  # a request of another project, through the own project
     assert dev.status_code == 404
+
+
+async def test_client_follows_every_status_and_the_decision(
+    client: httpx.AsyncClient, world: World
+) -> None:
+    """Sheet row "Serve change requests updated versions to clients": the client sees each
+    status the team sets, and the decision with its note and date."""
+    raised = await raise_move(client, world, 19)
+    path = f"{client_crs(world)}/{raised['id']}"
+
+    async def seen() -> dict[str, Any]:
+        result: dict[str, Any] = await ok(client, world.contact, "GET", path)
+        return result
+
+    assert (await seen())["status"] == "pending"
+    await review(client, world, raised["id"])
+    in_review = await seen()
+    assert (in_review["status"], in_review["decided_at"]) == ("in_review", None)
+    assert in_review["review_started_at"] is not None
+
+    await decide(client, world, raised["id"], "declined", "Date is fixed by the launch")
+
+    declined = await seen()
+    assert declined["status"] == "declined"
+    assert declined["decision_note"] == "Date is fixed by the launch"
+    assert declined["decided_at"] is not None
+    listed = await ok(client, world.contact, "GET", client_crs(world))
+    assert listed["counts"]["declined"] == 1
+    portal = await ok(client, world.contact, "GET", "/client/portal")
+    assert (portal["updates"][0]["kind"], portal["updates"][0]["status"]) == (
+        "change_request",
+        "declined",
+    )

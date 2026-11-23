@@ -36,6 +36,7 @@ from app.change_requests.schemas import (
 from app.core import storage
 from app.core.errors import AppError
 from app.milestones.models import Milestone
+from app.notifications import events as notifications
 from app.organisations.schemas import PersonBrief
 from app.projects.models import Project
 from app.tasks.details import content_type_for, store_upload
@@ -219,6 +220,7 @@ async def create_request(
         project_id=project_id,
         after={"code": request.code, "title": request.title},
     )
+    await notifications.change_request_submitted(session, actor, request)
     await session.commit()
     await session.refresh(request)
     return request
@@ -279,6 +281,7 @@ async def start_review(
         project_id=project_id,
         after={"code": request.code},
     )
+    await notifications.change_request_review_started(session, actor, request)
     await _commit(session)
     await session.refresh(request)
     return request
@@ -340,6 +343,7 @@ async def decide(
         project_id=project_id,
         after=after,
     )
+    await notifications.change_request_decided(session, actor, request)
     await _commit(session)
     await session.refresh(request)
     return request
@@ -393,6 +397,7 @@ async def add_comment(
         change_request_id=request.id, author_id=actor.id, body=body, internal=internal
     )
     session.add(comment)
+    await notifications.change_request_commented(session, actor, request, internal=internal)
     await session.commit()
     await session.refresh(comment)
     return CommentOut(

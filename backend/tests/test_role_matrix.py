@@ -81,6 +81,13 @@ NO_ROLE_RULE = {
     ("POST", "/auth/logout"),
     ("GET", "/me/profile"),  # your own profile: anyone signed in
     ("PATCH", "/me/profile"),
+    # your own notifications and their settings: anyone signed in (tests/test_notifications.py)
+    ("GET", "/me/notifications"),
+    ("GET", "/me/notifications/unread-count"),
+    ("POST", "/me/notifications/read-all"),
+    ("POST", "/me/notifications/{notification_id}/read"),
+    ("GET", "/me/notification-settings"),
+    ("PUT", "/me/notification-settings"),
 }
 
 

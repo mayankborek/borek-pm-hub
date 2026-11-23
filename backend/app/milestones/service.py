@@ -33,6 +33,7 @@ from app.milestones.schemas import (
     RoadmapOut,
     RoadmapPhaseOut,
 )
+from app.notifications import events as notifications
 from app.organisations.schemas import PersonBrief
 from app.projects.models import Project, ProjectMember
 from app.tasks.models import Task, WorkflowStatus
@@ -598,6 +599,9 @@ async def create_milestone(
         project_id=project_id,
         after={"code": milestone.code, "name": milestone.name},
     )
+    await notifications.milestone_changed(
+        session, actor, milestone, was_visible=False, old_due=milestone.due_date, was_done=False
+    )
     await session.commit()
     await session.refresh(milestone)
     return milestone
@@ -618,6 +622,8 @@ async def update_milestone(
         await _check_phase(session, project_id, changes["phase_id"])
     if changes.get("owner_id"):
         await _check_owner(session, project_id, changes["owner_id"])
+    was_visible, old_due = milestone.client_visible, milestone.due_date
+    was_done = milestone.completed_at is not None
     done = changes.pop("done", None)
     if done is True and milestone.completed_at is None:
         milestone.completed_at = datetime.now(UTC)
@@ -638,6 +644,9 @@ async def update_milestone(
         milestone.id,
         project_id=project_id,
         after=after,
+    )
+    await notifications.milestone_changed(
+        session, actor, milestone, was_visible=was_visible, old_due=old_due, was_done=was_done
     )
     await _commit(session, "milestone")
     await session.refresh(milestone)

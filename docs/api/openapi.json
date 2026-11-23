@@ -5006,6 +5006,170 @@
         "title": "NextMilestone",
         "type": "object"
       },
+      "NotificationActor": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "NotificationActor",
+        "type": "object"
+      },
+      "NotificationListOut": {
+        "properties": {
+          "items": {
+            "description": "Newest first.",
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pass as `cursor` for the next page; null = end.",
+            "title": "Next Cursor"
+          },
+          "unread_count": {
+            "title": "Unread Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor",
+          "unread_count"
+        ],
+        "title": "NotificationListOut",
+        "type": "object"
+      },
+      "NotificationOut": {
+        "properties": {
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotificationActor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who did it."
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "entity_id": {
+            "format": "uuid",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "description": "task, change_request, status_report, milestone or requirement: the link.",
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "params": {
+            "description": "Values for the text, for example code, title, fields, status.",
+            "title": "Params",
+            "type": "object"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotificationProject"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "setting": {
+            "description": "The setting it falls under (why you got it).",
+            "title": "Setting",
+            "type": "string"
+          },
+          "type": {
+            "description": "What happened, for example task.assigned. See the contract.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "setting",
+          "project",
+          "entity_type",
+          "entity_id",
+          "actor",
+          "params",
+          "created_at",
+          "read_at"
+        ],
+        "title": "NotificationOut",
+        "type": "object"
+      },
+      "NotificationProject": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "title": "NotificationProject",
+        "type": "object"
+      },
       "OrganisationBrief": {
         "properties": {
           "id": {
@@ -6779,6 +6943,20 @@
         "title": "RagStatus",
         "type": "string"
       },
+      "ReadAllOut": {
+        "properties": {
+          "marked": {
+            "description": "How many were unread and are now read.",
+            "title": "Marked",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "marked"
+        ],
+        "title": "ReadAllOut",
+        "type": "object"
+      },
       "ReadyResponse": {
         "properties": {
           "database": {
@@ -7432,6 +7610,60 @@
           "milestones"
         ],
         "title": "RoadmapPhaseOut",
+        "type": "object"
+      },
+      "SettingOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "enabled"
+        ],
+        "title": "SettingOut",
+        "type": "object"
+      },
+      "SettingsOut": {
+        "properties": {
+          "settings": {
+            "description": "Only the settings that apply to your role.",
+            "items": {
+              "$ref": "#/components/schemas/SettingOut"
+            },
+            "title": "Settings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "settings"
+        ],
+        "title": "SettingsOut",
+        "type": "object"
+      },
+      "SettingsUpdate": {
+        "additionalProperties": false,
+        "description": "Only the keys that change, for example {\"settings\": {\"reports\": false}}.",
+        "properties": {
+          "settings": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "maxProperties": 20,
+            "title": "Settings",
+            "type": "object"
+          }
+        },
+        "required": [
+          "settings"
+        ],
+        "title": "SettingsUpdate",
         "type": "object"
       },
       "StakeholderCreate": {
@@ -8806,6 +9038,19 @@
           "version"
         ],
         "title": "TaskUpdate",
+        "type": "object"
+      },
+      "UnreadCountOut": {
+        "properties": {
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "unread"
+        ],
+        "title": "UnreadCountOut",
         "type": "object"
       },
       "UserBrief": {
@@ -11127,6 +11372,220 @@
         "summary": "My Dashboard",
         "tags": [
           "dashboard"
+        ]
+      }
+    },
+    "/api/v1/me/notification-settings": {
+      "get": {
+        "description": "The settings for your role, all on until switched off.",
+        "operationId": "get_settings_api_v1_me_notification_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "put": {
+        "description": "Switch settings on or off; send only the keys that change (422 unknown_setting for keys\nthat are not yours).",
+        "operationId": "update_settings_api_v1_me_notification_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Settings",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications": {
+      "get": {
+        "description": "Newest first. `unread=true` for unread only; `cursor` = `next_cursor` of the previous\npage.",
+        "operationId": "list_notifications_api_v1_me_notifications_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unread",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unread",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/read-all": {
+      "post": {
+        "operationId": "read_all_api_v1_me_notifications_read_all_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadAllOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read All",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/unread-count": {
+      "get": {
+        "description": "For the bell badge. Cheap: poll it.",
+        "operationId": "unread_count_api_v1_me_notifications_unread_count_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Unread Count",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/{notification_id}/read": {
+      "post": {
+        "description": "Idempotent. 404 for someone else's notification.",
+        "operationId": "read_one_api_v1_me_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read One",
+        "tags": [
+          "notifications"
         ]
       }
     },

@@ -10,6 +10,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from app.audit.service import record_audit
 from app.common.enums import ReportState
 from app.core.errors import AppError
+from app.notifications import events as notifications
 from app.organisations.schemas import PersonBrief
 from app.reporting.models import Stakeholder, StatusReport
 from app.reporting.schemas import (
@@ -192,6 +193,7 @@ async def publish_report(
         project_id=project_id,
         after={"rag": report.rag},
     )
+    await notifications.report_published(session, actor, report)
     try:
         await session.commit()
     except StaleDataError:
