@@ -21,17 +21,17 @@ export function StakeholdersPage() {
       <p className="cp-section-sub">{t('Contact your Project Manager for delivery questions and shared updates.')}</p>
       {!people.length && <EmptyCard />}
       {people.map(({ key, person: c }) => (
-        <article className="cp-contact" key={key + project.id}>
-          <div className="cp-contact-head">
-            <span className="cp-contact-initials" aria-hidden="true">{initialsOf(c.name)}</span>
-            <h3 className="cp-contact-name">{c.name}</h3>
-            <span className="cp-contact-role">{t(c.role)}</span>
-            <button type="button" className="ad-link" style={{ marginLeft: 'auto' }} onClick={() => setEditing({ key, person: c })}>
+        <article className="am-sh" key={key + project.id}>
+          <div className="am-sh-head">
+            <span className="am-sh-initials" aria-hidden="true">{initialsOf(c.name)}</span>
+            <h3 className="am-sh-name">{c.name}</h3>
+            <span className="am-sh-role">{t(c.role)}</span>
+            <button type="button" className="ad-link am-sh-edit" onClick={() => setEditing({ key, person: c })}>
               {t('Edit')}
             </button>
           </div>
-          <a className="cp-contact-email" href={`mailto:${c.email}`}>{c.email}</a>
-          <p className="cp-contact-tel">{t('Tel: {phone}', { phone: c.phone || '-' })}</p>
+          <a className="am-sh-email" href={`mailto:${c.email}`}>{c.email}</a>
+          <p className="am-sh-tel">{t('Tel: {phone}', { phone: c.phone || '-' })}</p>
         </article>
       ))}
       {editing && (
