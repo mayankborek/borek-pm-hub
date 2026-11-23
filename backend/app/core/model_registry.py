@@ -7,5 +7,6 @@ from app.milestones import models as _milestones  # noqa: F401
 from app.organisations import models as _organisations  # noqa: F401
 from app.projects import models as _projects  # noqa: F401
 from app.reporting import models as _reporting  # noqa: F401
+from app.requirements import models as _requirements  # noqa: F401
 from app.tasks import models as _tasks  # noqa: F401
 from app.users import models as _users  # noqa: F401

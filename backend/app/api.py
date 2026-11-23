@@ -15,6 +15,7 @@ from app.organisations.router import router as organisations_router
 from app.portfolio.router import router as portfolio_router
 from app.projects.router import router as projects_router
 from app.reporting.router import router as reporting_router
+from app.requirements.router import router as requirements_router
 from app.tasks.details_router import router as details_router
 from app.tasks.router import router as tasks_router
 from app.users.router import me_router
@@ -38,3 +39,4 @@ api_router.include_router(reporting_router)
 api_router.include_router(finance_router)
 api_router.include_router(milestones_router)
 api_router.include_router(change_requests_router)
+api_router.include_router(requirements_router)

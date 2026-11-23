@@ -26,6 +26,11 @@ from app.client.schemas import (
     ClientRoadmapOut,
 )
 from app.core.database import SessionDep
+from app.requirements.schemas import (
+    ClientRequirementListOut,
+    ClientRequirementOut,
+    ClientRequirementResponse,
+)
 
 router = APIRouter(prefix="/client", tags=["client"])
 
@@ -171,3 +176,41 @@ async def download_change_request_attachment(
 ) -> FileResponse:
     require(user, Action.CLIENT_PORTAL)
     return await service.download_attachment(session, user, project_id, request_id, attachment_id)
+
+
+@router.get("/projects/{project_id}/requirements", response_model=ClientRequirementListOut)
+async def list_requirements(
+    project_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> ClientRequirementListOut:
+    """Requirements published for acceptance (drafts never appear), with the current version,
+    earlier versions and the answers given, plus counts per status."""
+    require(user, Action.CLIENT_PORTAL)
+    return await service.list_requirements(session, user, project_id)
+
+
+@router.get(
+    "/projects/{project_id}/requirements/{requirement_id}", response_model=ClientRequirementOut
+)
+async def get_requirement(
+    project_id: uuid.UUID, requirement_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> ClientRequirementOut:
+    require(user, Action.CLIENT_PORTAL)
+    return await service.get_requirement(session, user, project_id, requirement_id)
+
+
+@router.post(
+    "/projects/{project_id}/requirements/{requirement_id}/response",
+    response_model=ClientRequirementOut,
+)
+async def respond_to_requirement(
+    project_id: uuid.UUID,
+    requirement_id: uuid.UUID,
+    body: ClientRequirementResponse,
+    user: CurrentUser,
+    session: SessionDep,
+) -> ClientRequirementOut:
+    """Answer the version you reviewed: accepted, changes_requested or rejected (comment
+    required unless accepted). 409 VERSION_NOT_OPEN when it is not the newest published version,
+    409 NOT_AWAITING_ANSWER when it was already answered."""
+    require(user, Action.CLIENT_PORTAL)
+    return await service.respond_to_requirement(session, user, project_id, requirement_id, body)

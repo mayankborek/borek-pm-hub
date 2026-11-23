@@ -30,6 +30,7 @@ from app.milestones.models import Milestone, ProjectPhase
 from app.organisations.models import Organisation, OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
 from app.reporting.models import Stakeholder, StatusReport
+from app.requirements.models import Requirement, RequirementVersion
 from app.tasks import statuses
 from app.tasks.models import Task, TaskComment
 from app.users.models import User
@@ -303,6 +304,37 @@ def cases(w: World) -> list[Case]:
             "{cr_attachment_id}/download",
             everywhere({"client"}),
         ),
+        Case("GET", "/client/projects/{project_id}/requirements", everywhere({"client"})),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/requirements/{requirement_id}",
+            everywhere({"client"}),
+        ),
+        Case(
+            "POST",
+            "/client/projects/{project_id}/requirements/{requirement_id}/response",
+            everywhere({"client"}),
+            {"version_number": 1, "decision": "accepted"},
+        ),
+        # requirements: everyone who sees the project reads them; leads write and publish
+        Case("GET", f"{p}/requirements", inside_project(READERS)),
+        Case(
+            "POST",
+            f"{p}/requirements",
+            inside_project(LEADS),
+            {"title": "x", "description": "y"},
+        ),
+        Case("GET", f"{p}/requirements/{{requirement_id}}", inside_project(READERS)),
+        Case(
+            "PATCH", f"{p}/requirements/{{requirement_id}}", inside_project(LEADS), {"version": 999}
+        ),
+        Case(
+            "POST",
+            f"{p}/requirements/{{requirement_id}}/publish",
+            inside_project(LEADS),
+            {"version": 999},
+        ),
+        Case("DELETE", f"{p}/requirements/{{requirement_id}}", inside_project(LEADS)),
         # change requests: leads, Managers and the client's Account Manager; leads decide
         Case("GET", f"{p}/change-requests/{{request_id}}/comments", inside_project(CHANGE_PEOPLE)),
         Case(
@@ -551,6 +583,26 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             submitted_by=ids["client"],
         )
         s.add(change_request)
+        requirement = Requirement(
+            project_id=project.id,
+            code="REQ-01",
+            title="Login page",
+            status="awaiting_acceptance",
+            created_by=ids["pm_lead"],
+        )
+        s.add(requirement)
+        await s.flush()
+        s.add(
+            RequirementVersion(
+                requirement_id=requirement.id,
+                number=1,
+                description="Sign in with email",
+                acceptance_criteria=["Wrong password shows an error"],
+                created_by=ids["pm_lead"],
+                published_at=datetime.now(UTC),
+                published_by=ids["pm_lead"],
+            )
+        )
         await s.commit()
         ids |= {
             "project_id": project.id,
@@ -563,6 +615,7 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "phase_id": phase.id,
             "milestone_id": milestone.id,
             "request_id": change_request.id,
+            "requirement_id": requirement.id,
             "organisation_id": org.id,
             "status_id": rows[1].id,
             "user_id": ids["dev_other"],
