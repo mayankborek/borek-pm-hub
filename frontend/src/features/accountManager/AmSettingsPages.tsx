@@ -25,7 +25,7 @@ function Settings({ title, sub, children }: { title: string; sub: string; childr
   return (
     <div className="settings">
       <h1>{t('Account settings')}</h1>
-      <p className="lead" style={{ fontSize: 12, marginTop: 4 }}>{t('Manage your profile and portal preferences')}</p>
+      <p className="lead" style={{ fontSize: 'var(--fs-12)', marginTop: 4 }}>{t('Manage your profile and portal preferences')}</p>
       <div className="sgrid">
         <nav className="snav" aria-label={t('Settings')}>
           <small>{t('Settings')}</small>
@@ -98,7 +98,7 @@ export function AmSecurityPage() {
       <div className="divider" />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h5 style={{ margin: 0, fontSize: 14 }}>{t('Current session')}</h5>
+          <h5 style={{ margin: 0, fontSize: 'var(--fs-14)' }}>{t('Current session')}</h5>
           <p className="sd">{t('End your current portal session on this device.')}</p>
         </div>
         <button className="linkbtn" type="button" onClick={() => void signOut().then(() => navigate(paths.login, { replace: true }))}>{t('Log out')}</button>
@@ -145,7 +145,7 @@ export function AmPreferencesPage() {
   return (
     <Settings title="Preferences" sub="Set the language and appearance for your account.">
       <div className="sect">
-        <h5 style={{ fontSize: 13 }}>{t('Preferred language')}</h5>
+        <h5 style={{ fontSize: 'var(--fs-13)' }}>{t('Preferred language')}</h5>
         <p className="sd" style={{ marginBottom: 12 }}>{t('Used throughout your portal.')}</p>
         <select aria-label={t('Preferred language')} value={lang} onChange={(e) => setLang(e.target.value as 'en' | 'de')}>
           <option value="en">English (EN)</option>

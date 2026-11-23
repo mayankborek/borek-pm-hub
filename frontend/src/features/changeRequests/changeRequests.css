@@ -1,22 +1,22 @@
 /* PM Change Requests tab. Cards and filters reuse the .req-* classes from requirements.css. */
-.crq-flag { font-size: 12px; color: var(--muted, var(--slate)); }
-.crq-new { font-size: 11px; font-weight: 600; padding: 2px 8px; background: var(--accent, #124f94); color: #fff; }
-.crq-dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 16px; margin: 0; font-size: 13px; }
+.crq-flag { font-size: var(--fs-12); color: var(--muted, var(--slate)); }
+.crq-new { font-size: var(--fs-11); font-weight: 600; padding: 2px 8px; background: var(--accent, #124f94); color: #fff; }
+.crq-dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px 16px; margin: 0; font-size: var(--fs-13); }
 .crq-dl dt { color: var(--muted, var(--slate)); }
 .crq-dl dd { margin: 0; white-space: pre-wrap; }
 .crq-impact, .crq-decide { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); max-width: 640px; }
-.crq-impact label, .crq-decide label { display: grid; gap: 4px; font-size: 12px; color: var(--muted, var(--slate)); }
-.crq-impact input:not([type='checkbox']), .crq-impact textarea, .crq-decide textarea, .crq-reply textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--field, var(--line)); background: var(--surface); color: inherit; font: 400 14px/1.4 Inter, system-ui, sans-serif; }
+.crq-impact label, .crq-decide label { display: grid; gap: 4px; font-size: var(--fs-12); color: var(--muted, var(--slate)); }
+.crq-impact input:not([type='checkbox']), .crq-impact textarea, .crq-decide textarea, .crq-reply textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--field, var(--line)); background: var(--surface); color: inherit; font: 400 var(--fs-14)/1.4 Inter, system-ui, sans-serif; }
 .crq-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .crq-thread { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-.crq-thread li { padding: 10px 12px; background: color-mix(in srgb, var(--line) 30%, transparent); font-size: 13px; }
+.crq-thread li { padding: 10px 12px; background: color-mix(in srgb, var(--line) 30%, transparent); font-size: var(--fs-13); }
 .crq-thread li.crq-client { border-left: 3px solid var(--accent, #124f94); }
 .crq-thread li.crq-internal { border-left: 3px dashed var(--muted, #7d879c); }
 .crq-thread small { color: var(--muted, var(--slate)); margin-left: 8px; }
 .crq-thread p { margin: 4px 0 0; white-space: pre-wrap; }
 .crq-reply { display: grid; gap: 8px; }
-.crq-files { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 13px; }
+.crq-files { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: var(--fs-13); }
 .crq-files button { background: none; border: 0; padding: 0; color: var(--link, #124f94); text-decoration: underline; cursor: pointer; margin-right: 8px; }
 .crq-check { display: flex !important; align-items: center; gap: 6px; flex-direction: row; }
-.crq-badge { margin-left: 6px; padding: 0 6px; font-size: 11px; font-weight: 600; background: var(--accent, #124f94); color: #fff; }
+.crq-badge { margin-left: 6px; padding: 0 6px; font-size: var(--fs-11); font-weight: 600; background: var(--accent, #124f94); color: #fff; }
 @media (max-width: 700px) { .crq-row, .crq-dl { grid-template-columns: 1fr; } }

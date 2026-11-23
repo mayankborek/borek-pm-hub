@@ -97,7 +97,7 @@ export function ClientReportPage() {
       </Link>
       <h2>{report.title}</h2>
       <div className="cp-card">
-        <div className="cp-val" style={{ marginTop: 0, fontSize: 12 }}>
+        <div className="cp-val" style={{ marginTop: 0, fontSize: 'var(--fs-12)' }}>
           {t('Published by {name} · {role}', { name: project.publishedBy.name, role: t(project.publishedBy.role) })}
         </div>
         <div className="cp-lbl">{t('Reporting period')}</div>

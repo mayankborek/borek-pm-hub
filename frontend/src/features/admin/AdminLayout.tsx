@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
 import borekLogoDark from '@/assets/borek-logo.png';
-import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { initialsOf } from '@/features/client/format';
 import '@/features/client/clientPortal.css';
 import './admin.css';
@@ -51,8 +50,6 @@ export function AdminLayout() {
           <div className="topbar-row">
             <h1 className="topbar-title">{t(TITLES[section] ?? 'Users')}</h1>
             <div className="topbar-actions">
-              <ThemeToggle />
-              <i className="topbar-divider" />
               <Link to={paths.adminProfile} className="user">
                 <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
                 <span className="user-name">{user.name}</span>

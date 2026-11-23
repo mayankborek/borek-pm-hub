@@ -20,9 +20,9 @@ export function AmProjectsPage() {
 
   return (
     <div className="am-page">
-      <h1 style={{ fontSize: 18 }}>{t('Projects shared with you')}</h1>
+      <h1 style={{ fontSize: 'var(--fs-18)' }}>{t('Projects shared with you')}</h1>
       <p className="lead">{t('Only projects you have been invited to are available here.')}</p>
-      <p className="lead" style={{ fontSize: 11 }}>
+      <p className="lead" style={{ fontSize: 'var(--fs-11)' }}>
         {t('Published {date} · {name}, {role}', { date: paddedDate(lang, projects[0].publishedOn), name: by.name, role: t(by.role) })}
       </p>
       <div className="pcards">

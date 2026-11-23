@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import borekLogo from '@/assets/borek-logo-nav.svg';
 import borekLogoDark from '@/assets/borek-logo.png';
-import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { DevProjectsNav } from './DevProjectsNav';
 
 export function AppLayout() {
@@ -58,8 +57,6 @@ export function AppLayout() {
           <div className="topbar-row">
             <h1 className="topbar-title">{t(title)}</h1>
             <div className="topbar-actions">
-              <ThemeToggle />
-              <i className="topbar-divider" />
               <Link to={paths.profile} className="user">
                 <span className="avatar" aria-hidden="true">{initials}</span>
                 <span className="user-name">{user.name}</span>

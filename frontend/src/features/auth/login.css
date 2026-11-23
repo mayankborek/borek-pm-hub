@@ -36,18 +36,18 @@
   .hero>*:not(.art){position:relative;z-index:2}
   .art{z-index:0;background-size:cover}
   .logo{display:block;width:182px;height:auto}
-  .product{font-size:11px;font-weight:600;letter-spacing:.1em;margin:21px 0 0}
+  .product{font-size:var(--fs-11);font-weight:600;letter-spacing:.1em;margin:21px 0 0}
   .copy{margin:min(399px,44.2vh) 0 0}
   .copy h1{font-size:clamp(38px,3.75vw,54px);line-height:64px;font-weight:300;margin:0 0 min(86px,9.5vh);max-width:540px}
-  .copy p{font-size:16px;line-height:27px;font-weight:400;margin:0;max-width:520px}
-  .hero footer{margin-top:auto;padding-top:24px;font-size:11px;line-height:14px}
+  .copy p{font-size:var(--fs-16);line-height:27px;font-weight:400;margin:0;max-width:520px}
+  .hero footer{margin-top:auto;padding-top:24px;font-size:var(--fs-11);line-height:14px}
 
   /* Form panel */
   .panel{display:flex;flex-direction:column;justify-content:space-between;padding:min(224px,24.8vh) clamp(32px,4.4vw,64px) min(32px,3.5vh) clamp(40px,6.67vw,96px)}
   .form-wrap{width:100%;max-width:448px}
-  h2{font-size:38px;line-height:46px;font-weight:300;margin:0 0 10px;color:var(--l-navy)}
-  .sub{font-size:14px;line-height:17px;color:var(--l-text-secondary);margin:0 0 min(40px,4.4vh);max-width:420px}
-  .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:50px;border:1px solid var(--l-border);border-radius:0;background:var(--l-hero);color:#fff;font:500 13px Inter,sans-serif;cursor:pointer}
+  h2{font-size:var(--fs-38);line-height:46px;font-weight:300;margin:0 0 10px;color:var(--l-navy)}
+  .sub{font-size:var(--fs-14);line-height:17px;color:var(--l-text-secondary);margin:0 0 min(40px,4.4vh);max-width:420px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:50px;border:1px solid var(--l-border);border-radius:0;background:var(--l-hero);color:#fff;font:500 var(--fs-13) Inter,sans-serif;cursor:pointer}
   .btn:hover{background:var(--l-btn-hover)}
   .btn:focus-visible,input:focus-visible,a:focus-visible,.check input:focus-visible{outline:2px solid var(--l-action);outline-offset:2px}
   .btn[disabled]{background:var(--disabled);cursor:not-allowed}
@@ -55,25 +55,25 @@
   .ms img{position:absolute;left:50%;top:calc(50% + .5px);width:54px;height:41px;max-width:none;object-fit:cover;transform:translate(-50%,-50%)}
   .field{margin-top:16px}
   .field:first-of-type{margin-top:20px}
-  label{display:block;font-size:11px;line-height:16px;font-weight:600;margin-bottom:4px;color:var(--l-navy)}
-  input[type=email],input[type=password]{width:100%;height:38px;border:1px solid var(--l-border);border-radius:0;padding:0 16px;font:400 12px Inter,sans-serif;color:var(--l-navy);background:var(--l-field)}
+  label{display:block;font-size:var(--fs-11);line-height:16px;font-weight:600;margin-bottom:4px;color:var(--l-navy)}
+  input[type=email],input[type=password]{width:100%;height:38px;border:1px solid var(--l-border);border-radius:0;padding:0 16px;font:400 var(--fs-12) Inter,sans-serif;color:var(--l-navy);background:var(--l-field)}
   input::placeholder{color:var(--l-navy)}
   input[aria-invalid=true]{border-color:var(--l-err-border)}
-  .field-err{font-size:11px;line-height:14px;color:var(--err);margin:4px 0 0}
+  .field-err{font-size:var(--fs-11);line-height:14px;color:var(--err);margin:4px 0 0}
   .login{margin-top:16px}
-  .check{display:flex;align-items:center;gap:8px;margin:17px 0 0 2px;font-size:11px;font-weight:400;color:var(--l-text-secondary)}
+  .check{display:flex;align-items:center;gap:8px;margin:17px 0 0 2px;font-size:var(--fs-11);font-weight:400;color:var(--l-text-secondary)}
   .check input{width:16px;height:16px;margin:0;accent-color:var(--l-action)}
   .status{margin-top:14px}
-  .status strong{display:block;font-size:12px;line-height:20px;font-weight:700;color:var(--l-navy)}
+  .status strong{display:block;font-size:var(--fs-12);line-height:20px;font-weight:700;color:var(--l-navy)}
   .status.error strong{color:var(--err);font-weight:600}
-  .status span{display:block;font-size:11px;line-height:18px;color:var(--l-text-secondary);margin-top:8px}
+  .status span{display:block;font-size:var(--fs-11);line-height:18px;color:var(--l-text-secondary);margin-top:8px}
   .progress{height:4px;background:var(--l-track);border-radius:0;margin-top:14px;overflow:hidden}
   .progress span{display:block;height:100%;width:35%;background:var(--l-action);border-radius:0;animation:slide 1.2s ease-in-out infinite}
   hr{border:0;border-top:1px solid var(--l-border);margin:min(46px,5.1vh) 0 min(33px,3.7vh)}
-  .lang h3{font-size:11px;line-height:24px;font-weight:600;color:var(--l-text-secondary);margin:0 0 8px}
-  .lang a{font-size:12px;line-height:24px;font-weight:500;color:var(--l-action);text-decoration:none;margin-right:12px}
+  .lang h3{font-size:var(--fs-11);line-height:24px;font-weight:600;color:var(--l-text-secondary);margin:0 0 8px}
+  .lang a{font-size:var(--fs-12);line-height:24px;font-weight:500;color:var(--l-action);text-decoration:none;margin-right:12px}
   .lang a:hover{text-decoration:underline}
-  .help{font-size:11px;color:var(--l-text-secondary);margin:0}
+  .help{font-size:var(--fs-11);color:var(--l-text-secondary);margin:0}
 
   @media (max-width:860px){
    .page{grid-template-columns:1fr}
@@ -83,7 +83,7 @@
   }
   /* Short windows: tighten the form so everything stays visible without scrolling. */
   @media (max-height:760px){
-   h2{font-size:30px;line-height:36px;margin-bottom:6px}
+   h2{font-size:var(--fs-30);line-height:36px;margin-bottom:6px}
    .sub{line-height:17px}
    .btn{height:42px}
    .field{margin-top:10px}
@@ -93,7 +93,7 @@
    .check{margin-top:10px}
    .lang h3{line-height:18px;margin-bottom:2px}
    .lang a{line-height:20px}
-   .copy p{font-size:14px;line-height:22px}
+   .copy p{font-size:var(--fs-14);line-height:22px}
    .copy h1{line-height:1.15}
   }
   @media (max-height:600px){
