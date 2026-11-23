@@ -944,6 +944,84 @@
         "title": "BudgetSet",
         "type": "object"
       },
+      "CapacityOut": {
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PersonCapacity"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "period_end": {
+            "format": "date",
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_start": {
+            "format": "date",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CapacitySummary"
+          },
+          "thresholds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "near_capacity from 80 %, overallocated above 100 %.",
+            "title": "Thresholds",
+            "type": "object"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          }
+        },
+        "required": [
+          "today",
+          "timezone",
+          "period_start",
+          "period_end",
+          "thresholds",
+          "summary",
+          "people"
+        ],
+        "title": "CapacityOut",
+        "type": "object"
+      },
+      "CapacitySummary": {
+        "properties": {
+          "free_today": {
+            "description": "People with working hours and nothing booked today.",
+            "title": "Free Today",
+            "type": "integer"
+          },
+          "free_within_3_months": {
+            "description": "People free on at least one working day from today to 3 months later.",
+            "title": "Free Within 3 Months",
+            "type": "integer"
+          },
+          "without_engagements": {
+            "description": "People with no booking in the period.",
+            "title": "Without Engagements",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "free_today",
+          "free_within_3_months",
+          "without_engagements"
+        ],
+        "title": "CapacitySummary",
+        "type": "object"
+      },
       "CategoryOut": {
         "properties": {
           "name": {
@@ -1154,6 +1232,23 @@
             ],
             "title": "Decision Note"
           },
+          "delivery": {
+            "anyOf": [
+              {
+                "enum": [
+                  "not_started",
+                  "in_progress",
+                  "done"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approved requests with a milestone: not_started until a task linked to the milestone is in progress (or blocked or done), done once the milestone is reached. Otherwise null.",
+            "title": "Delivery"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -1290,6 +1385,7 @@
           "decided_at",
           "submitted_by",
           "submitted_by_client",
+          "delivery",
           "version",
           "created_at",
           "updated_at"
@@ -2211,6 +2307,11 @@
             "title": "Activity",
             "type": "array"
           },
+          "awaiting_input": {
+            "description": "Client actions: requirements of this project waiting for your answer.",
+            "title": "Awaiting Input",
+            "type": "integer"
+          },
           "category": {
             "anyOf": [
               {
@@ -2312,7 +2413,7 @@
           "next_milestone": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/NextMilestone"
+                "$ref": "#/components/schemas/app__client__schemas__NextMilestone"
               },
               {
                 "type": "null"
@@ -2417,6 +2518,7 @@
           "published_on",
           "published_by",
           "latest_update",
+          "awaiting_input",
           "project_manager",
           "next_milestone",
           "description",
@@ -2431,6 +2533,11 @@
       },
       "ClientProjectOut": {
         "properties": {
+          "awaiting_input": {
+            "description": "Client actions: requirements of this project waiting for your answer.",
+            "title": "Awaiting Input",
+            "type": "integer"
+          },
           "category": {
             "anyOf": [
               {
@@ -2498,7 +2605,7 @@
           "next_milestone": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/NextMilestone"
+                "$ref": "#/components/schemas/app__client__schemas__NextMilestone"
               },
               {
                 "type": "null"
@@ -2595,6 +2702,7 @@
           "published_on",
           "published_by",
           "latest_update",
+          "awaiting_input",
           "project_manager",
           "next_milestone"
         ],
@@ -3202,7 +3310,7 @@
         "type": "object"
       },
       "ClientUpdateOut": {
-        "description": "A client-visible event: a published report, or a change request raised, taken into\nreview or decided. For \"Recent updates\" (dashboard) and \"Recent activity\" (overview).",
+        "description": "A client-visible event: a published report, a change request raised, taken into review\nor decided, or a shared milestone shared (\"Milestone schedule published\") or reached.\nFor \"Recent updates\" (dashboard) and \"Recent activity\" (overview).",
         "properties": {
           "change_request_id": {
             "anyOf": [
@@ -3217,13 +3325,40 @@
             "description": "For kind change_request.",
             "title": "Change Request Id"
           },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For kind milestone.",
+            "title": "Due Date"
+          },
           "kind": {
             "enum": [
               "report",
-              "change_request"
+              "change_request",
+              "milestone"
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For kind milestone.",
+            "title": "Milestone Id"
           },
           "occurred_at": {
             "format": "date-time",
@@ -3258,13 +3393,21 @@
                 "$ref": "#/components/schemas/ChangeRequestStatus"
               },
               {
+                "enum": [
+                  "shared",
+                  "done"
+                ],
+                "type": "string"
+              },
+              {
                 "type": "null"
               }
             ],
-            "description": "For kind change_request: the status this event set (pending = raised)."
+            "description": "change_request: the status this event set (pending = raised); milestone: shared (\"Milestone schedule published\") or done; report: null.",
+            "title": "Status"
           },
           "title": {
-            "description": "Report title, or the request code and title.",
+            "description": "Report title, or the code and title / name of the item.",
             "title": "Title",
             "type": "string"
           }
@@ -3359,6 +3502,74 @@
           "body"
         ],
         "title": "CommentIn",
+        "type": "object"
+      },
+      "DeliveryEvent": {
+        "description": "For \"Recent updates\" (dashboard) and \"Recent activity\" (project overview).",
+        "properties": {
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For kind milestone.",
+            "title": "Due Date"
+          },
+          "entity_id": {
+            "format": "uuid",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "report",
+              "change_request",
+              "milestone",
+              "requirement"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "report: null; change_request: the status this event set (pending = raised); milestone: shared (shared with the client: \"Milestone schedule published\") or done; requirement: awaiting_acceptance (published) or the client's answer.",
+            "title": "Status"
+          },
+          "title": {
+            "description": "Report title, or the code and title of the item.",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "project",
+          "title",
+          "occurred_at",
+          "entity_id",
+          "status"
+        ],
+        "title": "DeliveryEvent",
         "type": "object"
       },
       "EstimateUnit": {
@@ -4063,6 +4274,86 @@
         "title": "LoginOut",
         "type": "object"
       },
+      "ManagerDashboardOut": {
+        "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/ManagerKpis"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "upcoming_milestones": {
+            "description": "Next 14 days, by date.",
+            "items": {
+              "$ref": "#/components/schemas/UpcomingMilestone"
+            },
+            "title": "Upcoming Milestones",
+            "type": "array"
+          },
+          "updates": {
+            "description": "Newest first, at most 10.",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryEvent"
+            },
+            "title": "Updates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "today",
+          "kpis",
+          "upcoming_milestones",
+          "updates"
+        ],
+        "title": "ManagerDashboardOut",
+        "type": "object"
+      },
+      "ManagerKpis": {
+        "properties": {
+          "active_projects": {
+            "description": "Not completed, not cancelled.",
+            "title": "Active Projects",
+            "type": "integer"
+          },
+          "awaiting_client": {
+            "description": "Requirements waiting for the client's answer.",
+            "title": "Awaiting Client",
+            "type": "integer"
+          },
+          "requests_in_review": {
+            "description": "Change requests in review.",
+            "title": "Requests In Review",
+            "type": "integer"
+          },
+          "requests_pending": {
+            "description": "Change requests raised, review not started.",
+            "title": "Requests Pending",
+            "type": "integer"
+          },
+          "shared_reports": {
+            "description": "Published status reports.",
+            "title": "Shared Reports",
+            "type": "integer"
+          },
+          "upcoming_milestones": {
+            "description": "Open milestones due in the next 14 days.",
+            "title": "Upcoming Milestones",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active_projects",
+          "shared_reports",
+          "upcoming_milestones",
+          "requests_in_review",
+          "requests_pending",
+          "awaiting_client"
+        ],
+        "title": "ManagerKpis",
+        "type": "object"
+      },
       "MeOut": {
         "properties": {
           "email": {
@@ -4270,6 +4561,24 @@
           "due_date"
         ],
         "title": "MilestoneBrief",
+        "type": "object"
+      },
+      "MilestoneCompletion": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "done",
+          "total"
+        ],
+        "title": "MilestoneCompletion",
         "type": "object"
       },
       "MilestoneCreate": {
@@ -4972,40 +5281,6 @@
         "title": "NewClientIn",
         "type": "object"
       },
-      "NextMilestone": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "due_date": {
-            "format": "date",
-            "title": "Due Date",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "state": {
-            "$ref": "#/components/schemas/MilestoneState"
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "due_date",
-          "state"
-        ],
-        "title": "NextMilestone",
-        "type": "object"
-      },
       "NotificationActor": {
         "properties": {
           "id": {
@@ -5516,6 +5791,109 @@
         "title": "PersonBrief",
         "type": "object"
       },
+      "PersonCapacity": {
+        "properties": {
+          "free_today": {
+            "title": "Free Today",
+            "type": "boolean"
+          },
+          "free_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last day of that free stretch before a known booking; null = open-ended.",
+            "title": "Free Until"
+          },
+          "has_engagements": {
+            "description": "Any booking intersecting the requested period.",
+            "title": "Has Engagements",
+            "type": "boolean"
+          },
+          "next_unallocated_day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The next working day with nothing booked (looked up to one year ahead).",
+            "title": "Next Unallocated Day"
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/ScheduleOut"
+          },
+          "segments": {
+            "description": "Bookings in the requested period, by date.",
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/WeekOut"
+            },
+            "title": "Weeks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "person",
+          "schedule",
+          "free_today",
+          "next_unallocated_day",
+          "free_until",
+          "has_engagements",
+          "segments",
+          "weeks"
+        ],
+        "title": "PersonCapacity",
+        "type": "object"
+      },
+      "PersonRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "job_title"
+        ],
+        "title": "PersonRef",
+        "type": "object"
+      },
       "PhaseCreate": {
         "additionalProperties": false,
         "description": "A new phase goes to the end of the roadmap (reorder with PUT /phases/order).",
@@ -5919,6 +6297,28 @@
             "title": "Name",
             "type": "string"
           },
+          "next_milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__manager__schemas__NextMilestone"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Upcoming delivery: the open milestone due first (late ones included)."
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedProgress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the PM published (same as the client sees); null = not published yet."
+          },
           "rag": {
             "anyOf": [
               {
@@ -5987,7 +6387,9 @@
           "tasks",
           "rag",
           "rag_date",
-          "finance"
+          "finance",
+          "progress",
+          "next_milestone"
         ],
         "title": "PortfolioProject",
         "type": "object"
@@ -6766,6 +7168,126 @@
         "title": "ProjectOut",
         "type": "object"
       },
+      "ProjectOverviewOut": {
+        "description": "The delivery summary of one project (Manager, Account Manager and the project team).",
+        "properties": {
+          "activity": {
+            "description": "Newest first, at most 10.",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryEvent"
+            },
+            "title": "Activity",
+            "type": "array"
+          },
+          "client_actions": {
+            "description": "Requirements waiting for the client's answer.",
+            "title": "Client Actions",
+            "type": "integer"
+          },
+          "days_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Until the target end date; negative = overdue.",
+            "title": "Days Left"
+          },
+          "milestones": {
+            "$ref": "#/components/schemas/MilestoneCompletion"
+          },
+          "next_milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__manager__schemas__NextMilestone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedProgress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null = not published yet."
+          },
+          "progress_trend": {
+            "description": "Published progress per report, oldest.",
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "title": "Progress Trend",
+            "type": "array"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "target_end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target End Date"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project",
+          "today",
+          "target_end_date",
+          "days_left",
+          "progress",
+          "progress_trend",
+          "milestones",
+          "next_milestone",
+          "client_actions",
+          "activity"
+        ],
+        "title": "ProjectOverviewOut",
+        "type": "object"
+      },
+      "ProjectRef": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "title": "ProjectRef",
+        "type": "object"
+      },
       "ProjectRole": {
         "enum": [
           "project_lead",
@@ -6773,6 +7295,36 @@
         ],
         "title": "ProjectRole",
         "type": "string"
+      },
+      "ProjectShare": {
+        "properties": {
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Of the available hours on the same dates.",
+            "title": "Percent"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "reserved_hours": {
+            "title": "Reserved Hours",
+            "type": "number"
+          }
+        },
+        "required": [
+          "project",
+          "reserved_hours",
+          "percent"
+        ],
+        "title": "ProjectShare",
+        "type": "object"
       },
       "ProjectStatus": {
         "enum": [
@@ -6932,6 +7484,46 @@
           "role"
         ],
         "title": "PublishedBy",
+        "type": "object"
+      },
+      "PublishedProgress": {
+        "description": "Progress the PM shared in the newest published report that has a figure.",
+        "properties": {
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the person who published it.",
+            "title": "Published By"
+          },
+          "published_on": {
+            "description": "Date of that report.",
+            "format": "date",
+            "title": "Published On",
+            "type": "string"
+          },
+          "report_id": {
+            "format": "uuid",
+            "title": "Report Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "percent",
+          "published_on",
+          "published_by",
+          "report_id"
+        ],
+        "title": "PublishedProgress",
         "type": "object"
       },
       "RagStatus": {
@@ -7427,6 +8019,176 @@
         "title": "RequirementVersionRef",
         "type": "object"
       },
+      "ReservationCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "end_date": {
+            "description": "Inclusive.",
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "hours_per_week": {
+            "description": "Planned hours per standard week.",
+            "exclusiveMinimum": 0.0,
+            "maximum": 168.0,
+            "title": "Hours Per Week",
+            "type": "number"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "An active member of the project.",
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "start_date",
+          "end_date",
+          "hours_per_week"
+        ],
+        "title": "ReservationCreate",
+        "type": "object"
+      },
+      "ReservationOut": {
+        "properties": {
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "hours_per_week": {
+            "title": "Hours Per Week",
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "person",
+          "project",
+          "start_date",
+          "end_date",
+          "hours_per_week",
+          "note",
+          "version"
+        ],
+        "title": "ReservationOut",
+        "type": "object"
+      },
+      "ReservationUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus only the fields that change.",
+        "properties": {
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "hours_per_week": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 168.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours Per Week"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "ReservationUpdate",
+        "type": "object"
+      },
       "RoadmapOut": {
         "description": "Everything the roadmap screen draws, in one call.",
         "properties": {
@@ -7610,6 +8372,138 @@
           "milestones"
         ],
         "title": "RoadmapPhaseOut",
+        "type": "object"
+      },
+      "ScheduleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "weekly_hours": {
+            "description": "Scheduled hours in a standard week.",
+            "maximum": 168.0,
+            "minimum": 0.0,
+            "title": "Weekly Hours",
+            "type": "number"
+          },
+          "working_days": {
+            "description": "ISO weekdays, 1 = Monday ... 7 = Sunday.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Working Days",
+            "type": "array"
+          }
+        },
+        "required": [
+          "weekly_hours",
+          "working_days"
+        ],
+        "title": "ScheduleIn",
+        "type": "object"
+      },
+      "ScheduleOut": {
+        "properties": {
+          "hours_per_day": {
+            "description": "weekly_hours spread evenly over working_days.",
+            "title": "Hours Per Day",
+            "type": "number"
+          },
+          "source": {
+            "enum": [
+              "workspace",
+              "personal"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "weekly_hours": {
+            "title": "Weekly Hours",
+            "type": "number"
+          },
+          "working_days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Working Days",
+            "type": "array"
+          }
+        },
+        "required": [
+          "weekly_hours",
+          "working_days",
+          "hours_per_day",
+          "source"
+        ],
+        "title": "ScheduleOut",
+        "type": "object"
+      },
+      "Segment": {
+        "description": "A stretch of dates where the person's bookings and availability stay the same: one piece\nof a timeline bar. Split where a project starts or stops.",
+        "properties": {
+          "available_hours": {
+            "title": "Available Hours",
+            "type": "number"
+          },
+          "capacity_left": {
+            "description": "Negative = overallocated by that many hours.",
+            "title": "Capacity Left",
+            "type": "number"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectShare"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "reserved_hours": {
+            "title": "Reserved Hours",
+            "type": "number"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "near_capacity",
+              "overallocated",
+              "unavailable",
+              "conflict"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rounded to 2 decimals; the status uses the unrounded value. Null = nothing available.",
+            "title": "Total Percent"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "available_hours",
+          "reserved_hours",
+          "total_percent",
+          "capacity_left",
+          "status",
+          "projects"
+        ],
+        "title": "Segment",
         "type": "object"
       },
       "SettingOut": {
@@ -9040,6 +9934,31 @@
         "title": "TaskUpdate",
         "type": "object"
       },
+      "TrendPoint": {
+        "properties": {
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "report_date": {
+            "format": "date",
+            "title": "Report Date",
+            "type": "string"
+          },
+          "report_id": {
+            "format": "uuid",
+            "title": "Report Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_id",
+          "report_date",
+          "percent"
+        ],
+        "title": "TrendPoint",
+        "type": "object"
+      },
       "UnreadCountOut": {
         "properties": {
           "unread": {
@@ -9051,6 +9970,44 @@
           "unread"
         ],
         "title": "UnreadCountOut",
+        "type": "object"
+      },
+      "UpcomingMilestone": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date",
+          "state",
+          "project"
+        ],
+        "title": "UpcomingMilestone",
         "type": "object"
       },
       "UserBrief": {
@@ -9206,6 +10163,313 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WeekOut": {
+        "properties": {
+          "available_hours": {
+            "title": "Available Hours",
+            "type": "number"
+          },
+          "capacity_left": {
+            "title": "Capacity Left",
+            "type": "number"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectShare"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "reserved_hours": {
+            "title": "Reserved Hours",
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "near_capacity",
+              "overallocated",
+              "unavailable",
+              "conflict"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Percent"
+          },
+          "week_start": {
+            "description": "Monday.",
+            "format": "date",
+            "title": "Week Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "week_start",
+          "available_hours",
+          "reserved_hours",
+          "total_percent",
+          "capacity_left",
+          "status",
+          "projects"
+        ],
+        "title": "WeekOut",
+        "type": "object"
+      },
+      "WorkloadCounts": {
+        "properties": {
+          "effort_pd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Estimates of open tasks in person-days; null when none is estimated.",
+            "title": "Effort Pd"
+          },
+          "open": {
+            "description": "Not done, in active projects.",
+            "title": "Open",
+            "type": "integer"
+          },
+          "overdue": {
+            "description": "Open with a due date before today.",
+            "title": "Overdue",
+            "type": "integer"
+          },
+          "unestimated": {
+            "description": "Open tasks without an estimate.",
+            "title": "Unestimated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open",
+          "overdue",
+          "effort_pd",
+          "unestimated"
+        ],
+        "title": "WorkloadCounts",
+        "type": "object"
+      },
+      "WorkloadOut": {
+        "properties": {
+          "hours_per_day": {
+            "description": "Person-day length used (workspace schedule).",
+            "title": "Hours Per Day",
+            "type": "number"
+          },
+          "people": {
+            "description": "Highest remaining effort first.",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadPerson"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/WorkloadSummary"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "unassigned": {
+            "$ref": "#/components/schemas/WorkloadCounts"
+          },
+          "unassigned_projects": {
+            "items": {
+              "$ref": "#/components/schemas/WorkloadProject"
+            },
+            "title": "Unassigned Projects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "today",
+          "hours_per_day",
+          "summary",
+          "people",
+          "unassigned",
+          "unassigned_projects"
+        ],
+        "title": "WorkloadOut",
+        "type": "object"
+      },
+      "WorkloadPerson": {
+        "properties": {
+          "effort_pd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Estimates of open tasks in person-days; null when none is estimated.",
+            "title": "Effort Pd"
+          },
+          "open": {
+            "description": "Not done, in active projects.",
+            "title": "Open",
+            "type": "integer"
+          },
+          "overdue": {
+            "description": "Open with a due date before today.",
+            "title": "Overdue",
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/WorkloadProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "unestimated": {
+            "description": "Open tasks without an estimate.",
+            "title": "Unestimated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open",
+          "overdue",
+          "effort_pd",
+          "unestimated",
+          "person",
+          "projects"
+        ],
+        "title": "WorkloadPerson",
+        "type": "object"
+      },
+      "WorkloadProject": {
+        "properties": {
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Client organisation name, if any.",
+            "title": "Client"
+          },
+          "effort_pd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Estimates of open tasks in person-days; null when none is estimated.",
+            "title": "Effort Pd"
+          },
+          "open": {
+            "description": "Not done, in active projects.",
+            "title": "Open",
+            "type": "integer"
+          },
+          "overdue": {
+            "description": "Open with a due date before today.",
+            "title": "Overdue",
+            "type": "integer"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "unestimated": {
+            "description": "Open tasks without an estimate.",
+            "title": "Unestimated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open",
+          "overdue",
+          "effort_pd",
+          "unestimated",
+          "project",
+          "client"
+        ],
+        "title": "WorkloadProject",
+        "type": "object"
+      },
+      "WorkloadSummary": {
+        "properties": {
+          "effort_pd": {
+            "title": "Effort Pd",
+            "type": "number"
+          },
+          "most_open": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "most_open_count": {
+            "title": "Most Open Count",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "overdue": {
+            "title": "Overdue",
+            "type": "integer"
+          },
+          "people_with_open_work": {
+            "title": "People With Open Work",
+            "type": "integer"
+          },
+          "projects_with_open_work": {
+            "title": "Projects With Open Work",
+            "type": "integer"
+          },
+          "unestimated": {
+            "title": "Unestimated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "people_with_open_work",
+          "projects_with_open_work",
+          "open",
+          "overdue",
+          "effort_pd",
+          "unestimated",
+          "most_open",
+          "most_open_count"
+        ],
+        "title": "WorkloadSummary",
+        "type": "object"
+      },
       "app__change_requests__schemas__AttachmentOut": {
         "properties": {
           "content_type": {
@@ -9282,6 +10546,75 @@
           "created_at"
         ],
         "title": "CommentOut",
+        "type": "object"
+      },
+      "app__client__schemas__NextMilestone": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date",
+          "state"
+        ],
+        "title": "NextMilestone",
+        "type": "object"
+      },
+      "app__manager__schemas__NextMilestone": {
+        "description": "The open milestone due first (late ones included, so a missed date is not hidden).",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "format": "date",
+            "title": "Due Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/MilestoneState"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "due_date",
+          "state"
+        ],
+        "title": "NextMilestone",
         "type": "object"
       },
       "app__tasks__details_schemas__AttachmentOut": {
@@ -11375,6 +12708,312 @@
         ]
       }
     },
+    "/api/v1/manager/capacity": {
+      "get": {
+        "description": "Reservations against working schedules: per person timeline segments, weekly totals,\nproject and combined percentages, status, free-day labels and the summary cards.\n`start` defaults to Monday of this week.",
+        "operationId": "capacity_api_v1_manager_capacity_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "weeks",
+            "required": false,
+            "schema": {
+              "default": 52,
+              "maximum": 78,
+              "minimum": 1,
+              "title": "Weeks",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapacityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capacity",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/v1/manager/dashboard": {
+      "get": {
+        "description": "KPIs, open milestones due in the next 14 days and recent delivery updates across the\nprojects you oversee. Project cards come from GET /portfolio.",
+        "operationId": "dashboard_api_v1_manager_dashboard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagerDashboardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Dashboard",
+        "tags": [
+          "manager"
+        ]
+      }
+    },
+    "/api/v1/manager/people/{user_id}/schedule": {
+      "delete": {
+        "description": "Back to the workspace default.",
+        "operationId": "clear_personal_schedule_api_v1_manager_people__user_id__schedule_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear Personal Schedule",
+        "tags": [
+          "team"
+        ]
+      },
+      "get": {
+        "description": "The person's schedule: their own one (`source: personal`) or the workspace default.",
+        "operationId": "get_personal_schedule_api_v1_manager_people__user_id__schedule_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Personal Schedule",
+        "tags": [
+          "team"
+        ]
+      },
+      "put": {
+        "description": "For part-time staff: their weekly hours and working days.",
+        "operationId": "set_personal_schedule_api_v1_manager_people__user_id__schedule_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Personal Schedule",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/v1/manager/schedule": {
+      "get": {
+        "description": "The workspace default working week (40 h Monday-Friday until changed).",
+        "operationId": "get_workspace_schedule_api_v1_manager_schedule_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Workspace Schedule",
+        "tags": [
+          "team"
+        ]
+      },
+      "put": {
+        "operationId": "set_workspace_schedule_api_v1_manager_schedule_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Workspace Schedule",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/v1/manager/workload": {
+      "get": {
+        "description": "Open and overdue tasks and remaining estimated effort (person-days) per person and\nproject, highest effort first, plus unassigned work.",
+        "operationId": "workload_api_v1_manager_workload_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkloadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Workload",
+        "tags": [
+          "team"
+        ]
+      }
+    },
     "/api/v1/me/notification-settings": {
       "get": {
         "description": "The settings for your role, all on until switched off.",
@@ -12511,7 +14150,7 @@
     },
     "/api/v1/portfolio": {
       "get": {
-        "description": "Active projects with leads, task counts, current RAG and money: all of them for a Manager,\nthose of the assigned clients for an Account Manager.",
+        "description": "Active projects with leads, task counts, current RAG, published progress, next milestone\nand money: all of them for a Manager, those of the assigned clients for an Account Manager.\n`stage`: active (not completed or cancelled) or completed.",
         "operationId": "portfolio_api_v1_portfolio_get",
         "parameters": [
           {
@@ -12578,6 +14217,26 @@
                 }
               ],
               "title": "Rag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "active",
+                    "completed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stage"
             }
           },
           {
@@ -13048,7 +14707,7 @@
     },
     "/api/v1/projects/{project_id}/change-requests": {
       "get": {
-        "description": "Newest first, with counts per status (for the overview card).",
+        "description": "Newest first, with counts per status over all requests (for the overview card and the\nfilter tabs). `q` searches the code and title.",
         "operationId": "list_change_requests_api_v1_projects__project_id__change_requests_get",
         "parameters": [
           {
@@ -13075,6 +14734,25 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "description": "Code or title.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Code or title.",
+              "title": "Q"
             }
           }
         ],
@@ -14527,6 +16205,50 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/overview": {
+      "get": {
+        "description": "Published progress (and its trend), milestone completion, days left, client actions, next\nmilestone and recent activity.",
+        "operationId": "project_overview_api_v1_projects__project_id__overview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Overview",
+        "tags": [
+          "manager"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/phases": {
       "get": {
         "description": "Active phases in roadmap order.",
@@ -15169,6 +16891,214 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/reservations": {
+      "get": {
+        "description": "The project's reservations, by start date.",
+        "operationId": "list_reservations_api_v1_projects__project_id__reservations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReservationOut"
+                  },
+                  "title": "Response List Reservations Api V1 Projects  Project Id  Reservations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Reservations",
+        "tags": [
+          "team"
+        ]
+      },
+      "post": {
+        "description": "Planned hours per standard week for a project member between two dates (inclusive).\nIndependent of tasks: estimates and assignments never create one.",
+        "operationId": "create_reservation_api_v1_projects__project_id__reservations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Reservation",
+        "tags": [
+          "team"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/reservations/{reservation_id}": {
+      "delete": {
+        "description": "Archived, not deleted; it no longer counts in capacity.",
+        "operationId": "archive_reservation_api_v1_projects__project_id__reservations__reservation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reservation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reservation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Reservation",
+        "tags": [
+          "team"
+        ]
+      },
+      "patch": {
+        "operationId": "update_reservation_api_v1_projects__project_id__reservations__reservation_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reservation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reservation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Reservation",
+        "tags": [
+          "team"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/roadmap": {
       "get": {
         "description": "The roadmap screen in one call: date range, today, phases in order with their status,\ncompleted share and milestones, and milestones outside any phase.",
@@ -15421,7 +17351,7 @@
     },
     "/api/v1/projects/{project_id}/status-reports": {
       "get": {
-        "description": "Newest first. Everyone who sees the project reads published reports; those who write\nreports also see drafts.",
+        "description": "Newest first. Everyone who sees the project reads published reports; those who write\nreports also see drafts. `q` searches the report text and date.",
         "operationId": "list_status_reports_api_v1_projects__project_id__status_reports_get",
         "parameters": [
           {
@@ -15448,6 +17378,25 @@
                 }
               ],
               "title": "State"
+            }
+          },
+          {
+            "description": "Report text or date (DD.MM.YYYY).",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Report text or date (DD.MM.YYYY).",
+              "title": "Q"
             }
           },
           {
@@ -15710,6 +17659,60 @@
           }
         },
         "summary": "Update Status Report",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/status-reports/{report_id}/pdf": {
+      "get": {
+        "description": "A published report as a PDF, the same file the client downloads (drafts: 404).",
+        "operationId": "download_status_report_api_v1_projects__project_id__status_reports__report_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Status Report",
         "tags": [
           "reporting"
         ]

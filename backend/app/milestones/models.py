@@ -94,6 +94,8 @@ class Milestone(IdMixin, TimestampMixin, Base):
     client_visible: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=false()
     )
+    # When it was last shared with the client ("Milestone schedule published"); null while hidden.
+    shared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(

@@ -507,6 +507,10 @@ async def test_dashboard_kpis_upcoming_window_pm_and_events(
         ("change_request", "in_review"),
         ("change_request", "pending"),
         ("report", None),
+        # The three shared milestones ("Milestone schedule published"), created before.
+        ("milestone", "shared"),
+        ("milestone", "shared"),
+        ("milestone", "shared"),
     ]
     assert portal["updates"][0]["title"] == "CR-01 Extend delivery review"
     assert [(e["kind"], e["status"]) for e in detail["activity"]] == events

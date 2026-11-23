@@ -94,7 +94,12 @@ def test_only_the_administrator_may_administer_users(role: GlobalRole) -> None:
 
 
 @pytest.mark.parametrize(
-    "action", [a for a in Action if a not in ADMIN_ONLY and a is not Action.ORGANISATION_VIEW]
+    "action",
+    [
+        a
+        for a in Action
+        if a not in ADMIN_ONLY and a not in (Action.ORGANISATION_VIEW, Action.SCHEDULE_MANAGE)
+    ],
 )
 def test_administrator_has_no_access_to_project_data(action: Action) -> None:
     admin = make(GlobalRole.ADMIN)

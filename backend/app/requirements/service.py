@@ -497,6 +497,23 @@ def _client_state(
     return "awaiting_answer" if v is newest else "superseded"
 
 
+async def awaiting_answer_by_project(
+    session: AsyncSession, project_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, int]:
+    if not project_ids:
+        return {}
+    rows = await session.execute(
+        select(Requirement.project_id, func.count(Requirement.id))
+        .where(
+            Requirement.project_id.in_(project_ids),
+            Requirement.archived_at.is_(None),
+            Requirement.status == RequirementStatus.AWAITING_ACCEPTANCE.value,
+        )
+        .group_by(Requirement.project_id)
+    )
+    return {pid: count for pid, count in rows.all()}
+
+
 async def client_out(
     session: AsyncSession, requirements: list[Requirement]
 ) -> list[ClientRequirementOut]:

@@ -6,10 +6,12 @@ from app.admin.router import roles_router as admin_roles_router
 from app.admin.router import router as admin_router
 from app.audit.router import router as audit_router
 from app.auth.router import router as auth_router
+from app.capacity.router import router as capacity_router
 from app.change_requests.router import router as change_requests_router
 from app.client.router import router as client_router
 from app.dashboard.router import router as dashboard_router
 from app.finance.router import router as finance_router
+from app.manager.router import router as manager_router
 from app.milestones.router import router as milestones_router
 from app.notifications.router import router as notifications_router
 from app.organisations.router import router as organisations_router
@@ -37,6 +39,8 @@ api_router.include_router(admin_roles_router)
 api_router.include_router(audit_router)
 api_router.include_router(organisations_router)
 api_router.include_router(portfolio_router)
+api_router.include_router(manager_router)
+api_router.include_router(capacity_router)
 api_router.include_router(reporting_router)
 api_router.include_router(finance_router)
 api_router.include_router(milestones_router)

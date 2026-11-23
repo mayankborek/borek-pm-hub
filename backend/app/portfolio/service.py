@@ -16,6 +16,7 @@ from app.auth.permissions import (
 from app.common.enums import GlobalRole, ProjectRole, ProjectStatus, RagStatus
 from app.common.validation import like_escape
 from app.finance import service as finance_service
+from app.manager import service as delivery
 from app.organisations.models import OrganisationAccountManager
 from app.organisations.schemas import PersonBrief
 from app.portfolio.schemas import (
@@ -24,6 +25,7 @@ from app.portfolio.schemas import (
     PortfolioOut,
     PortfolioProject,
     PortfolioSort,
+    PortfolioStage,
 )
 from app.projects import service as project_service
 from app.projects.membership import visible_project_ids
@@ -73,6 +75,7 @@ async def portfolio(
     client_organisation_id: uuid.UUID | None,
     rag: RagStatus | None,
     sort: PortfolioSort,
+    stage: PortfolioStage | None = None,
     page: int,
     page_size: int,
 ) -> PortfolioOut:
@@ -82,6 +85,10 @@ async def portfolio(
         conditions.append(Project.id.in_(visible_project_ids(user)))
     if status:
         conditions.append(Project.status == status.value)
+    if stage == "active":
+        conditions.append(Project.status.not_in(delivery.CLOSED_STATUSES))
+    elif stage == "completed":
+        conditions.append(Project.status == ProjectStatus.COMPLETED.value)
     if client_organisation_id:
         conditions.append(Project.client_organisation_id == client_organisation_id)
     if q and q.strip():
@@ -141,6 +148,8 @@ async def portfolio(
     clients = await project_service.client_organisations(session, projects)
     leads, counts = await _leads_and_counts(session, ids)
     finance = await finance_service.summaries(session, ids)
+    progress = await delivery.published_progress(session, ids)
+    upcoming = await delivery.next_milestones(session, ids)
     page_rags = {
         row.project_id: row
         for row in (await session.execute(select(latest).where(latest.c.project_id.in_(ids)))).all()
@@ -161,6 +170,8 @@ async def portfolio(
                 rag=page_rags[p.id].rag if p.id in page_rags else None,
                 rag_date=page_rags[p.id].report_date if p.id in page_rags else None,
                 finance=finance.get(p.id),
+                progress=progress.get(p.id),
+                next_milestone=upcoming.get(p.id),
             )
             for p in projects
         ],

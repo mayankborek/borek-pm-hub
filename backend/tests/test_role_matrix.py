@@ -20,6 +20,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.capacity.models import Reservation
 from app.change_requests.models import ChangeRequest
 from app.common.enums import GlobalRole
 from app.core.config import Settings, get_settings
@@ -392,6 +393,7 @@ def cases(w: World) -> list[Case]:
         ),
         # roadmap: everyone who sees the project reads it; leads change it
         Case("GET", f"{p}/roadmap", inside_project(READERS)),
+        Case("GET", f"{p}/overview", inside_project(READERS)),
         Case("GET", f"{p}/phases", inside_project(READERS)),
         Case(
             "POST",
@@ -415,6 +417,45 @@ def cases(w: World) -> list[Case]:
         Case("DELETE", f"{p}/milestones/{{milestone_id}}", inside_project(LEADS)),
         # oversight
         Case("GET", "/portfolio", everywhere({"manager"} | ACCOUNT_MANAGERS)),
+        Case("GET", "/manager/dashboard", everywhere({"manager"} | ACCOUNT_MANAGERS)),
+        # team: Managers see workload and capacity; Admins and Managers set schedules
+        Case("GET", "/manager/workload", everywhere({"manager"})),
+        Case("GET", "/manager/capacity", everywhere({"manager"})),
+        Case("GET", "/manager/schedule", everywhere({"manager", "admin"})),
+        Case(
+            "PUT",
+            "/manager/schedule",
+            everywhere({"manager", "admin"}),
+            {"weekly_hours": 40, "working_days": [1, 2, 3, 4, 5]},
+        ),
+        Case("GET", "/manager/people/{user_id}/schedule", everywhere({"manager", "admin"})),
+        Case(
+            "PUT",
+            "/manager/people/{user_id}/schedule",
+            everywhere({"manager", "admin"}),
+            {"weekly_hours": 20, "working_days": [1, 2, 3]},
+        ),
+        Case("DELETE", "/manager/people/{user_id}/schedule", everywhere({"manager", "admin"})),
+        # reservations: the project's leads and Managers
+        Case("GET", f"{p}/reservations", inside_project(LEADS)),
+        Case(
+            "POST",
+            f"{p}/reservations",
+            inside_project(LEADS),
+            {
+                "user_id": v.get("dev_member", ""),
+                "start_date": "2026-12-01",
+                "end_date": "2026-12-31",
+                "hours_per_week": 20,
+            },
+        ),
+        Case(
+            "PATCH",
+            f"{p}/reservations/{{reservation_id}}",
+            inside_project(LEADS),
+            {"version": 999},
+        ),
+        Case("DELETE", f"{p}/reservations/{{reservation_id}}", inside_project(LEADS)),
         Case("GET", "/access-overview", everywhere({"manager"})),
         Case("GET", "/access-overview/export", everywhere({"manager"})),
         # status reports
@@ -423,6 +464,7 @@ def cases(w: World) -> list[Case]:
             "POST", f"{p}/status-reports", inside_project(REPORTERS), {"rag": "red", "summary": "x"}
         ),
         Case("GET", f"{p}/status-reports/{{report_id}}", inside_project(READERS)),
+        Case("GET", f"{p}/status-reports/{{report_id}}/pdf", inside_project(READERS)),
         Case(
             "PATCH",
             f"{p}/status-reports/{{draft_id}}",
@@ -610,6 +652,15 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
                 published_by=ids["pm_lead"],
             )
         )
+        reservation = Reservation(
+            user_id=ids["dev_member"],
+            project_id=project.id,
+            start_date=date(2026, 11, 1),
+            end_date=date(2026, 12, 31),
+            hours_per_week=34,
+            created_by=ids["pm_lead"],
+        )
+        s.add(reservation)
         await s.commit()
         ids |= {
             "project_id": project.id,
@@ -623,6 +674,7 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "milestone_id": milestone.id,
             "request_id": change_request.id,
             "requirement_id": requirement.id,
+            "reservation_id": reservation.id,
             "organisation_id": org.id,
             "status_id": rows[1].id,
             "user_id": ids["dev_other"],

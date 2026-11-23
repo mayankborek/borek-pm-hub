@@ -1,12 +1,15 @@
 """Status reports (RAG, draft and published) and the stakeholder register of a project."""
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
 from app.auth.permissions import Action
+from app.client.pdf import build_report_pdf
+from app.client.service import report_document
 from app.common.enums import ReportState
 from app.common.validation import PageParam, PageSizeParam
 from app.core.database import SessionDep
@@ -45,11 +48,14 @@ async def list_status_reports(
     user: CurrentUser,
     session: SessionDep,
     state: ReportState | None = None,
+    q: Annotated[
+        str | None, Query(max_length=200, description="Report text or date (DD.MM.YYYY).")
+    ] = None,
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> StatusReportListOut:
     """Newest first. Everyone who sees the project reads published reports; those who write
-    reports also see drafts."""
+    reports also see drafts. `q` searches the report text and date."""
     await authorize(session, user, project_id, Action.PROJECT_VIEW)
     reports, total = await service.list_reports(
         session,
@@ -58,6 +64,7 @@ async def list_status_reports(
         state=state,
         page=page,
         page_size=page_size,
+        q=q,
     )
     return StatusReportListOut(
         items=await service.reports_out(session, reports),
@@ -94,6 +101,26 @@ async def get_status_report(
         include_drafts=await _sees_drafts(session, user, project_id),
     )
     return await _one(session, report)
+
+
+@router.get(
+    "/status-reports/{report_id}/pdf",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {"schema": {"type": "string"}}}}},
+)
+async def download_status_report(
+    project_id: uuid.UUID, report_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> Response:
+    """A published report as a PDF, the same file the client downloads (drafts: 404)."""
+    project = await authorize(session, user, project_id, Action.PROJECT_VIEW)
+    report = await service.get_report(session, project_id, report_id, include_drafts=False)
+    pdf = build_report_pdf(await report_document(session, report, project))
+    filename = f"status-report-{report.report_date.isoformat()}.pdf"
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.patch("/status-reports/{report_id}", response_model=StatusReportOut)

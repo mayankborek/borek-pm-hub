@@ -11,22 +11,28 @@ Types (the frontend builds the text from type + params):
   task.mentioned / task.attachment_added  (params: key, title, ...)
 - change_request.submitted / .review_started / .decided / .commented  (params: code, title, ...)
 - status_report.published  (params: title, report_date, health)
-- milestone.moved / .done / .shared  (params: code, name, due_date, previous_due_date)
+- milestone.moved / .done / .shared / .late  (params: code, name, due_date, previous_due_date,
+  days_late); moved/done/late go to leads + Managers, moved/done/shared to the client (shared
+  milestones only)
 - requirement.published / .answered  (params: code, title, version, decision)
 """
 
 import uuid
 from collections.abc import Iterable
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import is_client
+from app.capacity.models import MilestoneLateAlert
+from app.milestones.models import Milestone
 from app.notifications.service import (
     Recipient,
     account_managers,
     client_contacts,
+    managers,
     notify,
     project_leads,
 )
@@ -35,7 +41,6 @@ from app.users.models import User
 
 if TYPE_CHECKING:  # avoids import cycles with the domain modules
     from app.change_requests.models import ChangeRequest
-    from app.milestones.models import Milestone
     from app.reporting.models import StatusReport
     from app.requirements.models import Requirement
     from app.tasks.models import Task
@@ -302,42 +307,102 @@ async def report_published(session: AsyncSession, actor: User, report: "StatusRe
 # --- milestones (clients: shared milestones only) ------------------------------------------------
 
 
+def _milestone_params(milestone: Milestone, old_due: date | None = None) -> dict[str, Any]:
+    return {
+        "code": milestone.code,
+        "name": milestone.name,
+        "due_date": milestone.due_date.isoformat(),
+        "previous_due_date": (
+            old_due.isoformat() if old_due and old_due != milestone.due_date else None
+        ),
+    }
+
+
+async def _oversight(session: AsyncSession, project_id: uuid.UUID) -> list[Recipient]:
+    """Project leads and every Manager: who hears about any milestone of the project."""
+    return _as(await project_leads(session, project_id) + await managers(session), "milestones")
+
+
 async def milestone_changed(
     session: AsyncSession,
     actor: User,
-    milestone: "Milestone",
+    milestone: Milestone,
     *,
     was_visible: bool,
     old_due: date,
     was_done: bool,
 ) -> None:
-    """Tell the client when a shared milestone moves, is reached, or is newly shared."""
-    if not milestone.client_visible or milestone.archived_at is not None:
+    """Leads and Managers hear when any milestone moves or is reached; the client when a
+    shared milestone moves, is reached, or is newly shared."""
+    if milestone.archived_at is not None:
         return
-    if not was_visible:
-        type_ = "milestone.shared"
-    elif milestone.completed_at is not None and not was_done:
-        type_ = "milestone.done"
-    elif milestone.due_date != old_due:
-        type_ = "milestone.moved"
-    else:
+    reached = milestone.completed_at is not None and not was_done
+    moved = milestone.due_date != old_due
+    change = "milestone.done" if reached else "milestone.moved" if moved else None
+    params = _milestone_params(milestone, old_due)
+
+    async def send(type_: str, recipients: list[Recipient]) -> None:
+        await notify(
+            session,
+            actor,
+            type_,
+            entity_type="milestone",
+            entity_id=milestone.id,
+            project_id=milestone.project_id,
+            params=params,
+            recipients=recipients,
+        )
+
+    if change:
+        await send(change, await _oversight(session, milestone.project_id))
+    if not milestone.client_visible:
         return
-    project = await _project(session, milestone.project_id)
-    await notify(
-        session,
-        actor,
-        type_,
-        entity_type="milestone",
-        entity_id=milestone.id,
-        project_id=milestone.project_id,
-        params={
-            "code": milestone.code,
-            "name": milestone.name,
-            "due_date": milestone.due_date.isoformat(),
-            "previous_due_date": old_due.isoformat() if old_due != milestone.due_date else None,
-        },
-        recipients=_as(await client_contacts(session, project), "milestones"),
+    client_type = "milestone.shared" if not was_visible else change
+    if client_type:
+        project = await _project(session, milestone.project_id)
+        await send(client_type, _as(await client_contacts(session, project), "milestones"))
+
+
+async def milestones_running_late(session: AsyncSession) -> int:
+    """Daily check: tell leads and Managers once per due date when an open milestone of an
+    active project has passed it ("Running late"). Returns how many milestones were reported.
+    The caller commits."""
+    now = datetime.now(UTC).date()
+    rows = list(
+        await session.scalars(
+            select(Milestone)
+            .join(Project, Project.id == Milestone.project_id)
+            .outerjoin(MilestoneLateAlert, MilestoneLateAlert.milestone_id == Milestone.id)
+            .where(
+                Milestone.archived_at.is_(None),
+                Milestone.completed_at.is_(None),
+                Milestone.due_date < now,
+                Project.archived_at.is_(None),
+                Project.status.not_in(["completed", "cancelled"]),
+                or_(
+                    MilestoneLateAlert.milestone_id.is_(None),
+                    MilestoneLateAlert.due_date != Milestone.due_date,
+                ),
+            )
+        )
     )
+    for m in rows:
+        await notify(
+            session,
+            None,
+            "milestone.late",
+            entity_type="milestone",
+            entity_id=m.id,
+            project_id=m.project_id,
+            params={**_milestone_params(m), "days_late": (now - m.due_date).days},
+            recipients=await _oversight(session, m.project_id),
+        )
+        alert = await session.get(MilestoneLateAlert, m.id)
+        if alert is None:
+            session.add(MilestoneLateAlert(milestone_id=m.id, due_date=m.due_date))
+        else:
+            alert.due_date = m.due_date
+    return len(rows)
 
 
 # --- requirements -------------------------------------------------------------------------------

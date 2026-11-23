@@ -137,6 +137,11 @@ class ChangeRequestOut(BaseModel):
     decided_at: datetime | None
     submitted_by: PersonBrief
     submitted_by_client: bool = Field(description="Raised by a client contact.")
+    delivery: Literal["not_started", "in_progress", "done"] | None = Field(
+        description="Approved requests with a milestone: not_started until a task linked to the "
+        "milestone is in progress (or blocked or done), done once the milestone is reached. "
+        "Otherwise null."
+    )
     version: int
     created_at: datetime
     updated_at: datetime

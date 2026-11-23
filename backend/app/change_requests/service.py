@@ -9,6 +9,7 @@ due date and keeps the date it had before, which makes the milestone "revised".
 import uuid
 from collections import Counter
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import UploadFile
 from fastapi.responses import FileResponse
@@ -33,6 +34,7 @@ from app.change_requests.schemas import (
     CommentOut,
     MilestoneBrief,
 )
+from app.common.enums import StatusCategory
 from app.core import storage
 from app.core.errors import AppError
 from app.milestones.models import Milestone
@@ -40,6 +42,7 @@ from app.notifications import events as notifications
 from app.organisations.schemas import PersonBrief
 from app.projects.models import Project
 from app.tasks.details import content_type_for, store_upload
+from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
 
 
@@ -105,6 +108,23 @@ async def requests_out(
         user = users.get(user_id) if user_id else None
         return PersonBrief(id=user.id, name=user.name, email=user.email) if user else None
 
+    started = await _milestones_with_started_work(
+        session,
+        [
+            r.milestone_id
+            for r in requests
+            if r.milestone_id and r.status == ChangeRequestStatus.APPROVED.value
+        ],
+    )
+
+    def delivery(r: ChangeRequest) -> Literal["not_started", "in_progress", "done"] | None:
+        if r.status != ChangeRequestStatus.APPROVED.value or r.milestone_id is None:
+            return None
+        m = milestones.get(r.milestone_id)
+        if m is not None and m.completed_at is not None:
+            return "done"
+        return "in_progress" if r.milestone_id in started else "not_started"
+
     out = []
     for r in requests:
         m = milestones.get(r.milestone_id) if r.milestone_id else None
@@ -134,6 +154,7 @@ async def requests_out(
                 decided_at=r.decided_at,
                 submitted_by=submitter,
                 submitted_by_client=is_client(users[r.submitted_by]),
+                delivery=delivery(r),
                 version=r.version,
                 created_at=r.created_at,
                 updated_at=r.updated_at,
@@ -142,10 +163,39 @@ async def requests_out(
     return out
 
 
+async def _milestones_with_started_work(
+    session: AsyncSession, milestone_ids: list[uuid.UUID]
+) -> set[uuid.UUID]:
+    """Milestones with at least one active linked task in progress, blocked or done."""
+    if not milestone_ids:
+        return set()
+    started = (
+        StatusCategory.IN_PROGRESS.value,
+        StatusCategory.BLOCKED.value,
+        StatusCategory.DONE.value,
+    )
+    return set(
+        await session.scalars(
+            select(Task.milestone_id)
+            .join(WorkflowStatus, WorkflowStatus.id == Task.status_id)
+            .where(
+                Task.milestone_id.in_(milestone_ids),
+                Task.archived_at.is_(None),
+                WorkflowStatus.category.in_(started),
+            )
+            .distinct()
+        )
+    )
+
+
 async def list_requests(
-    session: AsyncSession, project_id: uuid.UUID, status: ChangeRequestStatus | None = None
+    session: AsyncSession,
+    project_id: uuid.UUID,
+    status: ChangeRequestStatus | None = None,
+    q: str | None = None,
 ) -> tuple[list[ChangeRequest], dict[str, int]]:
-    """Newest first, and counts per status over all of the project's requests."""
+    """Newest first, and counts per status over all of the project's requests. `q` matches the
+    code or title (case-insensitive)."""
     rows = list(
         await session.scalars(
             select(ChangeRequest)
@@ -160,6 +210,9 @@ async def list_requests(
     }
     if status is not None:
         rows = [r for r in rows if r.status == status.value]
+    if q and q.strip():
+        needle = q.strip().casefold()
+        rows = [r for r in rows if needle in r.code.casefold() or needle in r.title.casefold()]
     return rows, counts
 
 
@@ -326,7 +379,16 @@ async def decide(
         }
         if milestone.original_due_date is None:
             milestone.original_due_date = milestone.due_date
+        old_due = milestone.due_date
         milestone.due_date = request.requested_date
+        await notifications.milestone_changed(
+            session,
+            actor,
+            milestone,
+            was_visible=milestone.client_visible,
+            old_due=old_due,
+            was_done=False,  # a reached milestone is refused above (MILESTONE_DONE)
+        )
     request.status = data.decision
     request.decision_note = data.note
     request.decided_by = actor.id

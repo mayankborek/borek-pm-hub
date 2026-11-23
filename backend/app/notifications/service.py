@@ -15,7 +15,13 @@ from typing import Any
 from sqlalchemy import ColumnElement, and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.permissions import client_condition, is_admin, is_client, sees_all_projects
+from app.auth.permissions import (
+    client_condition,
+    is_admin,
+    is_client,
+    manager_condition,
+    sees_all_projects,
+)
 from app.common.enums import ProjectRole, ProjectType
 from app.core.errors import AppError
 from app.notifications.models import Notification, NotificationSetting
@@ -43,6 +49,7 @@ STAFF_SETTINGS = (
     "change_requests",
     "requirements",
     "reports",
+    "milestones",  # project leads and Managers: milestones moved, reached, running late
 )
 CLIENT_SETTINGS = ("change_requests", "requirements", "reports", "milestones")
 
@@ -117,6 +124,13 @@ async def project_leads(session: AsyncSession, project_id: uuid.UUID) -> list[uu
                 ProjectMember.project_role == ProjectRole.PROJECT_LEAD.value,
             )
         )
+    )
+
+
+async def managers(session: AsyncSession) -> list[uuid.UUID]:
+    """Every active Manager (they oversee all projects)."""
+    return list(
+        await session.scalars(select(User.id).where(manager_condition(), User.is_active.is_(True)))
     )
 
 
