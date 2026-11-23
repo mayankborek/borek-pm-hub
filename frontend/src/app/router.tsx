@@ -17,6 +17,9 @@ import { ClientProjectLayout } from '@/features/client/ClientProjectLayout';
 import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
 import { AmMilestonesPage } from '@/features/accountManager/AmMilestonesPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
+import { ProjectRequirementsPage } from '@/features/requirements/ProjectRequirementsPage';
+import { ProjectChangeRequestsPage } from '@/features/changeRequests/ProjectChangeRequestsPage';
+import { ClientRequirementsPage } from '@/features/requirements/ClientRequirementsPage';
 import { ClientChangeRequestsPage } from '@/features/client/ClientChangeRequestsPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
@@ -98,6 +101,7 @@ export const router = createBrowserRouter([
                   { path: 'milestones', element: <ClientMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
+                  { path: 'requirements', element: <ClientRequirementsPage /> },
                   { path: 'change-requests', element: <ClientChangeRequestsPage /> },
                   { path: 'contacts', element: <ClientContactsPage /> },
                 ],
@@ -223,6 +227,8 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <ProjectOverviewPage /> },
               { path: 'board', element: <ProjectBoardPage /> },
+              { path: 'requirements', element: <ProjectRequirementsPage /> },
+              { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
               { path: 'list', element: <ProjectListPage /> },
               { path: 'members', element: <ProjectMembersPage /> },
             ],

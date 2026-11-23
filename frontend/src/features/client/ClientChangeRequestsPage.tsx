@@ -227,9 +227,9 @@ function RequestDetail({ cr, projectId }: { cr: CrItem; projectId: string }) {
         )}
         <dt>{t('Raised by')}</dt><dd>{cr.submitted_by}</dd>
         {cr.impact_schedule_days !== null && (
-          <><dt>{t('Schedule impact')}</dt><dd>{t('{n} days', { n: cr.impact_schedule_days })}</dd></>
+          <><dt>{t(cr.status === 'pending' || cr.status === 'in_review' ? 'Proposed schedule impact' : 'Schedule impact')}</dt><dd>{t('{n} days', { n: cr.impact_schedule_days })}</dd></>
         )}
-        {cr.impact_scope && <><dt>{t('Scope impact')}</dt><dd>{cr.impact_scope}</dd></>}
+        {cr.impact_scope && <><dt>{t(cr.status === 'pending' || cr.status === 'in_review' ? 'Proposed scope impact' : 'Scope impact')}</dt><dd>{cr.impact_scope}</dd></>}
         {cr.decision_note && <><dt>{t('Decision note')}</dt><dd>{cr.decision_note}</dd></>}
       </dl>
 
