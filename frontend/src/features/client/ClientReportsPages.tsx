@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useToast } from '@/shared/ui/Toast';
+import { HEALTH_LABEL } from './labels';
+import { downloadReportPdf, useClientReport } from './reportsApi';
 import { Link, useParams } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { dateRange, longDate, paddedDate } from './format';
+import { longDate, paddedDate, pct } from './format';
 import { Icon } from './icons';
 import { useProjectContext } from './ClientProjectLayout';
 import { EmptyCard } from './ui';
@@ -16,6 +20,8 @@ const backIcon = (
 
 export function ClientReportsPage() {
   const pp = usePortalPaths();
+  const isClient = useAuth().user?.role === 'client';
+  const toast = useToast();
   const { project } = useProjectContext();
   const { t, lang } = usePrefs();
   const [search, setSearch] = useState('');
@@ -43,7 +49,7 @@ export function ClientReportsPage() {
           <div className="cx-lhd"><b>{t('Report library')}</b><span>{project.name}</span></div>
           <div className="cx-cols">
             <span>{t('Report')}</span>
-            <span>{t('Reporting period')}</span>
+            <span>{t('Report date')}</span>
             <span>{t('Published')}</span>
             <span>{t('Status')}</span>
             <span />
@@ -54,13 +60,16 @@ export function ClientReportsPage() {
                 <span className="cx-ib"><Icon name="file" className="cx-ico cx-18" /></span>
                 <div>
                   <div className="cx-t"><Link to={pp.report(project.id, r.id)}>{r.title}</Link></div>
-                  <div className="cx-s">{t('Project status · Shared by {name}', { name: project.publishedBy.name })}</div>
+                  <div className="cx-s">{project.publishedBy ? t('Project status · Shared by {name}', { name: project.publishedBy.name }) : t('Project status')}</div>
                 </div>
               </div>
-              <div className="cx-d">{dateRange(lang, r.periodStart, r.periodEnd)}</div>
-              <div className="cx-d">{paddedDate(lang, r.createdOn)}</div>
+              <div className="cx-d">{paddedDate(lang, r.reportDate)}</div>
+              <div className="cx-d">{paddedDate(lang, r.publishedAt.slice(0, 10))}</div>
               <div><span className="cx-st"><i />{t('Published')}</span></div>
-              <button type="button" className="cx-btn cx-dl" onClick={() => window.print()}>
+              <button type="button" className="cx-btn cx-dl" onClick={() => {
+                if (!isClient) return window.print();
+                downloadReportPdf(project.id, r.id, r.reportDate).catch(() => toast.error(t('The report could not be downloaded.')));
+              }}>
                 <Icon name="download" className="cx-ico cx-14" /> {t('Download')}
               </button>
             </div>
@@ -78,6 +87,8 @@ export function ClientReportPage() {
   const { project } = useProjectContext();
   const { t, lang } = usePrefs();
   const report = project.reports.find((r) => r.id === reportId);
+  const detail = useClientReport(project.id, report?.id).data;
+  const by = detail?.published_by ?? project.publishedBy;
 
   if (!report) {
     return (
@@ -97,19 +108,30 @@ export function ClientReportPage() {
       </Link>
       <h2>{report.title}</h2>
       <div className="cp-card">
-        <div className="cp-val" style={{ marginTop: 0, fontSize: 'var(--fs-12)' }}>
-          {t('Published by {name} · {role}', { name: project.publishedBy.name, role: t(project.publishedBy.role) })}
-        </div>
-        <div className="cp-lbl">{t('Reporting period')}</div>
-        <div className="cp-val" style={{ marginTop: 12 }}>{dateRange(lang, report.periodStart, report.periodEnd)}</div>
-        <div className="cp-lbl">{t('Created on')}</div>
-        <div className="cp-val" style={{ marginTop: 12 }}>{longDate(lang, report.createdOn)}</div>
+        {by && (
+          <div className="cp-val" style={{ marginTop: 0, fontSize: 'var(--fs-12)' }}>
+            {t('Published by {name} · {role}', { name: by.name, role: t(by.role) })}
+          </div>
+        )}
+        <div className="cp-lbl">{t('Report date')}</div>
+        <div className="cp-val" style={{ marginTop: 12 }}>{longDate(lang, report.reportDate)}</div>
+        <div className="cp-lbl">{t('Published on')}</div>
+        <div className="cp-val" style={{ marginTop: 12 }}>{longDate(lang, report.publishedAt.slice(0, 10))}</div>
+        <div className="cp-lbl">{t('Project status')}</div>
+        <div className="cp-val" style={{ marginTop: 12 }}>{t(HEALTH_LABEL[report.health])}</div>
         <div className="cp-lbl">{t('Published progress')}</div>
-        <div className="cp-big">{report.progress}%</div>
+        <div className="cp-big">{pct(report.progress)}</div>
         <div className="cp-lbl" style={{ marginTop: 14 }}>{t('Delivery summary')}</div>
         <div className="cp-val" style={{ marginTop: 12 }}>{report.summary}</div>
-        <div className="cp-lbl">{t('Published forecast')}</div>
-        <div className="cp-val" style={{ marginTop: 12 }}>{longDate(lang, report.forecast)}</div>
+        {([['Achievements', detail?.achievements], ['Next steps', detail?.next_steps], ['Risks', detail?.risks]] as const).map(
+          ([label, text]) =>
+            text && (
+              <div key={label}>
+                <div className="cp-lbl">{t(label)}</div>
+                <div className="cp-val" style={{ marginTop: 12, whiteSpace: 'pre-line' }}>{text}</div>
+              </div>
+            ),
+        )}
         <div className="cp-note">{t('Shared with your client organisation. Internal comments and working drafts are excluded.')}</div>
       </div>
     </div>

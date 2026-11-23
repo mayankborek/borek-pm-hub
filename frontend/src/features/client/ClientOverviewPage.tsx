@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { dayMonth, initialsOf, longDate, paddedDate } from './format';
+import { dayMonth, initialsOf, longDate, paddedDate, pct } from './format';
 import { nextMilestone } from './clientPortalApi';
 import { MILESTONE_BADGE } from './labels';
 import { useProjectContext } from './ClientProjectLayout';
@@ -19,7 +19,7 @@ export function ClientOverviewPage() {
 
   const next = nextMilestone(project, today);
   const done = project.milestones.filter((m) => m.state === 'done').length;
-  const filled = Math.round((project.progress / 100) * SEGMENTS);
+  const filled = Math.round(((project.progress ?? 0) / 100) * SEGMENTS);
   const inReview = project.changeRequests.find((c) => c.status === 'in_review');
   const manager = project.publishedBy;
   const nextDate = next && dayMonth(lang, next.dueDate).split(' ');
@@ -30,16 +30,16 @@ export function ClientOverviewPage() {
         <section className="cx-card cx-pp">
           <div className="cx-hd2">
             <span className="cx-lh"><Icon name="chart" /> {t('Project progress')}</span>
-            <span className="cx-dt">{paddedDate(lang, project.publishedOn)}</span>
+            <span className="cx-dt">{project.publishedOn ? paddedDate(lang, project.publishedOn) : ''}</span>
           </div>
           <div className="cx-big">
-            <strong>{project.progress}%</strong>
+            <strong>{pct(project.progress)}</strong>
             <div>
-              <div className="cx-t">{t('Latest published progress')}</div>
-              <div className="cx-s">{t('Shared by {name}', { name: manager.name })}</div>
+              <div className="cx-t">{project.progress === null ? t('Progress not published yet') : t('Latest published progress')}</div>
+              {manager && <div className="cx-s">{t('Shared by {name}', { name: manager.name })}</div>}
             </div>
           </div>
-          <div className="cx-segs" role="img" aria-label={t('{n} percent progress', { n: project.progress })}>
+          <div className="cx-segs" role="img" aria-label={t('{n} percent progress', { n: project.progress ?? 0 })}>
             {Array.from({ length: SEGMENTS }, (_, i) => <i key={i} className={i < filled ? 'cx-f' : undefined} />)}
           </div>
           <p className="cx-trend">{t('A progress trend will appear when more updates are shared.')}</p>
@@ -58,10 +58,12 @@ export function ClientOverviewPage() {
           <p>{project.latestUpdate ? project.latestUpdate.text : t('No updates have been shared yet.')}</p>
           <hr />
           <div className="cx-by">
-            <div className="cx-who">
-              <span className="cx-avatar" aria-hidden="true">{initialsOf(manager.name)}</span>
-              <div><b>{manager.name}</b><span className="cx-r">{t(manager.role)}</span></div>
-            </div>
+            {manager ? (
+              <div className="cx-who">
+                <span className="cx-avatar" aria-hidden="true">{initialsOf(manager.name)}</span>
+                <div><b>{manager.name}</b><span className="cx-r">{t(manager.role)}</span></div>
+              </div>
+            ) : <span />}
             <Link to={pp.reports(project.id)}>
               {t('View reports')} <Icon name="arrow" className="cx-ico cx-11" />
             </Link>
@@ -79,7 +81,7 @@ export function ClientOverviewPage() {
           </div>
           <div className="cx-card cx-kpi">
             <Icon name="calendar" />
-            <div className="cx-n">{daysBetween(today, project.dueDate)}</div>
+            <div className="cx-n">{project.dueDate ? daysBetween(today, project.dueDate) : '–'}</div>
             <div className="cx-l">{t('Days left')}</div>
             <div className="cx-s">{t('Until {date}', { date: dayMonth(lang, project.dueDate) })}</div>
           </div>

@@ -23,14 +23,14 @@ export function AmProjectsPage() {
       <h1 style={{ fontSize: 'var(--fs-18)' }}>{t('Projects shared with you')}</h1>
       <p className="lead">{t('Only projects you have been invited to are available here.')}</p>
       <p className="lead" style={{ fontSize: 'var(--fs-11)' }}>
-        {t('Published {date} · {name}, {role}', { date: paddedDate(lang, projects[0].publishedOn), name: by.name, role: t(by.role) })}
+        {by && t('Published {date} · {name}, {role}', { date: paddedDate(lang, projects[0].publishedOn), name: by.name, role: t(by.role) })}
       </p>
       <div className="pcards">
         {projects.map((p) => {
           const next = nextMilestone(p, today);
           return (
             <div className="card pcard" key={p.id}>
-              <div className="top"><h3>{p.name}</h3><span className={healthBadge(p.health)}>{t(HEALTH_LABEL[p.health])}</span></div>
+              <div className="top"><h3>{p.name}</h3><span className={healthBadge(p.health)}>{t(HEALTH_LABEL[p.health ?? 'none'])}</span></div>
               <p>{t('Published progress')} · {p.progress}%</p>
               <div className="bar"><i style={{ width: `${p.progress}%` }} /></div>
               {next && <p>{t('Next milestone')}: {next.name} · {longDate(lang, next.dueDate)}</p>}

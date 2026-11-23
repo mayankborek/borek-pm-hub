@@ -12,11 +12,13 @@ export function ClientMilestonesPage() {
 
   const milestones = [...project.milestones].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const manager = project.publishedBy;
+  const startIso = project.startDate ?? today;
+  const dueIso = project.dueDate ?? today;
 
   const DAY = 86_400_000;
   const day = (iso: string) => Date.parse(iso + 'T00:00:00Z') / DAY;
-  const start = Math.min(day(project.startDate), day(today), ...milestones.map((m) => day(m.dueDate)));
-  const end = Math.max(day(project.dueDate), day(today), ...milestones.map((m) => day(m.requestedDate ?? m.dueDate)));
+  const start = Math.min(day(startIso), day(today), ...milestones.map((m) => day(m.dueDate)));
+  const end = Math.max(day(dueIso), day(today), ...milestones.map((m) => day(m.requestedDate ?? m.dueDate)));
   const span = Math.max(end - start, 1);
   const pct = (iso: string) => `${((day(iso) - start) / span) * 100}%`;
   const ticks = Array.from({ length: 5 }, (_, i) => new Date((start + (span * i) / 4) * DAY).toISOString().slice(0, 10));
@@ -39,7 +41,7 @@ export function ClientMilestonesPage() {
           </div>
           {milestones.map((m, i) => {
             const status = MILESTONE_STATUS[m.state];
-            const from = i === 0 ? project.startDate : milestones[i - 1].dueDate;
+            const from = i === 0 ? startIso : milestones[i - 1].dueDate;
             const reached = m.state === 'done' || m.dueDate < today;
             const left = day(from) - start;
             const width = Math.max(day(m.dueDate) - day(from), 1);
@@ -52,7 +54,7 @@ export function ClientMilestonesPage() {
                 </div>
                 <div className="cp-g-track">
                   <div className="cp-g-bar" style={{ left: `${(left / span) * 100}%`, width: `${(width / span) * 100}%` }}>
-                    <i style={{ width: `${m.progress}%` }} />
+                    <i style={{ width: `${m.progress ?? 0}%` }} />
                   </div>
                   <span className={`cp-g-dia${reached ? ' cp-on' : ''}`} style={{ left: pct(m.dueDate) }} />
                   <div className="cp-g-note" style={{ left: pct(m.dueDate) }}>
@@ -80,7 +82,9 @@ export function ClientMilestonesPage() {
         <p className="cp-g-foot">{t('Phase bars show duration. Diamonds mark milestone due dates.')}</p>
       </div>
       <p className="cp-small" style={{ marginTop: 12 }}>
-        {t('Where your project stands, in date order · shared by {name}, {role}', { name: manager.name, role: t(manager.role) })}
+        {manager
+          ? t('Where your project stands, in date order · shared by {name}, {role}', { name: manager.name, role: t(manager.role) })
+          : t('Where your project stands, in date order')}
       </p>
     </section>
   );

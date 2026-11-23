@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { longDate } from './format';
+import { longDate, pct } from './format';
 import { nextMilestone, useClientPortal } from './clientPortalApi';
 import { HEALTH_LABEL } from './labels';
 import { Icon } from './icons';
@@ -23,7 +23,7 @@ export function ClientProjectsPage() {
   const { projects, today } = data;
   if (!projects.length) return <EmptyCard />;
 
-  const completed = (p: (typeof projects)[number]) => p.progress >= 100;
+  const completed = (p: (typeof projects)[number]) => (p.progress ?? 0) >= 100;
   const counts = { all: projects.length, active: projects.filter((p) => !completed(p)).length, completed: projects.filter(completed).length };
   const q = search.trim().toLowerCase();
   const shown = projects
@@ -74,15 +74,15 @@ export function ClientProjectsPage() {
                   <div className="cx-id">{p.code} · {p.category}</div>
                 </div>
               </div>
-              <span className={`cx-status cx-${p.health}`}>{t(HEALTH_LABEL[p.health])}</span>
+              <span className={`cx-status cx-${p.health ?? 'none'}`}>{t(HEALTH_LABEL[p.health ?? 'none'])}</span>
               <div className="cx-meta">
-                <div><div className="cx-k">{t('Project Manager')}</div><div className="cx-v">{p.publishedBy.name}</div></div>
+                <div><div className="cx-k">{t('Project Manager')}</div><div className="cx-v">{p.projectManager ?? p.publishedBy?.name ?? '–'}</div></div>
                 <div><div className="cx-k">{t('Next milestone')}</div><div className="cx-v">{next ? next.name : '–'}</div></div>
                 <div><div className="cx-k">{t('Target completion')}</div><div className="cx-v">{longDate(lang, p.dueDate)}</div></div>
                 <div className="cx-pg">
-                  <div className="cx-k"><span>{t('Project progress')}</span><b>{p.progress}%</b></div>
-                  <div className="cx-bar" role="progressbar" aria-valuenow={p.progress} aria-valuemin={0} aria-valuemax={100}>
-                    <i style={{ width: `${p.progress}%` }} />
+                  <div className="cx-k"><span>{t('Project progress')}</span><b>{pct(p.progress)}</b></div>
+                  <div className="cx-bar" role="progressbar" aria-valuenow={p.progress ?? undefined} aria-valuemin={0} aria-valuemax={100}>
+                    <i style={{ width: `${p.progress ?? 0}%` }} />
                   </div>
                 </div>
               </div>

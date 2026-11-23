@@ -1,15 +1,16 @@
 const parse = (iso: string) => new Date(`${iso}T00:00:00Z`);
-const fmt = (lang: string, iso: string, o: Intl.DateTimeFormatOptions) =>
-  parse(iso).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB', { timeZone: 'UTC', ...o });
+/** A date the API has not set (null) shows as an en dash. */
+const fmt = (lang: string, iso: string | null | undefined, o: Intl.DateTimeFormatOptions) =>
+  iso ? parse(iso).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-GB', { timeZone: 'UTC', ...o }) : '–';
 
 /** 06 Nov */
-export const dayMonth = (lang: string, iso: string) => fmt(lang, iso, { day: '2-digit', month: 'short' }).replace('.', '');
+export const dayMonth = (lang: string, iso: string | null) => fmt(lang, iso, { day: '2-digit', month: 'short' }).replace('.', '');
 /** 6 Nov 2026 */
-export const longDate = (lang: string, iso: string) => fmt(lang, iso, { day: 'numeric', month: 'short', year: 'numeric' });
+export const longDate = (lang: string, iso: string | null) => fmt(lang, iso, { day: 'numeric', month: 'short', year: 'numeric' });
 /** 2 Nov */
 export const shortDate = (lang: string, iso: string) => fmt(lang, iso, { day: 'numeric', month: 'short' });
 /** 02 Nov 2026 */
-export const paddedDate = (lang: string, iso: string) => fmt(lang, iso, { day: '2-digit', month: 'short', year: 'numeric' });
+export const paddedDate = (lang: string, iso: string | null) => fmt(lang, iso, { day: '2-digit', month: 'short', year: 'numeric' });
 
 /** 24–30 Oct 2026 (or 28 Oct – 3 Nov 2026 across months). */
 export function dateRange(lang: string, start: string, end: string) {
@@ -21,6 +22,9 @@ export function dateRange(lang: string, start: string, end: string) {
   }
   return `${shortDate(lang, start)} – ${longDate(lang, end)}`;
 }
+
+/** A published percentage, or an en dash when none was published (never a made-up 0%). */
+export const pct = (n: number | null) => (n === null ? '–' : `${n}%`);
 
 export const initialsOf = (name: string) =>
   name

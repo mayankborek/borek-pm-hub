@@ -1,6 +1,6 @@
 export type ClientHealth = 'on_track' | 'at_risk' | 'off_track';
 export type MilestoneState = 'done' | 'late' | 'revised' | 'at_risk' | 'in_progress' | 'planned';
-export type ChangeRequestStatus = 'in_review' | 'approved' | 'declined';
+export type ChangeRequestStatus = 'pending' | 'in_review' | 'approved' | 'declined';
 
 export interface ClientMilestone {
   id: string;
@@ -10,7 +10,8 @@ export interface ClientMilestone {
   /** ISO date (YYYY-MM-DD). */
   dueDate: string;
   state: MilestoneState;
-  progress: number;
+  /** 100 once reached; null = not available (never guessed from tasks). */
+  progress: number | null;
   /** A later date: proposed while the change request is open, published once the state is `revised`. */
   requestedDate?: string;
   changeRequestRef?: string;
@@ -38,12 +39,14 @@ export interface ClientChangeRequest {
 export interface ClientReport {
   id: string;
   title: string;
-  periodStart: string;
-  periodEnd: string;
-  createdOn: string;
+  /** ISO date the report is about. */
+  reportDate: string;
+  /** ISO date-time it was published to the client. */
+  publishedAt: string;
+  health: ClientHealth;
   summary: string;
-  forecast: string;
-  progress: number;
+  /** Progress the report shared; null when it shared none. */
+  progress: number | null;
 }
 
 export interface ClientContact {
@@ -75,19 +78,22 @@ export interface ClientProject {
   name: string;
   category: string;
   /** ISO dates. */
-  startDate: string;
-  dueDate: string;
+  startDate: string | null;
+  dueDate: string | null;
   /** Open items waiting on the client. */
   clientActions: number;
   /** Optional line under the progress bar on the dashboard; falls back to the next milestone. */
   note?: string;
   /** The PM's latest written update. */
   latestUpdate?: { text: string; date: string };
-  health: ClientHealth;
-  /** Latest progress the PM published, not live task data. */
-  progress: number;
-  publishedOn: string;
-  publishedBy: { name: string; role: string };
+  /** From the newest published report; null until the first one is published. */
+  health: ClientHealth | null;
+  /** Latest progress the PM published, not live task data; null = not published yet. */
+  progress: number | null;
+  publishedOn: string | null;
+  publishedBy: { name: string; role: string } | null;
+  /** The project lead's name; null = not assigned yet. */
+  projectManager?: string | null;
   contacts: ClientContact[];
   milestones: ClientMilestone[];
   tasks?: ProjectTask[];

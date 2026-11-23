@@ -81,11 +81,11 @@ export function ManagerDashboardPage() {
               </div>
               <div className="cx-tags">
                 <span className="cx-tag">{t('Active')}</span>
-                <span className={`cx-tag cx-${p.health}`}>{t(HEALTH_LABEL[p.health])}</span>
+                <span className={`cx-tag cx-${p.health ?? 'none'}`}>{t(HEALTH_LABEL[p.health ?? 'none'])}</span>
               </div>
-              <div className="cx-prow"><span>{t('Published progress')}</span><b>{p.progress}%</b></div>
-              <div className="cx-bar" role="progressbar" aria-valuenow={p.progress} aria-valuemin={0} aria-valuemax={100}>
-                <i style={{ width: `${p.progress}%` }} />
+              <div className="cx-prow"><span>{t('Published progress')}</span><b>{p.progress ?? '–'}{p.progress !== null && '%'}</b></div>
+              <div className="cx-bar" role="progressbar" aria-valuenow={p.progress ?? undefined} aria-valuemin={0} aria-valuemax={100}>
+                <i style={{ width: `${p.progress ?? 0}%` }} />
               </div>
               <p className="cx-note">{p.note ? t(p.note) : next ? t('Next milestone: {name}', { name: next.name }) : t('Nothing planned')}</p>
               <p className="cx-due">{t('Due {date}', { date: longDate(lang, p.dueDate) })}</p>

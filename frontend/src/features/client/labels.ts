@@ -3,10 +3,12 @@ import type { ChangeRequestStatus, ClientHealth, MilestoneState } from './types'
 /** The five badge tones from the client component sheet. Neutral is plain grey text. */
 export type Tone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
-export const HEALTH_LABEL: Record<ClientHealth, string> = {
+/** `none` is a project whose first report is not published yet. */
+export const HEALTH_LABEL: Record<ClientHealth | 'none', string> = {
   on_track: 'On track',
   at_risk: 'At risk',
   off_track: 'Off track',
+  none: 'Not reported yet',
 };
 export const HEALTH_TONE: Record<ClientHealth, Tone> = {
   on_track: 'success',
@@ -15,6 +17,7 @@ export const HEALTH_TONE: Record<ClientHealth, Tone> = {
 };
 
 export const CR_LABEL: Record<ChangeRequestStatus, string> = {
+  pending: 'Submitted',
   in_review: 'In review',
   approved: 'Approved',
   declined: 'Declined',

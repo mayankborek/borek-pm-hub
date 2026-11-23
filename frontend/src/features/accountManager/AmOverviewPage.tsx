@@ -16,16 +16,17 @@ const CR_ORDER: ChangeRequestStatus[] = ['in_review', 'approved', 'declined'];
 export function AmOverviewPage() {
   const { project, today } = useProjectContext();
   const { t, lang } = usePrefs();
+  const progress = project.progress ?? 0;
   const next = nextMilestone(project, today);
   const crs = project.changeRequests;
   const inReview = crs.filter((c) => c.status === 'in_review').length;
-  const latest = [...project.reports].sort((a, b) => b.createdOn.localeCompare(a.createdOn))[0];
+  const latest = [...project.reports].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))[0];
 
   return (
     <>
       <div className="grid4" style={{ marginTop: 20 }}>
-        <div className="card stat sm"><div className="label">{t('Project health')}</div><div className="num blue">{t(HEALTH_LABEL[project.health])}</div><div className="small">{t('Progressing as planned')}</div></div>
-        <div className="card stat sm"><div className="label">{t('Published progress')}</div><div className="num">{project.progress}%</div><div className="small">{t('Latest shared delivery progress')}</div></div>
+        <div className="card stat sm"><div className="label">{t('Project health')}</div><div className="num blue">{t(HEALTH_LABEL[project.health ?? 'none'])}</div><div className="small">{t('Progressing as planned')}</div></div>
+        <div className="card stat sm"><div className="label">{t('Published progress')}</div><div className="num">{progress}%</div><div className="small">{t('Latest shared delivery progress')}</div></div>
         <div className="card stat sm">
           <div className="label">{t('Next milestone')}</div>
           <div className="num">{next ? dayMonth(lang, next.dueDate) : '–'}</div>
@@ -42,13 +43,13 @@ export function AmOverviewPage() {
             <div className="donut">
               <svg width="180" height="180" viewBox="0 0 180 180" aria-hidden="true">
                 <circle cx="90" cy="90" r={R} fill="none" stroke="var(--bg)" strokeWidth="22" />
-                <circle cx="90" cy="90" r={R} fill="none" stroke="var(--blue)" strokeWidth="22" strokeDasharray={C} strokeDashoffset={C * (1 - project.progress / 100)} />
+                <circle cx="90" cy="90" r={R} fill="none" stroke="var(--blue)" strokeWidth="22" strokeDasharray={C} strokeDashoffset={C * (1 - progress / 100)} />
               </svg>
-              <div className="c"><b>{project.progress}%</b><span>{t('Complete')}</span></div>
+              <div className="c"><b>{progress}%</b><span>{t('Complete')}</span></div>
             </div>
             <div className="legend">
-              <div><i />{t('Complete')}<b>{project.progress}%</b></div>
-              <div><i className="r" />{t('Remaining')}<b>{100 - project.progress}%</b></div>
+              <div><i />{t('Complete')}<b>{progress}%</b></div>
+              <div><i className="r" />{t('Remaining')}<b>{100 - progress}%</b></div>
             </div>
           </div>
         </section>

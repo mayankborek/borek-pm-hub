@@ -49,7 +49,7 @@ export function AmHomePage() {
                   <Link className="t" to={paths.amProject(p.id)}>{p.name}</Link>
                   {next && <div className="meta">{next.name} · {dayMonth(lang, next.dueDate)}</div>}
                 </div>
-                <span><span className={healthBadge(p.health)}>{t(HEALTH_LABEL[p.health])}</span></span>
+                <span><span className={healthBadge(p.health)}>{t(HEALTH_LABEL[p.health ?? 'none'])}</span></span>
                 <div className="pg">
                   <div className="bar"><i style={{ width: `${p.progress}%` }} /></div>
                   <span>{p.progress}%</span>

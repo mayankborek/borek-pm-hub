@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { api } from '@/shared/api/client';
+import { useAuth } from '@/features/auth/AuthContext';
 import type { ClientMilestone, ClientPortalData, ClientProject, MilestoneState } from './types';
+import { fetchClientPortal } from './portalMapper';
 
-// The backend has no client-portal endpoints yet, so these hooks serve the supplied design's sample
-// data. Replace `fetchPortal` with a call to the real API; the pages only depend on ClientPortalData.
+// Clients read the real portal API (see portalMapper.ts). The Account Manager and Manager screens
+// reuse the same pages, but /client/* is closed to them, so they still get the design's sample data
+// until their own endpoints exist. The pages only depend on ClientPortalData.
 const PM = { name: 'Alex Morgan', role: 'Project Manager' };
 const CONTACTS = [
   { name: 'Alex Morgan', role: 'Project Manager', email: 'alex.morgan@boreksolutions.com' },
@@ -64,11 +68,10 @@ const SAMPLE: ClientPortalData = {
         {
           id: 'sprint-4-status',
           title: 'Sprint 4 status report',
-          periodStart: '2026-10-24',
-          periodEnd: '2026-11-01',
-          createdOn: '2026-11-02',
+          reportDate: '2026-11-01',
+          publishedAt: '2026-11-02T09:00:00Z',
+          health: 'on_track',
           summary: 'Delivery progress is 68%; the delivery review is running late and a revised date is being confirmed.',
-          forecast: '2026-11-20',
           progress: 68,
         },
       ],
@@ -95,11 +98,10 @@ const SAMPLE: ClientPortalData = {
         {
           id: 'delivery-status',
           title: 'Delivery status report',
-          periodStart: '2026-10-24',
-          periodEnd: '2026-10-30',
-          createdOn: '2026-10-30',
+          reportDate: '2026-10-30',
+          publishedAt: '2026-10-30T09:00:00Z',
+          health: 'on_track',
           summary: 'Delivery progress is 45%; the preview is on track for review.',
-          forecast: '2026-11-24',
           progress: 45,
         },
       ],
@@ -107,7 +109,7 @@ const SAMPLE: ClientPortalData = {
   ],
 };
 
-const fetchPortal = async (): Promise<ClientPortalData> => SAMPLE;
+const fetchSample = async (): Promise<ClientPortalData> => SAMPLE;
 
 /** Today's date (UTC, like the backend's `today()`), as YYYY-MM-DD. */
 function todayUtc() {
@@ -135,6 +137,7 @@ const stateOn = (m: ClientMilestone, today: string): MilestoneState => {
 
 export function useClientPortal() {
   const today = useToday();
+  const isClient = useAuth().user?.role === 'client';
   const select = useCallback(
     (data: ClientPortalData): ClientPortalData => ({
       ...data,
@@ -146,7 +149,13 @@ export function useClientPortal() {
     }),
     [today],
   );
-  return useQuery({ queryKey: ['client-portal'], queryFn: fetchPortal, select });
+  return useQuery({
+    queryKey: ['client-portal', isClient ? 'api' : 'sample'],
+    queryFn: isClient ? () => fetchClientPortal(api) : fetchSample,
+    select,
+    // Pick up newly published reports, milestones and requirements without a reload.
+    refetchInterval: isClient ? 60_000 : false,
+  });
 }
 
 export function useClientProject(projectId: string | undefined) {
