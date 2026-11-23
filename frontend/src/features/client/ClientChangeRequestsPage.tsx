@@ -41,6 +41,8 @@ export function ClientChangeRequestsPage() {
   const list = useChangeRequests(real.id);
   const [filter, setFilter] = useState<CrStatus | 'all'>('all');
   const [composing, setComposing] = useState(false);
+  const [sent, setSent] = useState<Sent | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const access = usePermissions('client')['change-requests'];
 
   if (access === 'denied') return <EmptyCard title="Change requests are not available" text="Your access to change requests has been turned off." />;
@@ -61,11 +63,33 @@ export function ClientChangeRequestsPage() {
           <p>{t('Ask for a change to scope or dates, and follow the answer from your project team.')}</p>
         </div>
         {!composing && access === 'edit' && (
-          <button type="button" className="cr-btn" onClick={() => setComposing(true)}>{t('New change request')}</button>
+          <button type="button" className="cr-btn" onClick={() => { setSent(null); setComposing(true); }}>{t('New change request')}</button>
         )}
       </div>
 
-      {composing && access === 'edit' && <NewRequest projectId={real.id} onDone={() => setComposing(false)} />}
+      {sent && !composing && (
+        <div className="cp-card cr-sent" role="status">
+          <b>{t('{code} has been received', { code: sent.code })}</b>
+          <p>{t('Your project team has been notified and will review it. You can follow the answer here, and we will message you if we need more detail.')}</p>
+          {!!sent.failed.length && (
+            <p className="cr-error">{t('These files could not be uploaded: {files}', { files: sent.failed.join(', ') })}</p>
+          )}
+          <div className="cr-actions">
+            <button type="button" className="cr-btn" onClick={() => { setFilter('all'); setOpenId(sent.id); setSent(null); }}>{t('View request')}</button>
+            <button type="button" className="cr-ghost" onClick={() => setSent(null)}>{t('Dismiss')}</button>
+          </div>
+        </div>
+      )}
+
+      {composing && access === 'edit' && (
+        <NewRequest
+          projectId={real.id}
+          onDone={(result) => {
+            setComposing(false);
+            if (result) setSent(result);
+          }}
+        />
+      )}
 
       <div className="cr-filters" role="tablist" aria-label={t('Filter by status')}>
         {FILTERS.map((f) => (
@@ -82,16 +106,21 @@ export function ClientChangeRequestsPage() {
         />
       ) : (
         <ul className="cr-list">
-          {shown.map((cr) => <RequestCard canReply={access === 'edit'} key={cr.id} cr={cr} projectId={real.id!} />)}
+          {shown.map((cr) => <RequestCard canReply={access === 'edit'} key={cr.id} cr={cr} projectId={real.id!} startOpen={cr.id === openId} />)}
         </ul>
       )}
     </section>
   );
 }
 
-function NewRequest({ projectId, onDone }: { projectId: string; onDone: () => void }) {
+interface Sent {
+  id: string;
+  code: string;
+  failed: string[];
+}
+
+function NewRequest({ projectId, onDone }: { projectId: string; onDone: (sent?: Sent) => void }) {
   const { t } = usePrefs();
-  const toast = useToast();
   const milestones = useShareableMilestones(projectId);
   const submit = useSubmitChangeRequest(projectId);
   const [form, setForm] = useState({ title: '', description: '', reason: '', milestone_id: '', requested_date: '' });
@@ -115,9 +144,7 @@ function NewRequest({ projectId, onDone }: { projectId: string; onDone: () => vo
       { draft, files },
       {
         onSuccess: ({ created, failed }) => {
-          if (failed.length) toast.error(t('{code} was sent, but these files could not be uploaded: {files}', { code: created.code, files: failed.join(', ') }));
-          else toast.success(t('{code} sent to your project team', { code: created.code }));
-          onDone();
+          onDone({ id: created.id, code: created.code, failed });
         },
         onError: (err) => setError(describeApiError(err, t('Your request could not be sent.'))),
       },
@@ -163,15 +190,15 @@ function NewRequest({ projectId, onDone }: { projectId: string; onDone: () => vo
       {error && <p className="cr-error" role="alert">{error}</p>}
       <div className="cr-actions">
         <button type="submit" className="cr-btn" disabled={submit.isPending}>{submit.isPending ? t('Sending…') : t('Send request')}</button>
-        <button type="button" className="cr-ghost" onClick={onDone} disabled={submit.isPending}>{t('Cancel')}</button>
+        <button type="button" className="cr-ghost" onClick={() => onDone()} disabled={submit.isPending}>{t('Cancel')}</button>
       </div>
     </form>
   );
 }
 
-function RequestCard({ cr, projectId, canReply }: { cr: CrItem; projectId: string; canReply: boolean }) {
+function RequestCard({ cr, projectId, canReply, startOpen }: { cr: CrItem; projectId: string; canReply: boolean; startOpen: boolean }) {
   const { t, lang } = usePrefs();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const s = STATUS[cr.status];
   return (
     <li className="cp-card cr-card">

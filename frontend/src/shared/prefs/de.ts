@@ -936,4 +936,15 @@ export const DE: Record<string, string> = {
   'No team members yet.': 'Noch keine Teammitglieder.',
   'Nobody has open work': 'Niemand hat offene Aufgaben',
   'You have a new update': 'Sie haben eine neue Aktualisierung',
+  'Target end date': 'Geplantes Enddatum',
+  '{n} blocker needs attention': '{n} Blocker erfordert Aufmerksamkeit',
+  '{n} blockers need attention': '{n} Blocker erfordern Aufmerksamkeit',
+  'Review linked work before confirming delivery.': 'Verknüpfte Arbeit prüfen, bevor die Lieferung bestätigt wird.',
+  'Review blocker': 'Blocker prüfen',
+  'No blockers': 'Keine Blocker',
+  'Nothing is blocked right now.': 'Aktuell ist nichts blockiert.',
+  'Tasks by status': 'Aufgaben nach Status',
+  'Tasks by priority': 'Aufgaben nach Priorität',
+  '{active} active tasks · {done} done': '{active} aktive Aufgaben · {done} erledigt',
 };
+

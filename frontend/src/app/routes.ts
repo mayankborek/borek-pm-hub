@@ -103,4 +103,5 @@ export const navItems: NavItem[] = [
   { label: 'Dashboard', to: paths.dashboard, roles: ['pm'], icon: '▦' },
   { label: 'My Task', to: paths.myWork, roles: ['developer'], icon: '✓' },
   { label: 'Task List', to: paths.tasks, roles: ['pm'], icon: '☰' },
+  { label: 'Projects', to: paths.projects, roles: ['pm'], icon: '▤' },
 ];

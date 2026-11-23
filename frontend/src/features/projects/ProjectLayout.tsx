@@ -84,17 +84,11 @@ export function ProjectLayout() {
 
   return (
     <div className="project-page">
-      <nav className="crumbs" aria-label={t('Breadcrumb')}>
-        <Link to={paths.projects}>
-          <span aria-hidden="true">← </span>
-          {t('Back')}
-        </Link>
-      </nav>
       <div className="project-head">
         <div className="page-header">
           <div>
+            <div className="proj-eyebrow">{project.code}</div>
             <h1 className="page-title">{project.name}</h1>
-            <p className="project-sub">{t('Project overview, task status, and delivery summary.')}</p>
           </div>
           {user?.role === 'pm' && (
             <div className="page-actions">
