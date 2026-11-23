@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePermissions, type AreaId } from '@/features/admin/adminStore';
@@ -109,8 +109,10 @@ export function ClientProjectLayout() {
     return isAm || isManager || !area || perms[area] !== 'denied';
   });
 
+  // The manager shell is not inside the client portal's `.cp` scope, which the switcher menu and button reset rely on.
+  const Wrap = isManager ? 'div' : Fragment;
   return (
-    <>
+    <Wrap {...(isManager ? { className: 'cp' } : {})}>
       <ProjectSwitcher current={project} projects={data.projects} />
       <nav className="cx-tabs" aria-label={t('Project sections')}>
         {tabs.map(([to, label, end]) => (
@@ -120,6 +122,6 @@ export function ClientProjectLayout() {
         ))}
       </nav>
       <Outlet context={{ project, today: data.today } satisfies ProjectContext} />
-    </>
+    </Wrap>
   );
 }
