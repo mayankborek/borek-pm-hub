@@ -69,16 +69,11 @@ const base = (projectId: string) => `/client/projects/${projectId}`;
 const key = (projectId: string | undefined, ...rest: string[]) => ['client-cr', projectId, ...rest];
 
 /**
- * The portal screens still run on sample data whose project ids are slugs; the API needs the real
- * project id. Until the portal itself is wired to the API, match the project by id or by name.
+ * The portal now runs on the API, so the project's id is already the real one. The state flags stay
+ * so the pages that read them keep working.
  */
-export function useApiProjectId(project: { id: string; name: string }) {
-  const portal = useQuery({
-    queryKey: ['client-portal-api'],
-    queryFn: () => api<{ projects: { id: string; name: string }[] }>('/client/portal'),
-  });
-  const id = portal.data?.projects.find((p) => p.id === project.id || p.name === project.name)?.id;
-  return { id, isPending: portal.isPending, isError: portal.isError, missing: portal.isSuccess && !id };
+export function useApiProjectId(project: { id: string }) {
+  return { id: project.id as string | undefined, isPending: false, isError: false, missing: false };
 }
 
 export const useChangeRequests = (projectId: string | undefined) =>
@@ -140,7 +135,10 @@ export function useSubmitChangeRequest(projectId: string | undefined) {
       }
       return { created, failed };
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key(projectId) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: key(projectId) });
+      void qc.invalidateQueries({ queryKey: ['client-portal'] });
+    },
   });
 }
 

@@ -67,7 +67,7 @@ interface ApiDetail {
 
 type Get = <T>(path: string) => Promise<T>;
 
-const CR_UPDATE: Record<string, string> = {
+export const CR_UPDATE: Record<string, string> = {
   pending: 'Change request raised',
   in_review: 'Change request moved to In review',
   approved: 'Change request approved',

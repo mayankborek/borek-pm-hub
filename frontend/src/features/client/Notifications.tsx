@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { useClientPortal } from './clientPortalApi';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useNotificationFeed } from './notificationsApi';
 
 const bell = (
   <svg width="20" height="20" viewBox="1172 105 20 20" fill="none" aria-hidden="true">
@@ -18,10 +19,9 @@ const bell = (
 /** Bell button with the notifications popover (closes on outside click, Escape or choosing an item). */
 export function Notifications() {
   const { t } = usePrefs();
-  const inManager = useLocation().pathname.startsWith('/manager');
-  const { data } = useClientPortal();
+  const role = useAuth().user?.role;
+  const feed = useNotificationFeed(role === 'client' || role === 'account_manager' || role === 'manager' ? role : undefined);
   const [open, setOpen] = useState(false);
-  const [readAll, setReadAll] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const button = useRef<HTMLButtonElement>(null);
 
@@ -44,9 +44,7 @@ export function Notifications() {
     };
   }, [open]);
 
-  const items = data?.notifications ?? [];
-  const isUnread = (n: { unread: boolean }) => n.unread && !readAll;
-  const unread = items.filter(isUnread).length;
+  const { items, unread } = feed;
 
   return (
     <span ref={wrap}>
@@ -66,12 +64,15 @@ export function Notifications() {
           <h2 className="cp-notif-title">{t('Notifications')}</h2>
           <div className="cp-notif-sub">
             <span>{t('{n} unread', { n: unread })}</span>
-            <button type="button" onClick={() => setReadAll(true)}>{t('Mark all as read')}</button>
+            <button type="button" onClick={() => feed.markAllRead()}>{t('Mark all as read')}</button>
           </div>
           <ul className="cp-notif-list">
             {items.map((n) => (
               <li key={n.id}>
-                <Link className={isUnread(n) ? 'cp-notif-item cp-unread' : 'cp-notif-item'} to={inManager ? n.to.replace('/client/', '/manager/').replace('/contacts', '/stakeholders') : n.to} onClick={() => setOpen(false)}>
+                <Link className={n.unread ? 'cp-notif-item cp-unread' : 'cp-notif-item'} to={n.to} onClick={() => {
+                  if (n.unread) feed.markRead(n.id);
+                  setOpen(false);
+                }}>
                   <span className="cp-notif-avatar" aria-hidden="true">BF</span>
                   <span className="cp-notif-headline">{t(n.headline)}</span>
                   <span className="cp-notif-meta">{n.meta}</span>

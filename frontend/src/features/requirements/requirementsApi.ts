@@ -185,6 +185,10 @@ export function useRespond(projectId: string, requirementId: string) {
         body: JSON.stringify(answer),
       }),
     // A 409 means a newer version was published meanwhile: refresh either way.
-    onSettled: () => qc.invalidateQueries({ queryKey: clientKey(projectId) }),
+    // The portal's "Awaiting your input" counts move too.
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: clientKey(projectId) });
+      void qc.invalidateQueries({ queryKey: ['client-portal'] });
+    },
   });
 }

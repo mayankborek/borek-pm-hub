@@ -1,14 +1,13 @@
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { shortDate } from '@/features/client/format';
 import { useProjectContext } from '@/features/client/ClientProjectLayout';
-import type { ProjectTaskStatus } from '@/features/client/types';
 import './amRoadmap.css';
 
 const DAY = 86_400_000;
 const day = (iso: string) => Date.parse(iso + 'T00:00:00Z') / DAY;
 const iso = (d: number) => new Date(d * DAY).toISOString().slice(0, 10);
 
-const TASK_COLOR: Record<ProjectTaskStatus, string> = {
+const TASK_COLOR: Record<string, string> = {
   'To do': '#65708A',
   'In progress': '#175DBA',
   'Code review': '#7652C4',
@@ -92,7 +91,7 @@ export function AmMilestonesPage() {
             </div>
             <div className="amr-track">
               <span className="amr-dot" style={{ left: pos(x.dueDate) }}>
-                <i style={{ background: TASK_COLOR[x.status] }} />
+                <i style={{ background: TASK_COLOR[x.status] ?? '#65708A' }} />
                 {shortDate(lang, x.dueDate)}
               </span>
             </div>

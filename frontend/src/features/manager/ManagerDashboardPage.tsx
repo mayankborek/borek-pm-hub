@@ -76,7 +76,7 @@ export function ManagerDashboardPage() {
                 <span className="cx-picon"><Icon name="briefcase" className="cx-ico cx-22" strokeWidth={1.6} /></span>
                 <div>
                   <h3>{p.name}</h3>
-                  <div className="cx-co">{organisation}</div>
+                  <div className="cx-co">{p.organisation ?? organisation}</div>
                 </div>
               </div>
               <div className="cx-tags">

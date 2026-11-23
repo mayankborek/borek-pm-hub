@@ -25,7 +25,8 @@ export interface ProjectTask {
   /** Ticket reference, shown before the title when present, e.g. BFL-112. */
   ref?: string;
   title: string;
-  status: ProjectTaskStatus;
+  /** The project's own status name (workflows are custom per project). */
+  status: string;
   /** ISO date (YYYY-MM-DD). */
   dueDate: string;
 }
@@ -54,6 +55,9 @@ export interface ClientContact {
   role: string;
   email: string;
   phone?: string;
+  /** Set for contacts of the stakeholder register (the project leads have none): what an edit saves to. */
+  stakeholderId?: string;
+  version?: number;
 }
 
 export interface ClientNotification {
@@ -77,6 +81,8 @@ export interface ClientProject {
   code: string;
   name: string;
   category: string;
+  /** The client organisation, for portfolios that span several. */
+  organisation?: string;
   /** ISO dates. */
   startDate: string | null;
   dueDate: string | null;
