@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePermissions, type AreaId } from '@/features/admin/adminStore';
 import { paths } from '@/app/routes';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -55,12 +56,21 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
   );
 }
 
+/** The admin's role permissions for Client hide the tabs of areas set to Denied. */
+const TAB_AREA: Record<string, AreaId | undefined> = {
+  Milestones: 'milestones',
+  Reports: 'reports',
+  'Change Requests': 'change-requests',
+  Contacts: 'stakeholders',
+};
+
 /** Project title and the Overview / Milestones / Reports / Change Requests / Contacts tabs. */
 export function ClientProjectLayout() {
   const pp = usePortalPaths();
   const role = useAuth().user?.role;
   const isAm = role === 'account_manager';
   const isManager = role === 'manager';
+  const perms = usePermissions('client');
   const { projectId } = useParams();
   const { t } = usePrefs();
   const query = useClientPortal();
@@ -78,7 +88,8 @@ export function ClientProjectLayout() {
     );
   }
 
-  const tabs: [string, string, boolean?][] = isAm
+  type Tab = [string, string, boolean?];
+  const allTabs: Tab[] = isAm
     ? [
         [pp.project(project.id), 'Overview', true],
         [pp.milestones(project.id), 'Milestones'],
@@ -93,6 +104,10 @@ export function ClientProjectLayout() {
         [pp.changeRequests(project.id), 'Change Requests'],
         [pp.people(project.id), isManager ? 'Stakeholders' : 'Contacts'],
       ];
+  const tabs = allTabs.filter(([, label]) => {
+    const area = TAB_AREA[label];
+    return isAm || isManager || !area || perms[area] !== 'denied';
+  });
 
   return (
     <>

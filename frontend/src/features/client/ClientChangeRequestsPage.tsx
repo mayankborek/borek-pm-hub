@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { describeApiError } from '@/shared/api/client';
+import { usePermissions } from '@/features/admin/adminStore';
 import { useProjectContext } from './ClientProjectLayout';
 import { Badge, EmptyCard, ErrorCard, LoadingCard } from './ui';
 import { longDate } from './format';
@@ -40,7 +41,9 @@ export function ClientChangeRequestsPage() {
   const list = useChangeRequests(real.id);
   const [filter, setFilter] = useState<CrStatus | 'all'>('all');
   const [composing, setComposing] = useState(false);
+  const access = usePermissions('client')['change-requests'];
 
+  if (access === 'denied') return <EmptyCard title="Change requests are not available" text="Your access to change requests has been turned off." />;
   if (real.missing) {
     return <EmptyCard title="Change requests are not available" text="This project is not connected to the portal service yet." />;
   }
@@ -57,12 +60,12 @@ export function ClientChangeRequestsPage() {
           <h2>{t('Change Requests')}</h2>
           <p>{t('Ask for a change to scope or dates, and follow the answer from your project team.')}</p>
         </div>
-        {!composing && (
+        {!composing && access === 'edit' && (
           <button type="button" className="cr-btn" onClick={() => setComposing(true)}>{t('New change request')}</button>
         )}
       </div>
 
-      {composing && <NewRequest projectId={real.id} onDone={() => setComposing(false)} />}
+      {composing && access === 'edit' && <NewRequest projectId={real.id} onDone={() => setComposing(false)} />}
 
       <div className="cr-filters" role="tablist" aria-label={t('Filter by status')}>
         {FILTERS.map((f) => (
@@ -79,7 +82,7 @@ export function ClientChangeRequestsPage() {
         />
       ) : (
         <ul className="cr-list">
-          {shown.map((cr) => <RequestCard key={cr.id} cr={cr} projectId={real.id!} />)}
+          {shown.map((cr) => <RequestCard canReply={access === 'edit'} key={cr.id} cr={cr} projectId={real.id!} />)}
         </ul>
       )}
     </section>
@@ -166,7 +169,7 @@ function NewRequest({ projectId, onDone }: { projectId: string; onDone: () => vo
   );
 }
 
-function RequestCard({ cr, projectId }: { cr: CrItem; projectId: string }) {
+function RequestCard({ cr, projectId, canReply }: { cr: CrItem; projectId: string; canReply: boolean }) {
   const { t, lang } = usePrefs();
   const [open, setOpen] = useState(false);
   const s = STATUS[cr.status];
@@ -178,12 +181,12 @@ function RequestCard({ cr, projectId }: { cr: CrItem; projectId: string }) {
         <Badge tone={s.tone}>{t(s.label)}</Badge>
         <small>{longDate(lang, isoDay(cr.submitted_at))}</small>
       </button>
-      {open && <RequestDetail cr={cr} projectId={projectId} />}
+      {open && <RequestDetail canReply={canReply} cr={cr} projectId={projectId} />}
     </li>
   );
 }
 
-function RequestDetail({ cr, projectId }: { cr: CrItem; projectId: string }) {
+function RequestDetail({ cr, projectId, canReply }: { cr: CrItem; projectId: string; canReply: boolean }) {
   const { t, lang } = usePrefs();
   const toast = useToast();
   const files = useAttachments(projectId, cr.id);
@@ -264,10 +267,10 @@ function RequestDetail({ cr, projectId }: { cr: CrItem; projectId: string }) {
         ))}
         {comments.data?.length === 0 && <li className="cr-none">{t('No messages yet.')}</li>}
       </ul>
-      <form className="cr-reply" onSubmit={send}>
+      {canReply && <form className="cr-reply" onSubmit={send}>
         <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={2} placeholder={t('Write a message to your project team')} aria-label={t('Message')} />
         <button type="submit" className="cr-btn" disabled={add.isPending || !reply.trim()}>{t('Send')}</button>
-      </form>
+      </form>}
     </div>
   );
 }
