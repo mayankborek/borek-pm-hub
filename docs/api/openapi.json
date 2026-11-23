@@ -38,6 +38,16 @@
         "title": "AcceptInviteOut",
         "type": "object"
       },
+      "AcceptanceDecision": {
+        "description": "The client's answer to one published version.",
+        "enum": [
+          "accepted",
+          "changes_requested",
+          "rejected"
+        ],
+        "title": "AcceptanceDecision",
+        "type": "string"
+      },
       "AccessOverviewOut": {
         "properties": {
           "items": {
@@ -1788,7 +1798,7 @@
             "type": "integer"
           },
           "awaiting_input": {
-            "description": "Genuine requests for client input. 0 until acceptance exists.",
+            "description": "Requirements whose current version waits for the client's answer.",
             "title": "Awaiting Input",
             "type": "integer"
           },
@@ -1880,6 +1890,24 @@
           "project_name"
         ],
         "title": "ClientLatestReport",
+        "type": "object"
+      },
+      "ClientMilestoneLink": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "ClientMilestoneLink",
         "type": "object"
       },
       "ClientMilestoneOut": {
@@ -2747,6 +2775,254 @@
           "project_name"
         ],
         "title": "ClientReportOut",
+        "type": "object"
+      },
+      "ClientRequirementListOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Requirements per status (awaiting_acceptance, changes_requested, accepted, rejected) and `total`.",
+            "title": "Counts",
+            "type": "object"
+          },
+          "items": {
+            "description": "By code.",
+            "items": {
+              "$ref": "#/components/schemas/ClientRequirementOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "counts"
+        ],
+        "title": "ClientRequirementListOut",
+        "type": "object"
+      },
+      "ClientRequirementOut": {
+        "properties": {
+          "awaiting_your_answer": {
+            "description": "True when the current version waits for the client's answer.",
+            "title": "Awaiting Your Answer",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "current": {
+            "$ref": "#/components/schemas/ClientRequirementVersionOut",
+            "description": "The newest published version."
+          },
+          "history": {
+            "description": "Earlier published versions, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/ClientRequirementVersionOut"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientMilestoneLink"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only if shown to the client."
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the requirement's owner.",
+            "title": "Owner"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequirementStatus",
+            "description": "Never draft: drafts never reach the client."
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "title",
+          "status",
+          "awaiting_your_answer",
+          "owner",
+          "milestone",
+          "current",
+          "history"
+        ],
+        "title": "ClientRequirementOut",
+        "type": "object"
+      },
+      "ClientRequirementResponse": {
+        "additionalProperties": false,
+        "description": "The client's answer to the version they reviewed. A comment is required unless they\naccept.",
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/AcceptanceDecision"
+          },
+          "version_number": {
+            "description": "The published version the client reviewed.",
+            "minimum": 1.0,
+            "title": "Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version_number",
+          "decision"
+        ],
+        "title": "ClientRequirementResponse",
+        "type": "object"
+      },
+      "ClientRequirementVersionOut": {
+        "properties": {
+          "acceptance_criteria": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Acceptance Criteria",
+            "type": "array"
+          },
+          "change_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Note"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the person who published it.",
+            "title": "Published By"
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responded At"
+          },
+          "responded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the client contact who answered.",
+            "title": "Responded By"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AcceptanceDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "response_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Comment"
+          },
+          "state": {
+            "enum": [
+              "awaiting_answer",
+              "answered",
+              "superseded"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "state",
+          "description",
+          "acceptance_criteria",
+          "change_note",
+          "published_at",
+          "published_by",
+          "response",
+          "response_comment",
+          "responded_by",
+          "responded_at"
+        ],
+        "title": "ClientRequirementVersionOut",
         "type": "object"
       },
       "ClientRoadmapOut": {
@@ -6529,6 +6805,450 @@
         "title": "ReportState",
         "type": "string"
       },
+      "RequirementCreate": {
+        "additionalProperties": false,
+        "description": "Starts as a draft with version 1. Publish it to send it to the client for acceptance.",
+        "properties": {
+          "acceptance_criteria": {
+            "description": "What the client checks; at least one to publish.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Acceptance Criteria",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The milestone it belongs to.",
+            "title": "Milestone Id"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An active project member.",
+            "title": "Owner Id"
+          },
+          "title": {
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ],
+        "title": "RequirementCreate",
+        "type": "object"
+      },
+      "RequirementListOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Requirements per status and `total`, unfiltered (acceptance tracking).",
+            "title": "Counts",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "counts"
+        ],
+        "title": "RequirementListOut",
+        "type": "object"
+      },
+      "RequirementOut": {
+        "properties": {
+          "code": {
+            "description": "REQ-01, REQ-02 ... per project.",
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "current_version": {
+            "description": "Number of the newest version (draft or not).",
+            "title": "Current Version",
+            "type": "integer"
+          },
+          "has_unpublished_changes": {
+            "description": "The newest version is a draft and an older version was published.",
+            "title": "Has Unpublished Changes",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MilestoneBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of the newest published version, the one the client sees.",
+            "title": "Published Version"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequirementStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "description": "For optimistic locking (not the content version).",
+            "title": "Version",
+            "type": "integer"
+          },
+          "versions": {
+            "description": "Newest first.",
+            "items": {
+              "$ref": "#/components/schemas/RequirementVersionOut"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "code",
+          "title",
+          "owner",
+          "milestone",
+          "status",
+          "current_version",
+          "published_version",
+          "has_unpublished_changes",
+          "versions",
+          "created_by",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RequirementOut",
+        "type": "object"
+      },
+      "RequirementStatus": {
+        "description": "draft (never published) -> awaiting_acceptance (a version is with the client) ->\naccepted | rejected (final) or changes_requested (the PM publishes a new version).",
+        "enum": [
+          "draft",
+          "awaiting_acceptance",
+          "changes_requested",
+          "accepted",
+          "rejected"
+        ],
+        "title": "RequirementStatus",
+        "type": "string"
+      },
+      "RequirementUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus only the fields that change; null clears owner or milestone.\n\ntitle, owner and milestone change the requirement itself. description, acceptance_criteria\nand change_note are the content: they change the draft version, or, when the newest version\nis already published, start a new draft version (the client keeps seeing the published one\nuntil the new one is published). Not possible once accepted or rejected.",
+        "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
+          "change_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What changed since the last version; shown to the client.",
+            "title": "Change Note"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "milestone_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Milestone Id"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "RequirementUpdate",
+        "type": "object"
+      },
+      "RequirementVersionOut": {
+        "properties": {
+          "acceptance_criteria": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Acceptance Criteria",
+            "type": "array"
+          },
+          "change_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Note"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responded At"
+          },
+          "responded_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "response": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AcceptanceDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "response_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Comment"
+          },
+          "state": {
+            "enum": [
+              "draft",
+              "awaiting_answer",
+              "answered",
+              "superseded"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "state",
+          "description",
+          "acceptance_criteria",
+          "change_note",
+          "created_by",
+          "created_at",
+          "published_at",
+          "published_by",
+          "response",
+          "response_comment",
+          "responded_by",
+          "responded_at"
+        ],
+        "title": "RequirementVersionOut",
+        "type": "object"
+      },
+      "RequirementVersionRef": {
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "RequirementVersionRef",
+        "type": "object"
+      },
       "RoadmapOut": {
         "description": "Everything the roadmap screen draws, in one call.",
         "properties": {
@@ -10109,6 +10829,167 @@
         ]
       }
     },
+    "/api/v1/client/projects/{project_id}/requirements": {
+      "get": {
+        "description": "Requirements published for acceptance (drafts never appear), with the current version,\nearlier versions and the answers given, plus counts per status.",
+        "operationId": "list_requirements_api_v1_client_projects__project_id__requirements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRequirementListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Requirements",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/requirements/{requirement_id}": {
+      "get": {
+        "operationId": "get_requirement_api_v1_client_projects__project_id__requirements__requirement_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRequirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Requirement",
+        "tags": [
+          "client"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/requirements/{requirement_id}/response": {
+      "post": {
+        "description": "Answer the version you reviewed: accepted, changes_requested or rejected (comment\nrequired unless accepted). 409 VERSION_NOT_OPEN when it is not the newest published version,\n409 NOT_AWAITING_ANSWER when it was already answered.",
+        "operationId": "respond_to_requirement_api_v1_client_projects__project_id__requirements__requirement_id__response_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequirementResponse"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRequirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Respond To Requirement",
+        "tags": [
+          "client"
+        ]
+      }
+    },
     "/api/v1/client/projects/{project_id}/roadmap": {
       "get": {
         "description": "The project roadmap: visible phases (bars with status and completed share) and visible\nmilestones (diamonds with state), plus the date range and today.",
@@ -13490,6 +14371,342 @@
         "summary": "Update Phase",
         "tags": [
           "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/requirements": {
+      "get": {
+        "description": "By code, with every version and the client's answers, and counts per status (acceptance\ntracking).",
+        "operationId": "list_requirements_api_v1_projects__project_id__requirements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RequirementStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Requirements",
+        "tags": [
+          "requirements"
+        ]
+      },
+      "post": {
+        "description": "A draft with version 1 and the next code (REQ-01, REQ-02 ...).",
+        "operationId": "create_requirement_api_v1_projects__project_id__requirements_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Requirement",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/requirements/{requirement_id}": {
+      "delete": {
+        "description": "Archive: hidden from every list, the client portal included.",
+        "operationId": "archive_requirement_api_v1_projects__project_id__requirements__requirement_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Requirement",
+        "tags": [
+          "requirements"
+        ]
+      },
+      "get": {
+        "operationId": "get_requirement_api_v1_projects__project_id__requirements__requirement_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Requirement",
+        "tags": [
+          "requirements"
+        ]
+      },
+      "patch": {
+        "description": "Editing the content of a published version starts a new draft version (409\nREQUIREMENT_CLOSED once accepted or rejected).",
+        "operationId": "update_requirement_api_v1_projects__project_id__requirements__requirement_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Requirement",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/requirements/{requirement_id}/publish": {
+      "post": {
+        "description": "Publish the newest (draft) version for client acceptance: status awaiting_acceptance.\nNeeds at least one acceptance criterion and an external project with a client (409\nNO_CLIENT); 409 NOTHING_TO_PUBLISH when the newest version is already published. An older\nversion the client did not answer becomes superseded.",
+        "operationId": "publish_requirement_api_v1_projects__project_id__requirements__requirement_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementVersionRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Requirement",
+        "tags": [
+          "requirements"
         ]
       }
     },

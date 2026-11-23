@@ -59,6 +59,12 @@ from app.organisations.models import Organisation, OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
 from app.projects.service import ensure_writable
 from app.reporting.models import Stakeholder, StatusReport
+from app.requirements import service as requirements
+from app.requirements.schemas import (
+    ClientRequirementListOut,
+    ClientRequirementOut,
+    ClientRequirementResponse,
+)
 from app.users.models import User
 
 MAX_UPDATES = 10
@@ -314,7 +320,9 @@ async def portal(session: AsyncSession, user: User) -> ClientPortalOut:
         projects=items,
         kpis=ClientKpis(
             active_projects=sum(1 for p in projects if p.status not in CLOSED_PROJECT_STATUSES),
-            awaiting_input=0,
+            awaiting_input=await requirements.awaiting_answer_count(
+                session, [p.id for p in projects]
+            ),
             upcoming_milestones=len(soon),
             shared_reports=len(reports),
         ),
@@ -645,3 +653,38 @@ async def download_attachment(
     _, request = await _request_of(session, user, project_id, request_id)
     item = await change_requests.get_attachment(session, request.id, attachment_id)
     return change_requests.file_response(item)
+
+
+# --- requirements and acceptance ----------------------------------------------------------------
+
+
+async def list_requirements(
+    session: AsyncSession, user: User, project_id: uuid.UUID
+) -> ClientRequirementListOut:
+    project = await get_project(session, user, project_id)
+    rows = await requirements.client_requirements(session, project.id)
+    return ClientRequirementListOut(
+        items=await requirements.client_out(session, rows), counts=requirements.client_counts(rows)
+    )
+
+
+async def get_requirement(
+    session: AsyncSession, user: User, project_id: uuid.UUID, requirement_id: uuid.UUID
+) -> ClientRequirementOut:
+    project = await get_project(session, user, project_id)
+    found = await requirements.client_requirement(session, project.id, requirement_id)
+    return (await requirements.client_out(session, [found]))[0]
+
+
+async def respond_to_requirement(
+    session: AsyncSession,
+    user: User,
+    project_id: uuid.UUID,
+    requirement_id: uuid.UUID,
+    data: ClientRequirementResponse,
+) -> ClientRequirementOut:
+    """Accept, request changes or reject the newest published version."""
+    project = await get_project(session, user, project_id)
+    ensure_writable(project)
+    found = await requirements.respond(session, user, project.id, requirement_id, data)
+    return (await requirements.client_out(session, [found]))[0]

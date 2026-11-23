@@ -54,6 +54,9 @@ class Action(StrEnum):
     CHANGE_REQUEST_VIEW = "change_request:view"
     CHANGE_REQUEST_SUBMIT = "change_request:submit"
     CHANGE_REQUEST_DECIDE = "change_request:decide"
+    # Requirements: create, edit, publish for client acceptance and archive (leads + Managers).
+    # Reading them is PROJECT_VIEW. Clients read and answer through /client/...
+    REQUIREMENT_MANAGE = "requirement:manage"
     # The client portal (/client/...): client contacts only, and only their organisation's
     # external projects. Nobody else, not even the Manager, uses these routes.
     CLIENT_PORTAL = "client:portal"
@@ -85,6 +88,7 @@ _PM_ONLY = frozenset(
         Action.CHANGE_REQUEST_VIEW,
         Action.CHANGE_REQUEST_SUBMIT,
         Action.CHANGE_REQUEST_DECIDE,
+        Action.REQUIREMENT_MANAGE,
         Action.DASHBOARD_VIEW,
         Action.USER_LIST,
     }

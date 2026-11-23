@@ -191,7 +191,7 @@ class ClientKpis(BaseModel):
 
     active_projects: int = Field(description="Not completed and not cancelled.")
     awaiting_input: int = Field(
-        description="Genuine requests for client input. 0 until acceptance exists."
+        description="Requirements whose current version waits for the client's answer."
     )
     upcoming_milestones: int = Field(description="Shared, open, due in the next 14 days.")
     shared_reports: int = Field(description="Published reports.")
