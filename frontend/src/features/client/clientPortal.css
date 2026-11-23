@@ -179,21 +179,21 @@ h3.cp-sec{font-size:18px;font-weight:600;margin-top:32px}
 /* Project contacts */
 .cp-section-title{margin-top:40px;font-size:26px;font-weight:600;line-height:24px}
 .cp-section-sub{margin-top:22px;color:var(--muted);font-size:17px;line-height:21px}
-.cp-contact{margin-top:22px;display:grid;grid-template-columns:minmax(260px,1fr) 1.9fr;align-items:stretch;padding:28px 40px;border:1px solid var(--line);background:var(--surface)}
-.cp-contact-person{display:flex;align-items:center;gap:28px;padding-right:32px;border-right:1px solid var(--line)}
-.cp-contact-initials{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:56px;height:56px;background:var(--surface-2);font-size:13px;font-weight:600}
-.cp-contact-name{font-size:23px;font-weight:500;line-height:28px}
-.cp-contact-role{margin-top:6px;color:var(--muted);font-size:17px;line-height:21px}
-.cp-contact-details{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 60px 0 48px}
-.cp-contact-label{color:var(--muted);font-size:13px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
-.cp-contact-email{display:inline-block;margin-top:12px;font-size:19px}
-.cp-contact-tel{margin-top:8px;color:var(--muted);font-size:14px}
-.cp-contact-btn{display:inline-flex;align-items:center;gap:12px;padding:16px 20px;background:#4a4fb5;color:#fff;font-size:17px;font-weight:600;white-space:nowrap;transition:background .15s ease}
+.cp-contact{margin-top:14px;display:grid;grid-template-columns:minmax(220px,1fr) 1.9fr;align-items:stretch;padding:14px 24px;border:1px solid var(--line);background:var(--surface)}
+.cp-contact-person{display:flex;align-items:center;gap:16px;padding-right:20px;border-right:1px solid var(--line)}
+.cp-contact-initials{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:40px;height:40px;background:var(--surface-2);font-size:12px;font-weight:600}
+.cp-contact-name{font-size:17px;font-weight:500;line-height:22px}
+.cp-contact-role{margin-top:2px;color:var(--muted);font-size:14px;line-height:18px}
+.cp-contact-details{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 0 24px}
+.cp-contact-label{color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.cp-contact-email{display:inline-block;margin-top:4px;font-size:15px}
+.cp-contact-tel{margin-top:2px;color:var(--muted);font-size:13px}
+.cp-contact-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;background:#4a4fb5;color:#fff;font-size:14px;font-weight:600;white-space:nowrap;transition:background .15s ease}
 :where(.cp) a.cp-contact-btn{color:#fff}
 .cp-contact-btn:hover{background:#5a60c8;text-decoration:none}
 @media (max-width:860px){
-  .cp-contact{grid-template-columns:1fr;gap:24px;padding:24px}
-  .cp-contact-person{padding:0 0 24px;border-right:0;border-bottom:1px solid var(--line)}
+  .cp-contact{grid-template-columns:1fr;gap:12px;padding:16px}
+  .cp-contact-person{padding:0 0 12px;border-right:0;border-bottom:1px solid var(--line)}
   .cp-contact-details{flex-direction:column;align-items:flex-start;padding:0}
 }
 

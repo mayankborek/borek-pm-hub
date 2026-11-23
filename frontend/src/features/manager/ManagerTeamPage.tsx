@@ -8,6 +8,12 @@ interface Engagement { name: string; role: string; project: string; pct: number;
 interface Load { name: string; project: string; open: number; overdue: number; effort: number | null; unestimated?: number }
 
 const MONTHS = ['Nov 26', 'Dec 26', 'Jan 27', 'Feb 27', 'Mar 27', 'Apr 27', 'May 27', 'Jun 27', 'Jul 27', 'Aug 27', 'Sep 27', 'Oct 27'];
+// Stable per-person avatar colour (hue from the name) so the same person looks the same on both tabs.
+const avatarStyle = (name: string) => {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return { background: `hsl(${h} 45% 32%)`, color: '#fff' };
+};
 const toneOf = (pct: number): Tone => (pct > 100 ? 'over' : pct >= 80 ? 'warn' : 'ok');
 
 // The backend has no team endpoint yet: sample data until the API exists. start/end are month-column offsets.
@@ -84,7 +90,7 @@ function Capacity() {
         {ENGAGEMENTS.map((e) => (
           <div className="mg-cap" key={e.name}>
             <div className="mg-who mg-row-who">
-              <span className="mg-ini" aria-hidden="true">{initialsOf(e.name)}</span>
+              <span className="mg-ini" style={avatarStyle(e.name)} aria-hidden="true">{initialsOf(e.name)}</span>
               <div>
                 <h3>{e.name}</h3>
                 <p>{t(e.role)}</p>
@@ -122,7 +128,7 @@ function Workload() {
         {LOADS.map((l) => (
           <div className="mg-load" key={l.name}>
             <div className="mg-who mg-row-who">
-              <span className="mg-ini" aria-hidden="true">{initialsOf(l.name)}</span>
+              <span className="mg-ini" style={avatarStyle(l.name)} aria-hidden="true">{initialsOf(l.name)}</span>
               <div><h3>{l.name}</h3><p>{l.project}</p></div>
             </div>
             <span>{l.open}</span>

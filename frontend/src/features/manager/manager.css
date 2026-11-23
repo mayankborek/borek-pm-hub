@@ -56,3 +56,25 @@
 .mg-team .mg-cap-h,.mg-team .mg-load-h{position:sticky;top:0;z-index:1;background:var(--card,#1a2233)}
 @media(max-width:800px){.mg-team{height:auto}.mg-team .mg-panel{flex:none;max-height:70vh}}
 @media(max-width:800px){.mg-stats{grid-template-columns:1fr 1fr}}
+/* Team screen look (borek flow mockup): palette, tabs, panels, timeline and load table. Scoped to .mg-team only. */
+.mg-team{--tm-panel:#182235;--tm-border:#2b384d;--tm-muted:#8995a9;--tm-blue:#8bb9ff;--tm-green:#51d4a2;--tm-orange:#f59a00;--tm-red:#f17b7b}
+.mg-team .mg-tabs{gap:14px;border-bottom-color:transparent}
+.mg-team .mg-tabs button{color:#aab5c8;opacity:1;padding:0 0 9px;font-size:12px}
+.mg-team .mg-tabs .on{color:#e8edf7;font-weight:400;border-bottom-color:#c5d5ed}
+.mg-team .mg-stat,.mg-team .mg-panel{background:var(--tm-panel);border-color:var(--tm-border);border-radius:7px}
+.mg-team .mg-stat>span{color:#b3bfd0;font-size:10px}
+.mg-team .mg-stat strong{font-weight:650}
+.mg-team .mg-stat small,.mg-team .mg-small,.mg-team .mg-panel-head p{color:var(--tm-muted);opacity:1}
+.mg-team .mg-ok{color:var(--tm-green)}.mg-team .mg-over-t{color:var(--tm-red)}.mg-team .mg-warn-t{color:#d6b46e}
+.mg-team .mg-cap-h,.mg-team .mg-load-h{background:var(--tm-panel);color:var(--tm-muted);opacity:1;text-transform:uppercase}
+.mg-team .mg-cap,.mg-team .mg-load{border-top-color:var(--tm-border)}
+.mg-team .mg-legend{color:#b7c0cf}
+.mg-team .mg-dot{width:6px;height:6px}
+.mg-team .mg-okbg{background:var(--tm-green)}.mg-team .mg-warn{background:var(--tm-blue)}.mg-team .mg-over{background:#ef7777}
+.mg-team .mg-ini{font-weight:600}
+.mg-team .mg-track{background:repeating-linear-gradient(90deg,transparent 0 calc(100%/12 - 1px),#304057 0 calc(100%/12))}
+.mg-team .mg-eng-label{color:#7e8ba0;opacity:1}
+.mg-team .mg-bar{height:6px;border-radius:1px}
+.mg-team .mg-bar.mg-ok{background:var(--tm-green)}.mg-team .mg-bar.mg-warn{background:var(--tm-blue)}.mg-team .mg-bar.mg-over{background:var(--tm-red)}
+.mg-team .mg-share{height:5px;border-radius:10px;background:#253248}
+.mg-team .mg-share i{border-radius:10px;background:var(--tm-blue)}
