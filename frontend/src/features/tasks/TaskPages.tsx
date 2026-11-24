@@ -27,7 +27,7 @@ export function TasksPage() {
   const toast = useToast();
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
+  const [exportMenu, setExportMenu] = useState(false);
   const deleteTask = useDeleteTask();
   const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, applied);
 
@@ -45,9 +45,10 @@ export function TasksPage() {
       },
       { replace: true },
     );
-  const runExport = () => {
+  const runExport = (format: ExportFormat) => {
+    setExportMenu(false);
     setExporting(true);
-    exportTasks({ project_id: projectId || undefined, filter: exportFilter(applied), format: exportFormat })
+    exportTasks({ project_id: projectId || undefined, filter: exportFilter(applied), format })
       .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
       .finally(() => setExporting(false));
   };
@@ -66,16 +67,30 @@ export function TasksPage() {
               <button type="button" className="btn secondary" onClick={() => setImporting(true)}>
                 {tr('Import')}
               </button>
-              <select aria-label={tr('Export format')} value={exportFormat} onChange={(e) => setExportFormat(e.target.value as ExportFormat)}>
-                {EXPORT_FORMATS.map((f) => (
-                  <option key={f} value={f}>
-                    {f.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="btn secondary" disabled={exporting || total === 0} onClick={runExport}>
-                {tr(exporting ? 'Exporting…' : 'Export')}
-              </button>
+              <div className="export-menu">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  aria-haspopup="menu"
+                  aria-expanded={exportMenu}
+                  disabled={exporting || total === 0}
+                  onClick={() => setExportMenu((o) => !o)}
+                  onKeyDown={(e) => e.key === 'Escape' && setExportMenu(false)}
+                >
+                  {tr(exporting ? 'Exporting…' : 'Export')} ▾
+                </button>
+                {exportMenu && (
+                  <ul className="export-list" role="menu">
+                    {EXPORT_FORMATS.map((f) => (
+                      <li key={f} role="none">
+                        <button type="button" role="menuitem" onClick={() => runExport(f)}>
+                          {f.toUpperCase()}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </>
           )}
           <Link className="btn" to={projectId ? `${paths.taskNew}?project_id=${projectId}` : paths.taskNew}>

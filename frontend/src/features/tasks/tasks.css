@@ -123,3 +123,8 @@
 .task-list-page > .toolbar { flex: none; }
 /* Developer My Projects: tighter gap under the topbar title. */
 .task-list-page.dev-projects { padding-top: 12px; }
+
+.export-menu { position: relative; }
+.export-list { position: absolute; right: 0; top: 100%; z-index: 5; margin: 4px 0 0; padding: 4px 0; list-style: none; min-width: 120px; border: 1px solid var(--line); background: var(--surface); }
+.export-list button { display: block; width: 100%; padding: 8px 12px; border: 0; background: none; text-align: left; font: 400 var(--fs-14) Inter, sans-serif; color: var(--ink); cursor: pointer; }
+.export-list button:hover { background: var(--line); }

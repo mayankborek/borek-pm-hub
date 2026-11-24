@@ -415,7 +415,6 @@ export const DE: Record<string, string> = {
   'CSV or Excel file': 'CSV- oder Excel-Datei',
   'A Jira CSV export (Filters → View all issues → Export → CSV) or a CSV/Excel file exported from here.':
     'Ein Jira-CSV-Export (Filter → Alle Vorgänge anzeigen → Exportieren → CSV) oder eine von hier exportierte CSV-/Excel-Datei.',
-  'Export format': 'Exportformat',
   'Sending…': 'Wird gesendet…',
   'Send': 'Senden',
   'created': 'erstellt',
