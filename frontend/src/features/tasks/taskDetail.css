@@ -11,6 +11,14 @@
 .td-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 8px; }
 .td-head .btn:disabled { opacity: .45; cursor: not-allowed; }
 .td-title { margin: 0; font-size: var(--fs-26); line-height: 34px; font-weight: 700; color: var(--ink); }
+input.td-title { flex: 1; min-width: 0; padding: 0 8px; border: 1px solid transparent; background: transparent; font-family: inherit; }
+input.td-title:hover, input.td-title:focus { border-color: var(--field); background: var(--surface); }
+input.td-title[aria-invalid='true'] { border-color: var(--err); }
+.td-mention { position: relative; flex: 1; display: flex; }
+.td-mention input { flex: 1; height: 44px; padding: 0 12px; border: 1px solid var(--field); background: var(--surface); font: 400 var(--fs-14) Inter, sans-serif; }
+.td-mention-list { position: absolute; left: 0; bottom: 100%; z-index: 5; margin: 0 0 4px; padding: 4px 0; list-style: none; min-width: 200px; border: 1px solid var(--line); background: var(--surface); }
+.td-mention-list li { display: block; }
+.td-mention-list .td-link { display: block; width: 100%; padding: 6px 12px; text-align: left; }
 .td-meta { margin: 0 0 16px; font-size: var(--fs-12); line-height: 16px; color: var(--muted); }
 .td-error { margin: 0 0 16px; font-size: var(--fs-13); color: var(--err); }
 .td-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }

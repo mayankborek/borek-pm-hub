@@ -46,7 +46,12 @@ export const useImportTasks = () => {
   });
 };
 
+export type ExportFormat = 'csv' | 'xlsx' | 'pdf';
+export const EXPORT_FORMATS: ExportFormat[] = ['csv', 'xlsx', 'pdf'];
+
 export interface ExportRequest {
+  /** csv (default) and xlsx can be imported again; pdf is a readable list. */
+  format?: ExportFormat;
   /** Narrows the export to one project (GET /projects/{id}/tasks/export); otherwise everything the user can see. */
   project_id?: string;
   filter?: Partial<Record<'q' | 'category' | 'status_id' | 'priority' | 'assignee_id', string>>;
@@ -60,14 +65,15 @@ export const exportFilter = (f: TaskFilter): ExportRequest['filter'] => ({
   assignee_id: f.assigneeId,
 });
 
-/** GET /tasks/export (or the project's) streams a CSV; fetched as a blob because downloads need the auth header. */
+/** GET /tasks/export (or the project's) streams a CSV, XLSX or PDF (?format=); fetched as a blob because downloads need the auth header. */
 export async function exportTasks(req: ExportRequest) {
   const headers = new Headers();
   applyAuth(headers);
   const path = req.project_id ? `/projects/${req.project_id}/tasks/export` : '/tasks/export';
-  const res = await fetch(`${env.apiBaseUrl}${path}${qs({ ...req.filter })}`, { headers });
+  const format = req.format ?? 'csv';
+  const res = await fetch(`${env.apiBaseUrl}${path}${qs({ ...req.filter, format })}`, { headers });
   if (!res.ok) throw new ApiError(res.status, res.statusText, await res.json().catch(() => undefined));
-  const name = /filename="?([^";]+)"?/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'tasks.csv';
+  const name = /filename="?([^";]+)"?/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? `tasks.${format}`;
   const url = URL.createObjectURL(await res.blob());
   Object.assign(document.createElement('a'), { href: url, download: name }).click();
   URL.revokeObjectURL(url);

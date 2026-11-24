@@ -353,6 +353,7 @@ export interface TaskComment {
   task_id: string;
   author: UserBrief;
   body: string;
+  mentions?: UserBrief[];
   created_at: string;
   edited_at: string | null;
 }
@@ -362,11 +363,27 @@ const commentsKey = (taskId: string) => [...taskKeys.all, 'comments', taskId] as
 export const useComments = (taskId: string) =>
   useQuery({ queryKey: commentsKey(taskId), queryFn: () => api<TaskComment[]>(`/tasks/${taskId}/comments`), enabled: !!taskId });
 
+export interface CommentInput {
+  body: string;
+  /** Project members @mentioned in the body (max 20); they get a notification. */
+  mention_ids: string[];
+}
+
 /** POST /tasks/{id}/comments */
 export const useAddComment = (taskId: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: string) => api<TaskComment>(`/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ body }) }),
+    mutationFn: (input: CommentInput) => api<TaskComment>(`/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: commentsKey(taskId) }),
+  });
+};
+
+/** PATCH /tasks/{id}/comments/{commentId}: the author only; `mention_ids` replaces the old mentions. */
+export const useEditComment = (taskId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: CommentInput & { id: string }) =>
+      api<TaskComment>(`/tasks/${taskId}/comments/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: commentsKey(taskId) }),
   });
 };

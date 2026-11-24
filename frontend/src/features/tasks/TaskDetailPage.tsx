@@ -12,6 +12,8 @@ import {
   useAddComment,
   useAttachmentActions,
   useComments,
+  useEditComment,
+  useProjectMembers,
   useAttachments,
   useProjectStatuses,
   useTask,
@@ -29,6 +31,7 @@ import { DatePicker } from './DatePicker';
 import { PrioritySelect } from './PrioritySelect';
 import { StatusSelect } from './StatusSelect';
 import { LabelChips, LabelPicker } from './LabelPicker';
+import { MentionInput, mentionIdsFor } from './MentionInput';
 import './taskDetail.css';
 
 const fileSize = (n: number | null) =>
@@ -89,7 +92,10 @@ export function TaskDetailPage() {
   const comments = useComments(taskId);
   const activity = useActivity(taskId);
   const addComment = useAddComment(taskId);
+  const editComment = useEditComment(taskId);
+  const members = useProjectMembers(task?.project_id).data ?? [];
   const [comment, setComment] = useState('');
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [tab, setTab] = useState<'all' | 'comments' | 'history'>('all');
   const entries = [
     ...(tab === 'history' ? [] : (comments.data ?? []).map((c) => ({ kind: 'comment' as const, c, at: c.created_at }))),
@@ -124,6 +130,7 @@ export function TaskDetailPage() {
 
   const stage = (patch: TaskPatch) => setDraft((d) => ({ ...d, ...patch }));
   const saved: TaskPatch = {
+    title: task.title,
     description: task.description,
     priority: task.priority,
     status_id: task.status.id,
@@ -144,7 +151,7 @@ export function TaskDetailPage() {
     // The backend rejects a developer's PATCH that carries PM-only fields, so Save sends just status fields for them.
     if (!isPm && key !== 'status_id' && key !== 'blocked_reason' && !(canSchedule && (key === 'start_date' || key === 'due_date'))) continue;
     const next =
-      key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
+      key === 'title' ? draft.title?.trim() : key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
     if (JSON.stringify(next) !== JSON.stringify(saved[key])) Object.assign(changes, { [key]: next });
   }
   const dirty = Object.keys(changes).length > 0;
@@ -152,7 +159,10 @@ export function TaskDetailPage() {
   const targetStatus = (statuses.data ?? [task.status]).find((s) => s.id === (draft.status_id ?? task.status.id)) ?? task.status;
   const blocking = targetStatus.category === 'blocked';
   const reason = (draft.blocked_reason !== undefined ? draft.blocked_reason : task.blocked_reason) ?? '';
-  const missingReason = blocking && !reason.trim();
+  const title = draft.title !== undefined ? draft.title : task.title;
+  // The backend rejects an empty title.
+  const missingTitle = isPm && !title.trim();
+  const missingReason = (blocking && !reason.trim()) || missingTitle;
   const save = () => {
     if (!dirty) {
       setFilesChanged(false);
@@ -200,7 +210,19 @@ export function TaskDetailPage() {
         ← {t('Back')}
       </button>
       <div className="td-head">
-        <h2 className="td-title">{task.title}</h2>
+        {isPm ? (
+          <input
+            className="td-title"
+            aria-label={t('Task title')}
+            aria-invalid={missingTitle}
+            maxLength={200}
+            value={title}
+            onChange={(e) => stage({ title: e.target.value })}
+            onKeyDown={saveOnEnter}
+          />
+        ) : (
+          <h2 className="td-title">{task.title}</h2>
+        )}
         <button type="button" className="btn" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
           {t(update.isPending ? 'Saving…' : 'Save')}
         </button>
@@ -311,7 +333,44 @@ export function TaskDetailPage() {
                       <Avatar user={e.c.author} round />
                       <div>
                         <strong>{e.c.author.name}</strong> <span>{stamp(e.c.created_at)}</span>
-                        <p>{e.c.body}</p>
+                        {editing?.id === e.c.id ? (
+                          <form
+                            className="td-composer"
+                            onSubmit={(ev) => {
+                              ev.preventDefault();
+                              const body = editing.text.trim();
+                              if (!body) return;
+                              editComment.mutate(
+                                { id: editing.id, body, mention_ids: mentionIdsFor(body, members) },
+                                { onSuccess: () => setEditing(null), onError: () => toast.error(t('Could not save your comment.')) },
+                              );
+                            }}
+                          >
+                            <MentionInput
+                              projectId={task.project_id}
+                              label={t('Edit comment')}
+                              value={editing.text}
+                              onChange={(text) => setEditing({ id: editing.id, text })}
+                              autoFocus
+                            />
+                            <button type="submit" className="btn" disabled={!editing.text.trim() || editComment.isPending}>
+                              {t('Save')}
+                            </button>
+                            <button type="button" className="btn secondary" onClick={() => setEditing(null)}>
+                              {t('Cancel')}
+                            </button>
+                          </form>
+                        ) : (
+                          <>
+                            <p>{e.c.body}</p>
+                            {/* Only the author can edit a comment. */}
+                            {e.c.author.id === user?.id && (
+                              <button type="button" className="td-link" onClick={() => setEditing({ id: e.c.id, text: e.c.body })}>
+                                {t('Edit')}
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
                     </li>
                   ) : (
@@ -341,18 +400,21 @@ export function TaskDetailPage() {
                   e.preventDefault();
                   const body = comment.trim();
                   if (!body) return;
-                  addComment.mutate(body, {
-                    onSuccess: () => setComment(''),
-                    onError: () => toast.error(t('Could not post your comment.')),
-                  });
+                  addComment.mutate(
+                    { body, mention_ids: mentionIdsFor(body, members) },
+                    {
+                      onSuccess: () => setComment(''),
+                      onError: () => toast.error(t('Could not post your comment.')),
+                    },
+                  );
                 }}
               >
-                <input
-                  aria-label={t('Add a comment')}
-                  placeholder={t('Add a comment…')}
-                  maxLength={5000}
+                <MentionInput
+                  projectId={task.project_id}
+                  label={t('Add a comment')}
+                  placeholder={t('Add a comment… use @ to mention someone')}
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  onChange={setComment}
                 />
                 <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
                   {t(addComment.isPending ? 'Sending…' : 'Send')}

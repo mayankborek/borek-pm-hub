@@ -11,7 +11,7 @@ interface Props {
   onClose: () => void;
 }
 
-/** CSV import in two steps: choose project + file and review the dry-run check, then save it. */
+/** CSV or Excel import in two steps: choose project + file and review the dry-run check, then save it. */
 export function JiraImportDialog({ projects, defaultProjectId, onClose }: Props) {
   const { t: tr } = usePrefs();
   const [projectId, setProjectId] = useState(defaultProjectId);
@@ -57,9 +57,9 @@ export function JiraImportDialog({ projects, defaultProjectId, onClose }: Props)
                 </select>
               </div>
               <div className="rd-field">
-                <label htmlFor="ji-file">{tr('CSV file')}</label>
-                <input id="ji-file" type="file" accept=".csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-                <p className="muted small">{tr('A Jira CSV export (Filters → View all issues → Export → CSV) or a file exported from here.')}</p>
+                <label htmlFor="ji-file">{tr('CSV or Excel file')}</label>
+                <input id="ji-file" type="file" accept=".csv,.xlsx" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <p className="muted small">{tr('A Jira CSV export (Filters → View all issues → Export → CSV) or a CSV/Excel file exported from here.')}</p>
               </div>
             </>
           )}

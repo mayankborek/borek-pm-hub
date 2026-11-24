@@ -9,7 +9,7 @@ import { describeApiError } from '@/shared/api/client';
 import { useToast } from '@/shared/ui/Toast';
 import { TaskFilters, TaskGroup, TaskRow } from './TaskParts';
 import { useAllTasks, useDeleteTask, useProjectStatuses } from './tasksApi';
-import { exportFilter, exportTasks } from './jiraApi';
+import { EXPORT_FORMATS, exportFilter, exportTasks, type ExportFormat } from './jiraApi';
 import { JiraImportDialog } from './JiraImportDialog';
 import { isFiltered, useUrlFilter } from './useUrlFilter';
 import './tasks.css';
@@ -27,6 +27,7 @@ export function TasksPage() {
   const toast = useToast();
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
   const deleteTask = useDeleteTask();
   const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, applied);
 
@@ -46,7 +47,7 @@ export function TasksPage() {
     );
   const runExport = () => {
     setExporting(true);
-    exportTasks({ project_id: projectId || undefined, filter: exportFilter(applied) })
+    exportTasks({ project_id: projectId || undefined, filter: exportFilter(applied), format: exportFormat })
       .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
       .finally(() => setExporting(false));
   };
@@ -65,6 +66,13 @@ export function TasksPage() {
               <button type="button" className="btn secondary" onClick={() => setImporting(true)}>
                 {tr('Import')}
               </button>
+              <select aria-label={tr('Export format')} value={exportFormat} onChange={(e) => setExportFormat(e.target.value as ExportFormat)}>
+                {EXPORT_FORMATS.map((f) => (
+                  <option key={f} value={f}>
+                    {f.toUpperCase()}
+                  </option>
+                ))}
+              </select>
               <button type="button" className="btn secondary" disabled={exporting || total === 0} onClick={runExport}>
                 {tr(exporting ? 'Exporting…' : 'Export')}
               </button>
