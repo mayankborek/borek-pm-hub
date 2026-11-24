@@ -4,6 +4,7 @@ import { paths } from '@/app/routes';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useProjectMembers, type AssignableUser } from '@/features/tasks/tasksApi';
+import { useOrganisations } from '@/features/admin/organisationsApi';
 import { MemberPicker } from './MemberPicker';
 import { parseApiError, useCreateProject, useProject, useSyncMembers, useUpdateProject, type FieldErrors } from './projectsApi';
 import { STATUS_LABEL } from './projectUi';
@@ -20,9 +21,15 @@ interface FormState {
   status: ProjectStatus;
   start_date: string;
   target_end_date: string;
+  type: 'internal' | 'external';
+  /** An organisation id, or NEW_CLIENT to create one together with the project. */
+  client: string;
+  new_client_name: string;
 }
 
-const EMPTY: FormState = { code: '', name: '', description: '', status: 'planned', start_date: '', target_end_date: '' };
+const NEW_CLIENT = '__new__';
+
+const EMPTY: FormState = { code: '', name: '', description: '', status: 'planned', start_date: '', target_end_date: '', type: 'internal', client: '', new_client_name: '' };
 
 const fromProject = (p: Project): FormState => ({
   code: p.code,
@@ -31,6 +38,9 @@ const fromProject = (p: Project): FormState => ({
   status: p.status,
   start_date: p.start_date ?? '',
   target_end_date: p.target_end_date ?? '',
+  type: p.type ?? 'internal',
+  client: p.client_organisation?.id ?? '',
+  new_client_name: '',
 });
 
 /** Mirrors the backend rules so most mistakes are caught before the request. The server stays the authority. */
@@ -45,17 +55,27 @@ function validate(f: FormState, isEdit: boolean, t: (s: string) => string): Fiel
   if (f.start_date && f.target_end_date && f.target_end_date < f.start_date) {
     e.target_end_date = t('Target end date cannot be before the start date.');
   }
+  if (f.type === 'external') {
+    if (!f.client) e.client = t('Choose a client for an external project.');
+    else if (f.client === NEW_CLIENT && !f.new_client_name.trim()) e.new_client_name = t('Client name is required.');
+  }
   return e;
 }
 
-const toInput = (f: FormState): ProjectInput => ({
-  code: f.code.trim(),
-  name: f.name.trim(),
-  description: f.description.trim() || null,
-  status: f.status,
-  start_date: f.start_date || null,
-  target_end_date: f.target_end_date || null,
-});
+const toInput = (f: FormState, isEdit: boolean): ProjectInput => {
+  const base: ProjectInput = {
+    code: f.code.trim(),
+    name: f.name.trim(),
+    description: f.description.trim() || null,
+    status: f.status,
+    start_date: f.start_date || null,
+    target_end_date: f.target_end_date || null,
+    type: f.type,
+  };
+  if (f.type === 'internal') return isEdit ? { ...base, client_organisation_id: null } : base;
+  if (f.client === NEW_CLIENT) return { ...base, new_client: { name: f.new_client_name.trim() } };
+  return { ...base, client_organisation_id: f.client };
+};
 
 export function ProjectCreatePage() {
   return <ProjectForm />;
@@ -82,6 +102,7 @@ function ProjectForm({ project, currentMembers = [] }: { project?: Project; curr
   const [formError, setFormError] = useState('');
   const [members, setMembers] = useState<AssignableUser[]>(currentMembers);
   const syncMembers = useSyncMembers(project?.id ?? '');
+  const clients = useOrganisations();
   const saving = create.isPending || update.isPending || syncMembers.isPending;
   const back = project ? paths.project(project.id) : paths.projects;
 
@@ -98,7 +119,7 @@ function ProjectForm({ project, currentMembers = [] }: { project?: Project; curr
     if (Object.keys(found).length) return;
 
     try {
-      const input = toInput(form);
+      const input = toInput(form, isEdit);
       if (project) {
         const { code: _code, ...rest } = input;
         await update.mutateAsync({ input: rest, version: project.version });
@@ -204,6 +225,34 @@ function ProjectForm({ project, currentMembers = [] }: { project?: Project; curr
             <input id="target_end_date" type="date" className="input" value={form.target_end_date} min={form.start_date || undefined} onChange={(e) => set('target_end_date', e.target.value)} {...aria('target_end_date')} />,
           )}
         </div>
+
+        <div className="pform-row two">
+          {field(
+            'type',
+            'Project Type',
+            <select id="type" className="input" value={form.type} onChange={(e) => set('type', e.target.value as FormState['type'])}>
+              <option value="internal">{t('Internal')}</option>
+              <option value="external">{t('External (for a client)')}</option>
+            </select>,
+          )}
+          {form.type === 'external' &&
+            field(
+              'client',
+              'Client *',
+              <select id="client" className="input" value={form.client} onChange={(e) => set('client', e.target.value)} {...aria('client')}>
+                <option value="">{t('Select a client')}</option>
+                {(clients.data?.items ?? []).map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+                {!isEdit && <option value={NEW_CLIENT}>{t('+ New client…')}</option>}
+              </select>,
+            )}
+        </div>
+        {form.type === 'external' &&
+          form.client === NEW_CLIENT &&
+          field('new_client_name', 'New Client Name *', <input id="new_client_name" className="input" maxLength={200} value={form.new_client_name} onChange={(e) => set('new_client_name', e.target.value)} {...aria('new_client_name')} />)}
 
         <div className="field">
           <label htmlFor="members">{t('Add Members')}</label>

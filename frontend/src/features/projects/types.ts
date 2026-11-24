@@ -36,6 +36,8 @@ export interface Project {
   /** Optimistic-locking counter, sent back on PATCH. */
   version: number;
   task_summary?: TaskSummary | null;
+  type?: 'internal' | 'external';
+  client_organisation?: { id: string; name: string } | null;
 }
 
 export interface ProjectInput {
@@ -45,6 +47,10 @@ export interface ProjectInput {
   status: ProjectStatus;
   start_date: string | null;
   target_end_date: string | null;
+  type: 'internal' | 'external';
+  /** External projects send exactly one of these two; internal send neither (null on edit clears the client). */
+  client_organisation_id?: string | null;
+  new_client?: { name: string };
 }
 
 /** Subset of GET /tasks used by the dashboard's attention list. */
