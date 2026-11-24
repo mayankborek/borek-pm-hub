@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, date, datetime
+from enum import StrEnum
 
 from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -327,7 +328,7 @@ async def update_stakeholder(
         raise _version_conflict("stakeholder")
     changes = data.model_dump(exclude={"version"}, exclude_unset=True)
     for field, value in changes.items():
-        setattr(stakeholder, field, value.value if field == "influence" and value else value)
+        setattr(stakeholder, field, value.value if isinstance(value, StrEnum) else value)
     record_audit(  # the fields changed, not their values: contact details stay out of the log
         session,
         actor,

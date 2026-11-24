@@ -15,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.common.enums import RagStatus, ReportState, StakeholderInfluence, sql_in
+from app.common.enums import RaciRole, RagStatus, ReportState, StakeholderInfluence, sql_in
 from app.core.database import Base, IdMixin, TimestampMixin
 
 
@@ -64,6 +64,7 @@ class Stakeholder(IdMixin, TimestampMixin, Base):
         CheckConstraint(
             f"influence IS NULL OR {sql_in('influence', StakeholderInfluence)}", name="influence"
         ),
+        CheckConstraint(f"raci IS NULL OR {sql_in('raci', RaciRole)}", name="raci"),
     )
 
     project_id: Mapped[uuid.UUID] = mapped_column(
@@ -75,6 +76,9 @@ class Stakeholder(IdMixin, TimestampMixin, Base):
     email: Mapped[str | None] = mapped_column(String(320))
     phone: Mapped[str | None] = mapped_column(String(50))
     influence: Mapped[str | None] = mapped_column(String(10))
+    # RACI (responsible, accountable, consulted, informed) and how they are kept informed.
+    raci: Mapped[str | None] = mapped_column(String(12))
+    communication_role: Mapped[str | None] = mapped_column(String(200))
     notes: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

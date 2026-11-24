@@ -4,7 +4,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.common.enums import RagStatus, ReportState, StakeholderInfluence
+from app.common.enums import RaciRole, RagStatus, ReportState, StakeholderInfluence
 from app.common.validation import (
     check_date,
     clean_email,
@@ -121,9 +121,17 @@ class StakeholderFields(BaseModel):
     email: str | None = Field(default=None, max_length=320)
     phone: str | None = Field(default=None, max_length=50)
     influence: StakeholderInfluence | None = None
+    raci: RaciRole | None = Field(
+        default=None, description="responsible, accountable, consulted or informed."
+    )
+    communication_role: str | None = Field(
+        default=None,
+        max_length=200,
+        description='How they are kept informed, e.g. "Weekly report".',
+    )
     notes: str | None = None
 
-    _clean_short = field_validator("organisation", "role_title")(_short_text)
+    _clean_short = field_validator("organisation", "role_title", "communication_role")(_short_text)
     _clean_notes = field_validator("notes")(_long_text)
 
     @field_validator("email")
@@ -173,6 +181,8 @@ class StakeholderOut(BaseModel):
     email: str | None
     phone: str | None
     influence: StakeholderInfluence | None
+    raci: RaciRole | None
+    communication_role: str | None
     notes: str | None
     version: int
     created_at: datetime

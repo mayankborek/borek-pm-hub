@@ -40,7 +40,20 @@ flowchart LR
 | `app/auth/` | `dependencies.py` (current user), `providers/dev.py` (Phase 1 login), `providers/entra.py` (stub), `permissions.py` (`can()`) |
 | `app/projects/` | `router.py` (HTTP + permission checks), `service.py` (rules), `models.py`, `schemas.py` |
 | `app/tasks/` | `router.py` (statuses, tasks, assignment, `/me/tasks`), `service.py` (task rules, filters, board, assignment), `statuses.py` (per-project statuses), `models.py`, `schemas.py` |
-| `app/users/` | User model |
+| `app/tasks/details*.py` | Task history, comments (with @mentions), attachments and links |
+| `app/task_links/` | Links between tasks: blocks / is blocked by, relates to, duplicates, clones |
+| `app/sprints/` | Sprints (planned, active, completed), spillover, sprint history, backlog filter |
+| `app/milestones/` | Phases, milestones and the roadmap (staff and client views) |
+| `app/change_requests/` | Change requests: raise, review, decide, impact, comments, internal notes, files |
+| `app/requirements/` | Requirements with versions, publishing for client acceptance, the client's answer |
+| `app/registers/` | Risks, issues and decisions (`/risks`, `/issues`, `/decisions` per project) |
+| `app/reporting/` | Status reports (draft, published, PDF) and stakeholders (incl. RACI) |
+| `app/client/` | The client portal (`/client/...`): published data of the client's own projects only |
+| `app/manager/`, `app/portfolio/`, `app/capacity/` | Manager dashboard, project overview, delivery cards (next action), workload, capacity, reservations |
+| `app/notifications/` | In-app notifications, settings, 90-day cleanup |
+| `app/picklists/` | Dropdown values the administrator edits; workflow values shown as protected |
+| `app/admin/`, `app/organisations/`, `app/audit/`, `app/finance/`, `app/dashboard/` | Users and invites, client organisations and contacts, audit log, budget, PM dashboard |
+| `app/users/` | User model, own profile (`/me/profile`) |
 | `app/core/` | Config, async DB session, errors, logging, request-ID middleware |
 | `alembic/`, `scripts/seed.py`, `tests/` | Migrations, demo data, pytest |
 

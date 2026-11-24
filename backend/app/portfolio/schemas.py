@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.common.enums import ProjectStatus, RagStatus
 from app.finance.schemas import FinanceOut
+from app.manager.next_action import NextAction
 from app.manager.schemas import NextMilestone, PublishedProgress
 from app.organisations.schemas import OrganisationBrief, PersonBrief
 from app.projects.schemas import TaskSummary
@@ -33,6 +34,11 @@ class PortfolioProject(BaseModel):
     )
     next_milestone: NextMilestone | None = Field(
         description="Upcoming delivery: the open milestone due first (late ones included)."
+    )
+    next_action: NextAction | None = Field(
+        default=None,
+        description="Overdue milestone, change request to decide, requirement waiting for the "
+        "client, or next milestone (first match).",
     )
 
 

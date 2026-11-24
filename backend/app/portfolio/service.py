@@ -17,6 +17,7 @@ from app.common.enums import GlobalRole, ProjectRole, ProjectStatus, RagStatus
 from app.common.validation import like_escape
 from app.finance import service as finance_service
 from app.manager import service as delivery
+from app.manager.next_action import next_actions
 from app.organisations.models import OrganisationAccountManager
 from app.organisations.schemas import PersonBrief
 from app.portfolio.schemas import (
@@ -150,6 +151,8 @@ async def portfolio(
     finance = await finance_service.summaries(session, ids)
     progress = await delivery.published_progress(session, ids)
     upcoming = await delivery.next_milestones(session, ids)
+    # Portfolio readers (Managers, the clients' Account Managers) see these projects' requests.
+    actions = await next_actions(session, ids, change_requests_for=ids)
     page_rags = {
         row.project_id: row
         for row in (await session.execute(select(latest).where(latest.c.project_id.in_(ids)))).all()
@@ -172,6 +175,7 @@ async def portfolio(
                 finance=finance.get(p.id),
                 progress=progress.get(p.id),
                 next_milestone=upcoming.get(p.id),
+                next_action=actions.get(p.id),
             )
             for p in projects
         ],
