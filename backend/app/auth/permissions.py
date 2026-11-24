@@ -32,6 +32,7 @@ class Action(StrEnum):
     TASK_CHANGE_STATUS = "task:change_status"  # also covers blocked_reason
     TASK_VIEW = "task:view"
     TASK_COMMENT = "task:comment"  # comments and attachments
+    TASK_LINK = "task:link"  # add and remove links between tasks (blocks, relates to ...)
     TASK_ARCHIVE = "task:archive"
     TASK_IMPORT = "task:import"  # bring tasks in from a CSV file (Jira transfer)
     MY_TASKS = "task:my_tasks"
@@ -57,6 +58,16 @@ class Action(StrEnum):
     # Requirements: create, edit, publish for client acceptance and archive (leads + Managers).
     # Reading them is PROJECT_VIEW. Clients read and answer through /client/...
     REQUIREMENT_MANAGE = "requirement:manage"
+    # Sprints: plan, start, complete, remove them and move tasks in and out (leads + Managers).
+    # Reading them is TASK_VIEW.
+    SPRINT_MANAGE = "sprint:manage"
+    # Risks, issues and decisions: write them (leads + Managers). Reading them is PROJECT_VIEW.
+    REGISTER_MANAGE = "register:manage"
+    # People & Access: the team, the client's Account Managers and client contacts with their
+    # sign-in status (leads, Managers, the client's Account Manager).
+    PEOPLE_VIEW = "people:view"
+    # Configurable dropdown values (administrator). Reading them: anyone signed in on staff.
+    PICKLIST_MANAGE = "picklist:manage"
     # Team capacity (Manager Role Guide): workload and capacity across people (Managers only),
     # reservations of a project's people (leads + Managers), working schedules (Admin + Managers).
     TEAM_VIEW = "team:view"
@@ -94,6 +105,9 @@ _PM_ONLY = frozenset(
         Action.CHANGE_REQUEST_SUBMIT,
         Action.CHANGE_REQUEST_DECIDE,
         Action.REQUIREMENT_MANAGE,
+        Action.SPRINT_MANAGE,
+        Action.REGISTER_MANAGE,
+        Action.PEOPLE_VIEW,
         Action.RESERVATION_MANAGE,
         Action.DASHBOARD_VIEW,
         Action.USER_LIST,
@@ -127,15 +141,29 @@ _ACCOUNT_MANAGER_ON_PROJECT = frozenset(
         Action.FINANCE_MANAGE,
         Action.CHANGE_REQUEST_VIEW,
         Action.CHANGE_REQUEST_SUBMIT,
+        Action.PEOPLE_VIEW,
     }
 )
 # Developers need project membership for these.
 _MEMBER_ACTIONS = frozenset(
-    {Action.PROJECT_VIEW, Action.TASK_VIEW, Action.TASK_CREATE, Action.TASK_COMMENT}
+    {
+        Action.PROJECT_VIEW,
+        Action.TASK_VIEW,
+        Action.TASK_CREATE,
+        Action.TASK_COMMENT,
+        Action.TASK_LINK,
+    }
 )
 _ANY_USER = frozenset({Action.PROJECT_LIST, Action.MY_TASKS})
 # The administrator can do these and nothing else; nobody else can do them (not even a PM).
-ADMIN_ONLY = frozenset({Action.ADMIN_USERS, Action.AUDIT_VIEW, Action.ORGANISATION_MANAGE})
+ADMIN_ONLY = frozenset(
+    {
+        Action.ADMIN_USERS,
+        Action.AUDIT_VIEW,
+        Action.ORGANISATION_MANAGE,
+        Action.PICKLIST_MANAGE,
+    }
+)
 
 
 # --- role helpers -------------------------------------------------------------------------------

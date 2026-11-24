@@ -157,6 +157,66 @@
         "title": "AccessProject",
         "type": "object"
       },
+      "AccountManager": {
+        "properties": {
+          "assigned_at": {
+            "format": "date-time",
+            "title": "Assigned At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "description": "Global role (pm, developer, manager, account_manager, client).",
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "description": "invited / invite_expired (no password yet), active, deactivated.",
+            "enum": [
+              "invited",
+              "invite_expired",
+              "active",
+              "deactivated"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "job_title",
+          "status",
+          "assigned_at"
+        ],
+        "title": "AccountManager",
+        "type": "object"
+      },
       "AccountManagersUpdate": {
         "additionalProperties": false,
         "description": "The complete list: people left out stop being account managers of this organisation.",
@@ -1824,6 +1884,73 @@
           "created_at"
         ],
         "title": "ClientCommentOut",
+        "type": "object"
+      },
+      "ClientContact": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "join_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join Date"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "description": "Global role (pm, developer, manager, account_manager, client).",
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "description": "invited / invite_expired (no password yet), active, deactivated.",
+            "enum": [
+              "invited",
+              "invite_expired",
+              "active",
+              "deactivated"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "job_title",
+          "status",
+          "join_date"
+        ],
+        "title": "ClientContact",
         "type": "object"
       },
       "ClientContactCreatedOut": {
@@ -4136,33 +4263,67 @@
         "title": "LatestUpdate",
         "type": "object"
       },
-      "LinkIn": {
-        "additionalProperties": false,
+      "Level": {
+        "description": "Risk probability and impact.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "title": "Level",
+        "type": "string"
+      },
+      "LinkKind": {
+        "description": "How a link reads from the task you are on.",
+        "enum": [
+          "blocks",
+          "is_blocked_by",
+          "relates_to",
+          "duplicates",
+          "is_duplicated_by",
+          "clones",
+          "is_cloned_by"
+        ],
+        "title": "LinkKind",
+        "type": "string"
+      },
+      "LinkedTask": {
         "properties": {
-          "name": {
+          "assignee": {
             "anyOf": [
               {
-                "maxLength": 255,
-                "type": "string"
+                "$ref": "#/components/schemas/UserBrief"
               },
               {
                 "type": "null"
               }
-            ],
-            "description": "Defaults to the host.",
-            "title": "Name"
+            ]
           },
-          "url": {
-            "maxLength": 2000,
-            "minLength": 1,
-            "title": "Url",
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusBrief"
+          },
+          "title": {
+            "title": "Title",
             "type": "string"
           }
         },
         "required": [
-          "url"
+          "id",
+          "key",
+          "title",
+          "status",
+          "assignee"
         ],
-        "title": "LinkIn",
+        "title": "LinkedTask",
         "type": "object"
       },
       "LinkedTaskOut": {
@@ -5222,6 +5383,53 @@
         "title": "MilestoneUpdate",
         "type": "object"
       },
+      "MoveTasks": {
+        "additionalProperties": false,
+        "description": "Puts tasks into a planned or active sprint, or back into the backlog (`sprint_id`\nnull).",
+        "properties": {
+          "sprint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sprint Id"
+          },
+          "task_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "task_ids",
+          "sprint_id"
+        ],
+        "title": "MoveTasks",
+        "type": "object"
+      },
+      "MoveTasksOut": {
+        "properties": {
+          "moved": {
+            "title": "Moved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "moved"
+        ],
+        "title": "MoveTasksOut",
+        "type": "object"
+      },
       "MyDashboard": {
         "description": "The signed-in user's tasks and projects (developer landing data).",
         "properties": {
@@ -5280,6 +5488,66 @@
         ],
         "title": "NewClientIn",
         "type": "object"
+      },
+      "NextAction": {
+        "properties": {
+          "code": {
+            "description": "M-01, CR-01 or REQ-01.",
+            "title": "Code",
+            "type": "string"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Milestones only.",
+            "title": "Due Date"
+          },
+          "entity_id": {
+            "description": "Milestone, change request or requirement id.",
+            "format": "uuid",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NextActionKind"
+          },
+          "status": {
+            "description": "Milestone state, change request or requirement status.",
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "entity_id",
+          "code",
+          "title",
+          "due_date",
+          "status"
+        ],
+        "title": "NextAction",
+        "type": "object"
+      },
+      "NextActionKind": {
+        "enum": [
+          "overdue_milestone",
+          "change_request",
+          "client_acceptance",
+          "next_milestone"
+        ],
+        "title": "NextActionKind",
+        "type": "string"
       },
       "NotificationActor": {
         "properties": {
@@ -5767,6 +6035,26 @@
         "title": "OrganisationUpdate",
         "type": "object"
       },
+      "PeopleActions": {
+        "properties": {
+          "manage_client_contacts": {
+            "description": "Add / remove client contacts and create new invite links (administrator).",
+            "title": "Manage Client Contacts",
+            "type": "boolean"
+          },
+          "manage_team": {
+            "description": "Add / remove members, change project roles.",
+            "title": "Manage Team",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "manage_team",
+          "manage_client_contacts"
+        ],
+        "title": "PeopleActions",
+        "type": "object"
+      },
       "PersonBrief": {
         "properties": {
           "email": {
@@ -6152,6 +6440,156 @@
         "title": "PhaseUpdate",
         "type": "object"
       },
+      "PicklistOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "protected": {
+            "description": "Workflow values from the system; cannot be changed.",
+            "title": "Protected",
+            "type": "boolean"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/PicklistValueOut"
+            },
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "protected",
+          "values"
+        ],
+        "title": "PicklistOut",
+        "type": "object"
+      },
+      "PicklistValueIn": {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "PicklistValueIn",
+        "type": "object"
+      },
+      "PicklistValueOut": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null on protected lists.",
+            "title": "Id"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "id",
+          "value",
+          "position",
+          "is_active",
+          "version"
+        ],
+        "title": "PicklistValueOut",
+        "type": "object"
+      },
+      "PicklistValueUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus what changes. `is_active: false` hides the value from new choices;\nwhat was saved with it stays.",
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "PicklistValueUpdate",
+        "type": "object"
+      },
       "PmDashboard": {
         "description": "All active projects. Archived projects and tasks are not counted.",
         "properties": {
@@ -6296,6 +6734,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "next_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextAction"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Overdue milestone, change request to decide, requirement waiting for the client, or next milestone (first match)."
           },
           "next_milestone": {
             "anyOf": [
@@ -6759,6 +7208,17 @@
             "title": "Name",
             "type": "string"
           },
+          "next_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextAction"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Delivery card: overdue milestone, change request to decide, requirement waiting for the client, or next milestone (first match). Filled on the project list."
+          },
           "priority": {
             "$ref": "#/components/schemas/TaskPriority"
           },
@@ -6916,6 +7376,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "next_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextAction"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Delivery card: overdue milestone, change request to decide, requirement waiting for the client, or next milestone (first match). Filled on the project list."
           },
           "priority": {
             "$ref": "#/components/schemas/TaskPriority"
@@ -7099,6 +7570,17 @@
             "title": "Name",
             "type": "string"
           },
+          "next_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextAction"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Delivery card: overdue milestone, change request to decide, requirement waiting for the client, or next milestone (first match). Filled on the project list."
+          },
           "priority": {
             "$ref": "#/components/schemas/TaskPriority"
           },
@@ -7262,6 +7744,58 @@
           "activity"
         ],
         "title": "ProjectOverviewOut",
+        "type": "object"
+      },
+      "ProjectPeopleOut": {
+        "properties": {
+          "account_managers": {
+            "items": {
+              "$ref": "#/components/schemas/AccountManager"
+            },
+            "title": "Account Managers",
+            "type": "array"
+          },
+          "can": {
+            "$ref": "#/components/schemas/PeopleActions"
+          },
+          "client_contacts": {
+            "description": "Empty for internal projects.",
+            "items": {
+              "$ref": "#/components/schemas/ClientContact"
+            },
+            "title": "Client Contacts",
+            "type": "array"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Per status over everyone listed.",
+            "title": "Counts",
+            "type": "object"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "team": {
+            "items": {
+              "$ref": "#/components/schemas/TeamMember"
+            },
+            "title": "Team",
+            "type": "array"
+          }
+        },
+        "required": [
+          "project_id",
+          "team",
+          "account_managers",
+          "client_contacts",
+          "counts",
+          "can"
+        ],
+        "title": "ProjectPeopleOut",
         "type": "object"
       },
       "ProjectRef": {
@@ -7526,6 +8060,17 @@
         "title": "PublishedProgress",
         "type": "object"
       },
+      "RaciRole": {
+        "description": "A stakeholder's part in the project's RACI matrix.",
+        "enum": [
+          "responsible",
+          "accountable",
+          "consulted",
+          "informed"
+        ],
+        "title": "RaciRole",
+        "type": "string"
+      },
       "RagStatus": {
         "enum": [
           "green",
@@ -7565,6 +8110,557 @@
           "database"
         ],
         "title": "ReadyResponse",
+        "type": "object"
+      },
+      "RegisterCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "decided_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name or body.",
+            "title": "Decided By"
+          },
+          "decided_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided On"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Level"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskPriority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Level"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Risk: open, mitigating, closed. Issue: open, in_progress, resolved, closed. Decision: proposed, decided, superseded. Default: the first.",
+            "title": "Status"
+          },
+          "title": {
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "RegisterCreate",
+        "type": "object"
+      },
+      "RegisterItemOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "decided_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided On"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Level"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RegisterKind"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "overdue": {
+            "description": "Due date passed and not closed / resolved / decided.",
+            "title": "Overdue",
+            "type": "boolean"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskPriority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Level"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Risks: probability x impact, 1 (low/low) to 9.",
+            "title": "Score"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "code",
+          "title",
+          "description",
+          "status",
+          "owner",
+          "due_date",
+          "overdue",
+          "probability",
+          "impact",
+          "score",
+          "mitigation",
+          "priority",
+          "decided_on",
+          "decided_by",
+          "rationale",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "version"
+        ],
+        "title": "RegisterItemOut",
+        "type": "object"
+      },
+      "RegisterKind": {
+        "enum": [
+          "risk",
+          "issue",
+          "decision"
+        ],
+        "title": "RegisterKind",
+        "type": "string"
+      },
+      "RegisterListOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Per status, over all items of this kind.",
+            "title": "Counts",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RegisterItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "counts"
+        ],
+        "title": "RegisterListOut",
+        "type": "object"
+      },
+      "RegisterUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus only the fields that change; null clears an optional field.",
+        "properties": {
+          "decided_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name or body.",
+            "title": "Decided By"
+          },
+          "decided_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided On"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Level"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskPriority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Level"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rationale"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Risk: open, mitigating, closed. Issue: open, in_progress, resolved, closed. Decision: proposed, decided, superseded. Default: the first.",
+            "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "RegisterUpdate",
+        "type": "object"
+      },
+      "ReportBlocker": {
+        "additionalProperties": false,
+        "description": "Developer entry point \"Report blocker\": moves the task to the project's Blocked status\nwith the reason in one step. The project leads are notified (task.blocked).",
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "version": {
+            "description": "Version from the last read (optimistic locking).",
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "reason"
+        ],
+        "title": "ReportBlocker",
         "type": "object"
       },
       "ReportState": {
@@ -8560,9 +9656,779 @@
         "title": "SettingsUpdate",
         "type": "object"
       },
+      "SprintBrief": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SprintState"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "name",
+          "state"
+        ],
+        "title": "SprintBrief",
+        "type": "object"
+      },
+      "SprintComplete": {
+        "additionalProperties": false,
+        "description": "Completes the active sprint. Unfinished tasks go to `move_open_tasks_to` (a planned\nsprint of the project), to a new planned sprint (`create_next_sprint`), or else to the\nbacklog.",
+        "properties": {
+          "create_next_sprint": {
+            "default": false,
+            "title": "Create Next Sprint",
+            "type": "boolean"
+          },
+          "move_open_tasks_to": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move Open Tasks To"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "SprintComplete",
+        "type": "object"
+      },
+      "SprintCounts": {
+        "description": "Current tasks in the sprint (archived tasks not counted).",
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "done",
+          "open"
+        ],
+        "title": "SprintCounts",
+        "type": "object"
+      },
+      "SprintCreate": {
+        "additionalProperties": false,
+        "description": "A new planned sprint. Without a name it is called \"<project code> Sprint <number>\".",
+        "properties": {
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          }
+        },
+        "title": "SprintCreate",
+        "type": "object"
+      },
+      "SprintDetailOut": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/SprintCounts"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "days_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active sprints: days to end_date (negative = over).",
+            "title": "Days Left"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SprintReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "started_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/SprintState"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/SprintTaskOut"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "number",
+          "name",
+          "goal",
+          "start_date",
+          "end_date",
+          "state",
+          "today",
+          "days_left",
+          "counts",
+          "report",
+          "started_at",
+          "started_by",
+          "completed_at",
+          "completed_by",
+          "created_at",
+          "version",
+          "tasks"
+        ],
+        "title": "SprintDetailOut",
+        "type": "object"
+      },
+      "SprintListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SprintOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "SprintListOut",
+        "type": "object"
+      },
+      "SprintOut": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/SprintCounts"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "days_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active sprints: days to end_date (negative = over).",
+            "title": "Days Left"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SprintReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "started_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/SprintState"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "number",
+          "name",
+          "goal",
+          "start_date",
+          "end_date",
+          "state",
+          "today",
+          "days_left",
+          "counts",
+          "report",
+          "started_at",
+          "started_by",
+          "completed_at",
+          "completed_by",
+          "created_at",
+          "version"
+        ],
+        "title": "SprintOut",
+        "type": "object"
+      },
+      "SprintReport": {
+        "description": "What happened when the sprint was completed (completed sprints only).",
+        "properties": {
+          "committed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tasks in the sprint when it was started.",
+            "title": "Committed"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "spilled": {
+            "title": "Spilled",
+            "type": "integer"
+          },
+          "spilled_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SprintBrief"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null: unfinished tasks went to backlog."
+          }
+        },
+        "required": [
+          "committed",
+          "completed",
+          "spilled",
+          "spilled_to"
+        ],
+        "title": "SprintReport",
+        "type": "object"
+      },
+      "SprintStart": {
+        "additionalProperties": false,
+        "description": "Starts a planned sprint. Dates sent here replace the planned ones; both must be known.",
+        "properties": {
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "SprintStart",
+        "type": "object"
+      },
+      "SprintState": {
+        "enum": [
+          "planned",
+          "active",
+          "completed"
+        ],
+        "title": "SprintState",
+        "type": "string"
+      },
+      "SprintTaskOut": {
+        "description": "A task in the sprint now (planned/active), or as recorded on completion (completed).",
+        "properties": {
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "moved_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SprintBrief"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Spilled tasks: the sprint they went to."
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Completed sprints: done or spilled."
+          },
+          "status_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Now; null for a recorded outcome.",
+            "title": "Status Category"
+          },
+          "status_name": {
+            "title": "Status Name",
+            "type": "string"
+          },
+          "times_spilled": {
+            "description": "In how many completed sprints it was not finished.",
+            "title": "Times Spilled",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "title",
+          "status_name",
+          "status_category",
+          "assignee",
+          "outcome",
+          "moved_to",
+          "times_spilled"
+        ],
+        "title": "SprintTaskOut",
+        "type": "object"
+      },
+      "SprintUpdate": {
+        "additionalProperties": false,
+        "description": "Send `version` plus only the fields that change. Completed sprints cannot change. An\nactive sprint keeps both dates (they cannot be cleared).",
+        "properties": {
+          "end_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "SprintUpdate",
+        "type": "object"
+      },
       "StakeholderCreate": {
         "additionalProperties": false,
         "properties": {
+          "communication_role": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How they are kept informed, e.g. \"Weekly report\".",
+            "title": "Communication Role"
+          },
           "email": {
             "anyOf": [
               {
@@ -8624,6 +10490,17 @@
             ],
             "title": "Phone"
           },
+          "raci": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RaciRole"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "responsible, accountable, consulted or informed."
+          },
           "role_title": {
             "anyOf": [
               {
@@ -8653,6 +10530,17 @@
       },
       "StakeholderOut": {
         "properties": {
+          "communication_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Communication Role"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -8726,6 +10614,16 @@
             "title": "Project Id",
             "type": "string"
           },
+          "raci": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RaciRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "role_title": {
             "anyOf": [
               {
@@ -8756,6 +10654,8 @@
           "email",
           "phone",
           "influence",
+          "raci",
+          "communication_role",
           "notes",
           "version",
           "created_at",
@@ -8768,6 +10668,19 @@
         "additionalProperties": false,
         "description": "Send only the fields that change; null clears an optional field.",
         "properties": {
+          "communication_role": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How they are kept informed, e.g. \"Weekly report\".",
+            "title": "Communication Role"
+          },
           "email": {
             "anyOf": [
               {
@@ -8835,6 +10748,17 @@
               }
             ],
             "title": "Phone"
+          },
+          "raci": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RaciRole"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "responsible, accountable, consulted or informed."
           },
           "role_title": {
             "anyOf": [
@@ -9435,6 +11359,19 @@
             "$ref": "#/components/schemas/TaskPriority",
             "default": "medium"
           },
+          "sprint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A planned or active sprint of the project (project leads only); else backlog.",
+            "title": "Sprint Id"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -9471,6 +11408,44 @@
           "title"
         ],
         "title": "TaskCreate",
+        "type": "object"
+      },
+      "TaskLinkOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/UserBrief"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "label": {
+            "description": "Readable, e.g. \"is blocked by\".",
+            "title": "Label",
+            "type": "string"
+          },
+          "task": {
+            "$ref": "#/components/schemas/LinkedTask"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "task",
+          "created_by",
+          "created_at"
+        ],
+        "title": "TaskLinkOut",
         "type": "object"
       },
       "TaskListOut": {
@@ -9669,6 +11644,19 @@
           "reporter": {
             "$ref": "#/components/schemas/UserBrief"
           },
+          "sprint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The sprint it is in (a completed one for done tasks); null = backlog.",
+            "title": "Sprint Id"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -9725,6 +11713,14 @@
         ],
         "title": "TaskOut",
         "type": "object"
+      },
+      "TaskOutcome": {
+        "enum": [
+          "done",
+          "spilled"
+        ],
+        "title": "TaskOutcome",
+        "type": "string"
       },
       "TaskPriority": {
         "enum": [
@@ -9884,6 +11880,19 @@
               }
             ]
           },
+          "sprint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project leads only: a planned or active sprint; null = back to the backlog.",
+            "title": "Sprint Id"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -9932,6 +11941,70 @@
           "version"
         ],
         "title": "TaskUpdate",
+        "type": "object"
+      },
+      "TeamMember": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "granted_at": {
+            "format": "date-time",
+            "title": "Granted At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "project_role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          },
+          "role": {
+            "description": "Global role (pm, developer, manager, account_manager, client).",
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "description": "invited / invite_expired (no password yet), active, deactivated.",
+            "enum": [
+              "invited",
+              "invite_expired",
+              "active",
+              "deactivated"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "job_title",
+          "status",
+          "project_role",
+          "granted_at"
+        ],
+        "title": "TeamMember",
         "type": "object"
       },
       "TrendPoint": {
@@ -10617,6 +12690,27 @@
         "title": "NextMilestone",
         "type": "object"
       },
+      "app__task_links__schemas__LinkIn": {
+        "additionalProperties": false,
+        "description": "Link this task to another task of the same project. Find it with\n`GET /projects/{id}/tasks?q=` (key or title).",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "task_id": {
+            "description": "The other task.",
+            "format": "uuid",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "task_id"
+        ],
+        "title": "LinkIn",
+        "type": "object"
+      },
       "app__tasks__details_schemas__AttachmentOut": {
         "properties": {
           "content_type": {
@@ -10763,6 +12857,35 @@
           "edited_at"
         ],
         "title": "CommentOut",
+        "type": "object"
+      },
+      "app__tasks__details_schemas__LinkIn": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Defaults to the host.",
+            "title": "Name"
+          },
+          "url": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "LinkIn",
         "type": "object"
       }
     }
@@ -11140,6 +13263,122 @@
         "summary": "List Audit Events",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/picklists/{key}/values": {
+      "post": {
+        "description": "Added at the end. 409 DUPLICATE_VALUE when the list has it already (any letter case).",
+        "operationId": "add_value_api_v1_admin_picklists__key__values_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PicklistValueIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PicklistValueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Value",
+        "tags": [
+          "picklists"
+        ]
+      }
+    },
+    "/api/v1/admin/picklists/{key}/values/{value_id}": {
+      "patch": {
+        "description": "Rename, move (`position`) or hide (`is_active: false`); values are never deleted.",
+        "operationId": "update_value_api_v1_admin_picklists__key__values__value_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "value_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Value Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PicklistValueUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PicklistValueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Value",
+        "tags": [
+          "picklists"
         ]
       }
     },
@@ -13550,6 +15789,37 @@
             }
           },
           {
+            "description": "Tasks in this sprint",
+            "in": "query",
+            "name": "sprint_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks in this sprint",
+              "title": "Sprint Id"
+            }
+          },
+          {
+            "description": "The backlog: no sprint, or unfinished in a completed sprint",
+            "in": "query",
+            "name": "backlog",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "The backlog: no sprint, or unfinished in a completed sprint",
+              "title": "Backlog",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
@@ -14145,6 +16415,32 @@
         "summary": "Renew Member Invite",
         "tags": [
           "organisations"
+        ]
+      }
+    },
+    "/api/v1/picklists": {
+      "get": {
+        "description": "Active values for dropdowns. The administrator also gets hidden values.",
+        "operationId": "list_picklists_api_v1_picklists_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PicklistOut"
+                  },
+                  "title": "Response List Picklists Api V1 Picklists Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Picklists",
+        "tags": [
+          "picklists"
         ]
       }
     },
@@ -15379,6 +17675,276 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/decisions": {
+      "get": {
+        "description": "Active decisions; `status` narrows. Risks: highest score first. Others: oldest first.",
+        "operationId": "list_decisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List decisions",
+        "tags": [
+          "registers"
+        ]
+      },
+      "post": {
+        "operationId": "create_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add a decision",
+        "tags": [
+          "registers"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/decisions/{item_id}": {
+      "delete": {
+        "description": "Archived, not deleted.",
+        "operationId": "archive_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive a decision",
+        "tags": [
+          "registers"
+        ]
+      },
+      "get": {
+        "operationId": "get_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get a decision",
+        "tags": [
+          "registers"
+        ]
+      },
+      "patch": {
+        "operationId": "update_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change a decision",
+        "tags": [
+          "registers"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/finance": {
       "get": {
         "description": "Budget, received, spent and remaining.",
@@ -15639,6 +18205,276 @@
         "summary": "Archive Entry",
         "tags": [
           "finance"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/issues": {
+      "get": {
+        "description": "Active issues; `status` narrows. Risks: highest score first. Others: oldest first.",
+        "operationId": "list_issues",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List issues",
+        "tags": [
+          "registers"
+        ]
+      },
+      "post": {
+        "operationId": "create_issue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add a issue",
+        "tags": [
+          "registers"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/issues/{item_id}": {
+      "delete": {
+        "description": "Archived, not deleted.",
+        "operationId": "archive_issue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive a issue",
+        "tags": [
+          "registers"
+        ]
+      },
+      "get": {
+        "operationId": "get_issue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get a issue",
+        "tags": [
+          "registers"
+        ]
+      },
+      "patch": {
+        "operationId": "update_issue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change a issue",
+        "tags": [
+          "registers"
         ]
       }
     },
@@ -16246,6 +19082,50 @@
         "summary": "Project Overview",
         "tags": [
           "manager"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/people": {
+      "get": {
+        "description": "People & Access: team, the client's Account Managers and client contacts, each with\ntheir sign-in status, plus what the reader may change (project leads, Managers, the\nclient's Account Manager).",
+        "operationId": "project_people_api_v1_projects__project_id__people_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPeopleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project People",
+        "tags": [
+          "projects"
         ]
       }
     },
@@ -17099,6 +19979,276 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/risks": {
+      "get": {
+        "description": "Active risks; `status` narrows. Risks: highest score first. Others: oldest first.",
+        "operationId": "list_risks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List risks",
+        "tags": [
+          "registers"
+        ]
+      },
+      "post": {
+        "operationId": "create_risk",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add a risk",
+        "tags": [
+          "registers"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/risks/{item_id}": {
+      "delete": {
+        "description": "Archived, not deleted.",
+        "operationId": "archive_risk",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive a risk",
+        "tags": [
+          "registers"
+        ]
+      },
+      "get": {
+        "operationId": "get_risk",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get a risk",
+        "tags": [
+          "registers"
+        ]
+      },
+      "patch": {
+        "operationId": "update_risk",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change a risk",
+        "tags": [
+          "registers"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/roadmap": {
       "get": {
         "description": "The roadmap screen in one call: date range, today, phases in order with their status,\ncompleted share and milestones, and milestones outside any phase.",
@@ -17140,6 +20290,485 @@
         "summary": "Get Roadmap",
         "tags": [
           "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/sprints": {
+      "get": {
+        "description": "Active first, then planned (by number), then completed (newest first). `state=completed`\nis the sprint history.",
+        "operationId": "list_sprints_api_v1_projects__project_id__sprints_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SprintState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SprintListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Sprints",
+        "tags": [
+          "sprints"
+        ]
+      },
+      "post": {
+        "description": "A new planned sprint with the next number.",
+        "operationId": "create_sprint_api_v1_projects__project_id__sprints_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SprintCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SprintOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Sprint",
+        "tags": [
+          "sprints"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/sprints/move-tasks": {
+      "post": {
+        "description": "Puts up to 200 tasks into a planned or active sprint, or back into the backlog\n(`sprint_id: null`). Written to each task's history.",
+        "operationId": "move_tasks_api_v1_projects__project_id__sprints_move_tasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveTasks"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveTasksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Move Tasks",
+        "tags": [
+          "sprints"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/sprints/{sprint_id}": {
+      "delete": {
+        "description": "Removes a planned sprint (archived, the row stays); its tasks go back to the backlog.\nActive: 409 SPRINT_ACTIVE. Completed: 409 SPRINT_COMPLETED (history stays).",
+        "operationId": "archive_sprint_api_v1_projects__project_id__sprints__sprint_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sprint_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sprint Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Sprint",
+        "tags": [
+          "sprints"
+        ]
+      },
+      "get": {
+        "description": "With its tasks: the current ones (planned, active), or the sprint report with each task's\noutcome (completed).",
+        "operationId": "get_sprint_api_v1_projects__project_id__sprints__sprint_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sprint_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sprint Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SprintDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Sprint",
+        "tags": [
+          "sprints"
+        ]
+      },
+      "patch": {
+        "description": "Name, goal and dates of a planned or active sprint (409 SPRINT_COMPLETED otherwise).",
+        "operationId": "update_sprint_api_v1_projects__project_id__sprints__sprint_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sprint_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sprint Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SprintUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SprintOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Sprint",
+        "tags": [
+          "sprints"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/sprints/{sprint_id}/complete": {
+      "post": {
+        "description": "Records each task's outcome. Done tasks stay; unfinished ones move to\n`move_open_tasks_to`, a new sprint (`create_next_sprint`), or the backlog.",
+        "operationId": "complete_sprint_api_v1_projects__project_id__sprints__sprint_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sprint_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sprint Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SprintComplete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SprintOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Sprint",
+        "tags": [
+          "sprints"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/sprints/{sprint_id}/start": {
+      "post": {
+        "description": "409 SPRINT_ALREADY_ACTIVE while another sprint of the project is active.",
+        "operationId": "start_sprint_api_v1_projects__project_id__sprints__sprint_id__start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sprint_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Sprint Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SprintStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SprintOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Sprint",
+        "tags": [
+          "sprints"
         ]
       }
     },
@@ -18322,6 +21951,37 @@
             }
           },
           {
+            "description": "Tasks in this sprint",
+            "in": "query",
+            "name": "sprint_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks in this sprint",
+              "title": "Sprint Id"
+            }
+          },
+          {
+            "description": "The backlog: no sprint, or unfinished in a completed sprint",
+            "in": "query",
+            "name": "backlog",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "The backlog: no sprint, or unfinished in a completed sprint",
+              "title": "Backlog",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
@@ -18644,6 +22304,37 @@
               ],
               "description": "Tasks linked to this milestone",
               "title": "Milestone Id"
+            }
+          },
+          {
+            "description": "Tasks in this sprint",
+            "in": "query",
+            "name": "sprint_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks in this sprint",
+              "title": "Sprint Id"
+            }
+          },
+          {
+            "description": "The backlog: no sprint, or unfinished in a completed sprint",
+            "in": "query",
+            "name": "backlog",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "The backlog: no sprint, or unfinished in a completed sprint",
+              "title": "Backlog",
+              "type": "boolean"
             }
           },
           {
@@ -19025,6 +22716,37 @@
             }
           },
           {
+            "description": "Tasks in this sprint",
+            "in": "query",
+            "name": "sprint_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks in this sprint",
+              "title": "Sprint Id"
+            }
+          },
+          {
+            "description": "The backlog: no sprint, or unfinished in a completed sprint",
+            "in": "query",
+            "name": "backlog",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "The backlog: no sprint, or unfinished in a completed sprint",
+              "title": "Backlog",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Managers, and PMs on projects they lead; ignored for others",
             "in": "query",
             "name": "include_archived",
@@ -19295,6 +23017,37 @@
               ],
               "description": "Tasks linked to this milestone",
               "title": "Milestone Id"
+            }
+          },
+          {
+            "description": "Tasks in this sprint",
+            "in": "query",
+            "name": "sprint_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tasks in this sprint",
+              "title": "Sprint Id"
+            }
+          },
+          {
+            "description": "The backlog: no sprint, or unfinished in a completed sprint",
+            "in": "query",
+            "name": "backlog",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "The backlog: no sprint, or unfinished in a completed sprint",
+              "title": "Backlog",
+              "type": "boolean"
             }
           },
           {
@@ -19720,7 +23473,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LinkIn"
+                "$ref": "#/components/schemas/app__tasks__details_schemas__LinkIn"
               }
             }
           },
@@ -20057,6 +23810,206 @@
         "summary": "Edit Comment",
         "tags": [
           "task details"
+        ]
+      }
+    },
+    "/api/v1/tasks/{task_id}/links": {
+      "get": {
+        "description": "Read from this task's side, by type.",
+        "operationId": "list_links_api_v1_tasks__task_id__links_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TaskLinkOut"
+                  },
+                  "title": "Response List Links Api V1 Tasks  Task Id  Links Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Links",
+        "tags": [
+          "task links"
+        ]
+      },
+      "post": {
+        "description": "409 LINK_EXISTS when the two tasks are already linked this way (either direction).",
+        "operationId": "add_link_api_v1_tasks__task_id__links_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__task_links__schemas__LinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Link",
+        "tags": [
+          "task links"
+        ]
+      }
+    },
+    "/api/v1/tasks/{task_id}/links/{link_id}": {
+      "delete": {
+        "operationId": "remove_link_api_v1_tasks__task_id__links__link_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Link Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Link",
+        "tags": [
+          "task links"
+        ]
+      }
+    },
+    "/api/v1/tasks/{task_id}/report-blocker": {
+      "post": {
+        "description": "The assignee (or a lead) reports what blocks the task: it moves to the project's first\nBlocked status with the reason, the leads get task.blocked, and it shows in the history.\n409 NO_BLOCKED_STATUS when the project has no status of category blocked.",
+        "operationId": "report_blocker_api_v1_tasks__task_id__report_blocker_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportBlocker"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Blocker",
+        "tags": [
+          "tasks"
         ]
       }
     },

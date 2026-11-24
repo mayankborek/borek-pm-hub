@@ -33,6 +33,8 @@ from app.organisations import members as organisation_members
 from app.organisations import service as organisation_service
 from app.organisations.models import Organisation
 from app.organisations.schemas import OrganisationBrief, OrganisationCreate
+from app.picklists import service as picklists
+from app.picklists.models import PicklistKey
 from app.projects.membership import project_access, visible_project_ids
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import (
@@ -663,4 +665,12 @@ async def list_categories(session: AsyncSession, q: str | None, limit: int) -> l
     if q and q.strip():
         stmt = stmt.where(Project.category.ilike(f"%{like_escape(q.strip())}%", escape="\\"))
     rows = await session.execute(stmt.order_by(count.desc(), key).limit(limit))
-    return [CategoryOut(name=name, project_count=n) for name, n in rows]
+    found = [CategoryOut(name=name, project_count=n) for name, n in rows]
+    # The administrator's list (picklist) comes too, even before any project uses a value.
+    seen = {c.name.lower() for c in found}
+    needle = (q or "").strip().lower()
+    for value in await picklists.active_values(session, PicklistKey.PROJECT_CATEGORY):
+        if value.lower() not in seen and needle in value.lower() and len(found) < limit:
+            found.append(CategoryOut(name=value, project_count=0))
+            seen.add(value.lower())
+    return found

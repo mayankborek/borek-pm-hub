@@ -26,6 +26,7 @@ from app.tasks.schemas import (
     BoardOut,
     ImportResultOut,
     LabelOut,
+    ReportBlocker,
     StatusCreate,
     StatusOrder,
     StatusOut,
@@ -117,6 +118,10 @@ def task_filters(
     milestone_id: Annotated[
         uuid.UUID | None, Query(description="Tasks linked to this milestone")
     ] = None,
+    sprint_id: Annotated[uuid.UUID | None, Query(description="Tasks in this sprint")] = None,
+    backlog: Annotated[
+        bool, Query(description="The backlog: no sprint, or unfinished in a completed sprint")
+    ] = False,
     include_archived: Annotated[
         bool, Query(description="Managers, and PMs on projects they lead; ignored for others")
     ] = False,
@@ -146,6 +151,8 @@ def task_filters(
         due_after=due_after,
         overdue=overdue,
         milestone_id=milestone_id,
+        sprint_id=sprint_id,
+        backlog=backlog,
         include_archived=include_archived and may_lead_projects(user),
     )
 
@@ -516,6 +523,31 @@ async def update_task(
     if changed & service.STATUS_FIELDS:
         await _task_for(session, user, task_id, Action.TASK_CHANGE_STATUS, writable=True)
     return await service.update_task(session, task, body, user)
+
+
+@router.post("/tasks/{task_id}/report-blocker", response_model=TaskOut)
+async def report_blocker(
+    task_id: uuid.UUID, body: ReportBlocker, user: CurrentUser, session: SessionDep
+) -> TaskOut:
+    """The assignee (or a lead) reports what blocks the task: it moves to the project's first
+    Blocked status with the reason, the leads get task.blocked, and it shows in the history.
+    409 NO_BLOCKED_STATUS when the project has no status of category blocked."""
+    task = await _task_for(session, user, task_id, Action.TASK_CHANGE_STATUS, writable=True)
+    blocked = await session.scalar(
+        select(WorkflowStatus)
+        .where(
+            WorkflowStatus.project_id == task.project_id,
+            WorkflowStatus.category == StatusCategory.BLOCKED.value,
+        )
+        .order_by(WorkflowStatus.position)
+        .limit(1)
+    )
+    if blocked is None:
+        raise AppError(
+            409, "NO_BLOCKED_STATUS", "The project has no Blocked status. Ask the project lead."
+        )
+    change = TaskUpdate(version=body.version, status_id=blocked.id, blocked_reason=body.reason)
+    return await service.update_task(session, task, change, user)
 
 
 @router.put("/tasks/{task_id}/assignee", response_model=TaskOut)

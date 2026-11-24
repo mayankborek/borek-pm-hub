@@ -29,9 +29,13 @@ from app.finance.models import FinanceEntry, ProjectBudget
 from app.main import create_app
 from app.milestones.models import Milestone, ProjectPhase
 from app.organisations.models import Organisation, OrganisationAccountManager
+from app.picklists.models import PicklistValue
 from app.projects.models import Project, ProjectMember
+from app.registers.models import RegisterItem
 from app.reporting.models import Stakeholder, StatusReport
 from app.requirements.models import Requirement, RequirementVersion
+from app.sprints.models import Sprint
+from app.task_links.models import TaskLink
 from app.tasks import statuses
 from app.tasks.models import Task, TaskComment
 from app.users.models import User
@@ -415,6 +419,67 @@ def cases(w: World) -> list[Case]:
         Case("GET", f"{p}/milestones/{{milestone_id}}", inside_project(READERS)),
         Case("PATCH", f"{p}/milestones/{{milestone_id}}", inside_project(LEADS), {"version": 999}),
         Case("DELETE", f"{p}/milestones/{{milestone_id}}", inside_project(LEADS)),
+        # sprints: everyone who sees the tasks reads them; leads plan, start and complete them
+        Case("GET", f"{p}/sprints", inside_project(READERS)),
+        Case("POST", f"{p}/sprints", inside_project(LEADS), {"name": "x"}),
+        Case(
+            "POST",
+            f"{p}/sprints/move-tasks",
+            inside_project(LEADS),
+            {"task_ids": [v["task_id"]], "sprint_id": v["sprint_id"]},
+        ),
+        Case("GET", f"{p}/sprints/{{sprint_id}}", inside_project(READERS)),
+        Case("PATCH", f"{p}/sprints/{{sprint_id}}", inside_project(LEADS), {"version": 999}),
+        Case("POST", f"{p}/sprints/{{sprint_id}}/start", inside_project(LEADS), {"version": 999}),
+        Case(
+            "POST", f"{p}/sprints/{{sprint_id}}/complete", inside_project(LEADS), {"version": 999}
+        ),
+        Case("DELETE", f"{p}/sprints/{{sprint_id}}", inside_project(LEADS)),
+        # task links: readers see them; people who work on tasks add and remove them
+        Case("GET", f"{t}/links", inside_project(READERS)),
+        Case(
+            "POST",
+            f"{t}/links",
+            inside_project(WORKERS),
+            {"kind": "blocks", "task_id": v["second_task_id"]},
+        ),
+        Case("DELETE", f"{t}/links/{{link_id}}", inside_project(WORKERS)),
+        # report blocker: like a status change (the assignee or a lead)
+        Case(
+            "POST",
+            f"{t}/report-blocker",
+            inside_project(ASSIGNEE),
+            {"version": 999, "reason": "Waiting for the API key"},
+        ),
+        # people & access: leads, Managers, the client's Account Manager
+        Case("GET", f"{p}/people", inside_project(REPORTERS)),
+        # risks, issues, decisions: readers read; leads write
+        *[
+            case
+            for path, key in (
+                ("risks", "risk_id"),
+                ("issues", "issue_id"),
+                ("decisions", "decision_id"),
+            )
+            for case in (
+                Case("GET", f"{p}/{path}", inside_project(READERS)),
+                Case("POST", f"{p}/{path}", inside_project(LEADS), {"title": "x"}),
+                Case("GET", f"{p}/{path}/{{{key}}}", inside_project(READERS)),
+                Case("PATCH", f"{p}/{path}/{{{key}}}", inside_project(LEADS), {"version": 999}),
+                Case("DELETE", f"{p}/{path}/{{{key}}}", inside_project(LEADS)),
+            )
+        ],
+        # picklists: staff read; the administrator changes the editable ones
+        Case("GET", "/picklists", everywhere(set(ACTORS) - {"client"})),
+        Case(
+            "POST", "/admin/picklists/{picklist_key}/values", everywhere({"admin"}), {"value": "x"}
+        ),
+        Case(
+            "PATCH",
+            "/admin/picklists/{picklist_key}/values/{picklist_value_id}",
+            everywhere({"admin"}),
+            {"version": 999},
+        ),
         # oversight
         Case("GET", "/portfolio", everywhere({"manager"} | ACCOUNT_MANAGERS)),
         Case("GET", "/manager/dashboard", everywhere({"manager"} | ACCOUNT_MANAGERS)),
@@ -661,6 +726,45 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             created_by=ids["pm_lead"],
         )
         s.add(reservation)
+        second = Task(
+            project_id=project.id,
+            key="MTX-2",
+            title="Second task",
+            status_id=rows[1].id,
+            created_by=ids["pm_lead"],
+        )
+        s.add(second)
+        await s.flush()
+        link = TaskLink(
+            project_id=project.id,
+            source_task_id=task.id,
+            target_task_id=second.id,
+            link_type="relates_to",
+            created_by=ids["pm_lead"],
+        )
+        registers = {
+            kind: RegisterItem(
+                project_id=project.id,
+                kind=kind,
+                code=code,
+                title=kind,
+                status=status,
+                created_by=ids["pm_lead"],
+            )
+            for kind, code, status in (
+                ("risk", "R-01", "open"),
+                ("issue", "I-01", "open"),
+                ("decision", "D-01", "proposed"),
+            )
+        }
+        choice = PicklistValue(
+            list_key="project_category", value="Website", position=1, created_by=ids["admin"]
+        )
+        s.add_all([link, choice, *registers.values()])
+        sprint = Sprint(
+            project_id=project.id, number=1, name="MTX Sprint 1", created_by=ids["pm_lead"]
+        )
+        s.add(sprint)
         await s.commit()
         ids |= {
             "project_id": project.id,
@@ -675,6 +779,13 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "request_id": change_request.id,
             "requirement_id": requirement.id,
             "reservation_id": reservation.id,
+            "sprint_id": sprint.id,
+            "second_task_id": second.id,
+            "link_id": link.id,
+            "risk_id": registers["risk"].id,
+            "issue_id": registers["issue"].id,
+            "decision_id": registers["decision"].id,
+            "picklist_value_id": choice.id,
             "organisation_id": org.id,
             "status_id": rows[1].id,
             "user_id": ids["dev_other"],
@@ -683,6 +794,7 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
         values = {name: str(value) for name, value in ids.items()}
         values["status_order"] = ",".join(str(r.id) for r in rows)
         values["move_to"] = str(rows[2].id)
+        values["picklist_key"] = "project_category"
     return ids, values
 
 
@@ -726,6 +838,11 @@ def _route_of(path: str) -> str:
         path.replace("{draft_id}", "{report_id}")
         .replace("{member_id}", "{user_id}")
         .replace("{cr_attachment_id}", "{attachment_id}")
+        .replace("{risk_id}", "{item_id}")
+        .replace("{issue_id}", "{item_id}")
+        .replace("{decision_id}", "{item_id}")
+        .replace("{picklist_key}", "{key}")
+        .replace("{picklist_value_id}", "{value_id}")
     )
 
 
@@ -738,7 +855,18 @@ def test_a_rule_exists_for_every_route(world_paths: set[tuple[str, str]]) -> Non
 
 @pytest.fixture
 def world_paths() -> set[tuple[str, str]]:
-    names = ("dev_out", "dev_other", "am_own", "status_id", "status_order", "move_to", "phase_id")
+    names = (
+        "dev_out",
+        "dev_other",
+        "am_own",
+        "status_id",
+        "status_order",
+        "move_to",
+        "phase_id",
+        "task_id",
+        "sprint_id",
+        "second_task_id",
+    )
     empty = World(None, {}, dict.fromkeys(names, ""))  # type: ignore[arg-type]
     return {(c.method, _route_of(c.path)) for c in cases(empty)}
 

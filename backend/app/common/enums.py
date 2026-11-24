@@ -111,6 +111,15 @@ class TaskPriority(StrEnum):
     LOWEST = "lowest"
 
 
+class RaciRole(StrEnum):
+    """A stakeholder's part in the project's RACI matrix."""
+
+    RESPONSIBLE = "responsible"
+    ACCOUNTABLE = "accountable"
+    CONSULTED = "consulted"
+    INFORMED = "informed"
+
+
 class EstimateUnit(StrEnum):
     MINUTES = "minutes"
     HOURS = "hours"

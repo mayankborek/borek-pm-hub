@@ -633,3 +633,45 @@ Use **one repo** (`borek-pm-hub`) with `backend/`, `frontend/`, `docs/` as in se
 
 ### 15.9 Hotfix
 If production breaks: branch `fix/PT-xx-...` from the **release tag**, fix, PR into `main`, tag a patch release (`v0.1.1`), deploy, then merge `main` back into `dev` so the fix is not lost. Never patch production by hand.
+
+
+---
+
+## 16. Update 24.11.2026: what was added after Phase 1 (V3 + Sprint 3)
+
+This section records what the code does today; sections 1 to 15 describe the Phase 1 baseline and
+were not rewritten. The machine-readable contract is `docs/api/openapi.json`; head migration **0031**.
+
+### 16.1 Modules
+| Module | Tables (migration) | What it does |
+|---|---|---|
+| `milestones` | `project_phases`, `milestones`, `tasks.milestone_id` (0022, 0028) | Phases and milestones; state (done, late, revised, at risk, in progress, planned) is computed on read; client sees shared milestones only |
+| `change_requests` | 0023, 0024 | pending -> in review -> approved / declined; approval moves the linked milestone ("revised"); shared comments vs internal notes; attachments |
+| `requirements` | 0025 | Versions, publish for client acceptance, the client's answer stored against the exact version |
+| `notifications` | 0026 | In-app, written in the same transaction as the change, access re-checked on read, 90-day cleanup |
+| `capacity` | 0027 | Workspace schedule, personal schedules, reservations; Manager workload and capacity |
+| `sprints` | `sprints`, `sprint_task_outcomes`, `tasks.sprint_id` (0029) | Jira-like: planned -> active -> completed, one active per project; completing records each task's outcome and moves unfinished tasks (spillover); backlog = no sprint or unfinished in a completed sprint |
+| `task_links` | `task_links` (0030) | blocks, relates to (stored once), duplicates, clones; same project only; both tasks' history |
+| `registers` | `register_items` (0031) | Risks (probability x impact score), issues (priority), decisions (date, decided by, rationale); one table, `kind` with database checks per kind |
+| `reporting` | `stakeholders.raci`, `communication_role` (0031) | RACI role and communication role on stakeholders |
+| `picklists` | `picklist_values` (0031) | Admin-editable dropdowns (project category, communication role); workflow values are protected (read-only, from the code) |
+| `client` | - | `/client/...` only for client contacts: their organisation's external projects, published data only, 404 for anything else |
+| `manager` | - | Dashboard, project overview, delivery cards: `next_action` = overdue milestone, change request to decide, requirement waiting for the client, next milestone (first match) |
+| `projects/people.py` | - | People & Access: team, the client's Account Managers, client contacts with sign-in status |
+
+### 16.2 New permission actions (all through `can()`)
+`milestone:manage`, `change_request:view/submit/decide`, `requirement:manage`, `team:view`,
+`reservation:manage`, `schedule:manage`, `client:portal`, `sprint:manage`, `register:manage`,
+`people:view` (leads, Managers, the client's Account Manager), `task:link` (people who work on the
+project's tasks), `picklist:manage` (administrator only). `tests/test_role_matrix.py` holds the
+expected answer for every role on every route and fails when a route has no rule.
+
+### 16.3 Developer entry points
+`POST /tasks/{id}/report-blocker` moves a task to the project's Blocked status with the reason in
+one call (assignee or lead), notifies the leads and writes the history. Invitation join uses
+`POST /auth/invite-info` and `POST /auth/accept-invite`.
+
+### 16.4 Still open
+Email provider (password reset by email, email notifications, report "send"); reporting period and
+forecast on status reports; Microsoft (Entra) sign-in; configurable role permissions (BB-26) and
+notification channels (BB-28), planned last.
