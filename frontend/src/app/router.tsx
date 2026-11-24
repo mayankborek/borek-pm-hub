@@ -19,6 +19,8 @@ import { AmMilestonesPage } from '@/features/accountManager/AmMilestonesPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
 import { ProjectRequirementsPage } from '@/features/requirements/ProjectRequirementsPage';
 import { ProjectChangeRequestsPage } from '@/features/changeRequests/ProjectChangeRequestsPage';
+import { ProjectChangeRequestPage } from '@/features/changeRequests/ProjectChangeRequestPage';
+import { ProjectReportsPage, ProjectReportPage } from '@/features/reports/ProjectReportsPages';
 import { ClientRequirementsPage } from '@/features/requirements/ClientRequirementsPage';
 import { ClientChangeRequestsPage } from '@/features/client/ClientChangeRequestsPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
@@ -229,6 +231,9 @@ export const router = createBrowserRouter([
               { path: 'board', element: <ProjectBoardPage /> },
               { path: 'requirements', element: <ProjectRequirementsPage /> },
               { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
+              { path: 'change-requests/:requestId', element: <ProjectChangeRequestPage /> },
+              { path: 'reports', element: <ProjectReportsPage /> },
+              { path: 'reports/:reportId', element: <ProjectReportPage /> },
               { path: 'list', element: <ProjectListPage /> },
               { path: 'members', element: <ProjectMembersPage /> },
             ],

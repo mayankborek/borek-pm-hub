@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { Pill, type Tone } from '@/shared/ui/Pill';
@@ -20,7 +22,7 @@ import '@/features/requirements/requirements.css';
 import './changeRequests.css';
 
 // Same wording as the client portal, so both sides name a status the same way.
-const STATUS: Record<CrStatus, { label: string; tone: Tone }> = {
+export const STATUS: Record<CrStatus, { label: string; tone: Tone }> = {
   pending: { label: 'Submitted', tone: 'risk' },
   in_review: { label: 'In review', tone: 'progress' },
   approved: { label: 'Accepted', tone: 'track' },
@@ -74,23 +76,24 @@ export function ProjectChangeRequestsPage() {
 
 function RequestCard({ cr, projectId }: { cr: StaffCr; projectId: string }) {
   const { t } = usePrefs();
-  const [open, setOpen] = useState(false);
   const s = STATUS[cr.status];
   return (
-    <li className="req-card">
-      <button type="button" className="req-summary" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <span className="req-code">{cr.code}</span>
-        <b>{cr.title}</b>
-        {cr.status === 'pending' && <span className="crq-new">{t('New')}</span>}
-        <span className="crq-flag">{cr.submitted_by.name} · {day(cr.created_at)}</span>
+    <li className="req-card crq-card">
+      <div className="crq-top">
+        <span className="crq-ico" aria-hidden="true">⇄</span>
+        <div className="crq-main">
+          <b>{cr.title}</b>
+          <span className="crq-flag">{cr.code} · {t('Submitted')} {day(cr.created_at)}</span>
+        </div>
         <Pill tone={s.tone}>{s.label}</Pill>
-      </button>
-      {open && <RequestDetail cr={cr} projectId={projectId} />}
+        <Link className="btn" to={paths.projectChangeRequest(projectId, cr.id)}>{t('Review request')} →</Link>
+      </div>
+      {cr.status === 'pending' && <div className="crq-await">◷ {t('Awaiting your review')}</div>}
     </li>
   );
 }
 
-function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: string }) {
+export function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: string }) {
   const { t } = usePrefs();
   const toast = useToast();
   const start = useStartReview(projectId, cr);

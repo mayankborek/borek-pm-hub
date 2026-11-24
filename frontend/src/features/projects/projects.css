@@ -160,3 +160,6 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 
 /* Breadcrumb above the title: identical on My Projects and project pages. */
 .crumbs, .page-crumb { margin: 0; font-size: var(--fs-12); line-height: 16px; color: var(--muted); }
+
+.proj-back { display: inline-block; margin-bottom: 6px; font-size: var(--fs-12); font-weight: 500; color: var(--link); text-decoration: none; }
+.proj-back:hover { text-decoration: underline; }

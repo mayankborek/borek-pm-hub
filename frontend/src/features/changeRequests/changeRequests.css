@@ -20,3 +20,11 @@
 .crq-check { display: flex !important; align-items: center; gap: 6px; flex-direction: row; }
 .crq-badge { margin-left: 6px; padding: 0 6px; font-size: var(--fs-11); font-weight: 600; background: var(--accent, #124f94); color: #fff; }
 @media (max-width: 700px) { .crq-row, .crq-dl { grid-template-columns: 1fr; } }
+.crq-card { padding: 0; }
+.crq-top { display: flex; align-items: center; gap: 14px; padding: 16px 20px; flex-wrap: wrap; }
+.crq-ico { display: grid; place-items: center; width: 32px; height: 32px; background: #e3edfd; color: #1e56c6; flex: none; }
+.crq-main { flex: 1; min-width: 200px; display: grid; gap: 2px; }
+.crq-await { padding: 8px 20px; border-top: 1px solid var(--line); font-size: var(--fs-12); color: var(--muted); }
+.crq-review { display: grid; gap: 16px; }
+.crq-review h2 { margin: 0; font-size: var(--fs-24, 24px); font-weight: 600; color: var(--navy); }
+.crq-back { font-size: var(--fs-12); color: var(--link); text-decoration: none; }

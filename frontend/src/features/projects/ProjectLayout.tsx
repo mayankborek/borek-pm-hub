@@ -13,6 +13,7 @@ import { usePendingChangeRequests } from '@/features/changeRequests/changeReques
 import { useProject } from './projectsApi';
 import type { Project } from './types';
 import '@/features/changeRequests/changeRequests.css';
+import '@/features/reports/reports.css';
 import './projects.css';
 
 export const useProjectContext = () => useOutletContext<Project>();
@@ -45,6 +46,33 @@ function BacklogActions({ project }: { project: Project }) {
   );
 }
 
+/** Read-only archive shown in place of the Overview once a project is completed or cancelled. */
+function ClosedProject({ project }: { project: Project }) {
+  const { t } = usePrefs();
+  return (
+    <div className="closed">
+      <div className="closed-head">
+        <h3>{project.name} · {t(project.status === 'cancelled' ? 'Cancelled' : 'Closed')}</h3>
+        <p>{t('The final project record is retained for the project team and authorized client users.')}</p>
+      </div>
+      <div className="closed-arch">
+        <h3>{t('Project archive')}</h3>
+        <p>{t('Read-only project history')}</p>
+        <ul>
+          <li>{t('Requirements and acceptance records')}</li>
+          <li>{t('Baseline and approved changes')}</li>
+          <li>{t('Milestones and completed work')}</li>
+          <li>{t('Final report, decisions and product link')}</li>
+        </ul>
+      </div>
+      <div className="closed-acts">
+        <Link className="btn secondary" to={paths.projectReports(project.id)}>{t('Open final report')}</Link>
+        <Link className="btn" to={paths.projects}>{t('Back to Projects')}</Link>
+      </div>
+    </div>
+  );
+}
+
 /** Shell for /projects/:projectId/* with the project header and tab navigation. */
 export function ProjectLayout() {
   const { projectId = '' } = useParams();
@@ -69,6 +97,7 @@ export function ProjectLayout() {
     );
   }
 
+  const closed = project.status === 'completed' || project.status === 'cancelled';
   const onBacklog = pathname === paths.projectList(projectId) || pathname === paths.projectBoard(projectId);
   const tabs = [
     { label: 'Overview', to: paths.project(projectId), end: true },
@@ -78,6 +107,7 @@ export function ProjectLayout() {
       ? [
           { label: 'Requirements', to: paths.projectRequirements(projectId) },
           { label: 'Change Requests', to: paths.projectChangeRequests(projectId), badge: pendingRequests },
+          { label: 'Reports', to: paths.projectReports(projectId) },
         ]
       : []),
   ];
@@ -87,7 +117,8 @@ export function ProjectLayout() {
       <div className="project-head">
         <div className="page-header">
           <div>
-            <div className="proj-eyebrow">{project.code}</div>
+            <Link className="proj-back" to={paths.projects}>← {t('All projects')}</Link>
+            <div className="proj-eyebrow">{project.type === 'internal' ? t('Internal project') : t('External project')} · {project.code}</div>
             <h1 className="page-title">{project.name}</h1>
           </div>
           {user?.role === 'pm' && (
@@ -108,7 +139,7 @@ export function ProjectLayout() {
           ))}
         </nav>
       </div>
-      <Outlet context={project} />
+      {closed && pathname === paths.project(projectId) ? <ClosedProject project={project} /> : <Outlet context={project} />}
     </div>
   );
 }
