@@ -29,6 +29,7 @@ export interface AdminRole {
 
 export const ROLES: AdminRole[] = [
   { id: 'administrator', name: 'Administrator', key: 'admin' },
+  { id: 'manager', name: 'Manager', key: 'manager' },
   { id: 'project-manager', name: 'Project Manager', key: 'pm' },
   { id: 'developer', name: 'Developer', key: 'developer' },
   { id: 'account-manager', name: 'Account Manager', key: 'account_manager' },
@@ -40,6 +41,7 @@ const grid = (...v: Access[]): Permissions => Object.fromEntries(AREAS.map((a, i
 /** Column order: projects, tasks, milestones, change requests, reports, stakeholders, access, administration. */
 export const DEFAULT_PERMISSIONS: Record<string, Permissions> = {
   administrator: grid('denied', 'denied', 'denied', 'denied', 'denied', 'denied', 'denied', 'edit'),
+  manager: grid('edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'denied'),
   'project-manager': grid('edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'edit', 'denied'),
   developer: grid('view', 'edit', 'view', 'view', 'view', 'view', 'denied', 'denied'),
   'account-manager': grid('view', 'view', 'view', 'edit', 'edit', 'edit', 'edit', 'denied'),
