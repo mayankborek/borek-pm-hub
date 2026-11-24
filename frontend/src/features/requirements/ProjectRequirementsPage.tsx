@@ -10,13 +10,13 @@ import {
   STATUS,
   VERSION_STATE_LABEL,
   useCreateRequirement,
-  usePublishRequirement,
   useRequirements,
   useUpdateRequirement,
   type Requirement,
   type RequirementDraft,
   type RequirementStatus,
 } from './requirementsApi';
+import { AcceptanceFlow } from './AcceptanceFlow';
 import './requirements.css';
 
 const PILL: Record<RequirementStatus, Tone> = {
@@ -144,22 +144,11 @@ function RequirementForm({ projectId, requirement, onDone }: { projectId: string
 
 function RequirementCard({ requirement: r, projectId }: { requirement: Requirement; projectId: string }) {
   const { t } = usePrefs();
-  const toast = useToast();
-  const publish = usePublishRequirement(projectId);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
 
-  const newest = r.versions[0];
   const closed = r.status === 'accepted' || r.status === 'rejected';
-  // Publish is offered when the newest version is a draft; the one on the client's desk is `published_version`.
-  const canPublish = !closed && newest?.state === 'draft';
   const shownVersion = r.published_version ?? r.current_version;
-
-  const onPublish = () =>
-    publish.mutate(r, {
-      onSuccess: () => toast.success(t('{code} v{n} sent to the client for acceptance', { code: r.code, n: r.current_version })),
-      onError: (err) => toast.error(describeApiError(err, t('The requirement could not be published.'))),
-    });
 
   return (
     <li className="req-card">
@@ -172,14 +161,12 @@ function RequirementCard({ requirement: r, projectId }: { requirement: Requireme
       {open && (
         <div className="req-detail">
           {r.has_unpublished_changes && <p className="req-hint">{t('Version {n} is a draft: the client still sees v{m}.', { n: r.current_version, m: r.published_version ?? '' })}</p>}
-          <div className="req-actions">
-            {canPublish && (
-              <button type="button" className="btn" onClick={onPublish} disabled={publish.isPending}>
-                {publish.isPending ? t('Publishing…') : t('Publish v{n} for acceptance', { n: r.current_version })}
-              </button>
-            )}
-            {!closed && !editing && <button type="button" className="btn secondary" onClick={() => setEditing(true)}>{t('Edit')}</button>}
-          </div>
+          {!editing && <AcceptanceFlow requirement={r} projectId={projectId} onCorrect={() => setEditing(true)} />}
+          {!closed && !editing && (
+            <div className="req-actions">
+              <button type="button" className="btn secondary" onClick={() => setEditing(true)}>{t('Edit')}</button>
+            </div>
+          )}
           {editing && <RequirementForm projectId={projectId} requirement={r} onDone={() => setEditing(false)} />}
           <ol className="req-versions">
             {r.versions.map((v) => (

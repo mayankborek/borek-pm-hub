@@ -32,3 +32,22 @@
 .req-error { font-size: var(--fs-12); color: var(--err, #c4161c); }
 .req-btn { height: 38px; padding: 0 18px; background: var(--cx-primary, var(--accent)); color: #fff; border: 0; font-size: var(--fs-13); font-weight: 500; cursor: pointer; }
 .req-btn:disabled { opacity: .5; cursor: default; }
+
+/* PM acceptance flow (borek-flow-screens): review, preview, publish, tracking, record. */
+.acc { display: grid; gap: 14px; }
+.acc-card { display: grid; gap: 8px; padding: 20px 22px; border: 1px solid var(--line); background: var(--surface); }
+.acc-card h4 { font-size: var(--fs-18); font-weight: 600; margin: 0; }
+.acc-card h5 { font-size: var(--fs-16); font-weight: 600; margin: 8px 0 0; }
+.acc-card p, .acc-card li { font-size: var(--fs-14); }
+.acc-sub { font-size: var(--fs-14); color: var(--muted, var(--slate)); }
+.acc-banner b { font-size: var(--fs-16); }
+.acc-banner p { font-size: var(--fs-14); color: var(--muted, var(--slate)); margin-top: 4px; }
+.acc-blue { color: var(--link, #124f94); }
+.acc-green { color: var(--ok, #17735e); }
+.acc-checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.acc-checks label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.acc-field { display: grid; gap: 6px; margin-top: 8px; }
+.acc-lbl { font-size: var(--fs-12); font-weight: 500; color: var(--muted, var(--slate)); }
+.acc-val { padding: 10px 12px; border: 1px solid var(--line); font-size: var(--fs-14); background: var(--surface); }
+.acc-status { font-size: var(--fs-14); font-weight: 600; margin-top: 8px; }
+.acc-end { justify-content: flex-end; }
