@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, date, datetime
 from typing import Any
 
-from sqlalchemy import ColumnElement, Select, case, func, or_, select, update
+from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -22,6 +22,7 @@ from app.milestones import service as milestones
 from app.notifications import events as notifications
 from app.projects.membership import visible_project_ids
 from app.projects.models import Project, ProjectMember
+from app.sprints import service as sprints
 from app.tasks import activity, statuses
 from app.tasks.models import Task, WorkflowStatus
 from app.tasks.schemas import (
@@ -53,6 +54,7 @@ DETAIL_FIELDS = frozenset(
         "estimate_unit",
         "assignee_id",
         "milestone_id",
+        "sprint_id",
     }
 )
 # Part of DETAIL_FIELDS, but also editable by a developer on a task they created for themselves.
@@ -124,6 +126,7 @@ def _to_out(
         assignee=_brief(assignee) if assignee else None,
         reporter=_brief(reporter),
         milestone_id=task.milestone_id,
+        sprint_id=task.sprint_id,
         blocked_reason=task.blocked_reason,
         blocked_at=task.blocked_at,
         completed_at=task.completed_at,
@@ -165,6 +168,8 @@ class TaskFilters:
         due_after: date | None = None,
         overdue: bool = False,
         milestone_id: uuid.UUID | None = None,
+        sprint_id: uuid.UUID | None = None,
+        backlog: bool = False,
         project_id: uuid.UUID | None = None,
         include_archived: bool = False,
     ) -> None:
@@ -179,6 +184,8 @@ class TaskFilters:
         self.due_after = due_after
         self.overdue = overdue
         self.milestone_id = milestone_id
+        self.sprint_id = sprint_id
+        self.backlog = backlog
         self.project_id = project_id
         self.include_archived = include_archived
 
@@ -200,6 +207,20 @@ class TaskFilters:
             found.append(Task.assignee_id.is_(None))
         if self.milestone_id:
             found.append(Task.milestone_id == self.milestone_id)
+        if self.sprint_id:
+            found.append(Task.sprint_id == self.sprint_id)
+        if self.backlog:
+            # No sprint; or the sprint is over and the task is not done (done ones stay in the
+            # completed sprint's history, like Jira).
+            found.append(
+                or_(
+                    Task.sprint_id.is_(None),
+                    and_(
+                        Task.sprint_id.not_in(sprints.open_sprint_ids()),
+                        WorkflowStatus.category != StatusCategory.DONE.value,
+                    ),
+                )
+            )
         if self.label:
             found.append(Task.labels.contains([self.label]))
         if self.due_before:
@@ -394,6 +415,10 @@ async def create_task(
         if not lead_rights:
             raise AppError(403, "FORBIDDEN", "Only project leads link tasks to milestones.")
         await milestones.check_milestone(session, project.id, data.milestone_id)
+    if data.sprint_id is not None:
+        if not lead_rights:
+            raise AppError(403, "FORBIDDEN", "Only project leads put tasks into sprints.")
+        await sprints.check_sprint(session, project.id, data.sprint_id)
 
     if data.status_id is not None:
         status = await statuses.get_status(session, project.id, data.status_id)
@@ -422,6 +447,7 @@ async def create_task(
         estimate_unit=data.estimate_unit.value if data.estimate_unit else None,
         assignee_id=assignee_id,
         milestone_id=data.milestone_id,
+        sprint_id=data.sprint_id,
         created_by=user.id,
     )
     apply_status(task, status, data.blocked_reason)
@@ -494,6 +520,15 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
             raise _invalid("estimate_value", "too_large", too_large)
     if changes.get("milestone_id") is not None and changes["milestone_id"] != task.milestone_id:
         await milestones.check_milestone(session, task.project_id, changes["milestone_id"])
+    sprint_change: list[str | None] | None = None
+    if "sprint_id" in changes and changes["sprint_id"] != task.sprint_id:
+        if changes["sprint_id"] is not None:
+            await sprints.check_sprint(session, task.project_id, changes["sprint_id"])
+        names = await sprints.sprint_names(session, {task.sprint_id, changes["sprint_id"]})
+        sprint_change = [
+            names.get(task.sprint_id) if task.sprint_id else None,
+            names.get(changes["sprint_id"]) if changes["sprint_id"] else None,
+        ]
     new_assignee_id = changes.get("assignee_id")
     if new_assignee_id is not None and new_assignee_id != task.assignee_id:
         await _check_assignee(session, task.project_id, new_assignee_id)
@@ -526,6 +561,8 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
     changed = activity.diff(
         before, activity.snapshot(task, (new_status or old_status).name, new_assignee)
     )
+    if sprint_change is not None:
+        changed["sprint"] = sprint_change
     if changed:
         activity.record(session, task.id, actor.id, "updated", changed)
         await notifications.task_changed(

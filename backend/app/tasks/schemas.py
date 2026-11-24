@@ -158,6 +158,10 @@ class TaskCreate(BaseModel):
     milestone_id: uuid.UUID | None = Field(
         default=None, description="A milestone of the project (project leads only)."
     )
+    sprint_id: uuid.UUID | None = Field(
+        default=None,
+        description="A planned or active sprint of the project (project leads only); else backlog.",
+    )
     blocked_reason: str | None = None
 
     _strip_title = field_validator("title")(_clean_title)
@@ -197,6 +201,10 @@ class TaskUpdate(BaseModel):
     assignee_id: uuid.UUID | None = None
     milestone_id: uuid.UUID | None = Field(
         default=None, description="Project leads only; null removes the link."
+    )
+    sprint_id: uuid.UUID | None = Field(
+        default=None,
+        description="Project leads only: a planned or active sprint; null = back to the backlog.",
     )
     blocked_reason: str | None = None
 
@@ -264,6 +272,10 @@ class TaskOut(BaseModel):
     assignee: UserBrief | None
     reporter: UserBrief
     milestone_id: uuid.UUID | None = Field(default=None, description="The linked milestone.")
+    sprint_id: uuid.UUID | None = Field(
+        default=None,
+        description="The sprint it is in (a completed one for done tasks); null = backlog.",
+    )
     blocked_reason: str | None
     blocked_at: datetime | None
     completed_at: datetime | None
@@ -333,3 +345,21 @@ TaskSort = Literal[
     "priority",
     "-priority",
 ]
+
+
+class ReportBlocker(BaseModel):
+    """Developer entry point "Report blocker": moves the task to the project's Blocked status
+    with the reason in one step. The project leads are notified (task.blocked)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = Field(ge=1, description="Version from the last read (optimistic locking).")
+    reason: str = Field(min_length=1, max_length=MAX_BLOCKED_REASON)
+
+    @field_validator("reason")
+    @classmethod
+    def _clean(cls, value: str) -> str:
+        cleaned = _clean_reason(value)
+        if cleaned is None:
+            raise ValueError("Say what blocks the task.")
+        return cleaned

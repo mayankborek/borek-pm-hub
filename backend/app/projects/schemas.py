@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.common.enums import ProjectRole, ProjectStatus, ProjectType, TaskPriority
 from app.common.validation import check_date, clean_optional_text, clean_text
+from app.manager.next_action import NextAction
 from app.organisations.schemas import (
     MemberInviteOut,
     OrganisationBrief,
@@ -205,6 +206,11 @@ class ProjectOut(BaseModel):
     client_organisation: OrganisationBrief | None
     version: int
     task_summary: TaskSummary
+    next_action: NextAction | None = Field(
+        default=None,
+        description="Delivery card: overdue milestone, change request to decide, requirement "
+        "waiting for the client, or next milestone (first match). Filled on the project list.",
+    )
 
 
 class ProjectDetailOut(ProjectOut):

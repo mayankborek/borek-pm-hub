@@ -1,7 +1,11 @@
 # Borek PM Hub
 
 Internal project and task management platform for Borek teams (Jira-like).
-Phase 1 focuses on projects, tasks, assignment and status tracking for Project Managers and Developers.
+Phase 1 covered projects, tasks, assignment and status tracking for Project Managers and Developers.
+Since then: sprints and backlog, task links, milestones and roadmap, change requests, requirements
+with client acceptance, risks / issues / decisions, status reports, notifications, the Client
+Portal, the Manager workspace (portfolio, workload, capacity) and admin picklists. The module map is
+in [backend/README.md](backend/README.md); the full API is [docs/api/openapi.json](docs/api/openapi.json).
 
 ## Repository structure
 

@@ -4,20 +4,24 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
 from app.auth.invites import invite_url
 from app.auth.permissions import Action, require
+from app.change_requests.models import ChangeRequest, ChangeRequestStatus
 from app.common.enums import ProjectStatus, ProjectType, TaskPriority
 from app.common.validation import PageParam, PageSizeParam
 from app.core.config import Settings, get_settings
 from app.core.database import SessionDep
+from app.manager import next_action
 from app.organisations import members as organisation_members
 from app.organisations.schemas import MemberInviteOut, OrganisationBrief
-from app.projects import service
+from app.projects import people, service
 from app.projects.membership import project_access
 from app.projects.models import Project, ProjectMember
+from app.projects.people import ProjectPeopleOut
 from app.projects.schemas import (
     CategoryOut,
     ClientContactCreatedOut,
@@ -134,6 +138,32 @@ async def list_categories(
     return await service.list_categories(session, q, limit)
 
 
+async def _change_requests_visible(
+    session: AsyncSession, user: User, projects: list[Project]
+) -> set[uuid.UUID]:
+    """Projects on the page whose open change requests this reader may see (checked only where
+    there is an open request)."""
+    ids = [p.id for p in projects]
+    if not ids:
+        return set()
+    with_open = set(
+        await session.scalars(
+            select(ChangeRequest.project_id).where(
+                ChangeRequest.project_id.in_(ids),
+                ChangeRequest.status.in_(
+                    [ChangeRequestStatus.PENDING.value, ChangeRequestStatus.IN_REVIEW.value]
+                ),
+            )
+        )
+    )
+    return {
+        p.id
+        for p in projects
+        if p.id in with_open
+        and await service.allowed_in(session, user, p, Action.CHANGE_REQUEST_VIEW)
+    }
+
+
 @router.get("", response_model=ProjectListOut)
 async def list_projects(
     user: CurrentUser,
@@ -166,9 +196,16 @@ async def list_projects(
     )
     summaries = await service.task_summaries(session, [p.id for p in projects])
     clients = await service.client_organisations(session, projects)
+    actions = await next_action.next_actions(
+        session,
+        [p.id for p in projects],
+        change_requests_for=await _change_requests_visible(session, user, projects),
+    )
     return ProjectListOut(
         items=[
-            _project_out(p, summaries.get(p.id), clients.get(p.client_organisation_id))
+            _project_out(p, summaries.get(p.id), clients.get(p.client_organisation_id)).model_copy(
+                update={"next_action": actions.get(p.id)}
+            )
             for p in projects
         ],
         total=total,
@@ -208,6 +245,17 @@ async def _require_manage(
     project = await service.get_project(session, project_id)
     access = await project_access(session, user, project)
     require(user, action, access.resource(project_id))
+
+
+@router.get("/{project_id}/people", response_model=ProjectPeopleOut)
+async def project_people(
+    project_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> ProjectPeopleOut:
+    """People & Access: team, the client's Account Managers and client contacts, each with
+    their sign-in status, plus what the reader may change (project leads, Managers, the
+    client's Account Manager)."""
+    project = await service.authorize(session, user, project_id, Action.PEOPLE_VIEW)
+    return await people.project_people(session, user, project)
 
 
 @router.get("/{project_id}/members", response_model=list[MemberOut])
