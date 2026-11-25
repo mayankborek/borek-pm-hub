@@ -405,6 +405,10 @@ class TaskStatsOut(BaseModel):
     overdue: int = Field(description="Open tasks whose due date is before today.")
     blocked: int = Field(description="Tasks in a blocked status (the 'needs attention' card).")
     team_members: int = Field(description="Active people who are members of the project.")
+    team_functions: int = Field(
+        description="Different job titles among those members ('Across 3 functions'); people "
+        "without a job title are not counted."
+    )
     next_milestone: NextMilestone | None = Field(
         description="The open milestone due first (late ones included)."
     )

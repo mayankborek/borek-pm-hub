@@ -7,6 +7,7 @@ leads also hear when one is blocked. Clients only hear about what they can see i
 own changes (`notify` drops the actor).
 
 Types (the frontend builds the text from type + params):
+- project.member_added  (params: code, name, project_role) to the person added
 - task.assigned / task.unassigned / task.updated / task.blocked / task.commented /
   task.mentioned / task.attachment_added  (params: key, title, ...)
 - change_request.submitted / .review_started / .decided / .commented  (params: code, title, ...)
@@ -55,6 +56,30 @@ async def _project(session: AsyncSession, project_id: uuid.UUID) -> Project:
     project = await session.get(Project, project_id)
     assert project is not None
     return project
+
+
+# --- projects -------------------------------------------------------------------------------------
+
+
+async def members_added(
+    session: AsyncSession,
+    actor: User,
+    project: Project,
+    roles: dict[uuid.UUID, str],
+) -> None:
+    """Existing people put on a project (Developer Role Guide: an existing developer is invited
+    to a project in the platform, no accept step). One notification per person with their role."""
+    for user_id, role in roles.items():
+        await notify(
+            session,
+            actor,
+            "project.member_added",
+            entity_type="project",
+            entity_id=project.id,
+            project_id=project.id,
+            params={"code": project.code, "name": project.name, "project_role": role},
+            recipients=_as([user_id], "projects"),
+        )
 
 
 # --- tasks ----------------------------------------------------------------------------------------

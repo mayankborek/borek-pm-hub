@@ -5711,6 +5711,20 @@
           "blocked": {
             "$ref": "#/components/schemas/AttentionList"
           },
+          "due_this_week": {
+            "description": "My open tasks due from today through Sunday of this week (ISO week).",
+            "title": "Due This Week",
+            "type": "integer"
+          },
+          "due_today": {
+            "description": "My open tasks due today (part of `due_this_week`).",
+            "title": "Due Today",
+            "type": "integer"
+          },
+          "focus": {
+            "$ref": "#/components/schemas/AttentionList",
+            "description": "My Focus: my open tasks, in progress first, then blocked, to do and backlog; within that by priority (highest first), then due date (none last)."
+          },
           "overdue": {
             "$ref": "#/components/schemas/AttentionList"
           },
@@ -5729,7 +5743,10 @@
         },
         "required": [
           "summary",
+          "due_this_week",
+          "due_today",
           "projects",
+          "focus",
           "blocked",
           "overdue"
         ],
@@ -7493,6 +7510,23 @@
             ],
             "title": "Description"
           },
+          "health": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_track",
+                  "at_risk",
+                  "off_track"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project card badge from the newest published status report (green / amber / red); null when none is published. Filled on the project list.",
+            "title": "Health"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -7661,6 +7695,23 @@
               }
             ],
             "title": "Description"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_track",
+                  "at_risk",
+                  "off_track"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project card badge from the newest published status report (green / amber / red); null when none is published. Filled on the project list.",
+            "title": "Health"
           },
           "id": {
             "format": "uuid",
@@ -7945,6 +7996,23 @@
               }
             ],
             "title": "Description"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_track",
+                  "at_risk",
+                  "off_track"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project card badge from the newest published status report (green / amber / red); null when none is published. Filled on the project list.",
+            "title": "Health"
           },
           "id": {
             "format": "uuid",
@@ -12800,6 +12868,11 @@
             "description": "completed / total, rounded down; null when the project has no tasks.",
             "title": "Progress Percent"
           },
+          "team_functions": {
+            "description": "Different job titles among those members ('Across 3 functions'); people without a job title are not counted.",
+            "title": "Team Functions",
+            "type": "integer"
+          },
           "team_members": {
             "description": "Active people who are members of the project.",
             "title": "Team Members",
@@ -12826,6 +12899,7 @@
           "overdue",
           "blocked",
           "team_members",
+          "team_functions",
           "next_milestone",
           "by_status",
           "by_priority"
@@ -16295,7 +16369,7 @@
     },
     "/api/v1/dashboard/me": {
       "get": {
-        "description": "My assigned-task counts, my projects with per-member counts, my attention lists.",
+        "description": "My Work: my assigned-task counts (with due this week / today), My Focus, my projects\nwith per-member counts, and my blocked and overdue tasks (Needs Attention).",
         "operationId": "my_dashboard_api_v1_dashboard_me_get",
         "parameters": [
           {
@@ -16309,6 +16383,20 @@
               "maximum": 50,
               "minimum": 1,
               "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Tasks in My Focus",
+            "in": "query",
+            "name": "focus_limit",
+            "required": false,
+            "schema": {
+              "default": 4,
+              "description": "Tasks in My Focus",
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Focus Limit",
               "type": "integer"
             }
           }

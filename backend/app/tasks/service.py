@@ -318,6 +318,54 @@ async def list_tasks(
     return [_to_out(*row) for row in rows.all()], total
 
 
+_FOCUS_RANK = case(
+    {
+        StatusCategory.IN_PROGRESS.value: 0,
+        StatusCategory.BLOCKED.value: 1,
+        StatusCategory.TODO.value: 2,
+        StatusCategory.BACKLOG.value: 3,
+    },
+    value=WorkflowStatus.category,
+    else_=4,
+)
+
+
+async def focus_tasks(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    limit: int,
+    scope: ColumnElement[bool] | None = None,
+) -> tuple[list[TaskOut], int]:
+    """My Work "My Focus": the user's open tasks, work in progress first, then by priority and
+    due date. Same visibility as GET /me/tasks (archived and cancelled projects left out)."""
+    filters = TaskFilters(assignee_ids=[user_id])
+    conditions = _list_conditions(filters, scope)
+    conditions.append(WorkflowStatus.category != StatusCategory.DONE.value)
+    total = (
+        await session.scalar(
+            select(func.count(Task.id))
+            .join(WorkflowStatus, WorkflowStatus.id == Task.status_id)
+            .join(Project, Project.id == Task.project_id)
+            .where(*conditions)
+        )
+        or 0
+    )
+    rows = await session.execute(
+        _select_rows()
+        .where(*conditions)
+        .order_by(
+            _FOCUS_RANK,
+            _PRIORITY_RANK,
+            Task.due_date.asc().nulls_last(),
+            Task.created_at.desc(),
+            Task.id,
+        )
+        .limit(limit)
+    )
+    return [_to_out(*row) for row in rows.all()], total
+
+
 async def export_tasks(
     session: AsyncSession, filters: TaskFilters, *, scope: ColumnElement[bool] | None = None
 ) -> list[TaskOut]:

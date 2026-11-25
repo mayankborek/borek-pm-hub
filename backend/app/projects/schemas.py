@@ -3,7 +3,7 @@
 import re
 import uuid
 from datetime import date, datetime
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -206,6 +206,11 @@ class ProjectOut(BaseModel):
     client_organisation: OrganisationBrief | None
     version: int
     task_summary: TaskSummary
+    health: Literal["on_track", "at_risk", "off_track"] | None = Field(
+        default=None,
+        description="Project card badge from the newest published status report (green / amber / "
+        "red); null when none is published. Filled on the project list.",
+    )
     next_action: NextAction | None = Field(
         default=None,
         description="Delivery card: overdue milestone, change request to decide, requirement "

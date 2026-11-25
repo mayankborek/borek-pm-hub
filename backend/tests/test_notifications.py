@@ -373,7 +373,7 @@ async def test_requirement_publish_and_answer(client: httpx.AsyncClient, world: 
         {"version_number": 1, "decision": "accepted"},
     )
 
-    for person in (world.pm, world.dev, world.am):
+    for person in (world.pm, world.dev, world.am):  # the developer as the owner
         items = await inbox(client, person)
         assert [n["type"] for n in items] == ["requirement.answered"], person.email
         assert items[0]["params"]["decision"] == "accepted"
@@ -383,7 +383,8 @@ async def test_requirement_publish_and_answer(client: httpx.AsyncClient, world: 
 
 
 async def test_settings_per_role_and_muting(client: httpx.AsyncClient, world: World) -> None:
-    staff = await ok(client, world.dev, "GET", "/me/notification-settings")
+    staff = await ok(client, world.pm, "GET", "/me/notification-settings")
+    developer = await ok(client, world.dev, "GET", "/me/notification-settings")
     clients = await ok(client, world.contact, "GET", "/me/notification-settings")
     admin = await ok(client, world.admin, "GET", "/me/notification-settings")
 
@@ -396,8 +397,16 @@ async def test_settings_per_role_and_muting(client: httpx.AsyncClient, world: Wo
         "requirements",
         "reports",
         "milestones",
+        "projects",
     ]
     assert all(s["enabled"] for s in staff["settings"])
+    assert [s["key"] for s in developer["settings"]] == [
+        "tasks_assigned",
+        "tasks_reported",
+        "mentions",
+        "requirements",
+        "projects",
+    ]
     assert [s["key"] for s in clients["settings"]] == [
         "change_requests",
         "requirements",

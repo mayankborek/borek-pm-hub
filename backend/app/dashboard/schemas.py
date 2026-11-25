@@ -50,6 +50,14 @@ class MyDashboard(BaseModel):
     """The signed-in user's tasks and projects (developer landing data)."""
 
     summary: TaskSummary = Field(description="Tasks assigned to me.")
+    due_this_week: int = Field(
+        description="My open tasks due from today through Sunday of this week (ISO week)."
+    )
+    due_today: int = Field(description="My open tasks due today (part of `due_this_week`).")
     projects: list[ProjectCard] = Field(description="My projects, with per-member counts.")
+    focus: AttentionList = Field(
+        description="My Focus: my open tasks, in progress first, then blocked, to do and "
+        "backlog; within that by priority (highest first), then due date (none last)."
+    )
     blocked: AttentionList
     overdue: AttentionList
