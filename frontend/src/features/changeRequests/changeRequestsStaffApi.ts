@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
-import type { CrAttachment, CrStatus } from '@/features/client/changeRequestsApi';
+import type { CrStatus } from '@/features/client/changeRequestsApi';
 
 /** Staff side of change requests (/projects/{id}/change-requests): the PM queue. Same statuses as the client portal. */
 export interface Person {
@@ -27,11 +27,25 @@ export interface StaffCr {
   decided_at: string | null;
   submitted_by: Person;
   submitted_by_client: boolean;
+  /** Approved requests with a milestone only; null otherwise. */
+  delivery: CrDelivery | null;
   /** Optimistic-lock counter every change sends back. */
   version: number;
   created_at: string;
   updated_at: string;
 }
+
+/** Staff attachments carry the uploader as a person; the client portal flattens it to a name. */
+export interface StaffAttachment {
+  id: string;
+  name: string;
+  content_type: string;
+  size_bytes: number;
+  uploaded_by: Person;
+  created_at: string;
+}
+
+export type CrDelivery = 'not_started' | 'in_progress' | 'done';
 
 export interface StaffCrList {
   items: StaffCr[];
@@ -52,6 +66,8 @@ export interface ImpactDraft {
   impact_schedule_days: number | null;
   impact_effort_hours: number | null;
   impact_scope: string | null;
+  /** The new milestone date; the milestone only moves when the request is approved. */
+  requested_date: string | null;
 }
 
 const base = (projectId: string) => `/projects/${projectId}/change-requests`;
@@ -87,7 +103,7 @@ export const useStaffComments = (projectId: string, requestId: string) =>
 export const useStaffAttachments = (projectId: string, requestId: string) =>
   useQuery({
     queryKey: key(projectId, requestId, 'files'),
-    queryFn: () => api<CrAttachment[]>(`${base(projectId)}/${requestId}/attachments`),
+    queryFn: () => api<StaffAttachment[]>(`${base(projectId)}/${requestId}/attachments`),
   });
 
 /** A 409 means someone else changed the request meanwhile: refresh either way. */

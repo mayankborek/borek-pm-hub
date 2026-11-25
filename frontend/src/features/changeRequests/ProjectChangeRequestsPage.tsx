@@ -16,6 +16,7 @@ import {
   useStaffChangeRequests,
   useStaffComments,
   useStartReview,
+  type CrDelivery,
   type StaffCr,
 } from './changeRequestsStaffApi';
 import '@/features/requirements/requirements.css';
@@ -28,9 +29,11 @@ export const STATUS: Record<CrStatus, { label: string; tone: Tone }> = {
   approved: { label: 'Accepted', tone: 'track' },
   declined: { label: 'Declined', tone: 'overdue' },
 };
+const DELIVERY: Record<CrDelivery, string> = { not_started: 'Not started', in_progress: 'In progress', done: 'Done' };
 const FILTERS: (CrStatus | 'all')[] = ['all', 'pending', 'in_review', 'approved', 'declined'];
 
 const day = (stamp: string) => stamp.slice(0, 10);
+const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 const num = (v: string) => (v.trim() === '' ? null : Number(v));
 
 /** Change Requests tab: the queue of requests clients raise, with impact, decision and the shared conversation. */
@@ -126,7 +129,7 @@ export function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: strin
                   >
                     {f.name}
                   </button>
-                  <small>{f.uploaded_by}</small>
+                  <small>{f.uploaded_by.name}</small>
                 </li>
               ))}
             </ul>
@@ -164,6 +167,7 @@ export function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: strin
               <DecisionForm cr={cr} projectId={projectId} />
             </>
           )}
+          {cr.delivery && <div className="crq-line"><span>{t('Delivery')}</span><b>{t(DELIVERY[cr.delivery])}</b></div>}
           {!open && (
             <>
               <ImpactSummary cr={cr} />
@@ -214,11 +218,12 @@ function ImpactForm({ cr, projectId }: { cr: StaffCr; projectId: string }) {
   const [days, setDays] = useState(cr.impact_schedule_days?.toString() ?? '');
   const [hours, setHours] = useState(cr.impact_effort_hours?.toString() ?? '');
   const [scope, setScope] = useState(cr.impact_scope ?? '');
+  const [date, setDate] = useState(cr.requested_date ?? '');
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     save.mutate(
-      { impact_schedule_days: num(days), impact_effort_hours: num(hours), impact_scope: scope.trim() || null },
+      { impact_schedule_days: num(days), impact_effort_hours: num(hours), impact_scope: scope.trim() || null, requested_date: cr.milestone ? date || null : null },
       {
         onSuccess: () => toast.success(t('Impact saved')),
         onError: (err) => toast.error(describeApiError(err, t('The impact could not be saved.'))),
@@ -230,6 +235,19 @@ function ImpactForm({ cr, projectId }: { cr: StaffCr; projectId: string }) {
     <form className="crq-impact" onSubmit={submit}>
       <b>{t('Proposed impact')}</b>
       <p className="req-hint">{t('Schedule days and scope are shown to the client as the proposed impact. Effort hours stay internal.')}</p>
+      {cr.milestone && (
+        <label>
+          {t('Proposed date for {code} (approved date {due})', { code: cr.milestone.code, due: cr.milestone.due_date })}
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value);
+              if (e.target.value) setDays(String(daysBetween(cr.milestone!.due_date, e.target.value)));
+            }}
+          />
+        </label>
+      )}
       <div className="crq-row">
         <label>
           {t('Schedule impact (days, minus = earlier)')}

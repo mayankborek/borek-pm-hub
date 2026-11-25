@@ -155,7 +155,7 @@ export function useAddComment(projectId: string | undefined, requestId: string) 
 }
 
 /** Files need the auth header, so they are fetched and saved from a blob rather than linked. */
-export async function downloadAttachment(projectId: string, requestId: string, file: CrAttachment) {
+export async function downloadAttachment(projectId: string, requestId: string, file: Pick<CrAttachment, 'id' | 'name'>) {
   const headers = new Headers();
   applyAuth(headers);
   const res = await fetch(`${env.apiBaseUrl}${base(projectId)}/change-requests/${requestId}/attachments/${file.id}/download`, { headers });
