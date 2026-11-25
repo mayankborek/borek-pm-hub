@@ -59,7 +59,11 @@ export function ManagerStakeholdersPage() {
           );
         })}
       </div>
-      {dialog && <StakeholderDialog projectId={project.id} person={dialog.person} onClose={() => setDialog(null)} />}
+      {dialog && (
+        <div className="mg-dlg">
+          <StakeholderDialog projectId={project.id} person={dialog.person} onClose={() => setDialog(null)} />
+        </div>
+      )}
     </>
   );
 }
