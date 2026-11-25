@@ -70,7 +70,7 @@ export function ClientProjectsPage() {
               <div className="cx-hd">
                 <span className="cx-picon"><Icon name="briefcase" className="cx-ico cx-22" strokeWidth={1.6} /></span>
                 <div>
-                  <h3>{p.name}</h3>
+                  <h3><Link to={pp.project(p.id)} style={{ color: 'inherit', textDecoration: 'none' }}>{p.name}</Link></h3>
                   <div className="cx-id">{p.code} · {p.category}</div>
                 </div>
               </div>

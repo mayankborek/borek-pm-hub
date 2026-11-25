@@ -60,7 +60,7 @@ export function ManagerLayout() {
             </div>
           </header>
           <main className="content">
-            <div className="fit">
+            <div className="fit cp">
               <Toast><Outlet /></Toast>
             </div>
           </main>
