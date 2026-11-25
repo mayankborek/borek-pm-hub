@@ -28,3 +28,16 @@
 .crq-review { display: grid; gap: 16px; }
 .crq-review h2 { margin: 0; font-size: var(--fs-24, 24px); font-weight: 600; color: var(--navy); }
 .crq-back { font-size: var(--fs-12); color: var(--link); text-decoration: none; }
+
+/* Review page: description and conversation on the left, request details on the right (matches the PM review screens). */
+.crq-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.crq-col { display: grid; gap: 16px; }
+.crq-panel { padding: 20px; display: grid; gap: 12px; }
+.crq-panel h3 { margin: 0; font-size: var(--fs-16, 16px); font-weight: 600; color: var(--navy); }
+.crq-desc { margin: 0; font-size: var(--fs-14); white-space: pre-wrap; }
+.crq-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--fs-13); }
+.crq-line span { color: var(--muted, var(--slate)); }
+.crq-dates { display: grid; gap: 8px; padding: 12px 14px; background: color-mix(in srgb, var(--line) 30%, transparent); }
+.crq-side hr { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 0; }
+.crq-side .crq-impact, .crq-side .crq-decide { max-width: none; }
+@media (max-width: 900px) { .crq-grid { grid-template-columns: 1fr; } }

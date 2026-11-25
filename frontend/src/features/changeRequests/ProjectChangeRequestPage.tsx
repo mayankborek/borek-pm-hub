@@ -27,7 +27,7 @@ export function ProjectChangeRequestPage() {
       <Link className="crq-back" to={paths.projectChangeRequests(project.id)}>← {t('All requests')}</Link>
       <h2>{cr.title}</h2>
       <div className="crq-flag">{cr.code} · <Pill tone={s.tone}>{s.label}</Pill></div>
-      <div className="req-card"><RequestDetail cr={cr} projectId={project.id} /></div>
+      <RequestDetail cr={cr} projectId={project.id} />
     </section>
   );
 }

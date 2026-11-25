@@ -107,51 +107,89 @@ export function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: strin
     });
 
   return (
-    <div className="req-detail">
-      <dl className="crq-dl">
-        <dt>{t('Request')}</dt><dd>{cr.description}</dd>
-        {cr.reason && <><dt>{t('Reason')}</dt><dd>{cr.reason}</dd></>}
-        {cr.milestone && (
-          <>
-            <dt>{t('Milestone')}</dt>
-            <dd>
-              {cr.milestone.code} · {cr.milestone.name} ({t('due {date}', { date: cr.milestone.due_date })})
-              {cr.requested_date && ` → ${cr.requested_date}`}
-            </dd>
-          </>
-        )}
-        <dt>{t('Raised by')}</dt><dd>{cr.submitted_by.name}{cr.submitted_by_client && ` · ${t('Client')}`}</dd>
-        {cr.decision_note && <><dt>{t('Decision note')}</dt><dd>{cr.decision_note}</dd></>}
-        {cr.decided_by && cr.decided_at && <><dt>{t('Decided')}</dt><dd>{cr.decided_by.name} · {day(cr.decided_at)}</dd></>}
-      </dl>
-
-      {!!files.data?.length && (
-        <ul className="crq-files">
-          {files.data.map((f) => (
-            <li key={f.id}>
-              <button
-                type="button"
-                onClick={() => downloadAttachment(projectId, cr.id, f).catch((err) => toast.error(describeApiError(err, t('The file could not be downloaded.'))))}
-              >
-                {f.name}
-              </button>
-              <small>{f.uploaded_by}</small>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {cr.status === 'pending' && (
-        <div className="req-actions">
-          <button type="button" className="btn" onClick={onStart} disabled={start.isPending}>
-            {start.isPending ? t('Starting…') : t('Start review')}
-          </button>
+    <div className="crq-grid">
+      <div className="crq-col">
+        <div className="req-card crq-panel">
+          <h3>{t('Description')}</h3>
+          <p className="crq-desc">{cr.description}</p>
+          {cr.reason && <p className="crq-desc"><b>{t('Reason')}:</b> {cr.reason}</p>}
+          <p className="crq-flag">
+            {t('Submitted')} {day(cr.created_at)} · {cr.submitted_by.name}{cr.submitted_by_client && ` · ${t('Client')}`}
+          </p>
+          {!!files.data?.length && (
+            <ul className="crq-files">
+              {files.data.map((f) => (
+                <li key={f.id}>
+                  <button
+                    type="button"
+                    onClick={() => downloadAttachment(projectId, cr.id, f).catch((err) => toast.error(describeApiError(err, t('The file could not be downloaded.'))))}
+                  >
+                    {f.name}
+                  </button>
+                  <small>{f.uploaded_by}</small>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+        <div className="req-card crq-panel">
+          <Conversation cr={cr} projectId={projectId} />
+        </div>
+      </div>
 
-      {open ? <ImpactForm cr={cr} projectId={projectId} /> : <ImpactSummary cr={cr} />}
-      {cr.status === 'in_review' && <DecisionForm cr={cr} projectId={projectId} />}
-      <Conversation cr={cr} projectId={projectId} />
+      <div className="crq-col">
+        <div className="req-card crq-panel crq-side">
+          <h3>{t('Request details')}</h3>
+          <div className="crq-line"><span>{t('Status')}</span><Pill tone={STATUS[cr.status].tone}>{t(STATUS[cr.status].label)}</Pill></div>
+          {cr.decided_by && cr.decided_at && (
+            <div className="crq-line"><span>{t('Decided')}</span><b>{cr.decided_by.name} · {day(cr.decided_at)}</b></div>
+          )}
+          {cr.decision_note && <p className="crq-desc">{cr.decision_note}</p>}
+          <hr />
+          {cr.status === 'pending' && (
+            <>
+              <ImpactSummary cr={cr} />
+              <p className="req-hint">{t('Start the review to assess the schedule impact. Delivery dates stay unchanged until approval.')}</p>
+              <div className="req-actions">
+                <button type="button" className="btn" onClick={onStart} disabled={start.isPending}>
+                  {start.isPending ? t('Starting…') : t('Start review')}
+                </button>
+              </div>
+            </>
+          )}
+          {cr.status === 'in_review' && (
+            <>
+              <DateImpact cr={cr} />
+              <ImpactForm cr={cr} projectId={projectId} />
+              <DecisionForm cr={cr} projectId={projectId} />
+            </>
+          )}
+          {!open && (
+            <>
+              <ImpactSummary cr={cr} />
+              <DateImpact cr={cr} />
+              <p className="req-hint">
+                {t(cr.status === 'approved' ? 'The approved assessment has been applied.' : 'The original milestone date remains in effect.')}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Approved milestone date next to the proposed one, so the PM sees what an approval would change. */
+function DateImpact({ cr }: { cr: StaffCr }) {
+  const { t } = usePrefs();
+  if (!cr.milestone) return null;
+  const moved = cr.status === 'approved';
+  return (
+    <div className="crq-dates">
+      <div className="crq-line"><span>{t(moved ? 'Previous approved date' : 'Approved date')}</span><b>{cr.milestone.due_date}</b></div>
+      {cr.requested_date && (
+        <div className="crq-line"><span>{t(moved ? 'Updated milestone date' : 'Proposed date')}</span><b>{cr.requested_date}</b></div>
+      )}
     </div>
   );
 }
