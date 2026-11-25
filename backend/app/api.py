@@ -17,6 +17,7 @@ from app.notifications.router import router as notifications_router
 from app.organisations.router import router as organisations_router
 from app.picklists.router import router as picklists_router
 from app.portfolio.router import router as portfolio_router
+from app.project_reports.router import router as project_reports_router
 from app.projects.router import router as projects_router
 from app.registers.router import router as registers_router
 from app.reporting.router import router as reporting_router
@@ -54,3 +55,4 @@ api_router.include_router(sprints_router)
 api_router.include_router(task_links_router)
 api_router.include_router(registers_router)
 api_router.include_router(picklists_router)
+api_router.include_router(project_reports_router)

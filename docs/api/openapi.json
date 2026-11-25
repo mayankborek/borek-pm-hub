@@ -711,6 +711,15 @@
         "title": "AttentionList",
         "type": "object"
       },
+      "Audience": {
+        "enum": [
+          "account_manager",
+          "client",
+          "manager"
+        ],
+        "title": "Audience",
+        "type": "string"
+      },
       "AuditEventListOut": {
         "properties": {
           "items": {
@@ -1318,18 +1327,17 @@
             "title": "Id",
             "type": "string"
           },
-          "impact_effort_hours": {
+          "impact_effort_unit": {
             "anyOf": [
               {
-                "type": "integer"
+                "$ref": "#/components/schemas/ImpactUnit"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Impact Effort Hours"
+            ]
           },
-          "impact_schedule_days": {
+          "impact_effort_value": {
             "anyOf": [
               {
                 "type": "integer"
@@ -1338,7 +1346,28 @@
                 "type": "null"
               }
             ],
-            "title": "Impact Schedule Days"
+            "title": "Impact Effort Value"
+          },
+          "impact_schedule_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpactUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "impact_schedule_value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact Schedule Value"
           },
           "impact_scope": {
             "anyOf": [
@@ -1437,8 +1466,10 @@
           "requested_date",
           "status",
           "review_started_at",
-          "impact_schedule_days",
-          "impact_effort_hours",
+          "impact_schedule_value",
+          "impact_schedule_unit",
+          "impact_effort_value",
+          "impact_effort_unit",
           "impact_scope",
           "decision_note",
           "decided_by",
@@ -1479,7 +1510,17 @@
             ],
             "title": "Description"
           },
-          "impact_effort_hours": {
+          "impact_effort_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpactUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "impact_effort_value": {
             "anyOf": [
               {
                 "maximum": 100000.0,
@@ -1490,21 +1531,32 @@
                 "type": "null"
               }
             ],
-            "title": "Impact Effort Hours"
+            "description": "Extra work, in impact_effort_unit. Set or clear together with the unit.",
+            "title": "Impact Effort Value"
           },
-          "impact_schedule_days": {
+          "impact_schedule_unit": {
             "anyOf": [
               {
-                "maximum": 3650.0,
-                "minimum": -3650.0,
+                "$ref": "#/components/schemas/ImpactUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "impact_schedule_value": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": -10000.0,
                 "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Days the delivery moves (minus = earlier).",
-            "title": "Impact Schedule Days"
+            "description": "How far the delivery moves, in impact_schedule_unit (minus = earlier). Set or clear together with the unit.",
+            "title": "Impact Schedule Value"
           },
           "impact_scope": {
             "anyOf": [
@@ -1725,7 +1777,17 @@
             "title": "Id",
             "type": "string"
           },
-          "impact_schedule_days": {
+          "impact_schedule_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImpactUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "impact_schedule_value": {
             "anyOf": [
               {
                 "type": "integer"
@@ -1734,8 +1796,8 @@
                 "type": "null"
               }
             ],
-            "description": "Days the delivery moves.",
-            "title": "Impact Schedule Days"
+            "description": "How far the delivery moves, in impact_schedule_unit (minus = earlier).",
+            "title": "Impact Schedule Value"
           },
           "impact_scope": {
             "anyOf": [
@@ -1823,7 +1885,8 @@
           "milestone",
           "requested_date",
           "review_started_at",
-          "impact_schedule_days",
+          "impact_schedule_value",
+          "impact_schedule_unit",
           "impact_scope",
           "decision_note",
           "decided_at",
@@ -2610,7 +2673,7 @@
           "reports": {
             "description": "Published reports, newest first.",
             "items": {
-              "$ref": "#/components/schemas/ClientReportBrief"
+              "$ref": "#/components/schemas/app__client__schemas__ClientReportBrief"
             },
             "title": "Reports",
             "type": "array"
@@ -2836,15 +2899,25 @@
         "title": "ClientProjectOut",
         "type": "object"
       },
-      "ClientReportBrief": {
+      "ClientReportDetail": {
         "properties": {
-          "health": {
-            "enum": [
-              "on_track",
-              "at_risk",
-              "off_track"
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Health",
+            "title": "Client Name"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ReportContent"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
             "type": "string"
           },
           "id": {
@@ -2852,31 +2925,67 @@
             "title": "Id",
             "type": "string"
           },
-          "progress": {
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "period_end": {
             "anyOf": [
               {
-                "type": "integer"
+                "format": "date",
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Progress shared in this report, if any.",
-            "title": "Progress"
+            "title": "Period End"
           },
-          "published_at": {
-            "format": "date-time",
-            "title": "Published At",
+          "period_kind": {
+            "$ref": "#/components/schemas/PeriodKind"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "prepared_by": {
+            "description": "Name.",
+            "title": "Prepared By",
             "type": "string"
           },
-          "report_date": {
-            "format": "date",
-            "title": "Report Date",
+          "project_name": {
+            "title": "Project Name",
             "type": "string"
+          },
+          "shared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shared At"
           },
           "summary": {
-            "title": "Summary",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
           },
           "title": {
             "title": "Title",
@@ -2885,14 +2994,41 @@
         },
         "required": [
           "id",
+          "kind",
           "title",
-          "report_date",
-          "health",
-          "progress",
+          "period_kind",
+          "period_start",
+          "period_end",
+          "prepared_by",
+          "shared_at",
+          "project_name",
+          "client_name",
           "summary",
-          "published_at"
+          "content",
+          "generated_at"
         ],
-        "title": "ClientReportBrief",
+        "title": "ClientReportDetail",
+        "type": "object"
+      },
+      "ClientReportListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/app__project_reports__schemas__ClientReportBrief"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ClientReportListOut",
         "type": "object"
       },
       "ClientReportOut": {
@@ -3699,6 +3835,38 @@
         "title": "DeliveryEvent",
         "type": "object"
       },
+      "DistributionItem": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Status category (todo, done ...) for colours.",
+            "title": "Category"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "label": {
+            "description": "Status name.",
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "category",
+          "count"
+        ],
+        "title": "DistributionItem",
+        "type": "object"
+      },
       "EstimateUnit": {
         "enum": [
           "minutes",
@@ -3707,6 +3875,30 @@
         ],
         "title": "EstimateUnit",
         "type": "string"
+      },
+      "Fact": {
+        "properties": {
+          "key": {
+            "description": "Stable id, e.g. status, health, target, pm, next_action.",
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value"
+        ],
+        "title": "Fact",
+        "type": "object"
       },
       "FinanceEntryCreate": {
         "additionalProperties": false,
@@ -3970,6 +4162,16 @@
         "title": "HealthResponse",
         "type": "object"
       },
+      "ImpactUnit": {
+        "description": "Unit of a change request's schedule or effort impact (PM design spec 19.11.2026).",
+        "enum": [
+          "hours",
+          "days",
+          "weeks"
+        ],
+        "title": "ImpactUnit",
+        "type": "string"
+      },
       "ImportIssueOut": {
         "properties": {
           "external_key": {
@@ -4215,6 +4417,31 @@
           "expires_at"
         ],
         "title": "InviteOut",
+        "type": "object"
+      },
+      "Kpi": {
+        "properties": {
+          "key": {
+            "description": "Stable id, e.g. total, completed, remaining, completion.",
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "description": "Ready to show (numbers as text, percent with %).",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value"
+        ],
+        "title": "Kpi",
         "type": "object"
       },
       "LabelOut": {
@@ -4767,6 +4994,18 @@
             ],
             "title": "Completion Criteria"
           },
+          "deliverable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What is handed over when the milestone is reached.",
+            "title": "Deliverable"
+          },
           "description": {
             "anyOf": [
               {
@@ -4886,6 +5125,17 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "deliverable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliverable"
           },
           "description": {
             "anyOf": [
@@ -5019,6 +5269,7 @@
           "name",
           "description",
           "completion_criteria",
+          "deliverable",
           "due_date",
           "original_due_date",
           "requested_date",
@@ -5105,6 +5356,17 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "deliverable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliverable"
           },
           "description": {
             "anyOf": [
@@ -5230,6 +5492,7 @@
           "name",
           "description",
           "completion_criteria",
+          "deliverable",
           "due_date",
           "original_due_date",
           "requested_date",
@@ -5300,6 +5563,18 @@
               }
             ],
             "title": "Completion Criteria"
+          },
+          "deliverable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What is handed over when the milestone is reached.",
+            "title": "Deliverable"
           },
           "description": {
             "anyOf": [
@@ -6038,12 +6313,12 @@
       "PeopleActions": {
         "properties": {
           "manage_client_contacts": {
-            "description": "Add / remove client contacts and create new invite links (administrator).",
+            "description": "Invite / remove client contacts and resend or revoke their links (project leads and Managers on external projects with a client; the administrator).",
             "title": "Manage Client Contacts",
             "type": "boolean"
           },
           "manage_team": {
-            "description": "Add / remove members, change project roles.",
+            "description": "Add / remove members, change project roles, invite new people, resend or revoke their invite links (POST /projects/{id}/people/invite ...).",
             "title": "Manage Team",
             "type": "boolean"
           }
@@ -6054,6 +6329,15 @@
         ],
         "title": "PeopleActions",
         "type": "object"
+      },
+      "PeriodKind": {
+        "enum": [
+          "custom",
+          "weekly",
+          "overall"
+        ],
+        "title": "PeriodKind",
+        "type": "string"
       },
       "PersonBrief": {
         "properties": {
@@ -6843,6 +7127,23 @@
         "title": "PortfolioProject",
         "type": "object"
       },
+      "PriorityCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority"
+          }
+        },
+        "required": [
+          "priority",
+          "count"
+        ],
+        "title": "PriorityCount",
+        "type": "object"
+      },
       "ProfileOut": {
         "properties": {
           "email": {
@@ -7456,6 +7757,90 @@
           "members"
         ],
         "title": "ProjectDetailOut",
+        "type": "object"
+      },
+      "ProjectInviteIn": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "title": "Email",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "kind": {
+            "description": "team: a new internal person joins this project; client: a new contact of the project's client organisation (external projects only).",
+            "enum": [
+              "team",
+              "client"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_role": {
+            "$ref": "#/components/schemas/ProjectRole",
+            "default": "developer",
+            "description": "team only. project_lead needs role pm."
+          },
+          "role": {
+            "default": "developer",
+            "description": "team only: the new person's role in the hub.",
+            "enum": [
+              "developer",
+              "pm"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "email"
+        ],
+        "title": "ProjectInviteIn",
+        "type": "object"
+      },
+      "ProjectInviteOut": {
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/MemberInviteOut"
+          },
+          "kind": {
+            "enum": [
+              "team",
+              "client"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "person": {
+            "$ref": "#/components/schemas/OrganisationMemberOut"
+          }
+        },
+        "required": [
+          "person",
+          "kind",
+          "invite"
+        ],
+        "title": "ProjectInviteOut",
         "type": "object"
       },
       "ProjectListOut": {
@@ -8661,6 +9046,541 @@
           "reason"
         ],
         "title": "ReportBlocker",
+        "type": "object"
+      },
+      "ReportBrief": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_kind": {
+            "$ref": "#/components/schemas/PeriodKind"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "prepared_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "shared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last time the audiences were changed.",
+            "title": "Shared At"
+          },
+          "shared_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shared_with": {
+            "items": {
+              "$ref": "#/components/schemas/Audience"
+            },
+            "title": "Shared With",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "title",
+          "period_kind",
+          "period_start",
+          "period_end",
+          "prepared_by",
+          "generated_at",
+          "shared_with",
+          "shared_at",
+          "shared_by",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ReportBrief",
+        "type": "object"
+      },
+      "ReportContent": {
+        "description": "What the report shows, generic so the preview and the PDF render every type the same\nway: KPI tiles, a status distribution, label/value facts and tables.",
+        "properties": {
+          "distribution": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DistributionItem"
+            },
+            "title": "Distribution",
+            "type": "array"
+          },
+          "facts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "kpis": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Kpi"
+            },
+            "title": "Kpis",
+            "type": "array"
+          },
+          "tables": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Table"
+            },
+            "title": "Tables",
+            "type": "array"
+          }
+        },
+        "title": "ReportContent",
+        "type": "object"
+      },
+      "ReportEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PeriodKind"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Left out: custom, overall for project_status and other."
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The expert summary (free text).",
+            "title": "Summary"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Left out: a title for the type.",
+            "title": "Title"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "version"
+        ],
+        "title": "ReportEdit",
+        "type": "object"
+      },
+      "ReportKind": {
+        "enum": [
+          "tasks",
+          "milestones",
+          "change_requests",
+          "project_status",
+          "other"
+        ],
+        "title": "ReportKind",
+        "type": "string"
+      },
+      "ReportListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReportBrief"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "ReportListOut",
+        "type": "object"
+      },
+      "ReportOut": {
+        "properties": {
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Name"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ReportContent"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_kind": {
+            "$ref": "#/components/schemas/PeriodKind"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "prepared_by": {
+            "$ref": "#/components/schemas/PersonBrief"
+          },
+          "project_code": {
+            "title": "Project Code",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "shared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last time the audiences were changed.",
+            "title": "Shared At"
+          },
+          "shared_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shared_with": {
+            "items": {
+              "$ref": "#/components/schemas/Audience"
+            },
+            "title": "Shared With",
+            "type": "array"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "title",
+          "period_kind",
+          "period_start",
+          "period_end",
+          "prepared_by",
+          "generated_at",
+          "shared_with",
+          "shared_at",
+          "shared_by",
+          "version",
+          "created_at",
+          "updated_at",
+          "project_name",
+          "project_code",
+          "client_name",
+          "summary",
+          "content"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
+      "ReportSettings": {
+        "additionalProperties": false,
+        "description": "Generate (POST) and Edit (PUT, same fields + version). Periods:\n- tasks, milestones, change_requests: `custom` with period_start and period_end;\n- project_status: `overall` (no dates) or `weekly` (period_start = any day of the week;\n  saved as that Monday to Sunday);\n- other: `overall`; `title` and `summary` (the expert summary) are required.",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PeriodKind"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Left out: custom, overall for project_status and other."
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The expert summary (free text).",
+            "title": "Summary"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Left out: a title for the type.",
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "ReportSettings",
+        "type": "object"
+      },
+      "ReportShare": {
+        "additionalProperties": false,
+        "properties": {
+          "audiences": {
+            "description": "Who can view it: the full list (replaces the previous one; [] = nobody).",
+            "items": {
+              "$ref": "#/components/schemas/Audience"
+            },
+            "maxItems": 3,
+            "title": "Audiences",
+            "type": "array"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "audiences"
+        ],
+        "title": "ReportShare",
         "type": "object"
       },
       "ReportState": {
@@ -10818,6 +11738,28 @@
         "title": "StatusCategory",
         "type": "string"
       },
+      "StatusCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusBrief"
+          }
+        },
+        "required": [
+          "status",
+          "position",
+          "count"
+        ],
+        "title": "StatusCount",
+        "type": "object"
+      },
       "StatusCreate": {
         "additionalProperties": false,
         "properties": {
@@ -11259,6 +12201,51 @@
         "title": "StatusUpdate",
         "type": "object"
       },
+      "Table": {
+        "properties": {
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "key": {
+            "description": "Stable id, e.g. tasks, milestones, change_requests.",
+            "title": "Key",
+            "type": "string"
+          },
+          "rows": {
+            "description": "Cells as text; dates ISO (YYYY-MM-DD).",
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total_rows": {
+            "description": "Rows before the cut at MAX_ROWS.",
+            "title": "Total Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "heading",
+          "columns",
+          "rows",
+          "total_rows"
+        ],
+        "title": "Table",
+        "type": "object"
+      },
       "TaskCreate": {
         "additionalProperties": false,
         "properties": {
@@ -11358,6 +12345,19 @@
           "priority": {
             "$ref": "#/components/schemas/TaskPriority",
             "default": "medium"
+          },
+          "reporter_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project leads only: an active project member; left out = the creator.",
+            "title": "Reporter Id"
           },
           "sprint_id": {
             "anyOf": [
@@ -11733,6 +12733,106 @@
         "title": "TaskPriority",
         "type": "string"
       },
+      "TaskStatsOut": {
+        "description": "Task figures for the project Overview (PM design: KPI cards + status / priority charts).\n\nCounts active tasks only (archived ones are left out). The status chart's \"Done\" checkbox\nis a frontend toggle: every status is returned, done ones included.",
+        "properties": {
+          "blocked": {
+            "description": "Tasks in a blocked status (the 'needs attention' card).",
+            "title": "Blocked",
+            "type": "integer"
+          },
+          "by_priority": {
+            "description": "Highest to lowest, zero counts included.",
+            "items": {
+              "$ref": "#/components/schemas/PriorityCount"
+            },
+            "title": "By Priority",
+            "type": "array"
+          },
+          "by_status": {
+            "description": "Every project status in board order, zero counts included.",
+            "items": {
+              "$ref": "#/components/schemas/StatusCount"
+            },
+            "title": "By Status",
+            "type": "array"
+          },
+          "completed": {
+            "description": "Tasks in a done status.",
+            "title": "Completed",
+            "type": "integer"
+          },
+          "due_this_week": {
+            "description": "Open tasks due from today through Sunday of this week (ISO week).",
+            "title": "Due This Week",
+            "type": "integer"
+          },
+          "next_milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__manager__schemas__NextMilestone"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The open milestone due first (late ones included)."
+          },
+          "open": {
+            "description": "Tasks not in a done status.",
+            "title": "Open",
+            "type": "integer"
+          },
+          "overdue": {
+            "description": "Open tasks whose due date is before today.",
+            "title": "Overdue",
+            "type": "integer"
+          },
+          "progress_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "completed / total, rounded down; null when the project has no tasks.",
+            "title": "Progress Percent"
+          },
+          "team_members": {
+            "description": "Active people who are members of the project.",
+            "title": "Team Members",
+            "type": "integer"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "total": {
+            "description": "Active tasks in the project.",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "today",
+          "total",
+          "open",
+          "completed",
+          "progress_percent",
+          "due_this_week",
+          "overdue",
+          "blocked",
+          "team_members",
+          "next_milestone",
+          "by_status",
+          "by_priority"
+        ],
+        "title": "TaskStatsOut",
+        "type": "object"
+      },
       "TaskSummary": {
         "description": "Task counts for list cards, overview and dashboard.\n\nArchived tasks are not counted. Overdue = due before today (UTC) and not in a done\nstatus. The counts follow the status categories (done / in_progress / blocked).\n`completion_percent` is completed / total, rounded, 0 when there are no tasks.",
         "properties": {
@@ -11879,6 +12979,19 @@
                 "type": "null"
               }
             ]
+          },
+          "reporter_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Project leads only: an active project member (PM, developer, Manager). Cannot be null; starts as the task's creator.",
+            "title": "Reporter Id"
           },
           "sprint_id": {
             "anyOf": [
@@ -12621,6 +13734,65 @@
         "title": "CommentOut",
         "type": "object"
       },
+      "app__client__schemas__ClientReportBrief": {
+        "properties": {
+          "health": {
+            "enum": [
+              "on_track",
+              "at_risk",
+              "off_track"
+            ],
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Progress shared in this report, if any.",
+            "title": "Progress"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "report_date": {
+            "format": "date",
+            "title": "Report Date",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "report_date",
+          "health",
+          "progress",
+          "summary",
+          "published_at"
+        ],
+        "title": "ClientReportBrief",
+        "type": "object"
+      },
       "app__client__schemas__NextMilestone": {
         "properties": {
           "code": {
@@ -12688,6 +13860,78 @@
           "state"
         ],
         "title": "NextMilestone",
+        "type": "object"
+      },
+      "app__project_reports__schemas__ClientReportBrief": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportKind"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_kind": {
+            "$ref": "#/components/schemas/PeriodKind"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "prepared_by": {
+            "description": "Name.",
+            "title": "Prepared By",
+            "type": "string"
+          },
+          "shared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shared At"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "period_kind",
+          "period_start",
+          "period_end",
+          "prepared_by",
+          "shared_at"
+        ],
+        "title": "ClientReportBrief",
         "type": "object"
       },
       "app__task_links__schemas__LinkIn": {
@@ -14851,6 +16095,156 @@
         ]
       }
     },
+    "/api/v1/client/projects/{project_id}/shared-reports": {
+      "get": {
+        "description": "Generated reports the project team shared with the client portal, newest share first.",
+        "operationId": "client_list_api_v1_client_projects__project_id__shared_reports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientReportListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Client List",
+        "tags": [
+          "project reports"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/shared-reports/{report_id}": {
+      "get": {
+        "operationId": "client_get_api_v1_client_projects__project_id__shared_reports__report_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientReportDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Client Get",
+        "tags": [
+          "project reports"
+        ]
+      }
+    },
+    "/api/v1/client/projects/{project_id}/shared-reports/{report_id}/pdf": {
+      "get": {
+        "operationId": "client_pdf_api_v1_client_projects__project_id__shared_reports__report_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Client Pdf",
+        "tags": [
+          "project reports"
+        ]
+      }
+    },
     "/api/v1/dashboard": {
       "get": {
         "description": "PMs and Managers: metrics for active projects plus the blocked and overdue tasks. A PM gets\ntheir own projects, a Manager all of them.",
@@ -15676,19 +17070,25 @@
             }
           },
           {
+            "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
             "in": "query",
             "name": "assignee_id",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "uuid",
-                  "type": "string"
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
               "title": "Assignee Id"
             }
           },
@@ -19129,6 +20529,213 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/people/invite": {
+      "post": {
+        "description": "Project leads and Managers: invite a new person. `team` = a new developer / PM joins\nthis project; `client` = a new contact of the project's client (external projects). Returns\nthe invite link once (no email yet); it works for 30 days. 409 EMAIL_TAKEN when the email\nalready has an account (add existing people with POST /members).",
+        "operationId": "invite_person_api_v1_projects__project_id__people_invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInviteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectInviteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invite Person",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/people/{user_id}": {
+      "delete": {
+        "description": "Remove access. Team member: leaves the project (tasks here become unassigned). Client\ncontact: the account is deactivated (client access is per organisation).",
+        "operationId": "remove_person_api_v1_projects__project_id__people__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Person",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/people/{user_id}/invite": {
+      "delete": {
+        "description": "Revoke: the open link stops working, the person stays listed (invite_expired).",
+        "operationId": "revoke_invite_api_v1_projects__project_id__people__user_id__invite_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationMemberOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Invite",
+        "tags": [
+          "projects"
+        ]
+      },
+      "post": {
+        "description": "Resend: a new link for a team member or client contact who has not joined yet (409\nALREADY_JOINED otherwise). Older unused links stop working.",
+        "operationId": "resend_invite_api_v1_projects__project_id__people__user_id__invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectInviteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resend Invite",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/phases": {
       "get": {
         "description": "Active phases in roadmap order.",
@@ -19432,6 +21039,438 @@
         "summary": "Update Phase",
         "tags": [
           "milestones"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/reports": {
+      "get": {
+        "description": "Newest first. Project leads and Managers see every report; the client's Account\nManager sees the ones shared with the Account Manager and their own.",
+        "operationId": "list_reports_api_v1_projects__project_id__reports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReportKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "description": "Only reports shared with this audience.",
+            "in": "query",
+            "name": "shared_with",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Audience"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only reports shared with this audience.",
+              "title": "Shared With"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 100000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Reports",
+        "tags": [
+          "project reports"
+        ]
+      },
+      "post": {
+        "description": "Generate report: the project's data for the type and period, kept as it is now (the\npreview). Nobody else sees it until it is shared.",
+        "operationId": "generate_report_api_v1_projects__project_id__reports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Report",
+        "tags": [
+          "project reports"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/reports/{report_id}": {
+      "delete": {
+        "description": "Delete = archive: gone from every list, also for the people it was shared with.",
+        "operationId": "archive_report_api_v1_projects__project_id__reports__report_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Report",
+        "tags": [
+          "project reports"
+        ]
+      },
+      "get": {
+        "operationId": "get_report_api_v1_projects__project_id__reports__report_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Report",
+        "tags": [
+          "project reports"
+        ]
+      },
+      "put": {
+        "description": "Edit report: new settings, the data is generated again. 409 REPORT_SHARED while it is\nshared with anyone.",
+        "operationId": "edit_report_api_v1_projects__project_id__reports__report_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportEdit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Report",
+        "tags": [
+          "project reports"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/reports/{report_id}/pdf": {
+      "get": {
+        "description": "Download report (A4 PDF). The footer names the audience: Internal until shared.",
+        "operationId": "download_report_api_v1_projects__project_id__reports__report_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Report",
+        "tags": [
+          "project reports"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/reports/{report_id}/share": {
+      "post": {
+        "description": "Send report = share inside the app (no email): the full list of audiences who can\nview it (account_manager, client, manager); [] stops sharing. Newly added audiences get a\nnotification. `client` needs an external project with a client.",
+        "operationId": "share_report_api_v1_projects__project_id__reports__report_id__share_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportShare"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Share Report",
+        "tags": [
+          "project reports"
         ]
       }
     },
@@ -21683,6 +23722,50 @@
         ]
       }
     },
+    "/api/v1/projects/{project_id}/task-stats": {
+      "get": {
+        "description": "The project Overview figures: open / completed / progress, due this week, overdue,\nblockers, team size, next milestone, and task counts per status and per priority (exact\ncounts, zeros included). Same access as the task list.",
+        "operationId": "project_task_stats_api_v1_projects__project_id__task_stats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskStatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Task Stats",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
     "/api/v1/projects/{project_id}/tasks": {
       "get": {
         "operationId": "list_project_tasks_api_v1_projects__project_id__tasks_get",
@@ -21838,19 +23921,25 @@
             }
           },
           {
+            "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
             "in": "query",
             "name": "assignee_id",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "uuid",
-                  "type": "string"
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
               "title": "Assignee Id"
             }
           },
@@ -22194,19 +24283,25 @@
             }
           },
           {
+            "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
             "in": "query",
             "name": "assignee_id",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "uuid",
-                  "type": "string"
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
               "title": "Assignee Id"
             }
           },
@@ -22603,19 +24698,25 @@
             }
           },
           {
+            "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
             "in": "query",
             "name": "assignee_id",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "uuid",
-                  "type": "string"
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
               "title": "Assignee Id"
             }
           },
@@ -22907,19 +25008,25 @@
             }
           },
           {
+            "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
             "in": "query",
             "name": "assignee_id",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "uuid",
-                  "type": "string"
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "Repeat for several people (any of them). With unassigned=true, tasks without an assignee are included too.",
               "title": "Assignee Id"
             }
           },

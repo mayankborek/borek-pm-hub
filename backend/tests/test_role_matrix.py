@@ -30,6 +30,7 @@ from app.main import create_app
 from app.milestones.models import Milestone, ProjectPhase
 from app.organisations.models import Organisation, OrganisationAccountManager
 from app.picklists.models import PicklistValue
+from app.project_reports.models import ProjectReport
 from app.projects.models import Project, ProjectMember
 from app.registers.models import RegisterItem
 from app.reporting.models import Stakeholder, StatusReport
@@ -175,6 +176,7 @@ def cases(w: World) -> list[Case]:
         Case("GET", f"{p}/tasks", inside_project(READERS)),
         Case("GET", f"{p}/tasks", inside_project(READERS), params={"view": "board"}),
         Case("GET", f"{p}/labels", inside_project(READERS)),
+        Case("GET", f"{p}/task-stats", inside_project(READERS)),
         Case("POST", f"{p}/tasks", inside_project(WORKERS), {"title": "x"}),
         Case("GET", f"{p}/tasks/export", inside_project(READERS)),
         Case("POST", f"{p}/tasks/import", inside_project(LEADS), files=csv),
@@ -276,6 +278,17 @@ def cases(w: World) -> list[Case]:
             "GET", "/client/projects/{project_id}/reports/{report_id}/pdf", everywhere({"client"})
         ),
         Case("GET", "/client/projects/{project_id}/roadmap", everywhere({"client"})),
+        Case("GET", "/client/projects/{project_id}/shared-reports", everywhere({"client"})),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/shared-reports/{generated_report_id}",
+            everywhere({"client"}),
+        ),
+        Case(
+            "GET",
+            "/client/projects/{project_id}/shared-reports/{generated_report_id}/pdf",
+            everywhere({"client"}),
+        ),
         Case("GET", "/client/projects/{project_id}/change-requests", everywhere({"client"})),
         Case(
             "POST",
@@ -453,6 +466,39 @@ def cases(w: World) -> list[Case]:
         ),
         # people & access: leads, Managers, the client's Account Manager
         Case("GET", f"{p}/people", inside_project(REPORTERS)),
+        # project invitations: leads and Managers (Mayank 25.11.2026)
+        Case(
+            "POST",
+            f"{p}/people/invite",
+            inside_project(LEADS),
+            {"kind": "team", "name": "New person", "email": "new@matrix.example"},
+        ),
+        Case("POST", f"{p}/people/{{user_id}}/invite", inside_project(LEADS)),
+        Case("DELETE", f"{p}/people/{{user_id}}/invite", inside_project(LEADS)),
+        Case("DELETE", f"{p}/people/{{user_id}}", inside_project(LEADS)),
+        # generated reports: people who write status reports
+        Case("GET", f"{p}/reports", inside_project(REPORTERS)),
+        Case(
+            "POST",
+            f"{p}/reports",
+            inside_project(REPORTERS),
+            {"kind": "project_status", "period_kind": "overall"},
+        ),
+        Case("GET", f"{p}/reports/{{generated_report_id}}", inside_project(REPORTERS)),
+        Case(
+            "PUT",
+            f"{p}/reports/{{generated_report_id}}",
+            inside_project(REPORTERS),
+            {"version": 999, "kind": "project_status"},
+        ),
+        Case(
+            "POST",
+            f"{p}/reports/{{generated_report_id}}/share",
+            inside_project(REPORTERS),
+            {"version": 999, "audiences": []},
+        ),
+        Case("GET", f"{p}/reports/{{generated_report_id}}/pdf", inside_project(REPORTERS)),
+        Case("DELETE", f"{p}/reports/{{generated_report_id}}", inside_project(REPORTERS)),
         # risks, issues, decisions: readers read; leads write
         *[
             case
@@ -765,6 +811,16 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             project_id=project.id, number=1, name="MTX Sprint 1", created_by=ids["pm_lead"]
         )
         s.add(sprint)
+        generated = ProjectReport(
+            project_id=project.id,
+            kind="project_status",
+            title="Project status report",
+            period_kind="overall",
+            generated_at=datetime.now(UTC),
+            prepared_by=ids["pm_lead"],
+            shared_with=["account_manager", "client"],
+        )
+        s.add(generated)
         await s.commit()
         ids |= {
             "project_id": project.id,
@@ -780,6 +836,7 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
             "requirement_id": requirement.id,
             "reservation_id": reservation.id,
             "sprint_id": sprint.id,
+            "generated_report_id": generated.id,
             "second_task_id": second.id,
             "link_id": link.id,
             "risk_id": registers["risk"].id,
@@ -836,6 +893,7 @@ def _api_routes() -> set[tuple[str, str]]:
 def _route_of(path: str) -> str:
     return (
         path.replace("{draft_id}", "{report_id}")
+        .replace("{generated_report_id}", "{report_id}")
         .replace("{member_id}", "{user_id}")
         .replace("{cr_attachment_id}", "{attachment_id}")
         .replace("{risk_id}", "{item_id}")

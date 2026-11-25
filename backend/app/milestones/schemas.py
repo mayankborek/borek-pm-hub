@@ -145,11 +145,14 @@ class MilestoneCreate(BaseModel):
     owner_id: uuid.UUID | None = Field(default=None, description="A member of the project.")
     description: str | None = None
     completion_criteria: str | None = None
+    deliverable: str | None = Field(
+        default=None, description="What is handed over when the milestone is reached."
+    )
     at_risk: bool = False
     client_visible: bool = Field(default=False, description="Shown on the client's roadmap.")
 
     _clean_name = field_validator("name")(_name)
-    _clean_long = field_validator("description", "completion_criteria")(_long)
+    _clean_long = field_validator("description", "completion_criteria", "deliverable")(_long)
     _clean_date = field_validator("due_date")(_date)
 
 
@@ -166,6 +169,9 @@ class MilestoneUpdate(BaseModel):
     owner_id: uuid.UUID | None = None
     description: str | None = None
     completion_criteria: str | None = None
+    deliverable: str | None = Field(
+        default=None, description="What is handed over when the milestone is reached."
+    )
     at_risk: bool | None = None
     client_visible: bool | None = None
     done: bool | None = None
@@ -175,7 +181,7 @@ class MilestoneUpdate(BaseModel):
     def _clean_name(cls, value: str | None) -> str | None:
         return None if value is None else _name(value)
 
-    _clean_long = field_validator("description", "completion_criteria")(_long)
+    _clean_long = field_validator("description", "completion_criteria", "deliverable")(_long)
     _clean_date = field_validator("due_date")(_date)
 
     @model_validator(mode="after")
@@ -192,6 +198,7 @@ class MilestoneOut(BaseModel):
     name: str
     description: str | None
     completion_criteria: str | None
+    deliverable: str | None
     due_date: date = Field(description="The current due date (after any approved change).")
     original_due_date: date | None = Field(
         description="The date before an approved change request moved it (state revised)."

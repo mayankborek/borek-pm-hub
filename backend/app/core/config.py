@@ -46,8 +46,9 @@ class Settings(BaseSettings):
 
     # Address of the web app, used to build invite links. Empty = the first CORS origin.
     frontend_url: str = ""
-    # How long an invite link works (days).
-    invite_valid_days: int = 7
+    # How long an invite link works (days). 30 decided by Mayank 25.11.2026: people may open it
+    # late; the PM / admin can always send a new link (the old one then stops working).
+    invite_valid_days: int = 30
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -1,7 +1,8 @@
 """Project and project-member endpoints (F02)."""
 
 import uuid
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import select
@@ -17,8 +18,9 @@ from app.core.config import Settings, get_settings
 from app.core.database import SessionDep
 from app.manager import next_action
 from app.organisations import members as organisation_members
-from app.organisations.schemas import MemberInviteOut, OrganisationBrief
-from app.projects import people, service
+from app.organisations.schemas import MemberInviteOut, OrganisationBrief, OrganisationMemberOut
+from app.projects import invitations, people, service
+from app.projects.invitations import ProjectInviteIn, ProjectInviteOut
 from app.projects.membership import project_access
 from app.projects.models import Project, ProjectMember
 from app.projects.people import ProjectPeopleOut
@@ -41,6 +43,25 @@ from app.users.models import User
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+async def _invite_out(
+    session: AsyncSession,
+    response: Response,
+    settings: Settings,
+    person: User,
+    kind: Literal["team", "client"],
+    token: str,
+    expires_at: datetime,
+) -> ProjectInviteOut:
+    response.headers["Cache-Control"] = "no-store"  # the link works once: keep it out of caches
+    return ProjectInviteOut(
+        person=(await organisation_members.to_out(session, [person]))[0],
+        kind=kind,
+        invite=MemberInviteOut(url=invite_url(token, settings), expires_at=expires_at),
+    )
+
+
 MAX_CATEGORY_SUGGESTIONS = 100
 
 
@@ -256,6 +277,70 @@ async def project_people(
     client's Account Manager)."""
     project = await service.authorize(session, user, project_id, Action.PEOPLE_VIEW)
     return await people.project_people(session, user, project)
+
+
+@router.post("/{project_id}/people/invite", response_model=ProjectInviteOut, status_code=201)
+async def invite_person(
+    project_id: uuid.UUID,
+    body: ProjectInviteIn,
+    user: CurrentUser,
+    session: SessionDep,
+    settings: SettingsDep,
+    response: Response,
+) -> ProjectInviteOut:
+    """Project leads and Managers: invite a new person. `team` = a new developer / PM joins
+    this project; `client` = a new contact of the project's client (external projects). Returns
+    the invite link once (no email yet); it works for 30 days. 409 EMAIL_TAKEN when the email
+    already has an account (add existing people with POST /members)."""
+    project = await service.authorize(
+        session, user, project_id, Action.MEMBER_MANAGE, writable=True
+    )
+    person, token, expires_at = await invitations.invite(session, user, project, body, settings)
+    return await _invite_out(session, response, settings, person, body.kind, token, expires_at)
+
+
+@router.post("/{project_id}/people/{user_id}/invite", response_model=ProjectInviteOut)
+async def resend_invite(
+    project_id: uuid.UUID,
+    user_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    settings: SettingsDep,
+    response: Response,
+) -> ProjectInviteOut:
+    """Resend: a new link for a team member or client contact who has not joined yet (409
+    ALREADY_JOINED otherwise). Older unused links stop working."""
+    project = await service.authorize(
+        session, user, project_id, Action.MEMBER_MANAGE, writable=True
+    )
+    person, kind, token, expires_at = await invitations.resend(
+        session, user, project, user_id, settings
+    )
+    return await _invite_out(session, response, settings, person, kind, token, expires_at)
+
+
+@router.delete("/{project_id}/people/{user_id}/invite", response_model=OrganisationMemberOut)
+async def revoke_invite(
+    project_id: uuid.UUID, user_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> OrganisationMemberOut:
+    """Revoke: the open link stops working, the person stays listed (invite_expired)."""
+    project = await service.authorize(
+        session, user, project_id, Action.MEMBER_MANAGE, writable=True
+    )
+    person = await invitations.revoke(session, user, project, user_id)
+    return (await organisation_members.to_out(session, [person]))[0]
+
+
+@router.delete("/{project_id}/people/{user_id}", status_code=204)
+async def remove_person(
+    project_id: uuid.UUID, user_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> None:
+    """Remove access. Team member: leaves the project (tasks here become unassigned). Client
+    contact: the account is deactivated (client access is per organisation)."""
+    project = await service.authorize(
+        session, user, project_id, Action.MEMBER_MANAGE, writable=True
+    )
+    await invitations.remove(session, user, project, user_id)
 
 
 @router.get("/{project_id}/members", response_model=list[MemberOut])

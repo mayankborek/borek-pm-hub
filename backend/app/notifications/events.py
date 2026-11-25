@@ -11,6 +11,7 @@ Types (the frontend builds the text from type + params):
   task.mentioned / task.attachment_added  (params: key, title, ...)
 - change_request.submitted / .review_started / .decided / .commented  (params: code, title, ...)
 - status_report.published  (params: title, report_date, health)
+- project_report.shared  (params: title, kind) to the audiences newly added (app/project_reports)
 - milestone.moved / .done / .shared / .late  (params: code, name, due_date, previous_due_date,
   days_late); moved/done/late go to leads + Managers, moved/done/shared to the client (shared
   milestones only)
@@ -84,12 +85,12 @@ async def _task(
 
 
 def _involved(task: "Task", *, skip: Iterable[uuid.UUID | None] = ()) -> list[Recipient]:
-    """Assignee first (the stronger reason), then the creator."""
+    """Assignee first (the stronger reason), then the reporter."""
     skipped = set(skip)
     return [
         r
         for r in _as([task.assignee_id], "tasks_assigned")
-        + _as([task.created_by], "tasks_reported")
+        + _as([task.reporter_id], "tasks_reported")
         if r[0] not in skipped
     ]
 
