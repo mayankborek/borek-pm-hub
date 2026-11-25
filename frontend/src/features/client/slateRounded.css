@@ -32,7 +32,8 @@
 
 /* Client sidebar and top bar, sized as in borek-flow-portal (1).html */
 .am.am-client .sidebar{background:#0D1240;border-right:0;padding:24px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-.am.am-client .sidebar .logo{width:168px;height:46px;margin-bottom:20px}
+.am.am-client .sidebar .logo{width:130px;height:35px;margin-bottom:20px}
+.am.am-client .sidebar .corp{display:block;margin:auto 0 0 -4px;width:93px;height:24px}
 .am.am-client .nav{display:flex;flex-direction:column;gap:4px}
 .am.am-client .nav a{height:44px;padding:0 0 0 31px;margin:0;border-radius:6px;font-size:14px;font-weight:400;color:#E8EDF7}
 .am.am-client .nav a:hover{background:rgba(255,255,255,.06)}
@@ -43,6 +44,7 @@
 :root .am.am-client .topbar h2::after{left:0;right:auto;width:286px;background:#454AAD}
 @media (max-width:900px){
   .am.am-client .sidebar{position:static;height:auto;padding:12px 16px}
-  .am.am-client .sidebar .logo{width:128px;height:36px;margin-bottom:8px}
+  .am.am-client .sidebar .logo{width:110px;height:30px;margin-bottom:8px}
+  .am.am-client .sidebar .corp{display:none}
   .am.am-client .nav{flex-direction:row;flex-wrap:wrap}
 }
