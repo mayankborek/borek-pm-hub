@@ -2,7 +2,6 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePermissions, type AreaId } from '@/features/admin/adminStore';
-import { paths } from '@/app/routes';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useClientPortal } from './clientPortalApi';
@@ -100,7 +99,6 @@ export function ClientProjectLayout() {
         [pp.project(project.id), 'Overview', true],
         [pp.milestones(project.id), 'Milestones'],
         [pp.reports(project.id), 'Reports'],
-        ...(isManager ? [] : ([[paths.clientRequirements(project.id), 'Requirements']] as [string, string][])),
         [pp.changeRequests(project.id), 'Change Requests'],
         [pp.people(project.id), isManager ? 'Stakeholders' : 'Contacts'],
       ];

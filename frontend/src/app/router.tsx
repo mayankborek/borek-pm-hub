@@ -21,7 +21,6 @@ import { ProjectRequirementsPage } from '@/features/requirements/ProjectRequirem
 import { ProjectChangeRequestsPage } from '@/features/changeRequests/ProjectChangeRequestsPage';
 import { ProjectChangeRequestPage } from '@/features/changeRequests/ProjectChangeRequestPage';
 import { ProjectReportsPage, ProjectReportPage } from '@/features/reports/ProjectReportsPages';
-import { ClientRequirementsPage } from '@/features/requirements/ClientRequirementsPage';
 import { ClientChangeRequestsPage } from '@/features/client/ClientChangeRequestsPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
 import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
@@ -103,7 +102,6 @@ export const router = createBrowserRouter([
                   { path: 'milestones', element: <ClientMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
-                  { path: 'requirements', element: <ClientRequirementsPage /> },
                   { path: 'change-requests', element: <ClientChangeRequestsPage /> },
                   { path: 'contacts', element: <ClientContactsPage /> },
                 ],

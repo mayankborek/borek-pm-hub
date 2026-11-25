@@ -40,7 +40,6 @@ export const paths = {
   clientReports: (id: string) => `/client/projects/${id}/reports`,
   clientReport: (id: string, reportId: string) => `/client/projects/${id}/reports/${reportId}`,
   clientChangeRequests: (id: string) => `/client/projects/${id}/change-requests`,
-  clientRequirements: (id: string) => `/client/projects/${id}/requirements`,
   clientContacts: (id: string) => `/client/projects/${id}/contacts`,
   adminUsers: '/admin/users',
   adminUser: (id: string) => `/admin/users/${id}`,

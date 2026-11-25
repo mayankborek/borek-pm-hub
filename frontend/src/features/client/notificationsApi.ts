@@ -59,7 +59,7 @@ const SCREENS = {
     milestones: paths.clientMilestones,
     report: paths.clientReport,
     changeRequests: paths.clientChangeRequests,
-    requirements: paths.clientRequirements,
+    requirements: paths.clientProject,
   },
   manager: {
     projects: () => paths.managerProjects,

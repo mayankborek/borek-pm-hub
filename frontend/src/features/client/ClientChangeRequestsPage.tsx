@@ -26,6 +26,12 @@ const STATUS: Record<CrStatus, { label: string; tone: Tone }> = {
   approved: { label: 'Accepted', tone: 'success' },
   declined: { label: 'Declined', tone: 'danger' },
 };
+const NOTE: Record<CrStatus, string> = {
+  pending: 'Waiting for the project team to pick this up',
+  in_review: 'Being reviewed by the project team',
+  approved: 'Accepted by the project team',
+  declined: 'Declined by the project team',
+};
 const FILTERS: (CrStatus | 'all')[] = ['all', 'pending', 'in_review', 'approved', 'declined'];
 const MAX_FILES = 5;
 
@@ -69,9 +75,12 @@ export function ClientChangeRequestsPage() {
           <h2>{t('Change Requests')}</h2>
           <p>{t('Ask for a change to scope or dates, and follow the answer from your project team.')}</p>
         </div>
-        {!composing && access === 'edit' && (
-          <button type="button" className="cr-btn" onClick={() => { setSent(null); setComposing(true); }}>{t('New change request')}</button>
-        )}
+        <div className="cr-head-act">
+          <span className="cr-count">{counts.total ?? items.length}</span>
+          {!composing && access === 'edit' && (
+            <button type="button" className="cr-btn" onClick={() => { setSent(null); setComposing(true); }}>{t('New change request')}</button>
+          )}
+        </div>
       </div>
 
       {sent && !composing && (
@@ -113,6 +122,7 @@ export function ClientChangeRequestsPage() {
         ))}
       </div>
 
+      <div className="cr-bar">
       <div className="cr-tools">
         <label className="cr-search">
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Search requests …')} aria-label={t('Search requests')} />
@@ -126,6 +136,7 @@ export function ClientChangeRequestsPage() {
             {t(f === 'all' ? 'All' : STATUS[f].label)} <span>{f === 'all' ? (counts.total ?? items.length) : (counts[f] ?? 0)}</span>
           </button>
         ))}
+      </div>
       </div>
 
       {shown.length === 0 ? (
@@ -239,6 +250,11 @@ function RequestCard({ cr, onOpen }: { cr: CrItem; onOpen: () => void }) {
   return (
     <li className="cp-card cr-card">
       <button type="button" className="cr-summary" onClick={onOpen}>
+        <span className="cr-ico cr-dt" aria-hidden="true">⇄</span>
+        <span className="cr-ttl cr-dt">
+          <b>{cr.title}</b>
+          <small>{cr.code} · {t('Submitted {date}', { date: paddedDate(lang, isoDay(cr.submitted_at)) })}</small>
+        </span>
         <span className="cr-code">{cr.code}</span>
         <b>{cr.title}</b>
         <Badge tone={s.tone}>{t(s.label)}</Badge>
@@ -249,7 +265,8 @@ function RequestCard({ cr, onOpen }: { cr: CrItem; onOpen: () => void }) {
           <small>{t('Updated {date}', { date: paddedDate(lang, isoDay(cr.decided_at ?? cr.review_started_at ?? cr.submitted_at)) })}</small>
           <span className="cr-view">{t('View impact assessment')}</span>
         </span>
-        <span className="cr-open-btn">{t('View request')}</span>
+        <span className="cr-open-btn">{t('View request')} →</span>
+        <span className="cr-foot-line cr-dt">{t(NOTE[cr.status])}</span>
       </button>
     </li>
   );
