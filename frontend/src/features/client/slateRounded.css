@@ -29,3 +29,20 @@
 /* avatars, dots, legend swatches */
 .am.am-slate :is(.cp-avatar,.avatar,.bell .dot,.cp-legend div::before,.legend i,.cx-avatar,.cx-st i,.pill .dot,
   .amr-dot i,.amr-circ,.cp-contact-initials){border-radius:50%}
+
+/* Client sidebar and top bar, sized as in borek-flow-portal (1).html */
+.am.am-client .sidebar{background:#0D1240;border-right:0;padding:24px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.am.am-client .sidebar .logo{width:168px;height:46px;margin-bottom:20px}
+.am.am-client .nav{display:flex;flex-direction:column;gap:4px}
+.am.am-client .nav a{height:44px;padding:0 0 0 31px;margin:0;border-radius:6px;font-size:14px;font-weight:400;color:#E8EDF7}
+.am.am-client .nav a:hover{background:rgba(255,255,255,.06)}
+:root .am.am-client .nav a.active{background:#1B2146;color:#E8EDF7;font-weight:500;padding-left:31px}
+.am.am-client .nav a.active::before{left:16px;top:12px;height:20px;width:3px;border-radius:2px;background:#8AB4FF}
+.am.am-client .topbar{padding:0 57px 0 32px}
+.am.am-client .topbar h2{font-size:24px;font-weight:400;letter-spacing:-.1px}
+:root .am.am-client .topbar h2::after{left:0;right:auto;width:286px;background:#454AAD}
+@media (max-width:900px){
+  .am.am-client .sidebar{position:static;height:auto;padding:12px 16px}
+  .am.am-client .sidebar .logo{width:128px;height:36px;margin-bottom:8px}
+  .am.am-client .nav{flex-direction:row;flex-wrap:wrap}
+}

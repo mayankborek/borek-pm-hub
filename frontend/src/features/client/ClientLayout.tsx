@@ -12,7 +12,7 @@ import './slateRounded.css';
 
 /** The design titles every project tab "Client Portal", except Overview and a single report. */
 function titleFor(pathname: string) {
-  if (pathname === paths.clientHome) return 'Home';
+  if (pathname === paths.clientHome) return 'Dashboard';
   if (pathname.startsWith(paths.clientProfile)) return 'Profile';
   if (pathname === paths.clientProjects) return 'Projects';
   if (/^\/client\/projects\/[^/]+\/?$/.test(pathname)) return 'Overview';
@@ -28,15 +28,14 @@ export function ClientLayout() {
   if (!user) return null;
 
   return (
-    <div className="am am-slate">
+    <div className="am am-slate am-client">
       <div className="shell">
         <aside className="sidebar">
           <Link to={paths.clientHome} aria-label={t('Borek Flow home')}>
             <img className="logo" src={amLogo} alt="BOREK Solutions Group" />
           </Link>
-          <div className="sub">Borek Flow</div>
           <nav className="nav" aria-label={t('Main')}>
-            <NavLink to={paths.clientHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Home')}</NavLink>
+            <NavLink to={paths.clientHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Dashboard')}</NavLink>
             <NavLink to={paths.clientProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
           </nav>
         </aside>
