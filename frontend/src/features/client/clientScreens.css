@@ -31,8 +31,8 @@
 .cp .cx-switch a:hover,.cp .cx-switch a[aria-current=true]{background:var(--bg)}
 .cp .cx-switch a[aria-current=true]{font-weight:600}
 .cx-tabs{display:flex;flex-wrap:wrap;gap:12px 17px;margin-top:34px;font-size:var(--fs-14);line-height:20px}
-.cp .cx-tabs a{color:var(--navy);text-decoration:none}
-.cp .cx-tabs a.cx-on{font-weight:600}
+.cp .cx-tabs a{color:var(--navy);text-decoration:none;padding-bottom:6px;border-bottom:2px solid transparent}
+.cp .cx-tabs a.cx-on{font-weight:600;border-bottom-color:var(--navy)}
 
 /* dashboard (sizes follow borek-flow-portal.html) */
 .cx-welcome{padding-top:29px}
