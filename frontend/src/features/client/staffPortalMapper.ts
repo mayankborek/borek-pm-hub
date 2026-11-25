@@ -9,6 +9,8 @@ import type {
   ClientUpdate,
   MilestoneState,
   ProjectTask,
+  WorkItem,
+  WorkPriority,
 } from './types';
 
 /**
@@ -73,6 +75,8 @@ interface ApiTask {
   title: string;
   due_date: string | null;
   status: { name: string; category: string };
+  priority: WorkPriority;
+  assignee: { name: string } | null;
 }
 
 type Get = <T>(path: string) => Promise<T>;
@@ -153,6 +157,19 @@ async function projectOf(get: Get, p: ApiProject, withTasks: boolean) {
     tasks: tasks.items
       .filter((t) => t.due_date && t.status.category !== 'done')
       .map((t): ProjectTask => ({ id: t.id, ref: t.key, title: t.title, status: t.status.name, dueDate: t.due_date! })),
+    workItems: tasks.items.map(
+      (t): WorkItem => ({
+        id: t.id,
+        ref: t.key,
+        title: t.title,
+        status: t.status.name,
+        done: t.status.category === 'done',
+        priority: t.priority,
+        dueDate: t.due_date,
+        assignee: t.assignee?.name ?? null,
+      }),
+    ),
+    teamSize: detail.members.length,
     changeRequests: crs.items.map((c) => ({ ref: c.code, title: c.title, status: c.status })),
     reports: published.map(
       (r): ClientReport => ({

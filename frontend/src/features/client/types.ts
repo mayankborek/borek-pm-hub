@@ -31,6 +31,22 @@ export interface ProjectTask {
   dueDate: string;
 }
 
+export type WorkPriority = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
+
+/** Any task of a project (done or not), for the Account Manager's task list, backlog, board and overview. */
+export interface WorkItem {
+  id: string;
+  ref: string;
+  title: string;
+  /** The project's own status name. */
+  status: string;
+  done: boolean;
+  priority: WorkPriority;
+  /** ISO date (YYYY-MM-DD); null = no due date. */
+  dueDate: string | null;
+  assignee: string | null;
+}
+
 export interface ClientChangeRequest {
   ref: string;
   title: string;
@@ -103,6 +119,10 @@ export interface ClientProject {
   contacts: ClientContact[];
   milestones: ClientMilestone[];
   tasks?: ProjectTask[];
+  /** Every task, for Account Managers only. */
+  workItems?: WorkItem[];
+  /** Project members (name), for Account Managers only. */
+  teamSize?: number;
   changeRequests: ClientChangeRequest[];
   reports: ClientReport[];
 }
