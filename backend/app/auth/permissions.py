@@ -191,6 +191,10 @@ def is_admin(user: User) -> bool:
     return user.global_role == GlobalRole.ADMIN
 
 
+def is_developer(user: User) -> bool:
+    return user.global_role == GlobalRole.DEVELOPER
+
+
 def is_account_manager(user: User) -> bool:
     return user.global_role == GlobalRole.ACCOUNT_MANAGER
 

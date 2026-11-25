@@ -1,8 +1,9 @@
 """Dashboard queries. Every number comes from the same task rows as the lists and the board."""
 
 import uuid
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import ColumnElement, select
+from sqlalchemy import ColumnElement, and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import sees_all_projects
@@ -95,7 +96,9 @@ async def pm_dashboard(session: AsyncSession, user: User, limit: int) -> PmDashb
     )
 
 
-async def my_dashboard(session: AsyncSession, user: User, limit: int) -> MyDashboard:
+async def my_dashboard(
+    session: AsyncSession, user: User, limit: int, focus_limit: int = 4
+) -> MyDashboard:
     scope = None if sees_all_projects(user) else task_service.scope_for_member(user)
     mine = [
         Task.assignee_id == user.id,
@@ -126,12 +129,32 @@ async def my_dashboard(session: AsyncSession, user: User, limit: int) -> MyDashb
             .order_by(Project.code)
         )
     )
+    today = datetime.now(UTC).date()
+    sunday = today + timedelta(days=6 - today.weekday())
+    due_this_week, due_today = (
+        await session.execute(
+            select(
+                func.count(case((and_(Task.due_date >= today, Task.due_date <= sunday), 1))),
+                func.count(case((Task.due_date == today, 1))),
+            )
+            .join(WorkflowStatus, WorkflowStatus.id == Task.status_id)
+            .join(Project, Project.id == Task.project_id)
+            .where(*mine, WorkflowStatus.category != StatusCategory.DONE.value)
+        )
+    ).one()
+    focus, focus_total = await task_service.focus_tasks(
+        session, user.id, limit=focus_limit, scope=scope
+    )
+
     ids = [p.id for p in projects]
     summaries = await project_service.task_summaries(session, ids)
     members = await _member_counts(session, ids)
     return MyDashboard(
         summary=project_service.make_summary(*counts),
+        due_this_week=due_this_week,
+        due_today=due_today,
         projects=[_card(p, summaries.get(p.id), members.get(p.id)) for p in projects],
+        focus=AttentionList(total=focus_total, items=focus),
         blocked=await _attention(
             session, limit, category=StatusCategory.BLOCKED, assignee_id=user.id, scope=scope
         ),

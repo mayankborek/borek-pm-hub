@@ -222,10 +222,11 @@ async def list_projects(
         [p.id for p in projects],
         change_requests_for=await _change_requests_visible(session, user, projects),
     )
+    health = await service.latest_health(session, [p.id for p in projects])
     return ProjectListOut(
         items=[
             _project_out(p, summaries.get(p.id), clients.get(p.client_organisation_id)).model_copy(
-                update={"next_action": actions.get(p.id)}
+                update={"next_action": actions.get(p.id), "health": health.get(p.id)}
             )
             for p in projects
         ],

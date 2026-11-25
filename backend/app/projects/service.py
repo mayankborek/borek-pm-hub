@@ -24,11 +24,14 @@ from app.common.enums import (
     ProjectRole,
     ProjectStatus,
     ProjectType,
+    RagStatus,
+    ReportState,
     StatusCategory,
 )
 from app.common.validation import like_escape
 from app.core.config import Settings
 from app.core.errors import AppError
+from app.notifications import events as notification_events
 from app.organisations import members as organisation_members
 from app.organisations import service as organisation_service
 from app.organisations.models import Organisation
@@ -44,6 +47,7 @@ from app.projects.schemas import (
     ProjectUpdate,
     TaskSummary,
 )
+from app.reporting.models import StatusReport
 from app.tasks import activity, statuses
 from app.tasks.models import Task, WorkflowStatus
 from app.users.models import User
@@ -217,6 +221,38 @@ async def task_summaries(
     return {project_id: make_summary(*counts) for project_id, *counts in rows.all()}
 
 
+_HEALTH_OF_RAG = {
+    RagStatus.GREEN.value: "on_track",
+    RagStatus.AMBER.value: "at_risk",
+    RagStatus.RED.value: "off_track",
+}
+
+
+async def latest_health(
+    session: AsyncSession, project_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """Per project: the health of the newest published status report (same rule as the client
+    portal: by report date, then publishing time). Projects without one are absent."""
+    if not project_ids:
+        return {}
+    rows = await session.execute(
+        select(StatusReport.project_id, StatusReport.rag)
+        .where(
+            StatusReport.project_id.in_(project_ids),
+            StatusReport.state == ReportState.PUBLISHED.value,
+            StatusReport.archived_at.is_(None),
+        )
+        .order_by(
+            StatusReport.project_id,
+            StatusReport.report_date.desc(),
+            StatusReport.published_at.desc(),
+            StatusReport.id,
+        )
+        .distinct(StatusReport.project_id)
+    )
+    return {pid: _HEALTH_OF_RAG[rag] for pid, rag in rows.all() if rag in _HEALTH_OF_RAG}
+
+
 async def list_projects(
     session: AsyncSession,
     user: User,
@@ -379,6 +415,10 @@ async def create_project(
                 granted_by=user.id,
             )
         )
+    # Everyone put on the new project except the creator hears about it.
+    await notification_events.members_added(
+        session, user, project, {uid: role.value for uid, role in roles.items() if uid != user.id}
+    )
     record_audit(
         session,
         user,
@@ -531,6 +571,9 @@ async def add_member(
         granted_by=granted_by.id,
     )
     session.add(member)
+    await notification_events.members_added(
+        session, granted_by, project, {data.user_id: data.project_role.value}
+    )
     record_audit(
         session,
         granted_by,

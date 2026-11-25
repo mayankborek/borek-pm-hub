@@ -19,6 +19,7 @@ from app.auth.permissions import (
     client_condition,
     is_admin,
     is_client,
+    is_developer,
     manager_condition,
     sees_all_projects,
 )
@@ -50,14 +51,23 @@ STAFF_SETTINGS = (
     "requirements",
     "reports",
     "milestones",  # project leads and Managers: milestones moved, reached, running late
+    "projects",  # I was added to a project
 )
+# Developers hear about their tasks, mentions, projects they join and the client's answer on
+# requirements they own (Mayank 25.11.2026). Change requests, reports, milestones and blocked
+# alerts never reach them.
+DEVELOPER_SETTINGS = ("tasks_assigned", "tasks_reported", "mentions", "requirements", "projects")
 CLIENT_SETTINGS = ("change_requests", "requirements", "reports", "milestones")
 
 
 def settings_for(user: User) -> tuple[str, ...]:
     if is_admin(user):
         return ()
-    return CLIENT_SETTINGS if is_client(user) else STAFF_SETTINGS
+    if is_client(user):
+        return CLIENT_SETTINGS
+    if is_developer(user):
+        return DEVELOPER_SETTINGS
+    return STAFF_SETTINGS
 
 
 # A recipient and the setting the notification falls under for them. When someone appears more

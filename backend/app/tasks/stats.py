@@ -53,11 +53,16 @@ async def task_stats(session: AsyncSession, project_id: uuid.UUID) -> TaskStatsO
             .where(active, is_open)
         )
     ).one()
-    team_members = await session.scalar(
-        select(func.count(ProjectMember.id))
-        .join(User, User.id == ProjectMember.user_id)
-        .where(ProjectMember.project_id == project_id, User.is_active.is_(True))
-    )
+    team_members, team_functions = (
+        await session.execute(
+            select(
+                func.count(ProjectMember.id),
+                func.count(func.distinct(func.lower(func.nullif(func.trim(User.job_title), "")))),
+            )
+            .join(User, User.id == ProjectMember.user_id)
+            .where(ProjectMember.project_id == project_id, User.is_active.is_(True))
+        )
+    ).one()
 
     by_status = [
         StatusCount(
@@ -81,6 +86,7 @@ async def task_stats(session: AsyncSession, project_id: uuid.UUID) -> TaskStatsO
         overdue=overdue,
         blocked=blocked,
         team_members=team_members or 0,
+        team_functions=team_functions or 0,
         next_milestone=next_milestone,
         by_status=by_status,
         by_priority=[
