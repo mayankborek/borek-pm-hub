@@ -52,6 +52,7 @@ import { ProjectCreatePage, ProjectEditPage } from '@/features/projects/ProjectF
 import { ProjectOverviewPage } from '@/features/projects/ProjectOverviewPage';
 import { ProjectBoardPage } from '@/features/projects/ProjectBoardPage';
 import { ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
+import { ProjectPeoplePage, ProjectSettingsPage } from '@/features/projects/ProjectSettingsPages';
 import { TasksPage } from '@/features/tasks/TaskPages';
 import { TaskCreatePage } from '@/features/tasks/TaskCreatePage';
 import { MyWorkPage } from '@/features/tasks/MyWorkPage';
@@ -240,6 +241,8 @@ export const router = createBrowserRouter([
               { path: 'reports/:reportId', element: <ProjectReportPage /> },
               { path: 'list', element: <ProjectListPage /> },
               { path: 'members', element: <ProjectMembersPage /> },
+              { path: 'settings', element: <ProjectSettingsPage /> },
+              { path: 'settings/people', element: <ProjectPeoplePage /> },
             ],
           },
           { path: 'profile', element: <ProfilePage /> },

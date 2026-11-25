@@ -1,46 +1,34 @@
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
-import { useAuth } from '@/features/auth/AuthContext';
-import { parseApiError } from '@/features/projects/projectsApi';
+import { parseApiError, useProjects } from '@/features/projects/projectsApi';
+import { PmIcon } from '@/features/projects/pmIcons';
+import type { Project } from '@/features/projects/types';
 import { useDashboard, type DashboardProject, type PmDashboard } from './dashboardApi';
-import { STATUS_LABEL, daysOverdue, formatDate, todayIso } from '@/features/projects/projectUi';
+import { STATUS_LABEL, daysOverdue, formatDate, healthOf, todayIso } from '@/features/projects/projectUi';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { Pill } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
+import '@/features/projects/pmProjects.css';
 import './dashboard.css';
 
-const PROJECT_ROWS = 12;
+const PROJECT_CARDS = 4;
+const HEALTH_TONE = { 'On Track': 'good', 'At Risk': 'warn', 'Off Track': 'bad' } as const;
 
-const greeting = () => {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
-};
-
-/** Same rule as the project list: on hold is off track, blocked or overdue work is at risk. */
-const healthOf = (p: DashboardProject) =>
-  p.status === 'on_hold' ? 'Off Track' : p.tasks.blocked > 0 || p.tasks.overdue > 0 ? 'At Risk' : 'On Track';
-
+/** Figma "Dashboard" (PM): delivery priorities, four counts, project cards, attention items and next actions. */
 export function DashboardPage() {
-  const { user } = useAuth();
   const { t } = usePrefs();
   const dashboard = useDashboard();
-  const firstName = user?.name.split(' ')[0] ?? '';
+  const projects = useProjects();
 
   const newProject = (
     <Link className="btn" to={paths.projectNew}>
-      {t('New Project')}
+      {t('Create New Project')}
     </Link>
   );
 
   return (
     <section className="page-body dashboard">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            {t(greeting())}, {firstName}
-          </h1>
-          <p className="page-desc">{t('Portfolio health, team delivery, and attention items across active projects.')}</p>
-        </div>
+        <h1 className="page-title">{t('Your delivery priorities')}</h1>
         {newProject}
       </div>
 
@@ -51,22 +39,41 @@ export function DashboardPage() {
       ) : dashboard.data.projects.length === 0 ? (
         <EmptyState title={t('No projects yet')} text={t('Create a project to start tracking work, delivery, and attention items for your team.')} action={newProject} />
       ) : (
-        <DashboardBody data={dashboard.data} />
+        <DashboardBody data={dashboard.data} details={projects.data?.items ?? []} />
       )}
     </section>
   );
 }
 
-function DashboardBody({ data }: { data: PmDashboard }) {
+function DashboardBody({ data, details }: { data: PmDashboard; details: Project[] }) {
   const { t } = usePrefs();
-  const total = data.projects_total;
+  const today = todayIso();
+  const byId = new Map(details.map((p) => [p.id, p]));
+  const external = details.filter((p) => p.type === 'external').length;
+  const internal = details.length - external;
+  const active = data.projects.filter((p) => p.status === 'active');
+  const planning = data.projects.filter((p) => p.status === 'planned');
+  const shown = data.projects.slice(0, PROJECT_CARDS);
+  const firstBlocked = data.blocked.items[0];
+
   const metrics = [
-    { label: t('Active Projects'), value: data.active_projects, note: t('{n} in total', { n: total }) },
-    { label: t('Tasks in Progress'), value: data.summary.in_progress, note: t('Across all projects') },
-    { label: t('Blocked Tasks'), value: data.summary.blocked, note: t('Needs PM action') },
-    { label: t('Overdue Tasks'), value: data.summary.overdue, note: t('Needs PM action') },
+    { label: t('Total projects'), value: data.projects_total, note: details.length ? t('{e} external · {i} internal', { e: external, i: internal }) : t('Across all projects'), icon: 'folder' as const, tone: 'navy' },
+    {
+      label: t('Active projects'),
+      value: data.active_projects,
+      note: data.active_projects === 0 && planning.length ? t('{name} is in planning', { name: planning[0].name }) : t('{n} in total', { n: data.projects_total }),
+      icon: 'layers' as const,
+      tone: 'blue',
+    },
+    { label: t('Blocked tasks'), value: data.summary.blocked, note: firstBlocked ? t('{name} needs attention', { name: firstBlocked.title }) : t('Nothing is blocked'), icon: 'ban' as const, tone: 'orange' },
+    { label: t('Overdue tasks'), value: data.summary.overdue, note: t('Open tasks past due · {date}', { date: formatDate(today) }), icon: 'clock' as const, tone: 'red' },
   ];
-  const shown = data.projects.slice(0, PROJECT_ROWS);
+
+  // Next actions: the delivery date that falls first, then the most urgent task.
+  const nextProject = [...active, ...planning]
+    .filter((p) => p.target_end_date && p.target_end_date >= today)
+    .sort((a, b) => a.target_end_date!.localeCompare(b.target_end_date!))[0];
+  const urgent = data.overdue.items[0] ?? firstBlocked;
 
   return (
     <>
@@ -74,45 +81,75 @@ function DashboardBody({ data }: { data: PmDashboard }) {
         {metrics.map((m) => (
           <article className="metric" key={m.label}>
             <h3>{m.label}</h3>
+            <span className={`metric-ico ${m.tone}`}><PmIcon name={m.icon} /></span>
             <strong>{m.value}</strong>
             <span>{m.note}</span>
           </article>
         ))}
       </section>
 
-      <div className="split">
-        <section className="card" aria-label={t('Projects')}>
-          <h3>{t('All Accessible Projects')}</h3>
-          <p className="desc">
-            {t(total === 1 ? '{n} project available to you' : '{n} projects available to you', { n: total })}
-          </p>
-          <div className="proj-head" aria-hidden="true">
-            <span>{t('Project')}</span>
-            <span>{t('Lifecycle')}</span>
-            <span>{t('Health')}</span>
-          </div>
-          <ul className="proj-list">
-            {shown.map((p) => {
-              const health = healthOf(p);
-              return (
-                <li key={p.id}>
-                  <Link to={paths.project(p.id)}>{p.name} →</Link>
-                  <span className={`life ${p.status}`}>{t(STATUS_LABEL[p.status])}</span>
-                  <span className={`health ${health.replace(' ', '-').toLowerCase()}`}>{t(health)}</span>
-                </li>
-              );
-            })}
-          </ul>
-          {total > shown.length && (
-            <Link className="more" to={paths.projects}>
-              {t('View all {n} projects →', { n: total })}
-            </Link>
-          )}
-        </section>
+      <div className="dash-sec">
+        <h2>{t('Projects at a glance')}</h2>
+        <Link to={paths.projects}>{t('View all projects')}</Link>
+      </div>
+      <section className="glance">
+        {shown.map((p) => (
+          <GlanceCard key={p.id} p={p} detail={byId.get(p.id)} />
+        ))}
+      </section>
 
-        <AttentionAreas data={data} />
+      <div className="dash-lower">
+        <AttentionAreas data={data} today={today} />
+        <section className="card next" aria-label={t('Your next actions')}>
+          <h3>{t('Your next actions')}</h3>
+          <ul>
+            {nextProject && (
+              <li>
+                <b>{nextProject.name} · {formatDate(nextProject.target_end_date)}</b>
+                <span>{t('Delivery date approaching. Review project status.')}</span>
+              </li>
+            )}
+            {urgent && (
+              <li>
+                <b>{urgent.title}</b>
+                <span>{[urgent.project_name, urgent.status.name, urgent.due_date && t('Due {date}', { date: formatDate(urgent.due_date) })].filter(Boolean).join(' · ')}</span>
+              </li>
+            )}
+            {!nextProject && !urgent && <li><span>{t('Nothing needs your action right now.')}</span></li>}
+          </ul>
+          {urgent && <Link to={paths.task(urgent.id)}>{t('Open my task')}</Link>}
+        </section>
       </div>
     </>
+  );
+}
+
+function GlanceCard({ p, detail }: { p: DashboardProject; detail?: Project }) {
+  const { t } = usePrefs();
+  const eligible = p.tasks.total;
+  const health = healthOf({ status: p.status, task_summary: p.tasks } as Project);
+  const external = detail?.type === 'external';
+  return (
+    <article className="card glance-card">
+      <div className="glance-head">
+        <span className="glance-ico"><PmIcon name={external ? 'briefcase' : 'layers'} /></span>
+        <div>
+          <h3><Link to={paths.project(p.id)}>{p.name}</Link></h3>
+          <p>{detail?.client_organisation?.name ?? (external ? t('Client project') : t('Internal initiative'))}</p>
+        </div>
+      </div>
+      <div className="tags">
+        <span className={`tag ${external ? 'blue' : ''}`}>{t(external ? 'External' : 'Internal')}</span>
+        <span className={`tag ${p.status === 'active' ? 'green' : p.status === 'planned' ? 'amber' : ''}`}>{t(p.status === 'active' ? 'Active' : STATUS_LABEL[p.status])}</span>
+        <span className={`tag ${eligible ? HEALTH_TONE[health] : ''}`}>{t(eligible ? health : 'Unassessed')}</span>
+      </div>
+      <div className="glance-row"><span>{t('Task completion')}</span><b>{eligible ? `${Math.round(p.tasks.completion_percent)}%` : '—'}</b></div>
+      <div className="glance-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={eligible ? Math.round(p.tasks.completion_percent) : undefined} aria-label={t('{name} completion', { name: p.name })}>
+        <i style={{ width: `${eligible ? p.tasks.completion_percent : 0}%` }} />
+      </div>
+      <p className="glance-note">{eligible ? t('{done} of {total} tasks complete', { done: p.tasks.completed, total: eligible }) : t('No eligible tasks planned yet')}</p>
+      <p className="glance-note">{p.target_end_date ? t('Due {date}', { date: formatDate(p.target_end_date) }) : t('Dates to be planned')}</p>
+    </article>
   );
 }
 
@@ -121,38 +158,39 @@ const overdueText = (due: string | null, today: string, t: (s: string, v?: Recor
   return d === 1 ? t('1 day overdue') : t('{n} days overdue', { n: d });
 };
 
-function AttentionAreas({ data }: { data: PmDashboard }) {
+function AttentionAreas({ data, today }: { data: PmDashboard; today: string }) {
   const { t } = usePrefs();
-  const today = todayIso();
   const overdueIds = new Set(data.overdue.items.map((x) => x.id));
   const items = [
-    ...data.overdue.items.map((task) => ({ task, kind: 'overdue' as const })),
     ...data.blocked.items.filter((x) => !overdueIds.has(x.id)).map((task) => ({ task, kind: 'blocked' as const })),
-  ].slice(0, 6);
+    ...data.overdue.items.map((task) => ({ task, kind: 'overdue' as const })),
+  ].slice(0, 4);
 
   return (
-    <section className="card attn" aria-label={t('Attention Areas')}>
-      <h3>{t('Attention Areas')}</h3>
+    <section className="card attn" aria-label={t('Needs attention')}>
+      <h3>{t('Needs attention')}</h3>
       {items.length === 0 ? (
         <p className="muted attn-note">{t('Nothing is blocked or overdue. Nice work.')}</p>
       ) : (
         <ul className="attn-list">
           {items.map(({ task, kind }) => (
             <li key={task.id}>
-              <Link to={paths.task(task.id)} className={kind === 'overdue' ? 'attn-title warn' : 'attn-title err'}>
-                {task.key} · {task.title}
-              </Link>
-              <div className="attn-meta">
-                <span>
-                  {task.project_name}
-                  {kind === 'overdue' ? ` · ${formatDate(task.due_date)} · ${overdueText(task.due_date, today, t)}` : ` · ${t('blocked')}`}
+              <span className={`attn-ico ${kind}`}><PmIcon name={kind === 'blocked' ? 'warning' : 'clock'} /></span>
+              <div>
+                <Link to={paths.task(task.id)} className="attn-title">{task.title}</Link>
+                <span className="attn-meta">
+                  {[
+                    t(kind === 'blocked' ? 'Blocked' : 'Overdue'),
+                    task.assignee?.name,
+                    task.due_date && (kind === 'overdue' ? overdueText(task.due_date, today, t) : t('Due {date}', { date: formatDate(task.due_date) })),
+                  ].filter(Boolean).join(' · ')}
                 </span>
-                <Pill tone={kind === 'overdue' ? 'overdue' : 'blocked'}>{kind === 'overdue' ? t('Overdue') : t('Blocked')}</Pill>
               </div>
             </li>
           ))}
         </ul>
       )}
+      <Link to={paths.tasks}>{t('Review task list')}</Link>
     </section>
   );
 }

@@ -37,6 +37,8 @@ export interface Project {
   version: number;
   task_summary?: TaskSummary | null;
   type?: 'internal' | 'external';
+  category?: string | null;
+  priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest';
   client_organisation?: { id: string; name: string } | null;
 }
 
@@ -48,9 +50,11 @@ export interface ProjectInput {
   start_date: string | null;
   target_end_date: string | null;
   type: 'internal' | 'external';
+  category?: string | null;
+  priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest';
   /** External projects send exactly one of these two; internal send neither (null on edit clears the client). */
   client_organisation_id?: string | null;
-  new_client?: { name: string };
+  new_client?: { name: string; contact?: { name: string; email: string } };
 }
 
 /** Subset of GET /tasks used by the dashboard's attention list. */

@@ -60,6 +60,15 @@ export const useSyncMembers = (id: string) => {
   });
 };
 
+/** GET /picklists: the PM-editable dropdown values. Returns the active values of one list, or [] while loading. */
+export const usePicklist = (key: string) =>
+  useQuery({
+    queryKey: ['picklists'],
+    queryFn: () => api<{ key: string; values: { value: string; is_active: boolean }[] }[]>('/picklists'),
+    staleTime: 60_000,
+    select: (lists) => lists.find((l) => l.key === key)?.values.filter((v) => v.is_active).map((v) => v.value) ?? [],
+  });
+
 export interface FieldErrors {
   [field: string]: string;
 }

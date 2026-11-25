@@ -1,0 +1,41 @@
+/* ---- PM Projects (Figma "Projects"): card grid with a portfolio summary ---- */
+.pj-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.pj-bar h2 { margin: 0; font-size: var(--fs-20, 20px); font-weight: 600; color: var(--ink); }
+.pj-filter { height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-13); font-weight: 600; }
+.pj-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+.pj-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.pj-card { padding: 20px; display: flex; flex-direction: column; gap: 14px; border-radius: 12px; }
+.pj-card h3 { margin: 0; font-size: var(--fs-18); font-weight: 600; }
+.pj-open { margin-top: 8px; font-size: var(--fs-14); font-weight: 500; color: #124f94; text-decoration: none; }
+.pj-open:hover { text-decoration: underline; }
+.pj-portfolio { padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; }
+.pj-portfolio h3 { margin: 0; font-size: var(--fs-16); }
+.pj-portfolio strong { font-size: var(--fs-26); font-weight: 700; color: var(--ink); }
+.pj-portfolio h4 { margin: 8px 0 0; font-size: var(--fs-13); font-weight: 600; color: var(--ink); }
+.pj-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pj-stats div { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; background: #f3f4f8; font-size: var(--fs-12); color: var(--muted); }
+.pj-stats div.on { background: #e8f0fd; color: #124f94; }
+.pj-stats b { font-size: var(--fs-26); font-weight: 700; color: var(--ink); }
+.pj-portfolio dl { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.pj-portfolio dl div { display: flex; justify-content: space-between; font-size: var(--fs-13); padding-right: 20px; }
+.pj-portfolio dt { color: var(--ink); }
+.pj-portfolio dd { margin: 0; font-weight: 600; }
+
+/* Card pieces shared with the dashboard (tags, completion bar). */
+.glance-head { display: flex; align-items: center; gap: 16px; }
+.glance-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 8px; background: #eef0f7; color: #124f94; flex: none; }
+.glance-head p { margin: 2px 0 0; font-size: var(--fs-13); color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { display: inline-flex; align-items: center; justify-content: center; min-width: 100px; height: 28px; padding: 0 12px; border-radius: 4px; background: #eef0f4; color: var(--muted); font-size: var(--fs-12); font-weight: 600; }
+.tag.blue { background: #e1ecfd; color: #124f94; }
+.tag.green, .tag.good { background: #dff3e8; color: #17735e; }
+.tag.amber, .tag.warn { background: #fdf0cf; color: #0d1240; }
+.tag.bad { background: #fbe4e1; color: #ad1f1f; }
+.glance-row { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; font-size: var(--fs-13); color: var(--muted); }
+.glance-row b { margin-right: 24px; font-size: var(--fs-15); font-weight: 600; color: var(--ink); }
+.glance-bar { height: 8px; border-radius: 4px; background: #eef0f4; overflow: hidden; }
+.glance-bar i { display: block; height: 100%; border-radius: 4px; background: #124f94; }
+.glance-note { margin: 0; font-size: var(--fs-13); color: var(--muted); }
+
+@media (max-width: 1100px) { .pj-layout { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .pj-cards { grid-template-columns: 1fr; } }

@@ -10,11 +10,13 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
 import { usePendingChangeRequests } from '@/features/changeRequests/changeRequestsStaffApi';
-import { useProject } from './projectsApi';
+import { useProject, useProjects } from './projectsApi';
+import { PmIcon } from './pmIcons';
 import type { Project } from './types';
 import '@/features/changeRequests/changeRequests.css';
 import '@/features/reports/reports.css';
 import './projects.css';
+import './pmSettings.css';
 
 export const useProjectContext = () => useOutletContext<Project>();
 
@@ -73,6 +75,37 @@ function ClosedProject({ project }: { project: Project }) {
   );
 }
 
+/** Project name with a chevron that opens a list of the user's projects (Figma project header). */
+function ProjectSwitcher({ project }: { project: Project }) {
+  const { t } = usePrefs();
+  const { pathname } = useLocation();
+  const [open, setOpen] = useState(false);
+  const { data } = useProjects();
+  const tail = pathname.split('/').slice(3).join('/');
+  const others = (data?.items ?? []).filter((p) => p.id !== project.id);
+  return (
+    <div className="proj-switch">
+      <h1 className="page-title">{project.name}</h1>
+      {others.length > 0 && (
+        <>
+          <button type="button" className="proj-switch-btn" aria-label={t('Switch project')} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            <PmIcon name="chevron" />
+          </button>
+          {open && (
+            <ul className="proj-switch-menu">
+              {others.map((p) => (
+                <li key={p.id}>
+                  <Link to={`${paths.project(p.id)}${tail ? `/${tail}` : ''}`} onClick={() => setOpen(false)}>{p.name}</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Shell for /projects/:projectId/* with the project header and tab navigation. */
 export function ProjectLayout() {
   const { projectId = '' } = useParams();
@@ -108,6 +141,7 @@ export function ProjectLayout() {
           { label: 'Requirements', to: paths.projectRequirements(projectId) },
           { label: 'Change Requests', to: paths.projectChangeRequests(projectId), badge: pendingRequests },
           { label: 'Reports', to: paths.projectReports(projectId) },
+          { label: 'Settings', to: paths.projectSettings(projectId) },
         ]
       : []),
   ];
@@ -117,16 +151,12 @@ export function ProjectLayout() {
       <div className="project-head">
         <div className="page-header">
           <div>
-            <Link className="proj-back" to={paths.projects}>← {t('All projects')}</Link>
-            <div className="proj-eyebrow">{project.type === 'internal' ? t('Internal project') : t('External project')} · {project.code}</div>
-            <h1 className="page-title">{project.name}</h1>
+            <div className="proj-eyebrow">{project.type === 'internal' ? t('Internal project') : t('External project')}</div>
+            <ProjectSwitcher project={project} />
           </div>
-          {user?.role === 'pm' && (
+          {user?.role === 'pm' && onBacklog && (
             <div className="page-actions">
-              {onBacklog && <BacklogActions project={project} />}
-              <Link className="btn secondary" to={paths.projectEdit(project.id)}>
-                {t('Edit project')}
-              </Link>
+              <BacklogActions project={project} />
             </div>
           )}
         </div>

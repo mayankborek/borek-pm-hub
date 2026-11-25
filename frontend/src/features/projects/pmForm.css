@@ -1,0 +1,26 @@
+/* ---- Create / edit project (Figma "Create Project"): type cards, two columns, sticky action bar ---- */
+.pform.pform-new { margin: 0; gap: 0; min-height: 100%; }
+.pform-new .pf { display: flex; flex-direction: column; min-height: calc(100vh - 70px); }
+.pform-new .pf-scroll { flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 28px 32px 32px; }
+.pform-new h2 { margin: 0; font-size: var(--fs-26); line-height: 34px; font-weight: 700; color: var(--ink); }
+.pf-h { margin: 8px 0 0; font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
+.pf-types { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pf-type { display: flex; align-items: center; gap: 18px; height: 68px; padding: 0 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.pf-type.on { background: #e8f0fd; border-color: #2f6fd1; }
+.pf-type input { position: absolute; opacity: 0; pointer-events: none; }
+.pf-type input:focus-visible + .pf-radio { outline: 2px solid var(--link); outline-offset: 2px; }
+.pf-radio { width: 14px; height: 14px; border: 1.5px solid var(--ink); border-radius: 50%; flex: none; box-sizing: border-box; }
+.pf-type.on .pf-radio { border-width: 4px; }
+.pf-type b { display: block; font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
+.pf-type small { display: block; margin-top: 2px; font-size: var(--fs-12); color: var(--muted); }
+.pf-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 28px; }
+.pf-col { display: flex; flex-direction: column; gap: 14px; }
+.pf-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pf-three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.pform-new .pf-client { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; padding-top: 20px; border-top: 1px solid var(--line); }
+.pf-tabs { display: flex; gap: 36px; border-bottom: 1px solid var(--line); }
+.pf-tabs button { padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink); font: inherit; font-size: var(--fs-13); cursor: pointer; margin-bottom: -1px; }
+.pf-tabs button.on { border-bottom-color: var(--ink); font-weight: 600; }
+.pform-new .pf-foot { justify-content: flex-end; height: auto; padding: 16px 32px; background: var(--surface); border-top: 1px solid var(--line); }
+.pform-new .pform-btn { border-radius: 6px; }
+@media (max-width: 900px) { .pf-cols, .pf-types, .pf-three { grid-template-columns: 1fr; } }

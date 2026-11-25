@@ -4,15 +4,14 @@ import { paths } from '@/app/routes';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useProjectMembers, type AssignableUser } from '@/features/tasks/tasksApi';
+import { PrioritySelect } from '@/features/tasks/PrioritySelect';
 import { useOrganisations } from '@/features/admin/organisationsApi';
 import { MemberPicker } from './MemberPicker';
-import { parseApiError, useCreateProject, useProject, useSyncMembers, useUpdateProject, type FieldErrors } from './projectsApi';
+import { parseApiError, useCreateProject, useProject, useSyncMembers, useUpdateProject, usePicklist, type FieldErrors } from './projectsApi';
 import { STATUS_LABEL } from './projectUi';
 import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './projects.css';
-
-/** The Figma form names the first status "Planning"; other screens keep "Planned". */
-const FORM_STATUS_LABEL: Record<ProjectStatus, string> = { ...STATUS_LABEL, planned: 'Planning' };
+import './pmForm.css';
 
 interface FormState {
   code: string;
@@ -25,11 +24,15 @@ interface FormState {
   /** An organisation id, or NEW_CLIENT to create one together with the project. */
   client: string;
   new_client_name: string;
+  contact_name: string;
+  contact_email: string;
+  category: string;
+  priority: NonNullable<Project['priority']>;
 }
 
 const NEW_CLIENT = '__new__';
 
-const EMPTY: FormState = { code: '', name: '', description: '', status: 'planned', start_date: '', target_end_date: '', type: 'internal', client: '', new_client_name: '' };
+const EMPTY: FormState = { code: '', name: '', description: '', status: 'planned', start_date: '', target_end_date: '', type: 'internal', client: '', new_client_name: '', contact_name: '', contact_email: '', category: '', priority: 'medium' };
 
 const fromProject = (p: Project): FormState => ({
   code: p.code,
@@ -41,6 +44,10 @@ const fromProject = (p: Project): FormState => ({
   type: p.type ?? 'internal',
   client: p.client_organisation?.id ?? '',
   new_client_name: '',
+  contact_name: '',
+  contact_email: '',
+  category: p.category ?? '',
+  priority: p.priority ?? 'medium',
 });
 
 /** Mirrors the backend rules so most mistakes are caught before the request. The server stays the authority. */
@@ -50,6 +57,8 @@ function validate(f: FormState, isEdit: boolean, t: (s: string) => string): Fiel
     if (!f.code.trim()) e.code = t('Project code is required.');
     else if (f.code.trim().length > 20) e.code = t('Use 20 characters or fewer.');
   }
+  if (!f.category.trim()) e.category = t('Choose a category.');
+  if (!f.start_date) e.start_date = t('Start date is required.');
   if (!f.name.trim()) e.name = t('Project name is required.');
   else if (f.name.trim().length > 200) e.name = t('Use 200 characters or fewer.');
   if (f.start_date && f.target_end_date && f.target_end_date < f.start_date) {
@@ -57,7 +66,11 @@ function validate(f: FormState, isEdit: boolean, t: (s: string) => string): Fiel
   }
   if (f.type === 'external') {
     if (!f.client) e.client = t('Choose a client for an external project.');
-    else if (f.client === NEW_CLIENT && !f.new_client_name.trim()) e.new_client_name = t('Client name is required.');
+    else if (f.client === NEW_CLIENT) {
+      if (!f.new_client_name.trim()) e.new_client_name = t('Client name is required.');
+      if (f.contact_name.trim() && !f.contact_email.trim()) e.contact_email = t('Add the contact email.');
+      if (f.contact_email.trim() && !f.contact_name.trim()) e.contact_name = t('Add the contact name.');
+    }
   }
   return e;
 }
@@ -71,9 +84,11 @@ const toInput = (f: FormState, isEdit: boolean): ProjectInput => {
     start_date: f.start_date || null,
     target_end_date: f.target_end_date || null,
     type: f.type,
+    category: f.category.trim() || null,
+    priority: f.priority,
   };
   if (f.type === 'internal') return isEdit ? { ...base, client_organisation_id: null } : base;
-  if (f.client === NEW_CLIENT) return { ...base, new_client: { name: f.new_client_name.trim() } };
+  if (f.client === NEW_CLIENT) return { ...base, new_client: { name: f.new_client_name.trim(), ...(f.contact_email.trim() && { contact: { name: f.contact_name.trim(), email: f.contact_email.trim() } }) } };
   return { ...base, client_organisation_id: f.client };
 };
 
@@ -103,6 +118,8 @@ function ProjectForm({ project, currentMembers = [] }: { project?: Project; curr
   const [members, setMembers] = useState<AssignableUser[]>(currentMembers);
   const syncMembers = useSyncMembers(project?.id ?? '');
   const clients = useOrganisations();
+  const categoryList = usePicklist('project_category');
+  const isNew = form.client === NEW_CLIENT;
   const saving = create.isPending || update.isPending || syncMembers.isPending;
   const back = project ? paths.project(project.id) : paths.projects;
 
@@ -155,111 +172,133 @@ function ProjectForm({ project, currentMembers = [] }: { project?: Project; curr
 
   const aria = (id: keyof FormState) => ({ 'aria-invalid': !!errors[id], 'aria-describedby': errors[id] ? `${id}-error` : undefined });
 
-  const title = isEdit ? 'Edit Project' : 'Create Project';
+  const title = isEdit ? 'Edit project' : 'Create new project';
+  const typeCard = (value: FormState['type'], label: string, sub: string) => (
+    <label className={`pf-type${form.type === value ? ' on' : ''}`}>
+      <input type="radio" name="type" value={value} checked={form.type === value} onChange={() => set('type', value)} />
+      <span className="pf-radio" aria-hidden="true" />
+      <span><b>{t(label)}</b><small>{t(sub)}</small></span>
+    </label>
+  );
+  const categories = [...new Set([...(categoryList.data ?? []), ...(form.category ? [form.category] : [])])];
 
   return (
-    <section className="pform">
-      <div className="pform-head">
-        <p className="pform-crumb">{t('Projects  /  All Projects')}</p>
-        <h2>{t(title)}</h2>
-      </div>
+    <section className="pform pform-new">
+      <form className="pf" onSubmit={(e) => void onSubmit(e)} noValidate>
+        <div className="pf-scroll">
+          <h2>{t(title)}</h2>
+          {formError && (
+            <div className="form-alert" role="alert">
+              {t(formError)}
+            </div>
+          )}
 
-      <form className="pform-body" onSubmit={(e) => void onSubmit(e)} noValidate>
-        {formError && (
-          <div className="form-alert" role="alert">
-            {t(formError)}
+          <h3 className="pf-h">{t('Project type')}</h3>
+          <div className="pf-types">
+            {typeCard('internal', 'Internal', 'Company projects')}
+            {typeCard('external', 'External', 'Client projects')}
           </div>
-        )}
 
-        <div className="pform-section">
-          <span className="pform-icon" aria-hidden="true">
-            <i /><i /><i /><i />
-          </span>
-          <div>
-            <h3>{t('Project Details')}</h3>
-            <p>{t('Give your team a clear starting point.')}</p>
+          <div className="pf-cols">
+            <div className="pf-col">
+              <h3 className="pf-h">{t('Basic information')}</h3>
+              {field('name', 'Project Name *', <input id="name" className="input" placeholder={t('e.g. Website redesign')} value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} {...aria('name')} />)}
+              <div className="pf-two">
+                {field(
+                  'code',
+                  'Unique Code *',
+                  <input id="code" className="input" placeholder={t('e.g. BFL-WEB')} value={form.code} maxLength={20} disabled={isEdit} onChange={(e) => set('code', e.target.value.toUpperCase())} {...aria('code')} />,
+                  isEdit ? 'The code cannot be changed after creation.' : undefined,
+                )}
+                {field(
+                  'category',
+                  'Category *',
+                  <select id="category" className="input" value={form.category} onChange={(e) => set('category', e.target.value)} {...aria('category')}>
+                    <option value="">{t('Select a category')}</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>,
+                )}
+              </div>
+              {field(
+                'description',
+                'Description (optional)',
+                <textarea id="description" className="input" placeholder={t('Describe the outcome, scope, or goal for this project.')} value={form.description} onChange={(e) => set('description', e.target.value)} />,
+              )}
+            </div>
+            <div className="pf-col">
+              <h3 className="pf-h">{t('Project team')}</h3>
+              <div className="field">
+                <label htmlFor="members">{t('Team members (optional)')}</label>
+                <MemberPicker selected={members} onChange={setMembers} />
+              </div>
+              {field(
+                'status',
+                'Project lifecycle',
+                <select id="status" className="input" value={form.status} onChange={(e) => set('status', e.target.value as ProjectStatus)}>
+                  {PROJECT_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(STATUS_LABEL[s])}
+                    </option>
+                  ))}
+                </select>,
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="pform-row two">
-          {field('name', 'Project Name *', <input id="name" className="input" placeholder={t('e.g. Website redesign')} value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} {...aria('name')} />)}
-          {field(
-            'code',
-            'Unique Code',
-            <input
-              id="code"
-              className="input"
-              placeholder={t('e.g. BFL-WEB')}
-              value={form.code}
-              maxLength={20}
-              disabled={isEdit}
-              onChange={(e) => set('code', e.target.value.toUpperCase())}
-              {...aria('code')}
-            />,
-            isEdit ? 'The code cannot be changed after creation.' : undefined,
-          )}
-        </div>
-
-        {field(
-          'description',
-          'Description',
-          <textarea id="description" className="input" placeholder={t('Describe the outcome, scope, or goal for this project.')} value={form.description} onChange={(e) => set('description', e.target.value)} />,
-        )}
-
-        <div className="pform-row sched">
-          {field(
-            'status',
-            'Status',
-            <select id="status" className="input" value={form.status} onChange={(e) => set('status', e.target.value as ProjectStatus)}>
-              {PROJECT_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {t(FORM_STATUS_LABEL[s])}
-                </option>
-              ))}
-            </select>,
-          )}
-          {field('start_date', 'Start Date', <input id="start_date" type="date" className="input" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} />)}
-          {field(
-            'target_end_date',
-            'Target End Date',
-            <input id="target_end_date" type="date" className="input" value={form.target_end_date} min={form.start_date || undefined} onChange={(e) => set('target_end_date', e.target.value)} {...aria('target_end_date')} />,
-          )}
-        </div>
-
-        <div className="pform-row two">
-          {field(
-            'type',
-            'Project Type',
-            <select id="type" className="input" value={form.type} onChange={(e) => set('type', e.target.value as FormState['type'])}>
-              <option value="internal">{t('Internal')}</option>
-              <option value="external">{t('External (for a client)')}</option>
-            </select>,
-          )}
-          {form.type === 'external' &&
-            field(
-              'client',
-              'Client *',
-              <select id="client" className="input" value={form.client} onChange={(e) => set('client', e.target.value)} {...aria('client')}>
-                <option value="">{t('Select a client')}</option>
-                {(clients.data?.items ?? []).map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-                {!isEdit && <option value={NEW_CLIENT}>{t('+ New client…')}</option>}
-              </select>,
+          <h3 className="pf-h">{t('Timeline & priority')}</h3>
+          <div className="pf-three">
+            {field('start_date', 'Start date *', <input id="start_date" type="date" className="input" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} />)}
+            {field(
+              'target_end_date',
+              'Target end date (optional)',
+              <input id="target_end_date" type="date" className="input" value={form.target_end_date} min={form.start_date || undefined} onChange={(e) => set('target_end_date', e.target.value)} {...aria('target_end_date')} />,
             )}
-        </div>
-        {form.type === 'external' &&
-          form.client === NEW_CLIENT &&
-          field('new_client_name', 'New Client Name *', <input id="new_client_name" className="input" maxLength={200} value={form.new_client_name} onChange={(e) => set('new_client_name', e.target.value)} {...aria('new_client_name')} />)}
+            <div className="field">
+              <label>{t('Priority (optional)')}</label>
+              <PrioritySelect value={form.priority} onChange={(p) => set('priority', p)} />
+            </div>
+          </div>
 
-        <div className="field">
-          <label htmlFor="members">{t('Add Members')}</label>
-          <MemberPicker selected={members} onChange={setMembers} />
+          {form.type === 'external' && (
+            <div className="pf-client">
+              <h3 className="pf-h">{t('Client information')}</h3>
+              <div className="pf-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected={!isNew} className={!isNew ? 'on' : ''} onClick={() => set('client', form.client === NEW_CLIENT ? '' : form.client)}>{t('Existing client')}</button>
+                {!isEdit && (
+                  <button type="button" role="tab" aria-selected={isNew} className={isNew ? 'on' : ''} onClick={() => set('client', NEW_CLIENT)}>{t('New client')}</button>
+                )}
+              </div>
+              {isNew ? (
+                <div className="pf-two">
+                  {field('new_client_name', 'Client organisation *', <input id="new_client_name" className="input" maxLength={200} value={form.new_client_name} onChange={(e) => set('new_client_name', e.target.value)} {...aria('new_client_name')} />)}
+                  <div className="pf-two">
+                    {field('contact_name', 'Contact name (optional)', <input id="contact_name" className="input" maxLength={200} value={form.contact_name} onChange={(e) => set('contact_name', e.target.value)} {...aria('contact_name')} />)}
+                    {field('contact_email', 'Contact email', <input id="contact_email" type="email" className="input" maxLength={320} value={form.contact_email} onChange={(e) => set('contact_email', e.target.value)} {...aria('contact_email')} />)}
+                  </div>
+                </div>
+              ) : (
+                <div className="pf-two">
+                  {field(
+                    'client',
+                    'Client organisation *',
+                    <select id="client" className="input" value={form.client} onChange={(e) => set('client', e.target.value)} {...aria('client')}>
+                      <option value="">{t('Select client organisation')}</option>
+                      {(clients.data?.items ?? []).map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>,
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="pform-actions">
+        <div className="pform-actions pf-foot">
           <Link className="pform-btn" to={back}>
             {t('Cancel')}
           </Link>

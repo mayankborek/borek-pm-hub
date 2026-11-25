@@ -8,8 +8,11 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProjects } from './projectsApi';
 import type { Project } from './types';
 import emptyIllustration from './assets/empty-projects.jpg';
-import { STATUS_LABEL, STATUS_TONE, completionOf, formatDate } from './projectUi';
+import { PmIcon } from './pmIcons';
+import { STATUS_LABEL, STATUS_TONE, completionOf, formatDate, healthOf } from './projectUi';
+import { PROJECT_STATUSES, type ProjectStatus } from './types';
 import './projects.css';
+import './pmProjects.css';
 import '@/features/tasks/tasks.css';
 
 /** Developer "My Projects" grid, styled like the PM Task List (Figma "01 PM Task List — Primary"). */
@@ -59,6 +62,79 @@ function DevProjectGrid({ projects, total }: { projects: Project[]; total: numbe
   );
 }
 
+const HEALTH_TONE = { 'On Track': 'good', 'At Risk': 'warn', 'Off Track': 'bad' } as const;
+
+/** Figma "Projects" (PM): project cards on the left, the portfolio summary on the right. */
+function PmProjectGrid({ projects, total }: { projects: Project[]; total: number }) {
+  const { t } = usePrefs();
+  const [status, setStatus] = useState<ProjectStatus | ''>('');
+  const shown = status ? projects.filter((p) => p.status === status) : projects;
+  const count = (s: ProjectStatus) => projects.filter((p) => p.status === s).length;
+  const external = projects.filter((p) => p.type === 'external').length;
+  return (
+    <>
+      <div className="pj-bar">
+        <h2>{t('All projects')} · {total}</h2>
+        <select className="pj-filter" aria-label={t('Filter by status')} value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus | '')}>
+          <option value="">{t('All projects')}</option>
+          {PROJECT_STATUSES.map((s) => (
+            <option key={s} value={s}>{t(STATUS_LABEL[s])}</option>
+          ))}
+        </select>
+      </div>
+      <div className="pj-layout">
+        <div className="pj-cards">
+          {shown.length === 0 && <p className="muted">{t('No projects with this status.')}</p>}
+          {shown.map((p) => {
+            const eligible = p.task_summary?.total ?? 0;
+            const pct = Math.round(completionOf(p));
+            const health = healthOf(p);
+            const ext = p.type === 'external';
+            return (
+              <article className="card pj-card" key={p.id}>
+                <div className="glance-head">
+                  <span className="glance-ico"><PmIcon name={ext ? 'briefcase' : 'layers'} /></span>
+                  <div>
+                    <h3>{p.name}</h3>
+                    <p>{ext ? [p.client_organisation?.name, t('Client project')].filter(Boolean).join(' · ') : `Borek · ${t('Internal initiative')}`}</p>
+                  </div>
+                </div>
+                <div className="tags">
+                  <span className={`tag ${ext ? 'blue' : ''}`}>{t(ext ? 'External' : 'Internal')}</span>
+                  <span className={`tag ${p.status === 'active' ? 'blue' : ''}`}>{t(STATUS_LABEL[p.status])}</span>
+                  <span className={`tag ${eligible ? HEALTH_TONE[health] : ''}`}>{t(eligible ? health : 'Unassessed')}</span>
+                </div>
+                <div className="glance-row"><span>{t('Task completion')}</span><b>{eligible ? `${pct}%` : '—'}</b></div>
+                <div className="glance-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={eligible ? pct : undefined} aria-label={t('{name} completion', { name: p.name })}>
+                  <i style={{ width: `${eligible ? pct : 0}%` }} />
+                </div>
+                <p className="glance-note">{eligible ? t('{done} of {total} tasks complete', { done: p.task_summary?.completed ?? 0, total: eligible }) : t('No eligible tasks planned yet')}</p>
+                <p className="glance-note">{p.target_end_date ? t('Due {date}', { date: formatDate(p.target_end_date) }) : t('Dates to be planned')}</p>
+                <Link className="pj-open" to={paths.project(p.id)}>{t('View project')} →</Link>
+              </article>
+            );
+          })}
+        </div>
+        <aside className="card pj-portfolio" aria-label={t('Your Portfolio')}>
+          <h3>{t('Your Portfolio')}</h3>
+          <strong>{t(total === 1 ? '{n} project' : '{n} projects', { n: total })}</strong>
+          <h4>{t('By status')}</h4>
+          <div className="pj-stats">
+            {PROJECT_STATUSES.filter((s) => count(s) > 0).map((s) => (
+              <div key={s} className={s === 'active' ? 'on' : ''}><span>{t(STATUS_LABEL[s])}</span><b>{count(s)}</b></div>
+            ))}
+          </div>
+          <h4>{t('By project type')}</h4>
+          <dl>
+            <div><dt>{t('External project')}</dt><dd>{external}</dd></div>
+            <div><dt>{t('Internal project')}</dt><dd>{projects.length - external}</dd></div>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}
+
 export function ProjectsPage() {
   const { user } = useAuth();
   const { t } = usePrefs();
@@ -68,7 +144,7 @@ export function ProjectsPage() {
 
   const newButton = isPm && (
     <Link className="btn" to={paths.projectNew}>
-      {t('New Project')}
+      {t('Create New Project')}
     </Link>
   );
 
@@ -77,12 +153,12 @@ export function ProjectsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">{t(isPm ? 'Projects' : 'My projects')}</h1>
-          <p className="page-desc">{t('Projects you can access. Open a project to see its overview and tasks.')}</p>
+          <p className="page-desc">{t(isPm ? 'Plan delivery, monitor progress and keep your team aligned.' : 'Projects you can access. Open a project to see its overview and tasks.')}</p>
         </div>
         {newButton}
       </div>
 
-      <div className="toolbar task-filters" hidden={!isPm && data?.total === 0 && !search.trim()}>
+      <div className="toolbar task-filters" hidden={isPm || (data?.total === 0 && !search.trim())}>
         <input
           type="search"
           className="input"
@@ -117,44 +193,7 @@ export function ProjectsPage() {
       ) : !isPm ? (
         <DevProjectGrid projects={data.items} total={data.total} />
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('Project')}</th>
-                <th>{t('Status')}</th>
-                <th>{t('Progress')}</th>
-                <th className="num">{t('Tasks')}</th>
-                <th className="num">{t('Overdue')}</th>
-                <th>{t('Target end')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <Link className="row-link" to={paths.project(p.id)}>
-                      {p.name}
-                    </Link>
-                    <div className="muted small">{p.code}</div>
-                  </td>
-                  <td>
-                    <Pill tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
-                  </td>
-                  <td>
-                    <ProgressBar percent={completionOf(p)} label={t('{name} completion', { name: p.name })} />
-                  </td>
-                  <td className="num">{p.task_summary?.total ?? '—'}</td>
-                  <td className={p.task_summary?.overdue ? 'num warn' : 'num'}>{p.task_summary?.overdue ?? '—'}</td>
-                  <td>{formatDate(p.target_end_date)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="table-foot muted small">
-            {t(data.total === 1 ? '{n} project' : '{n} projects', { n: data.total })}
-          </div>
-        </div>
+        <PmProjectGrid projects={data.items} total={data.total} />
       )}
     </section>
   );
