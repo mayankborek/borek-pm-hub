@@ -21,7 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.common.enums import sql_in
+from app.common.enums import ImpactUnit, sql_in
 from app.core.database import Base, IdMixin, TimestampMixin
 
 
@@ -54,8 +54,18 @@ class ChangeRequest(IdMixin, TimestampMixin, Base):
         CheckConstraint(
             "requested_date IS NULL OR milestone_id IS NOT NULL", name="date_needs_milestone"
         ),
+        CheckConstraint(sql_in("impact_schedule_unit", ImpactUnit), name="impact_schedule_unit"),
+        CheckConstraint(sql_in("impact_effort_unit", ImpactUnit), name="impact_effort_unit"),
         CheckConstraint(
-            "impact_effort_hours IS NULL OR impact_effort_hours >= 0", name="effort_not_negative"
+            "(impact_schedule_value IS NULL) = (impact_schedule_unit IS NULL)",
+            name="impact_schedule_pair",
+        ),
+        CheckConstraint(
+            "(impact_effort_value IS NULL) = (impact_effort_unit IS NULL)",
+            name="impact_effort_pair",
+        ),
+        CheckConstraint(
+            "impact_effort_value IS NULL OR impact_effort_value >= 0", name="effort_not_negative"
         ),
         CheckConstraint(
             "(status IN ('pending', 'in_review')) = (decided_at IS NULL)",
@@ -84,8 +94,12 @@ class ChangeRequest(IdMixin, TimestampMixin, Base):
     )
     review_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Impact, filled in by the project lead or a Manager.
-    impact_schedule_days: Mapped[int | None] = mapped_column(Integer)
-    impact_effort_hours: Mapped[int | None] = mapped_column(Integer)
+    # Each impact is an amount plus a unit (hours, days, weeks); both set or both null.
+    # Schedule: how far the delivery moves (minus = earlier). Effort: extra work.
+    impact_schedule_value: Mapped[int | None] = mapped_column(Integer)
+    impact_schedule_unit: Mapped[str | None] = mapped_column(String(10))
+    impact_effort_value: Mapped[int | None] = mapped_column(Integer)
+    impact_effort_unit: Mapped[str | None] = mapped_column(String(10))
     impact_scope: Mapped[str | None] = mapped_column(Text)
     decision_note: Mapped[str | None] = mapped_column(Text)
     decided_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"))

@@ -207,6 +207,7 @@ async def milestones_out(
                 name=m.name,
                 description=m.description,
                 completion_criteria=m.completion_criteria,
+                deliverable=m.deliverable,
                 due_date=m.due_date,
                 original_due_date=m.original_due_date,
                 requested_date=changes.get(m.id, DateChange()).requested_date,

@@ -5,6 +5,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.change_requests.models import ChangeRequestStatus
+from app.common.enums import ImpactUnit
 from app.common.validation import check_date, clean_optional_text, clean_text
 from app.organisations.schemas import PersonBrief
 
@@ -74,10 +75,21 @@ class ChangeRequestUpdate(BaseModel):
     reason: str | None = None
     milestone_id: uuid.UUID | None = None
     requested_date: date | None = None
-    impact_schedule_days: int | None = Field(
-        default=None, ge=-3650, le=3650, description="Days the delivery moves (minus = earlier)."
+    impact_schedule_value: int | None = Field(
+        default=None,
+        ge=-10_000,
+        le=10_000,
+        description="How far the delivery moves, in impact_schedule_unit (minus = earlier). "
+        "Set or clear together with the unit.",
     )
-    impact_effort_hours: int | None = Field(default=None, ge=0, le=100_000)
+    impact_schedule_unit: ImpactUnit | None = None
+    impact_effort_value: int | None = Field(
+        default=None,
+        ge=0,
+        le=100_000,
+        description="Extra work, in impact_effort_unit. Set or clear together with the unit.",
+    )
+    impact_effort_unit: ImpactUnit | None = None
     impact_scope: str | None = None
 
     @field_validator("title")
@@ -129,8 +141,10 @@ class ChangeRequestOut(BaseModel):
     requested_date: date | None
     status: ChangeRequestStatus
     review_started_at: datetime | None
-    impact_schedule_days: int | None
-    impact_effort_hours: int | None
+    impact_schedule_value: int | None
+    impact_schedule_unit: ImpactUnit | None
+    impact_effort_value: int | None
+    impact_effort_unit: ImpactUnit | None
     impact_scope: str | None
     decision_note: str | None
     decided_by: PersonBrief | None

@@ -2,9 +2,10 @@
 
 The project team (members with their project role), the client's Account Managers and the
 client contacts (external projects), each with their sign-in status (invited, invite expired,
-active, deactivated) and what the reader may do about it. The changes themselves use the routes
-that already exist: project members (`/projects/{id}/members`) and client contacts
-(`/organisations/{id}/members`, incl. a new invite link)."""
+active, deactivated) and what the reader may do about it. The changes use project members
+(`/projects/{id}/members`), the project invitations (`/projects/{id}/people/...`,
+app/projects/invitations.py) and, for the administrator, client contacts
+(`/organisations/{id}/members`)."""
 
 import uuid
 from datetime import date, datetime
@@ -51,9 +52,13 @@ class ClientContact(Person):
 
 
 class PeopleActions(BaseModel):
-    manage_team: bool = Field(description="Add / remove members, change project roles.")
+    manage_team: bool = Field(
+        description="Add / remove members, change project roles, invite new people, resend or "
+        "revoke their invite links (POST /projects/{id}/people/invite ...)."
+    )
     manage_client_contacts: bool = Field(
-        description="Add / remove client contacts and create new invite links (administrator)."
+        description="Invite / remove client contacts and resend or revoke their links (project "
+        "leads and Managers on external projects with a client; the administrator)."
     )
 
 
@@ -141,8 +146,11 @@ async def project_people(session: AsyncSession, user: User, project: Project) ->
         counts=counts,
         can=PeopleActions(
             manage_team=await allowed_in(session, user, project, Action.MEMBER_MANAGE),
-            manage_client_contacts=await allowed_in(
-                session, user, project, Action.ORGANISATION_MANAGE
-            ),
+            manage_client_contacts=(
+                project.project_type == "external"
+                and project.client_organisation_id is not None
+                and await allowed_in(session, user, project, Action.MEMBER_MANAGE)
+            )
+            or await allowed_in(session, user, project, Action.ORGANISATION_MANAGE),
         ),
     )

@@ -19,7 +19,16 @@ from app.core.errors import AppError
 from app.projects import service as project_service
 from app.projects.membership import lead_rights_in, project_access
 from app.projects.models import Project
-from app.tasks import csv_import, importer, labels, pdf_export, service, statuses, transfer
+from app.tasks import (
+    csv_import,
+    importer,
+    labels,
+    pdf_export,
+    service,
+    stats,
+    statuses,
+    transfer,
+)
 from app.tasks.models import Task, WorkflowStatus
 from app.tasks.schemas import (
     AssigneeUpdate,
@@ -35,6 +44,7 @@ from app.tasks.schemas import (
     TaskListOut,
     TaskOut,
     TaskSort,
+    TaskStatsOut,
     TaskUpdate,
 )
 from app.users.models import User
@@ -109,7 +119,14 @@ def task_filters(
     status_id: Annotated[list[uuid.UUID] | None, Query(max_length=50)] = None,
     category: Annotated[list[StatusCategory] | None, Query(max_length=10)] = None,
     priority: Annotated[list[TaskPriority] | None, Query(max_length=10)] = None,
-    assignee_id: uuid.UUID | None = None,
+    assignee_id: Annotated[
+        list[uuid.UUID] | None,
+        Query(
+            max_length=50,
+            description="Repeat for several people (any of them). With unassigned=true, "
+            "tasks without an assignee are included too.",
+        ),
+    ] = None,
     unassigned: bool = False,
     label: Annotated[str | None, Query(max_length=30)] = None,
     due_before: Annotated[date | None, Query(description="Due strictly before this date")] = None,
@@ -144,7 +161,7 @@ def task_filters(
         status_ids=status_id,
         categories=category,
         priorities=priority,
-        assignee_id=assignee_id,
+        assignee_ids=assignee_id,
         unassigned=unassigned,
         label=label.strip() if label else None,
         due_before=due_before,
@@ -298,6 +315,17 @@ async def list_project_tasks(
     return TaskListOut(items=items, total=total, page=page, page_size=page_size)
 
 
+@router.get("/projects/{project_id}/task-stats", response_model=TaskStatsOut)
+async def project_task_stats(
+    project_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> TaskStatsOut:
+    """The project Overview figures: open / completed / progress, due this week, overdue,
+    blockers, team size, next milestone, and task counts per status and per priority (exact
+    counts, zeros included). Same access as the task list."""
+    await _project_for(session, user, project_id, Action.TASK_VIEW)
+    return await stats.task_stats(session, project_id)
+
+
 @router.get("/projects/{project_id}/labels", response_model=list[LabelOut])
 async def list_project_labels(
     project_id: uuid.UUID,
@@ -364,11 +392,17 @@ async def _filter_summary(session: AsyncSession, filters: service.TaskFilters) -
         found.append("category " + ", ".join(c.value.replace("_", " ") for c in filters.categories))
     if filters.priorities:
         found.append("priority " + ", ".join(p.value for p in filters.priorities))
+    people: list[str] = []
+    if filters.assignee_ids:
+        people = list(
+            await session.scalars(
+                select(User.name).where(User.id.in_(filters.assignee_ids)).order_by(User.name)
+            )
+        )
     if filters.unassigned:
-        found.append("unassigned")
-    elif filters.assignee_id:
-        assignee = await session.get(User, filters.assignee_id)
-        found.append(f"assignee {assignee.name if assignee else 'unknown'}")
+        people.append("unassigned")
+    if people:
+        found.append("assignee " + ", ".join(people))
     if filters.label:
         found.append(f"label {filters.label}")
     if filters.due_after:
@@ -489,7 +523,9 @@ async def my_tasks(
     """My Work (F07): tasks assigned to the signed-in user across their active projects."""
     require(user, Action.MY_TASKS)
     filters.project_id = project_id
-    filters.assignee_id = user.id  # always the caller; the `assignee_id` and `unassigned` filters
+    filters.assignee_ids = [
+        user.id
+    ]  # always the caller; the `assignee_id` and `unassigned` filters
     filters.unassigned = False  # do not apply here
     scope = _cross_project_scope(user, filters)
     items, total = await service.list_tasks(

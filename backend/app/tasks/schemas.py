@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.common.enums import EstimateUnit, StatusCategory, TaskPriority
 from app.common.validation import check_date, clean_optional_text, clean_text
+from app.manager.schemas import NextMilestone
 
 MAX_LABELS = 10
 MAX_LABEL_INPUT = 50  # raw list size accepted before de-duplication
@@ -162,6 +163,10 @@ class TaskCreate(BaseModel):
         default=None,
         description="A planned or active sprint of the project (project leads only); else backlog.",
     )
+    reporter_id: uuid.UUID | None = Field(
+        default=None,
+        description="Project leads only: an active project member; left out = the creator.",
+    )
     blocked_reason: str | None = None
 
     _strip_title = field_validator("title")(_clean_title)
@@ -199,6 +204,11 @@ class TaskUpdate(BaseModel):
     estimate_value: int | None = Field(default=None, gt=0, le=MAX_ESTIMATE)
     estimate_unit: EstimateUnit | None = None
     assignee_id: uuid.UUID | None = None
+    reporter_id: uuid.UUID | None = Field(
+        default=None,
+        description="Project leads only: an active project member (PM, developer, Manager). "
+        "Cannot be null; starts as the task's creator.",
+    )
     milestone_id: uuid.UUID | None = Field(
         default=None, description="Project leads only; null removes the link."
     )
@@ -218,7 +228,7 @@ class TaskUpdate(BaseModel):
     def _clean(cls, value: list[str] | None) -> list[str] | None:
         return None if value is None else _clean_labels(value)
 
-    @field_validator("title", "priority", "labels", "status_id", mode="before")
+    @field_validator("title", "priority", "labels", "status_id", "reporter_id", mode="before")
     @classmethod
     def _not_null(cls, value: object) -> object:
         if value is None:
@@ -363,3 +373,42 @@ class ReportBlocker(BaseModel):
         if cleaned is None:
             raise ValueError("Say what blocks the task.")
         return cleaned
+
+
+class StatusCount(BaseModel):
+    status: StatusBrief
+    position: int
+    count: int
+
+
+class PriorityCount(BaseModel):
+    priority: TaskPriority
+    count: int
+
+
+class TaskStatsOut(BaseModel):
+    """Task figures for the project Overview (PM design: KPI cards + status / priority charts).
+
+    Counts active tasks only (archived ones are left out). The status chart's "Done" checkbox
+    is a frontend toggle: every status is returned, done ones included."""
+
+    today: date
+    total: int = Field(description="Active tasks in the project.")
+    open: int = Field(description="Tasks not in a done status.")
+    completed: int = Field(description="Tasks in a done status.")
+    progress_percent: int | None = Field(
+        description="completed / total, rounded down; null when the project has no tasks."
+    )
+    due_this_week: int = Field(
+        description="Open tasks due from today through Sunday of this week (ISO week)."
+    )
+    overdue: int = Field(description="Open tasks whose due date is before today.")
+    blocked: int = Field(description="Tasks in a blocked status (the 'needs attention' card).")
+    team_members: int = Field(description="Active people who are members of the project.")
+    next_milestone: NextMilestone | None = Field(
+        description="The open milestone due first (late ones included)."
+    )
+    by_status: list[StatusCount] = Field(
+        description="Every project status in board order, zero counts included."
+    )
+    by_priority: list[PriorityCount] = Field(description="Highest to lowest, zero counts included.")

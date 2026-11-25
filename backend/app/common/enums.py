@@ -120,6 +120,14 @@ class RaciRole(StrEnum):
     INFORMED = "informed"
 
 
+class ImpactUnit(StrEnum):
+    """Unit of a change request's schedule or effort impact (PM design spec 19.11.2026)."""
+
+    HOURS = "hours"
+    DAYS = "days"
+    WEEKS = "weeks"
+
+
 class EstimateUnit(StrEnum):
     MINUTES = "minutes"
     HOURS = "hours"
