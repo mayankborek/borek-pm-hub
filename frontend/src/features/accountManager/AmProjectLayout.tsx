@@ -42,7 +42,7 @@ function Switcher({ current, projects }: { current: ClientProject; projects: Cli
   );
 }
 
-/** Project header (borek-flow-portal/project.html): breadcrumb, title and the Overview / Milestones / Reports / Stakeholders tabs. */
+/** Project header (borek-flow-portal/project.html): breadcrumb, title and the Overview / Backlog / Board / Change Requests / Milestones / Reports / Stakeholders tabs. */
 export function AmProjectLayout() {
   const { projectId } = useParams();
   const { t } = usePrefs();
@@ -62,6 +62,9 @@ export function AmProjectLayout() {
   }
   const tabs: [string, string, boolean?][] = [
     [paths.amProject(project.id), 'Overview', true],
+    [paths.amBacklog(project.id), 'Backlog'],
+    [paths.amBoard(project.id), 'Board'],
+    [paths.amChangeRequests(project.id), 'Change Requests'],
     [paths.amMilestones(project.id), 'Milestones'],
     [paths.amReports(project.id), 'Reports'],
     [paths.amStakeholders(project.id), 'Stakeholders'],

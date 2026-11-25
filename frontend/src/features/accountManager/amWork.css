@@ -1,0 +1,48 @@
+/* Account Manager task screens (design2): Task List, Backlog, Board, Change Requests. */
+.am .wk-bar{display:flex;align-items:center;gap:12px;margin:20px 0;flex-wrap:wrap}
+.am .wk-bar input,.am .wk-bar select,.am .wk-filter{height:36px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 var(--fs-12) Inter,sans-serif;padding:0 12px;border-radius:0}
+.am .wk-bar input{width:260px}
+.am .wk-bar select{min-width:164px}
+.am .wk-filter{cursor:pointer}
+.am .wk-extra{margin-top:-8px}
+.am .wk-people{display:flex}
+.am .wk-people button{width:24px;height:24px;border-radius:50%;border:2px solid var(--bg);margin-left:-6px;font:700 var(--fs-8) Inter,sans-serif;color:#11163F;cursor:pointer;padding:0}
+.am .wk-people button:first-child{margin-left:0}
+.am .wk-people button.on{outline:2px solid var(--blue);z-index:1}
+.am .wk-card{padding:0}
+.am .wk-card>h3{padding:16px 16px 12px;font-size:var(--fs-14)}
+.am .wk-card>h3 small{font-weight:400;color:var(--muted);font-size:var(--fs-11);margin-left:8px}
+.am .wk-empty{padding:0 16px 20px}
+.am .wk-table{width:100%;border-collapse:collapse;font-size:var(--fs-13)}
+.am .wk-table th{background:var(--bg);text-align:left;font-size:var(--fs-11);font-weight:600;color:var(--muted);padding:12px 16px}
+.am .wk-table td{padding:14px 16px;border-top:1px solid var(--line);vertical-align:middle}
+.am .wk-table .muted,.am .wk-person.muted{color:var(--muted)}
+.am .wk-title{font-weight:600;color:var(--ink)}
+.am a.wk-title:hover{text-decoration:underline}
+.am .wk-pri{display:inline-flex;align-items:center;gap:6px}
+.am .wk-person{display:inline-flex;align-items:center;gap:8px}
+.am .wk-av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 var(--fs-8) Inter,sans-serif;color:#11163F}
+.am .wk-foot{display:flex;justify-content:space-between;align-items:center;padding:16px;border-top:1px solid var(--line);font-size:var(--fs-11)}
+.am .wk-foot nav{display:flex;align-items:center;gap:8px}
+.am .wk-foot nav span{margin-right:6px}
+.am .wk-foot nav button{background:none;border:0;min-width:24px;height:24px;color:var(--ink);font:500 var(--fs-13) Inter,sans-serif;cursor:pointer}
+.am .wk-foot nav button.on{font-weight:700;border-bottom:2px solid var(--ink)}
+.am .wk-foot nav button:disabled{color:var(--muted);cursor:default}
+.am .wk-board{display:flex;gap:16px;overflow-x:auto;align-items:flex-start;padding-bottom:12px}
+.am .wk-col{flex:0 0 236px;background:var(--bg);border:1px solid var(--line);padding:12px;min-height:320px}
+.am .wk-col h4{font-size:var(--fs-12);font-weight:600;margin:0 0 12px}
+.am .wk-cardt{background:var(--card);border:1px solid var(--line);padding:12px;margin-bottom:12px;display:flex;flex-direction:column;gap:14px}
+.am .wk-cardt header,.am .wk-cardt footer{display:flex;justify-content:space-between;align-items:center}
+.am .wk-cardt b{font-size:var(--fs-13);font-weight:600}
+.am .wk-cardt footer{border-top:1px solid var(--line);padding-top:10px;font-size:var(--fs-11);color:var(--muted)}
+.am .wk-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);padding:2px 8px;font-size:var(--fs-11);color:var(--muted)}
+.am .wk-chip i{width:6px;height:6px;border-radius:50%}
+.am .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Overview: tasks by status and priority */
+.am .ov-row{display:grid;grid-template-columns:96px 1fr 24px;align-items:center;gap:16px;margin-top:16px;font-size:var(--fs-12)}
+.am .ov-row b{text-align:right}
+.am .ov-cols{display:flex;justify-content:space-around;align-items:flex-end;height:170px;margin-top:16px}
+.am .ov-cols div{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:var(--fs-11);color:var(--muted)}
+.am .ov-cols b{color:var(--ink);font-size:var(--fs-13)}
+.am .ov-cols i{display:block;width:40px;min-height:2px}

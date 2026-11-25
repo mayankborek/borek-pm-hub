@@ -51,7 +51,7 @@ export function ManagerStakeholdersPage() {
               </dl>
               <div className="mg-foot">
                 <span>{t(borek ? 'Delivery contact' : 'Client organisation contact')}</span>
-                {borek && c.stakeholderId && (
+                {c.stakeholderId && (
                   <button type="button" className="mg-btn" onClick={() => setDialog({ person: c })}>{t('Edit contact')}</button>
                 )}
               </div>

@@ -18,7 +18,12 @@ function titleFor(pathname: string) {
   if (pathname === paths.amHome) return 'Dashboard';
   if (SETTINGS.includes(pathname)) return 'Profile';
   if (pathname === paths.amProjects) return 'Projects';
+  if (pathname === paths.amTasks) return 'Task List';
   if (/^\/account-manager\/projects\/[^/]+\/?$/.test(pathname)) return 'Overview';
+  if (/^\/account-manager\/projects\/[^/]+\/backlog\/?$/.test(pathname)) return 'Backlog';
+  if (/^\/account-manager\/projects\/[^/]+\/board\/?$/.test(pathname)) return 'Board';
+  if (/^\/account-manager\/projects\/[^/]+\/change-requests\/?$/.test(pathname)) return 'Change Requests';
+  if (/^\/account-manager\/projects\/[^/]+\/milestones\/?$/.test(pathname)) return 'Milestones';
   if (/^\/account-manager\/projects\/[^/]+\/reports\/[^/]+\/?$/.test(pathname)) return 'Report details';
   return 'Account Manager';
 }
@@ -46,7 +51,7 @@ export function Toast({ children }: { children: ReactNode }) {
   );
 }
 
-/** Account Manager shell (design.html): sidebar (Dashboard, Projects), titled top bar with bell and profile. */
+/** Account Manager shell (design.html): sidebar (Dashboard, Task List, Projects), titled top bar with bell and profile. */
 export function AccountManagerLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
@@ -63,6 +68,7 @@ export function AccountManagerLayout() {
             </Link>
             <nav className="nav" aria-label={t('Main')}>
               <NavLink to={paths.amHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Dashboard')}</NavLink>
+              <NavLink to={paths.amTasks} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Task List')}</NavLink>
               <NavLink to={paths.amProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
             </nav>
             <img className="corp" src={solutionsLogo} alt="Borek Solutions Group" width={93} height={24} />

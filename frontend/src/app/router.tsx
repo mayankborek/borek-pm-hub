@@ -30,6 +30,8 @@ import { ManagerLayout } from '@/features/manager/ManagerLayout';
 import { ManagerDashboardPage } from '@/features/manager/ManagerDashboardPage';
 import { ManagerStakeholdersPage } from '@/features/manager/ManagerStakeholdersPage';
 import { ManagerTeamPage } from '@/features/manager/ManagerTeamPage';
+import { AmTasksPage } from '@/features/accountManager/AmTasksPage';
+import { AmBacklogPage, AmBoardPage, AmChangeRequestsPage } from '@/features/accountManager/AmBoardPages';
 import { AmHomePage } from '@/features/accountManager/AmHomePage';
 import { AmProjectsPage } from '@/features/accountManager/AmProjectsPage';
 import { AmProjectLayout } from '@/features/accountManager/AmProjectLayout';
@@ -123,12 +125,16 @@ export const router = createBrowserRouter([
               { path: 'profile/security', element: <AmSecurityPage /> },
               { path: 'profile/notifications', element: <AmNotificationsPage /> },
               { path: 'profile/preferences', element: <AmPreferencesPage /> },
+              { path: 'tasks', element: <AmTasksPage /> },
               { path: 'projects', element: <AmProjectsPage /> },
               {
                 path: 'projects/:projectId',
                 element: <AmProjectLayout />,
                 children: [
                   { index: true, element: <AmOverviewPage /> },
+                  { path: 'backlog', element: <AmBacklogPage /> },
+                  { path: 'board', element: <AmBoardPage /> },
+                  { path: 'change-requests', element: <AmChangeRequestsPage /> },
                   { path: 'milestones', element: <AmMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
