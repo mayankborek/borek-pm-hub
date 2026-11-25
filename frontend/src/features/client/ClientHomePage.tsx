@@ -64,17 +64,21 @@ export function ClientHomePage() {
         </div>
       </section>
 
-      {latest && (
-        <section className="cx-card cx-latest" aria-labelledby="cx-latest-h">
-          <h2 id="cx-latest-h">{t('Latest report')}</h2>
-          <span className="cx-pub">{t('Published · {date}', { date: paddedDate(lang, latest.r.publishedAt.slice(0, 10)) })}</span>
-          <div className="cx-t">{latest.r.title}</div>
-          <div className="cx-m">{t('{name} · Shared by your Project Manager', { name: latest.p.name })}</div>
-          <Link className="cx-btn" to={pp.reports(latest.p.id)}>
-            {t('View reports')} <Icon name="arrow" />
-          </Link>
-        </section>
-      )}
+      <section className="cx-card cx-latest" aria-labelledby="cx-latest-h">
+        <h2 id="cx-latest-h">{t('Latest report')}</h2>
+        {latest ? (
+          <>
+            <span className="cx-pub">{t('Published · {date}', { date: paddedDate(lang, latest.r.publishedAt.slice(0, 10)) })}</span>
+            <div className="cx-t">{latest.r.title}</div>
+            <div className="cx-m">{t('{name} · Shared by your Project Manager', { name: latest.p.name })}</div>
+            <Link className="cx-btn" to={pp.reports(latest.p.id)}>
+              {t('View reports')} <Icon name="arrow" />
+            </Link>
+          </>
+        ) : (
+          <div className="cx-m" style={{ marginTop: 20 }}>{t('No reports have been shared yet')}</div>
+        )}
+      </section>
 
       <div className="cx-sec">
         <h2>{t('My projects')}</h2>

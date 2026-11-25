@@ -700,6 +700,7 @@ export const DE: Record<string, string> = {
   'Next {n} days': 'Nächste {n} Tage',
   'Shared reports': 'Geteilte Berichte',
   'Published reports available': 'Veröffentlichte Berichte verfügbar',
+  'No reports have been shared yet': 'Es wurden noch keine Berichte geteilt',
   'Published · {date}': 'Veröffentlicht · {date}',
   '{name} · Shared by your Project Manager': '{name} · Geteilt von Ihrem Projektmanager',
   'View reports': 'Berichte ansehen',
