@@ -275,7 +275,8 @@ Every project starts with 7 statuses: Backlog, To do, In progress, Code review, 
 | assignee_id | nullable FK users (unassigned tasks are allowed, F09) |
 | blocked_reason, blocked_at | both set while the status is in the `blocked` category (reason required; checked in the service because the status is in another table) |
 | position | integer/rank for Kanban order (add when the board needs it) |
-| created_by (the reporter), completed_at | `completed_at` is set while the status is in the `done` category |
+| created_by, completed_at | `created_by` = who created the task (a developer's own-task rights use it). `completed_at` is set while the status is in the `done` category |
+| reporter_id | FK users, not null; starts as `created_by`, a PM / project lead can change it to an active project member (PM design spec, migration 0032, 25.11.2026). Gets the "tasks_reported" notifications |
 | version, archived_at | |
 
 **task_comments** (added in v0.4, F08)
@@ -646,13 +647,15 @@ were not rewritten. The machine-readable contract is `docs/api/openapi.json`; he
 | Module | Tables (migration) | What it does |
 |---|---|---|
 | `milestones` | `project_phases`, `milestones`, `tasks.milestone_id` (0022, 0028) | Phases and milestones; state (done, late, revised, at risk, in progress, planned) is computed on read; client sees shared milestones only |
-| `change_requests` | 0023, 0024 | pending -> in review -> approved / declined; approval moves the linked milestone ("revised"); shared comments vs internal notes; attachments |
+| `change_requests` | 0023, 0024, 0033 | pending -> in review -> approved / declined; approval moves the linked milestone ("revised"); shared comments vs internal notes; attachments. Impact = amount + unit (`hours`, `days`, `weeks`) for schedule and effort (0033, 25.11.2026) |
 | `requirements` | 0025 | Versions, publish for client acceptance, the client's answer stored against the exact version |
 | `notifications` | 0026 | In-app, written in the same transaction as the change, access re-checked on read, 90-day cleanup |
 | `capacity` | 0027 | Workspace schedule, personal schedules, reservations; Manager workload and capacity |
 | `sprints` | `sprints`, `sprint_task_outcomes`, `tasks.sprint_id` (0029) | Jira-like: planned -> active -> completed, one active per project; completing records each task's outcome and moves unfinished tasks (spillover); backlog = no sprint or unfinished in a completed sprint |
 | `task_links` | `task_links` (0030) | blocks, relates to (stored once), duplicates, clones; same project only; both tasks' history |
 | `registers` | `register_items` (0031) | Risks (probability x impact score), issues (priority), decisions (date, decided by, rationale); one table, `kind` with database checks per kind |
+| `project_reports` | `project_reports` (0035) | Generated reports (BB-21 / RD-11, Figma report format 25.11.2026): tasks, milestones, change requests, project status (overall / weekly), other; data kept as a snapshot (`content`), PDF, shared in the app with Account Manager / client portal / Manager (no email); a shared report cannot be edited |
+| `projects` (invitations) | - | PM invites new team members and client contacts from the project, resend / revoke links, remove access (`/projects/{id}/people/...`, 25.11.2026); invite links last 30 days |
 | `reporting` | `stakeholders.raci`, `communication_role` (0031) | RACI role and communication role on stakeholders |
 | `picklists` | `picklist_values` (0031) | Admin-editable dropdowns (project category, communication role); workflow values are protected (read-only, from the code) |
 | `client` | - | `/client/...` only for client contacts: their organisation's external projects, published data only, 404 for anything else |

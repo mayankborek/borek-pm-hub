@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.change_requests.models import ChangeRequestStatus
-from app.common.enums import ProjectStatus, RagStatus
+from app.common.enums import ImpactUnit, ProjectStatus, RagStatus
 from app.milestones.schemas import MilestoneState, PhaseStatus
 
 ClientHealth = Literal["on_track", "at_risk", "off_track"]
@@ -169,7 +169,10 @@ class ClientChangeRequestOut(ClientChangeRequestBrief):
     milestone: ClientMilestoneRef | None = Field(description="Only if shown to the client.")
     requested_date: date | None
     review_started_at: datetime | None = Field(description="For the request timeline.")
-    impact_schedule_days: int | None = Field(description="Days the delivery moves.")
+    impact_schedule_value: int | None = Field(
+        description="How far the delivery moves, in impact_schedule_unit (minus = earlier)."
+    )
+    impact_schedule_unit: ImpactUnit | None
     impact_scope: str | None
     decision_note: str | None
     decided_at: datetime | None

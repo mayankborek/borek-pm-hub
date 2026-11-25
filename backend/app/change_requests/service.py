@@ -146,8 +146,10 @@ async def requests_out(
                 requested_date=r.requested_date,
                 status=ChangeRequestStatus(r.status),
                 review_started_at=r.review_started_at,
-                impact_schedule_days=r.impact_schedule_days,
-                impact_effort_hours=r.impact_effort_hours,
+                impact_schedule_value=r.impact_schedule_value,
+                impact_schedule_unit=r.impact_schedule_unit,
+                impact_effort_value=r.impact_effort_value,
+                impact_effort_unit=r.impact_effort_unit,
                 impact_scope=r.impact_scope,
                 decision_note=r.decision_note,
                 decided_by=person(r.decided_by),
@@ -298,6 +300,16 @@ async def update_request(
     requested_date = changes.get("requested_date", request.requested_date)
     if requested_date is not None and milestone_id is None:
         raise _invalid("requested_date", "needs_milestone", "A requested date needs a milestone.")
+    for kind in ("schedule", "effort"):  # checked on the merged values, like task estimates
+        value_field, unit_field = f"impact_{kind}_value", f"impact_{kind}_unit"
+        value = changes.get(value_field, getattr(request, value_field))
+        unit = changes.get(unit_field, getattr(request, unit_field))
+        if (value is None) != (unit is None):
+            raise _invalid(
+                unit_field,
+                "pair_required",
+                f"{value_field} and {unit_field} must be set or cleared together.",
+            )
     for field, value in changes.items():
         setattr(request, field, value)
     record_audit(

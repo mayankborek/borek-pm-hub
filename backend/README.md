@@ -47,6 +47,7 @@ flowchart LR
 | `app/change_requests/` | Change requests: raise, review, decide, impact, comments, internal notes, files |
 | `app/requirements/` | Requirements with versions, publishing for client acceptance, the client's answer |
 | `app/registers/` | Risks, issues and decisions (`/risks`, `/issues`, `/decisions` per project) |
+| `app/project_reports/` | Generated reports: generate, preview, share in the app, PDF (`/projects/{id}/reports`, client `/client/projects/{id}/shared-reports`) |
 | `app/reporting/` | Status reports (draft, published, PDF) and stakeholders (incl. RACI) |
 | `app/client/` | The client portal (`/client/...`): published data of the client's own projects only |
 | `app/manager/`, `app/portfolio/`, `app/capacity/` | Manager dashboard, project overview, delivery cards (next action), workload, capacity, reservations |

@@ -19,7 +19,9 @@ def _readable(value: Any) -> Any:
     return value
 
 
-def snapshot(task: Task, status_name: str, assignee_name: str | None) -> dict[str, Any]:
+def snapshot(
+    task: Task, status_name: str, assignee_name: str | None, reporter_name: str | None = None
+) -> dict[str, Any]:
     """The tracked fields with readable values (names instead of ids)."""
     return {
         "title": task.title,
@@ -35,6 +37,7 @@ def snapshot(task: Task, status_name: str, assignee_name: str | None) -> dict[st
         ),
         "status": status_name,
         "assignee": assignee_name,
+        "reporter": reporter_name,
         "blocked_reason": task.blocked_reason,
     }
 

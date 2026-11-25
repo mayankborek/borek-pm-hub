@@ -53,6 +53,7 @@ DETAIL_FIELDS = frozenset(
         "estimate_value",
         "estimate_unit",
         "assignee_id",
+        "reporter_id",
         "milestone_id",
         "sprint_id",
     }
@@ -62,7 +63,7 @@ SCHEDULE_FIELDS = frozenset({"start_date", "due_date"})
 # Part of DETAIL_FIELDS, but also editable by a developer on a task assigned to them.
 PRIORITY_FIELDS = frozenset({"priority"})
 STATUS_FIELDS = frozenset({"status_id", "blocked_reason"})
-_NOT_NULL_FIELDS = ("title", "priority", "labels", "status_id")
+_NOT_NULL_FIELDS = ("title", "priority", "labels", "status_id", "reporter_id")
 
 Assignee = aliased(User)
 Reporter = aliased(User)
@@ -96,7 +97,7 @@ def _select_rows() -> Select[Any]:
         .join(WorkflowStatus, WorkflowStatus.id == Task.status_id)
         .join(Project, Project.id == Task.project_id)
         .outerjoin(Assignee, Assignee.id == Task.assignee_id)
-        .join(Reporter, Reporter.id == Task.created_by)
+        .join(Reporter, Reporter.id == Task.reporter_id)
         .execution_options(populate_existing=True)  # never return a stale object after commit
     )
 
@@ -161,7 +162,7 @@ class TaskFilters:
         status_ids: list[uuid.UUID] | None = None,
         categories: list[StatusCategory] | None = None,
         priorities: list[TaskPriority] | None = None,
-        assignee_id: uuid.UUID | None = None,
+        assignee_ids: list[uuid.UUID] | None = None,
         unassigned: bool = False,
         label: str | None = None,
         due_before: date | None = None,
@@ -177,7 +178,7 @@ class TaskFilters:
         self.status_ids = status_ids
         self.categories = categories
         self.priorities = priorities
-        self.assignee_id = assignee_id
+        self.assignee_ids = assignee_ids
         self.unassigned = unassigned
         self.label = label
         self.due_before = due_before
@@ -201,9 +202,12 @@ class TaskFilters:
             found.append(WorkflowStatus.category.in_([c.value for c in self.categories]))
         if self.priorities:
             found.append(Task.priority.in_([p.value for p in self.priorities]))
-        if self.assignee_id:
-            found.append(Task.assignee_id == self.assignee_id)
-        if self.unassigned:
+        # People picker: any of the chosen people; with `unassigned` too, also tasks without one.
+        if self.assignee_ids and self.unassigned:
+            found.append(or_(Task.assignee_id.in_(self.assignee_ids), Task.assignee_id.is_(None)))
+        elif self.assignee_ids:
+            found.append(Task.assignee_id.in_(self.assignee_ids))
+        elif self.unassigned:
             found.append(Task.assignee_id.is_(None))
         if self.milestone_id:
             found.append(Task.milestone_id == self.milestone_id)
@@ -359,27 +363,25 @@ async def board(
 # --- writing ----------------------------------------------------------------------------------
 
 
-async def _check_assignee(session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID) -> None:
-    """The assignee must be an active user AND a member of the project (add them as a member
-    first). Assigning never adds anyone to the project."""
+async def _check_assignee(
+    session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID, field: str = "assignee_id"
+) -> None:
+    """The assignee (or reporter) must be an active user AND a member of the project (add them
+    as a member first). Assigning never adds anyone to the project."""
     eligible = await session.scalar(
         select(User.id).where(
             User.id == user_id, User.is_active.is_(True), works_on_tasks_condition()
         )
     )
     if eligible is None:
-        raise _invalid(
-            "assignee_id", "unknown_user", "The assignee must be an active project worker."
-        )
+        raise _invalid(field, "unknown_user", "The person must be an active project worker.")
     member_id = await session.scalar(
         select(ProjectMember.id).where(
             ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
         )
     )
     if member_id is None:
-        raise _invalid(
-            "assignee_id", "not_a_member", "The assignee must be a member of the project."
-        )
+        raise _invalid(field, "not_a_member", "The person must be a member of the project.")
 
 
 def apply_status(task: Task, status: WorkflowStatus, blocked_reason: str | None) -> None:
@@ -419,6 +421,10 @@ async def create_task(
         if not lead_rights:
             raise AppError(403, "FORBIDDEN", "Only project leads put tasks into sprints.")
         await sprints.check_sprint(session, project.id, data.sprint_id)
+    if data.reporter_id is not None and data.reporter_id != user.id:
+        if not lead_rights:
+            raise AppError(403, "FORBIDDEN", "Only project leads choose the reporter.")
+        await _check_assignee(session, project.id, data.reporter_id, "reporter_id")
 
     if data.status_id is not None:
         status = await statuses.get_status(session, project.id, data.status_id)
@@ -449,6 +455,7 @@ async def create_task(
         milestone_id=data.milestone_id,
         sprint_id=data.sprint_id,
         created_by=user.id,
+        reporter_id=data.reporter_id or user.id,
     )
     apply_status(task, status, data.blocked_reason)
     session.add(task)
@@ -532,13 +539,21 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
     new_assignee_id = changes.get("assignee_id")
     if new_assignee_id is not None and new_assignee_id != task.assignee_id:
         await _check_assignee(session, task.project_id, new_assignee_id)
+    if "reporter_id" in changes and changes["reporter_id"] != task.reporter_id:
+        await _check_assignee(session, task.project_id, changes["reporter_id"], "reporter_id")
 
     # Do every lookup and check before touching the task, so a rejected request leaves it as is.
     old_status = await session.get(WorkflowStatus, task.status_id)
     assert old_status is not None
     old_assignee = await _user_name(session, task.assignee_id)
     old_assignee_id = task.assignee_id
-    before = activity.snapshot(task, old_status.name, old_assignee)
+    old_reporter = await _user_name(session, task.reporter_id)
+    new_reporter = (
+        await _user_name(session, changes["reporter_id"])
+        if "reporter_id" in changes
+        else old_reporter
+    )
+    before = activity.snapshot(task, old_status.name, old_assignee, old_reporter)
     new_assignee = (
         await _user_name(session, changes["assignee_id"])
         if "assignee_id" in changes
@@ -559,7 +574,8 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate, actor
             value = value.value
         setattr(task, field, value)
     changed = activity.diff(
-        before, activity.snapshot(task, (new_status or old_status).name, new_assignee)
+        before,
+        activity.snapshot(task, (new_status or old_status).name, new_assignee, new_reporter),
     )
     if sprint_change is not None:
         changed["sprint"] = sprint_change

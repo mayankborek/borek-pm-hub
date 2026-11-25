@@ -80,6 +80,8 @@ class Milestone(IdMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     completion_criteria: Mapped[str | None] = mapped_column(Text)
+    # What is handed over when the milestone is reached (PM design spec, Mayank 25.11.2026).
+    deliverable: Mapped[str | None] = mapped_column(Text)
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
     # The date before the first approved change request moved it; set = "revised".
     original_due_date: Mapped[date | None] = mapped_column(Date)

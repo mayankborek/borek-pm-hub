@@ -59,7 +59,9 @@ async def _attention(
     scope: ColumnElement[bool] | None = None,
 ) -> AttentionList:
     filters = task_service.TaskFilters(
-        categories=[category] if category else None, overdue=overdue, assignee_id=assignee_id
+        categories=[category] if category else None,
+        overdue=overdue,
+        assignee_ids=[assignee_id] if assignee_id else None,
     )
     items, total = await task_service.list_tasks(
         session,

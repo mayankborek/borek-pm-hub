@@ -118,6 +118,14 @@ class Task(IdMixin, TimestampMixin, Base):
     blocked_reason: Mapped[str | None] = mapped_column(Text)
     blocked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
+    # Who reported the task. Starts as the creator; a PM can change it (PM design spec). Rights
+    # stay with `created_by` (a developer's own task), the reporter only gets notifications.
+    reporter_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("users.id"),
+        nullable=False,
+        default=lambda ctx: ctx.get_current_parameters()["created_by"],
+    )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")

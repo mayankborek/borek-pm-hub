@@ -421,7 +421,8 @@ async def test_people_lists_team_account_managers_and_client_contacts_with_statu
     assert [(c["email"], c["status"]) for c in out["client_contacts"]] == [
         ("jordan@acme.example", "invite_expired")
     ]
-    assert out["can"] == {"manage_team": True, "manage_client_contacts": False}
+    # the PM may invite / remove client contacts (Mayank 25.11.2026)
+    assert out["can"] == {"manage_team": True, "manage_client_contacts": True}
     am_view = await ok(client, world.am, "GET", f"/projects/{world.project.id}/people")
     assert am_view["can"]["manage_team"] is False
     assert (

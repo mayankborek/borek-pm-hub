@@ -227,13 +227,16 @@ async def test_lead_fills_in_impact_and_approves_which_moves_the_milestone(
         path,
         {
             "version": 1,
-            "impact_schedule_days": 14,
-            "impact_effort_hours": 40,
+            "impact_schedule_value": 2,
+            "impact_schedule_unit": "weeks",
+            "impact_effort_value": 40,
+            "impact_effort_unit": "hours",
             "impact_scope": "Two more review rounds",
         },
     )
 
-    assert assessed["impact_schedule_days"] == 14
+    assert (assessed["impact_schedule_value"], assessed["impact_schedule_unit"]) == (2, "weeks")
+    assert (assessed["impact_effort_value"], assessed["impact_effort_unit"]) == (40, "hours")
     approved = await decide(client, world, raised["id"], "approved", "Agreed in the call")
 
     assert approved["status"] == "approved"
@@ -329,7 +332,13 @@ async def test_approving_a_move_of_a_reached_milestone_is_refused(
 async def test_a_stale_version_is_refused(client: httpx.AsyncClient, world: World) -> None:
     raised = await raise_move(client, world, 19)
     path = f"{crs(world)}/{raised['id']}"
-    await ok(client, world.pm, "PATCH", path, {"version": 1, "impact_schedule_days": 3})
+    await ok(
+        client,
+        world.pm,
+        "PATCH",
+        path,
+        {"version": 1, "impact_schedule_value": 3, "impact_schedule_unit": "days"},
+    )
 
     stale = await call(client, world.pm, "POST", f"{path}/start-review", {"version": 1})
 
@@ -339,7 +348,13 @@ async def test_a_stale_version_is_refused(client: httpx.AsyncClient, world: Worl
 async def test_review_must_start_before_a_decision(client: httpx.AsyncClient, world: World) -> None:
     raised = await raise_move(client, world, 19)
     path = f"{crs(world)}/{raised['id']}"
-    edited = await ok(client, world.pm, "PATCH", path, {"version": 1, "impact_schedule_days": 3})
+    edited = await ok(
+        client,
+        world.pm,
+        "PATCH",
+        path,
+        {"version": 1, "impact_schedule_value": 3, "impact_schedule_unit": "days"},
+    )
 
     too_early = await call(
         client, world.pm, "POST", f"{path}/decision", {"version": 2, "decision": "approved"}
@@ -394,7 +409,13 @@ async def test_client_sees_no_effort_and_no_internal_people(
         world.pm,
         "PATCH",
         path,
-        {"version": 1, "impact_schedule_days": 14, "impact_effort_hours": 40},
+        {
+            "version": 1,
+            "impact_schedule_value": 14,
+            "impact_schedule_unit": "days",
+            "impact_effort_value": 5,
+            "impact_effort_unit": "days",
+        },
     )
     await decide(client, world, raised["id"], "approved", "Fine")
     internal = await ok(
@@ -409,12 +430,14 @@ async def test_client_sees_no_effort_and_no_internal_people(
     one = await ok(client, world.contact, "GET", f"{client_crs(world)}/{raised['id']}")
     detail = await ok(client, world.contact, "GET", f"/client/projects/{world.project.id}")
 
-    assert "impact_effort_hours" not in one and "decided_by" not in one
-    assert (one["impact_schedule_days"], one["decision_note"], one["status"]) == (
-        14,
-        "Fine",
-        "approved",
-    )
+    assert "impact_effort_value" not in one and "impact_effort_unit" not in one
+    assert "decided_by" not in one
+    assert (
+        one["impact_schedule_value"],
+        one["impact_schedule_unit"],
+        one["decision_note"],
+        one["status"],
+    ) == (14, "days", "Fine", "approved")
     by_code = {r["code"]: r for r in listed["items"]}
     assert by_code[internal["code"]]["milestone"] is None  # the hidden milestone stays hidden
     assert listed["counts"] == {
@@ -639,3 +662,45 @@ async def test_client_follows_every_status_and_the_decision(
         "change_request",
         "declined",
     )
+
+
+async def test_impact_amount_and_unit_go_together(client: httpx.AsyncClient, world: World) -> None:
+    raised = await raise_move(client, world, 19)
+    path = f"{crs(world)}/{raised['id']}"
+
+    alone = await call(client, world.pm, "PATCH", path, {"version": 1, "impact_effort_value": 3})
+    bad_unit = await call(
+        client,
+        world.pm,
+        "PATCH",
+        path,
+        {"version": 1, "impact_effort_value": 3, "impact_effort_unit": "months"},
+    )
+    set_both = await ok(
+        client,
+        world.pm,
+        "PATCH",
+        path,
+        {"version": 1, "impact_effort_value": 3, "impact_effort_unit": "days"},
+    )
+    unit_only = await ok(
+        client, world.pm, "PATCH", path, {"version": 2, "impact_effort_unit": "weeks"}
+    )
+    clear_one = await call(
+        client, world.pm, "PATCH", path, {"version": 3, "impact_effort_value": None}
+    )
+    cleared = await ok(
+        client,
+        world.pm,
+        "PATCH",
+        path,
+        {"version": 3, "impact_effort_value": None, "impact_effort_unit": None},
+    )
+
+    assert alone.status_code == 422
+    assert alone.json()["error"]["details"][0]["issue"] == "pair_required"
+    assert bad_unit.status_code == 422
+    assert (set_both["impact_effort_value"], set_both["impact_effort_unit"]) == (3, "days")
+    assert (unit_only["impact_effort_value"], unit_only["impact_effort_unit"]) == (3, "weeks")
+    assert clear_one.status_code == 422
+    assert (cleared["impact_effort_value"], cleared["impact_effort_unit"]) == (None, None)
