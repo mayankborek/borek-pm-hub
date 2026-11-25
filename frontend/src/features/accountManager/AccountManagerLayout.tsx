@@ -3,15 +3,19 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import logo from '@/assets/borek-flow-portal-logo.svg';
+import flowLogo from '@/assets/borek-flow-nav-white.svg';
+import solutionsLogo from '@/assets/borek-solutions-nav-white.svg';
 import { initialsOf } from '@/features/client/format';
+import { Notifications } from '@/features/client/Notifications';
 import './am.css';
+import '@/features/client/clientPortal.css';
+import '@/features/client/slateRounded.css';
 
 const SETTINGS: string[] = [paths.amProfile, paths.amSecurity, paths.amNotifications, paths.amPreferences];
 
 /** Top bar title per screen (borek-flow-portal): Home, Projects, a project's Overview, Profile. */
 function titleFor(pathname: string) {
-  if (pathname === paths.amHome) return 'Home';
+  if (pathname === paths.amHome) return 'Dashboard';
   if (SETTINGS.includes(pathname)) return 'Profile';
   if (pathname === paths.amProjects) return 'Projects';
   if (/^\/account-manager\/projects\/[^/]+\/?$/.test(pathname)) return 'Overview';
@@ -42,20 +46,7 @@ export function Toast({ children }: { children: ReactNode }) {
   );
 }
 
-function Bell() {
-  const say = useSay();
-  const { t } = usePrefs();
-  return (
-    <button type="button" className="bell" aria-label={t('Notifications')} onClick={() => say(t('No new notifications'))}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-        <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
-      </svg>
-    </button>
-  );
-}
-
-/** Account Manager portal shell, built from borek-flow-portal: sidebar (Overview, Projects), top bar with bell and profile. */
+/** Account Manager shell (design.html): sidebar (Dashboard, Projects), titled top bar with bell and profile. */
 export function AccountManagerLayout() {
   const { user } = useAuth();
   const { pathname } = useLocation();
@@ -63,24 +54,26 @@ export function AccountManagerLayout() {
   if (!user) return null;
 
   return (
-    <div className="am">
+    <div className="am am-slate am-client">
       <Toast>
         <div className="shell">
           <aside className="sidebar">
-              <Link to={paths.amHome} aria-label={t('Borek Flow home')}>
-                <img className="logo" src={logo} alt="BOREK Solutions Group" />
-              </Link>
-              <div className="sub">Borek Flow</div>
-              <nav className="nav" aria-label={t('Main')}>
-                <NavLink to={paths.amHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Overview')}</NavLink>
-                <NavLink to={paths.amProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
-              </nav>
-            </aside>
+            <Link to={paths.amHome} aria-label={t('Borek Flow home')}>
+              <img className="logo" src={flowLogo} alt="Borek Flow" />
+            </Link>
+            <nav className="nav" aria-label={t('Main')}>
+              <NavLink to={paths.amHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Dashboard')}</NavLink>
+              <NavLink to={paths.amProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
+            </nav>
+            <img className="corp" src={solutionsLogo} alt="Borek Solutions Group" width={93} height={24} />
+          </aside>
           <div className="main">
             <header className="topbar">
               <h2>{t(titleFor(pathname))}</h2>
               <div className="right">
-                <Bell />
+                <span className="cp cp-tools">
+                  <Notifications />
+                </span>
                 <Link to={paths.amProfile} className="user">
                   <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
                   {user.name}
@@ -88,7 +81,9 @@ export function AccountManagerLayout() {
               </div>
             </header>
             <main className="content">
-              <Outlet />
+              <div className="fit">
+                <Outlet />
+              </div>
             </main>
           </div>
         </div>

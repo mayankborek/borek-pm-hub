@@ -14,14 +14,17 @@ const isBorek = (c: ClientContact) => c.email.toLowerCase().endsWith('@boreksolu
 export function ManagerStakeholdersPage() {
   const { project } = useProjectContext();
   const { t } = usePrefs();
-  // `null` = closed, `{}` = adding, a contact = editing it.
+  // `null` = closed, a contact = editing it.
   const [dialog, setDialog] = useState<{ person?: ClientContact } | null>(null);
 
   return (
     <>
-      <h2 className="cp-section-title">{t('Project stakeholders')}</h2>
-      <p className="cp-section-sub">{t('Your key contacts for project delivery and client coordination.')}</p>
-      <button type="button" className="mg-btn" onClick={() => setDialog({})}>{t('Add stakeholder')}</button>
+      <div className="mg-head">
+        <div>
+          <h2 className="cp-section-title">{t('Project stakeholders')}</h2>
+          <p className="cp-section-sub">{t('Your key contacts for project delivery and client coordination.')}</p>
+        </div>
+      </div>
       {!project.contacts.length && <EmptyCard />}
       <div className="mg-people">
         {project.contacts.map((c) => {
@@ -30,7 +33,7 @@ export function ManagerStakeholdersPage() {
             <article className="mg-person" key={c.stakeholderId ?? c.email + c.name}>
               <div className="mg-kind">
                 <span>{t(borek ? 'Borek team' : 'Client contact')}</span>
-                <span>{borek ? 'Borek Solutions' : project.name}</span>
+                <span>{borek ? 'Borek Solutions' : project.organisation ?? project.name}</span>
               </div>
               <div className="mg-who">
                 <span className="mg-ini" aria-hidden="true">{initialsOf(c.name)}</span>
@@ -48,7 +51,7 @@ export function ManagerStakeholdersPage() {
               </dl>
               <div className="mg-foot">
                 <span>{t(borek ? 'Delivery contact' : 'Client organisation contact')}</span>
-                {c.stakeholderId && (
+                {borek && c.stakeholderId && (
                   <button type="button" className="mg-btn" onClick={() => setDialog({ person: c })}>{t('Edit contact')}</button>
                 )}
               </div>

@@ -266,3 +266,18 @@
 .am .topbar{gap:8px;padding:8px 16px}
 .am .content{padding:16px}
 }
+/* Projects screen (design.html): cards beside the portfolio summary. */
+.am .am-pj{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;margin-top:24px;align-items:start}
+.am .am-pj-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.am .am-pj-side{padding:20px}
+.am .am-pj-side h3{font-size:var(--fs-16);font-weight:600}
+.am .am-pj-side h4{font-size:var(--fs-12);font-weight:600;margin:20px 0 10px}
+.am .am-pj-n{font-size:var(--fs-24);font-weight:600;margin-top:14px}
+.am .am-pj-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.am .am-pj-tiles div{background:var(--bg);border-radius:12px;padding:12px}
+.am .am-pj-tiles span{display:block;font-size:var(--fs-11);color:var(--muted)}
+.am .am-pj-tiles b{display:block;font-size:var(--fs-24);font-weight:600;margin-top:10px}
+.am .am-pj-side dl{margin:0}
+.am .am-pj-side dl div{display:flex;justify-content:space-between;padding:8px 0;font-size:var(--fs-12)}
+.am .am-pj-side dd{margin:0;font-weight:600}
+@media(max-width:1100px){.am .am-pj{grid-template-columns:1fr}.am .am-pj-grid{grid-template-columns:1fr}}

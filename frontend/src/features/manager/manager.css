@@ -1,10 +1,12 @@
-.mg-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
-.mg-person{background:var(--card,#1a2233);border:1px solid var(--line,#26324a);border-radius:20px;padding:22px 22px 24px}
-.mg-kind{display:flex;justify-content:space-between;font-size:var(--fs-10);letter-spacing:.04em;text-transform:uppercase;opacity:.75}
-.mg-who{display:flex;align-items:center;gap:14px;margin:18px 0;padding-bottom:18px;border-bottom:1px solid var(--line,#26324a)}
+.mg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.mg-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:28px}
+.mg-person{background:#171f2f;border:1px solid #344258;border-radius:14px;padding:26px}
+.mg-kind{display:flex;justify-content:space-between;font-size:var(--fs-10);letter-spacing:.04em;text-transform:uppercase}
+.mg-kind span:last-child{text-transform:none;font-size:var(--fs-13);letter-spacing:0}
+.mg-who{display:flex;align-items:center;gap:14px;margin:28px 0 24px;padding-bottom:24px;border-bottom:1px solid #344258}
 .mg-who h3{font-size:var(--fs-20);font-weight:600;margin:0}
 .mg-who p{font-size:var(--fs-13);margin:2px 0 0;opacity:.8}
-.mg-ini{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:#101828;color:#a9c4ff;font-size:var(--fs-14);font-weight:600}
+.mg-ini{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:#101828;color:#a9c4ff;font-size:var(--fs-14);font-weight:600}
 .mg-detail{margin:0;display:grid;gap:14px}
 .mg-detail>div{display:flex;align-items:center;gap:14px}
 .mg-dico{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:8px;background:#101828;opacity:.8}
