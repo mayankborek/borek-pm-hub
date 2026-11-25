@@ -18,6 +18,7 @@ import {
 import { useProjectContext } from './ProjectLayout';
 import { CardAssignee, CardPriority } from './CardPickers';
 import { QuickCreate } from './QuickCreate';
+import { SprintBar } from './SprintBar';
 import { errorText, RenameInput, StatusCreator, StatusMenu } from './StatusParts';
 import gripDots from './assets/grip-dots.svg';
 import './board.css';
@@ -132,6 +133,7 @@ export function ProjectBoardPage() {
   return (
     <>
       <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
+      <SprintBar projectId={project.id} />
       {columns.length === 0 && !isPm ? (
         <EmptyState
           title={filtered ? 'No matching tasks' : 'No tasks on the board'}

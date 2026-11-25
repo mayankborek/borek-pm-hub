@@ -1,0 +1,4 @@
+.sprint-bar { display: flex; align-items: center; gap: 14px; margin: 0 0 16px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: var(--fs-13); color: var(--muted); }
+.sprint-bar b { font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
+.sprint-chip { padding: 3px 10px; border-radius: 4px; background: #e1ecfd; color: #124f94; font-size: var(--fs-11); font-weight: 600; }
+.sprint-bar .btn { margin-left: auto; height: 34px; padding: 0 18px; }

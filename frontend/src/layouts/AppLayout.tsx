@@ -32,6 +32,8 @@ export function AppLayout() {
         ? 'Board'
         : /^\/projects\/(?!new$)[^/]+\/list\/?$/.test(pathname)
         ? 'Backlog'
+        : /^\/projects\/[^/]+\/milestones\/?$/.test(pathname)
+        ? 'Milestones'
         : /^\/projects\/[^/]+\/settings(\/|$)/.test(pathname)
         ? 'Settings'
         : /^\/projects\/[^/]+\/requirements\/?$/.test(pathname)

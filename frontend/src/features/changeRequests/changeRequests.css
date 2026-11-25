@@ -41,3 +41,17 @@
 .crq-side hr { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 0; }
 .crq-side .crq-impact, .crq-side .crq-decide { max-width: none; }
 @media (max-width: 900px) { .crq-grid { grid-template-columns: 1fr; } }
+
+/* Guided review flow (impact, client discussion, decision). */
+.crq-eyebrow { margin: 0; font-size: var(--fs-11); letter-spacing: .04em; text-transform: uppercase; color: var(--muted, var(--slate)); }
+.crq-big { font-size: var(--fs-20, 20px); font-weight: 600; color: var(--navy); }
+.crq-sub { font-size: var(--fs-13); color: var(--navy); }
+.crq-h { font-size: var(--fs-20, 20px) !important; }
+.crq-form label { display: grid; gap: 4px; font-size: var(--fs-12); font-weight: 600; color: var(--muted, var(--slate)); }
+.crq-form input, .crq-form textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--line); background: color-mix(in srgb, var(--line) 30%, transparent); color: var(--navy); font: 500 var(--fs-14)/1.4 Inter, system-ui, sans-serif; }
+.crq-options { display: grid; gap: 10px; justify-items: start; }
+.crq-other { display: grid; gap: 4px; font-size: var(--fs-12); color: var(--muted, var(--slate)); }
+.crq-datelist { display: grid; gap: 8px; }
+.crq-datelist small, .crq-dates small { display: block; font-size: var(--fs-12); color: var(--muted, var(--slate)); }
+.crq-datelist b, .crq-dates b { font-size: var(--fs-14); color: var(--navy); }
+.btn.crq-on { background: var(--navy); color: #fff; }

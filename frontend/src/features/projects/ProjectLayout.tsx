@@ -140,6 +140,7 @@ export function ProjectLayout() {
       ? [
           { label: 'Requirements', to: paths.projectRequirements(projectId) },
           { label: 'Change Requests', to: paths.projectChangeRequests(projectId), badge: pendingRequests },
+          { label: 'Milestones', to: paths.projectMilestones(projectId) },
           { label: 'Reports', to: paths.projectReports(projectId) },
           { label: 'Settings', to: paths.projectSettings(projectId) },
         ]

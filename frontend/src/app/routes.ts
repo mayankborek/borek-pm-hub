@@ -13,6 +13,7 @@ export const paths = {
   projectBoard: (id: string) => `/projects/${id}/board`,
   projectList: (id: string) => `/projects/${id}/list`,
   projectMembers: (id: string) => `/projects/${id}/members`,
+  projectMilestones: (id: string) => `/projects/${id}/milestones`,
   projectSettings: (id: string) => `/projects/${id}/settings`,
   projectSettingsPeople: (id: string) => `/projects/${id}/settings/people`,
   projectRequirements: (id: string) => `/projects/${id}/requirements`,

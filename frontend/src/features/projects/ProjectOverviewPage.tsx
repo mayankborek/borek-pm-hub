@@ -5,7 +5,9 @@ import { emptyFilter, useProjectMembers, useProjectStatuses, useProjectTasks } f
 import type { StatusCategory, Task, TaskPriority } from '@/features/tasks/tasksApi';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
+import { nextMilestone, useRoadmap } from '@/features/milestones/milestonesApi';
 import { useProjectContext } from './ProjectLayout';
+import { formatDate } from './projectUi';
 import highestIcon from './assets/priority-highest.svg';
 import highIcon from './assets/priority-high.svg';
 import mediumIcon from './assets/priority-medium.svg';
@@ -54,6 +56,7 @@ export function ProjectOverviewPage() {
   const { data: statuses } = useProjectStatuses(project.id);
   const { data: members } = useProjectMembers(project.id);
   const [showDone, setShowDone] = useState(false);
+  const next = nextMilestone(useRoadmap(project.id).data);
 
   const stats = useMemo(() => {
     const tasks = data?.items ?? [];
@@ -119,12 +122,12 @@ export function ProjectOverviewPage() {
       </div>
 
       <div className="ov-alerts">
-        <section className="ov-alert" aria-label={t('Target end date')}>
+        <section className="ov-alert" aria-label={t('Next milestone')}>
           <div>
-            <b>{t('Target end date')}</b>
-            <span>{target}</span>
+            <b>{t('Next milestone')}</b>
+            <span>{next ? `${next.name} · ${formatDate(next.due_date)}` : target}</span>
           </div>
-          <Link to={paths.projectEdit(project.id)}>{t('Edit project')}</Link>
+          <Link to={paths.projectMilestones(project.id)}>{t('View milestones')}</Link>
         </section>
         <section className="ov-alert" aria-label={t('Blockers')}>
           <div>
