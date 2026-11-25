@@ -53,8 +53,9 @@ export function useClientPortal() {
     enabled: role === 'client' || role === 'account_manager' || role === 'manager',
     queryFn: () => (role === 'client' ? fetchClientPortal(api) : fetchStaffPortal(api, role as 'account_manager' | 'manager')),
     select,
-    // Pick up newly published reports, milestones and requirements without a reload.
-    refetchInterval: 60_000,
+    // Pick up newly published reports, milestones and requirements without a reload (Managers watch live: faster).
+    refetchInterval: role === 'manager' ? 10_000 : 60_000,
+    refetchOnWindowFocus: role === 'manager',
   });
 }
 

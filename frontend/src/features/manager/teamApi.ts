@@ -66,7 +66,7 @@ export interface Workload {
 
 /** The timeline shows twelve month columns; 56 weeks from this Monday always covers them. */
 export const useCapacity = () =>
-  useQuery({ queryKey: ['manager-capacity'], queryFn: () => api<Capacity>('/manager/capacity?weeks=56'), refetchInterval: 120_000 });
+  useQuery({ queryKey: ['manager-capacity'], queryFn: () => api<Capacity>('/manager/capacity?weeks=56'), refetchInterval: 15_000, refetchOnWindowFocus: true });
 
 export const useWorkload = () =>
-  useQuery({ queryKey: ['manager-workload'], queryFn: () => api<Workload>('/manager/workload'), refetchInterval: 120_000 });
+  useQuery({ queryKey: ['manager-workload'], queryFn: () => api<Workload>('/manager/workload'), refetchInterval: 15_000, refetchOnWindowFocus: true });

@@ -12,7 +12,7 @@ import '@/features/client/clientScreens.css';
 const WINDOW_DAYS = 14;
 const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
-/** Manager dashboard (manager.png): four summary cards, My projects, upcoming milestones and recent updates. Sample data until the API exists. */
+/** Manager dashboard (manager.png): four summary cards, My projects, upcoming milestones and recent updates. */
 export function ManagerDashboardPage() {
   const { user } = useAuth();
   const { t, lang } = usePrefs();
