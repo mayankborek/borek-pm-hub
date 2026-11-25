@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { longDate, shortDate } from './format';
+import { longDate, paddedDate, shortDate } from './format';
 import { useProjectContext } from './ClientProjectLayout';
-import { MILESTONE_STATUS } from './labels';
+import { MILESTONE_BADGE, MILESTONE_STATUS } from './labels';
+import { Kpi, MilestoneCard } from './ui';
 
 export function ClientMilestonesPage() {
   const pp = usePortalPaths();
@@ -24,7 +25,18 @@ export function ClientMilestonesPage() {
   const ticks = Array.from({ length: 5 }, (_, i) => new Date((start + (span * i) / 4) * DAY).toISOString().slice(0, 10));
   const range = `${shortDate(lang, new Date(start * DAY).toISOString().slice(0, 10))}–${longDate(lang, new Date(end * DAY).toISOString().slice(0, 10))}`;
 
+  const openCrs = project.changeRequests.filter((c) => c.status === 'pending' || c.status === 'in_review');
+  const awaiting = project.changeRequests.filter((c) => c.status === 'in_review').length;
+  const cardMeta = (m: (typeof milestones)[number]) => {
+    const n = m.progress ?? 0;
+    if (m.state === 'revised' && m.requestedDate) {
+      return t('Published revision: {from} → {to} · {n}%', { from: shortDate(lang, m.dueDate), to: longDate(lang, m.requestedDate), n });
+    }
+    return t('Baseline {from} · Proposed {to} · {n}%', { from: longDate(lang, m.dueDate), to: longDate(lang, m.requestedDate ?? m.dueDate), n });
+  };
+
   return (
+    <>
     <section className="cp-card cp-rm" aria-label={t('Project roadmap')}>
       <h2>{t('Project roadmap')}</h2>
       <p>{t('Project phases and delivery milestones · {range}', { range })}</p>
@@ -87,5 +99,36 @@ export function ClientMilestonesPage() {
           : t('Where your project stands, in date order')}
       </p>
     </section>
+
+    {!!milestones.length && (
+      <section aria-label={t('Milestones')}>
+        <div className="cp-mcards">
+          {milestones.map((m) => (
+            <MilestoneCard
+              key={m.id}
+              code={m.code}
+              name={m.name}
+              tone={MILESTONE_BADGE[m.state].tone}
+              badge={t(MILESTONE_BADGE[m.state].label)}
+              meta={cardMeta(m)}
+              progress={m.progress ?? 0}
+            />
+          ))}
+        </div>
+        <div className="cp-mcards">
+          <Kpi
+            label={t('Open change requests')}
+            value={openCrs.length}
+            hint={t('{n} awaiting a published decision', { n: awaiting })}
+          />
+        </div>
+        {project.publishedOn && manager && (
+          <p className="cp-small" style={{ marginTop: 12 }}>
+            {t('Published {date} · {name}, {role}', { date: paddedDate(lang, project.publishedOn), name: manager.name, role: t(manager.role) })}
+          </p>
+        )}
+      </section>
+    )}
+    </>
   );
 }

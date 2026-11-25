@@ -5,7 +5,7 @@ import { describeApiError } from '@/shared/api/client';
 import { usePermissions } from '@/features/admin/adminStore';
 import { useProjectContext } from './ClientProjectLayout';
 import { Badge, EmptyCard, ErrorCard, LoadingCard } from './ui';
-import { longDate } from './format';
+import { longDate, paddedDate } from './format';
 import type { Tone } from './labels';
 import {
   downloadAttachment,
@@ -43,6 +43,8 @@ export function ClientChangeRequestsPage() {
   const [composing, setComposing] = useState(false);
   const [sent, setSent] = useState<Sent | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const access = usePermissions('client')['change-requests'];
 
   if (access === 'denied') return <EmptyCard title="Change requests are not available" text="Your access to change requests has been turned off." />;
@@ -53,7 +55,12 @@ export function ClientChangeRequestsPage() {
   if (!list.data || !real.id) return <LoadingCard />;
 
   const { items, counts } = list.data;
-  const shown = filter === 'all' ? items : items.filter((i) => i.status === filter);
+  const opened = openId ? items.find((i) => i.id === openId) : undefined;
+  if (opened) return <RequestPage canReply={access === 'edit'} cr={opened} projectId={real.id} onBack={() => setOpenId(null)} />;
+  const q = query.trim().toLowerCase();
+  const shown = items
+    .filter((i) => filter === 'all' || i.status === filter)
+    .filter((i) => !q || i.code.toLowerCase().includes(q) || i.title.toLowerCase().includes(q));
 
   return (
     <section className="cr" aria-label={t('Change Requests')}>
@@ -91,7 +98,29 @@ export function ClientChangeRequestsPage() {
         />
       )}
 
-      <div className="cr-filters" role="tablist" aria-label={t('Filter by status')}>
+      <div className="cr-stats">
+        {([
+          ['Total requests', counts.total ?? items.length, 'Across this project'],
+          ['In review', counts.in_review ?? 0, 'Awaiting a decision'],
+          ['Approved', counts.approved ?? 0, 'Approved requests'],
+          ['Declined', counts.declined ?? 0, 'Declined requests'],
+        ] as const).map(([label, n, sub]) => (
+          <div className="cr-stat" key={label}>
+            <div className="cr-l">{t(label)}</div>
+            <div className="cr-n">{n}</div>
+            <div className="cr-s">{t(sub)}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="cr-tools">
+        <label className="cr-search">
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Search requests …')} aria-label={t('Search requests')} />
+        </label>
+        <button type="button" className="cr-ghost" aria-expanded={showFilters} onClick={() => setShowFilters((v) => !v)}>{t('Filter')}</button>
+      </div>
+
+      <div className={showFilters ? 'cr-filters cr-open' : 'cr-filters'} role="tablist" aria-label={t('Filter by status')}>
         {FILTERS.map((f) => (
           <button key={f} type="button" role="tab" aria-selected={filter === f} className={filter === f ? 'cr-on' : undefined} onClick={() => setFilter(f)}>
             {t(f === 'all' ? 'All' : STATUS[f].label)} <span>{f === 'all' ? (counts.total ?? items.length) : (counts[f] ?? 0)}</span>
@@ -106,9 +135,10 @@ export function ClientChangeRequestsPage() {
         />
       ) : (
         <ul className="cr-list">
-          {shown.map((cr) => <RequestCard canReply={access === 'edit'} key={cr.id} cr={cr} projectId={real.id!} startOpen={cr.id === openId} />)}
+          {shown.map((cr) => <RequestCard key={cr.id} cr={cr} onOpen={() => setOpenId(cr.id)} />)}
         </ul>
       )}
+      <p className="cr-foot">{t('Only requests explicitly shared with your organisation are shown.')}</p>
     </section>
   );
 }
@@ -152,8 +182,13 @@ function NewRequest({ projectId, onDone }: { projectId: string; onDone: (sent?: 
   };
 
   return (
+    <div className="cr-modal" role="dialog" aria-modal="true" aria-labelledby="cr-new-title" onKeyDown={(e) => e.key === 'Escape' && !submit.isPending && onDone()}>
     <form className="cp-card cr-form" onSubmit={onSubmit} noValidate>
-      <h3>{t('New change request')}</h3>
+      <div className="cr-form-head">
+        <h3 id="cr-new-title">{t('New change request')}</h3>
+        <button type="button" className="cr-x" aria-label={t('Close')} onClick={() => onDone()} disabled={submit.isPending}>×</button>
+      </div>
+      <p className="cr-form-sub">{t("Tell us what you'd like to change.")}</p>
       <label>
         {t('Title')}
         <input value={form.title} onChange={set('title')} maxLength={200} required />
@@ -193,39 +228,47 @@ function NewRequest({ projectId, onDone }: { projectId: string; onDone: (sent?: 
         <button type="button" className="cr-ghost" onClick={() => onDone()} disabled={submit.isPending}>{t('Cancel')}</button>
       </div>
     </form>
+    </div>
   );
 }
 
-function RequestCard({ cr, projectId, canReply, startOpen }: { cr: CrItem; projectId: string; canReply: boolean; startOpen: boolean }) {
+
+function RequestCard({ cr, onOpen }: { cr: CrItem; onOpen: () => void }) {
   const { t, lang } = usePrefs();
-  const [open, setOpen] = useState(startOpen);
   const s = STATUS[cr.status];
   return (
     <li className="cp-card cr-card">
-      <button type="button" className="cr-summary" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+      <button type="button" className="cr-summary" onClick={onOpen}>
         <span className="cr-code">{cr.code}</span>
         <b>{cr.title}</b>
         <Badge tone={s.tone}>{t(s.label)}</Badge>
         <small>{longDate(lang, isoDay(cr.submitted_at))}</small>
+        <span className="cr-tab">
+          <span>{t('Submitted on {date}', { date: paddedDate(lang, isoDay(cr.submitted_at)) })}</span>
+          <span>{t('Decision: {status}', { status: t(cr.status === 'approved' ? 'Approved' : cr.status === 'declined' ? 'Declined' : 'Pending') })}</span>
+          <small>{t('Updated {date}', { date: paddedDate(lang, isoDay(cr.decided_at ?? cr.review_started_at ?? cr.submitted_at)) })}</small>
+          <span className="cr-view">{t('View impact assessment')}</span>
+        </span>
+        <span className="cr-open-btn">{t('View request')}</span>
       </button>
-      {open && <RequestDetail canReply={canReply} cr={cr} projectId={projectId} />}
     </li>
   );
 }
 
-function RequestDetail({ cr, projectId, canReply }: { cr: CrItem; projectId: string; canReply: boolean }) {
+const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+type Step = { label: string; at: string | null; state: 'done' | 'current' | 'todo'; note?: string };
+
+/** One request: description, files and conversation beside its timeline and impact. */
+function RequestPage({ cr, projectId, canReply, onBack }: { cr: CrItem; projectId: string; canReply: boolean; onBack: () => void }) {
   const { t, lang } = usePrefs();
   const toast = useToast();
   const files = useAttachments(projectId, cr.id);
   const comments = useComments(projectId, cr.id);
   const add = useAddComment(projectId, cr.id);
   const [reply, setReply] = useState('');
+  const open = cr.status === 'pending' || cr.status === 'in_review';
 
-  const steps: [string, string | null][] = [
-    ['Submitted', cr.submitted_at],
-    ['In review', cr.review_started_at],
-    [cr.status === 'declined' ? 'Declined' : 'Accepted', cr.decided_at],
-  ];
   const send = (e: FormEvent) => {
     e.preventDefault();
     if (!reply.trim()) return;
@@ -235,69 +278,121 @@ function RequestDetail({ cr, projectId, canReply }: { cr: CrItem; projectId: str
     });
   };
 
+  const steps: Step[] = [
+    { label: 'Submitted', at: cr.submitted_at, state: 'done' },
+    {
+      label: 'In review',
+      at: cr.review_started_at,
+      state: cr.status === 'in_review' ? 'current' : cr.review_started_at || !open ? 'done' : 'todo',
+      note: cr.status === 'in_review' ? 'The project team is reviewing your request.' : undefined,
+    },
+    open
+      ? { label: 'Decision', at: null, state: 'todo', note: 'Awaiting the review outcome' }
+      : { label: cr.status === 'declined' ? 'Declined' : 'Accepted', at: cr.decided_at, state: 'done' },
+  ];
+
   return (
-    <div className="cr-detail">
-      <ol className="cr-steps" aria-label={t('Progress')}>
-        {steps.map(([label, at]) => (
-          <li key={label} className={at ? 'cr-done' : undefined}>
-            <b>{t(label)}</b>
-            <small>{at ? longDate(lang, isoDay(at)) : '—'}</small>
-          </li>
-        ))}
-      </ol>
+    <section className="cr cr-page" aria-label={cr.title}>
+      <button type="button" className="cr-back" onClick={onBack}>← {t('All requests')}</button>
+      <h2 className="cr-title">{cr.title}</h2>
 
-      <dl>
-        <dt>{t('Request')}</dt><dd>{cr.description}</dd>
-        {cr.reason && <><dt>{t('Reason')}</dt><dd>{cr.reason}</dd></>}
-        {cr.milestone && (
-          <>
-            <dt>{t('Milestone')}</dt>
-            <dd>{cr.milestone.code} · {cr.milestone.name}{cr.requested_date && ` → ${longDate(lang, cr.requested_date)}`}</dd>
-          </>
-        )}
-        <dt>{t('Raised by')}</dt><dd>{cr.submitted_by}</dd>
-        {cr.impact_schedule_days !== null && (
-          <><dt>{t(cr.status === 'pending' || cr.status === 'in_review' ? 'Proposed schedule impact' : 'Schedule impact')}</dt><dd>{t('{n} days', { n: cr.impact_schedule_days })}</dd></>
-        )}
-        {cr.impact_scope && <><dt>{t(cr.status === 'pending' || cr.status === 'in_review' ? 'Proposed scope impact' : 'Scope impact')}</dt><dd>{cr.impact_scope}</dd></>}
-        {cr.decision_note && <><dt>{t('Decision note')}</dt><dd>{cr.decision_note}</dd></>}
-      </dl>
+      <div className="cr-grid">
+        <div className="cr-main">
+          <div className="cp-card cr-box">
+            <h3 className="cr-h-blue">{t('Description')}</h3>
+            <p className="cr-desc">{cr.description}</p>
+            {cr.reason && <p className="cr-reason"><b>{t('Reason')}</b> {cr.reason}</p>}
+            <p className="cr-meta">{t('Submitted on {date}', { date: paddedDate(lang, isoDay(cr.submitted_at)) })} · {cr.submitted_by}</p>
+            <div className="cr-attach">
+              <b>{t('Attachments')}</b>
+              {files.data?.length ? (
+                <ul className="cr-files">
+                  {files.data.map((f) => (
+                    <li key={f.id}>
+                      <button
+                        type="button"
+                        onClick={() => downloadAttachment(projectId, cr.id, f).catch((err) => toast.error(describeApiError(err, t('The file could not be downloaded.'))))}
+                      >
+                        {f.name}
+                      </button>
+                      <small>{size(f.size_bytes)} · {f.uploaded_by}</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span>{t('No files attached')}</span>
+              )}
+            </div>
+          </div>
 
-      {!!files.data?.length && (
-        <>
-          <h4>{t('Files')}</h4>
-          <ul className="cr-files">
-            {files.data.map((f) => (
-              <li key={f.id}>
-                <button
-                  type="button"
-                  onClick={() => downloadAttachment(projectId, cr.id, f).catch((err) => toast.error(describeApiError(err, t('The file could not be downloaded.'))))}
-                >
-                  {f.name}
-                </button>
-                <small>{size(f.size_bytes)} · {f.uploaded_by}</small>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+          <div className="cp-card cr-box">
+            <h3>{t('Comments')}</h3>
+            {comments.isError && <p className="cr-error" role="alert">{t('The conversation could not be loaded.')}</p>}
+            <ul className="cr-thread">
+              {comments.data?.map((c) => (
+                <li key={c.id}>
+                  <span className="cr-av" aria-hidden="true">{initials(c.author)}</span>
+                  <div>
+                    <b>{c.author}{!c.from_client && ` · ${t('Borek team')}`}</b>
+                    <small> · {longDate(lang, isoDay(c.created_at))}, {c.created_at.slice(11, 16)}</small>
+                    <p>{c.body}</p>
+                  </div>
+                </li>
+              ))}
+              {comments.data?.length === 0 && <li className="cr-none">{t('No messages yet.')}</li>}
+            </ul>
+            {canReply && (
+              <form className="cr-reply" onSubmit={send}>
+                <h4>{t('Add a comment')}</h4>
+                <div className="cr-compose">
+                  <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder={t('Write a comment…')} aria-label={t('Message')} />
+                  <button type="submit" className="cr-send" disabled={add.isPending || !reply.trim()} aria-label={t('Send')}>↑</button>
+                </div>
+                <small>{t('Visible to your project team.')}</small>
+              </form>
+            )}
+          </div>
+        </div>
 
-      <h4>{t('Conversation')}</h4>
-      {comments.isError && <p className="cr-error" role="alert">{t('The conversation could not be loaded.')}</p>}
-      <ul className="cr-thread">
-        {comments.data?.map((c) => (
-          <li key={c.id} className={c.from_client ? 'cr-mine' : undefined}>
-            <b>{c.author}{!c.from_client && ` · ${t('Borek team')}`}</b>
-            <small>{longDate(lang, isoDay(c.created_at))}</small>
-            <p>{c.body}</p>
-          </li>
-        ))}
-        {comments.data?.length === 0 && <li className="cr-none">{t('No messages yet.')}</li>}
-      </ul>
-      {canReply && <form className="cr-reply" onSubmit={send}>
-        <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={2} placeholder={t('Write a message to your project team')} aria-label={t('Message')} />
-        <button type="submit" className="cr-btn" disabled={add.isPending || !reply.trim()}>{t('Send')}</button>
-      </form>}
-    </div>
+        <aside className="cr-side">
+          <div className="cp-card cr-box">
+            <h3>{t('Request timeline')}</h3>
+            <ol className="cr-line">
+              {steps.map((st) => (
+                <li key={st.label} className={`cr-${st.state}`}>
+                  <i aria-hidden="true">{st.state === 'done' ? '✓' : ''}</i>
+                  <b>{t(st.label)}</b>
+                  {st.at && <small>{longDate(lang, isoDay(st.at))}</small>}
+                  {st.state === 'current' && <em>{t('Current status')}</em>}
+                  {st.note && <small>{t(st.note)}</small>}
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="cp-card cr-box">
+            <h3 className="cr-h-blue">{t('Request details')}</h3>
+            <hr />
+            {cr.impact_schedule_days !== null ? (
+              <>
+                <div className="cr-k">{t('Schedule impact')}</div>
+                <div className="cr-big">{`${cr.impact_schedule_days > 0 ? '+' : ''}${t('{n} days', { n: cr.impact_schedule_days })}${open ? ` ${t('proposed')}` : ''}`}</div>
+                {open && <p>{t('Delivery dates stay unchanged until approval.')}</p>}
+              </>
+            ) : (
+              <p>{t('Schedule impact has not been assessed yet.')}</p>
+            )}
+            {cr.impact_scope && <><div className="cr-k">{t(open ? 'Proposed scope impact' : 'Scope impact')}</div><p>{cr.impact_scope}</p></>}
+            {cr.decision_note && <><div className="cr-k">{t('Decision note')}</div><p>{cr.decision_note}</p></>}
+            {cr.milestone && (
+              <div className="cr-row2">
+                <span>{t('Milestone')}</span>
+                <span>{cr.milestone.code} · {cr.milestone.name}{cr.requested_date && ` → ${longDate(lang, cr.requested_date)}`}</span>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+    </section>
   );
 }
