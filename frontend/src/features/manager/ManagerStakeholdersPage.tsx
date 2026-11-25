@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { initialsOf } from '@/features/client/format';
 import { useProjectContext } from '@/features/client/ClientProjectLayout';
+import { Icon } from '@/features/client/icons';
 import { EmptyCard } from '@/features/client/ui';
 import { StakeholderDialog } from '@/features/client/StakeholderDialog';
 import type { ClientContact } from '@/features/client/types';
@@ -36,8 +37,14 @@ export function ManagerStakeholdersPage() {
                 <div><h3>{c.name}</h3><p>{t(c.role)}</p></div>
               </div>
               <dl className="mg-detail">
-                <div><dt>{t('Work email')}</dt><dd>{c.email || '–'}</dd></div>
-                <div><dt>{t('Phone')}</dt><dd>{c.phone || t('Not provided')}</dd></div>
+                <div>
+                  <span className="mg-dico"><Icon name="mail" className="cx-ico" strokeWidth={1.5} /></span>
+                  <div><dt>{t('Work email')}</dt><dd>{c.email || '–'}</dd></div>
+                </div>
+                <div>
+                  <span className="mg-dico"><Icon name="phone" className="cx-ico" strokeWidth={1.5} /></span>
+                  <div><dt>{t('Phone')}</dt><dd>{c.phone || t('Not provided')}</dd></div>
+                </div>
               </dl>
               <div className="mg-foot">
                 <span>{t(borek ? 'Delivery contact' : 'Client organisation contact')}</span>

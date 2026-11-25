@@ -2,7 +2,8 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import logo from '@/assets/borek-flow-portal-logo.svg';
+import flowLogo from '@/assets/borek-flow-nav-white.svg';
+import solutionsLogo from '@/assets/borek-solutions-nav-white.svg';
 import { initialsOf } from '@/features/client/format';
 import { Notifications } from '@/features/client/Notifications';
 import { Toast } from '@/features/accountManager/AccountManagerLayout';
@@ -32,18 +33,18 @@ export function ManagerLayout() {
   if (!user) return null;
 
   return (
-    <div className="am am-slate">
+    <div className="am am-slate am-client">
       <div className="shell">
         <aside className="sidebar">
           <Link to={paths.managerHome} aria-label={t('Borek Flow home')}>
-            <img className="logo" src={logo} alt="BOREK Solutions Group" />
+            <img className="logo" src={flowLogo} alt="Borek Flow" />
           </Link>
-          <div className="sub">Borek Flow</div>
           <nav className="nav" aria-label={t('Main')}>
             <NavLink to={paths.managerHome} end className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Dashboard')}</NavLink>
             <NavLink to={paths.managerProjects} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Projects')}</NavLink>
             <NavLink to={paths.managerTeam} className={({ isActive }) => (isActive ? 'active' : undefined)}>{t('Team')}</NavLink>
           </nav>
+          <img className="corp" src={solutionsLogo} alt="Borek Solutions Group" width={93} height={24} />
         </aside>
         <div className="main">
           <header className="topbar">
