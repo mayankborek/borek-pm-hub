@@ -159,3 +159,5 @@
 :root[data-theme=dark] .st-code-review { color: #cab1ff; }
 :root[data-theme=dark] .st-testing { color: #8eddd5; }
 :root[data-theme=dark] .st-in-progress { color: #a9c9ff; }
+.avatar-glyph { flex: none; margin-right: 6px; }
+.avatar-filters button.avatar.round { margin-right: -4px; }

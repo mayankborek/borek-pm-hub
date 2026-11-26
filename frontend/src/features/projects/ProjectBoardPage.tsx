@@ -19,7 +19,7 @@ import { useProjectContext } from './ProjectLayout';
 import { CardAssignee, CardPriority } from './CardPickers';
 import { QuickCreate } from './QuickCreate';
 import { SprintBar } from './SprintBar';
-import { errorText, RenameInput, StatusCreator, StatusMenu } from './StatusParts';
+import { errorText, RenameInput, StatusMenu } from './StatusParts';
 import gripDots from './assets/grip-dots.svg';
 import './board.css';
 
@@ -249,7 +249,6 @@ export function ProjectBoardPage() {
                 )}
               </section>
             ))}
-            {isPm && <StatusCreator taken={taken} create={actions.create.mutateAsync} />}
           </div>
           {actionError && (
             <p className="qc-error" role="alert">

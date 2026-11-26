@@ -374,6 +374,7 @@ export function TaskFilters({
       {extra}
       {assignees.length > 0 && (
         <div className="avatar-filters" role="group" aria-label={t('Filter by assignee')}>
+          <svg className="avatar-glyph" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><circle cx="7" cy="4.5" r="3.5" fill="#5c6178" /><path d="M0 16c0-4 3-6 7-6s7 2 7 6z" fill="#5c6178" /></svg>
           {assignees.map((u) => (
             <button
               key={u.id}

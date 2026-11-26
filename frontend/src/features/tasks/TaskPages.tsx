@@ -115,7 +115,7 @@ export function TasksPage() {
         filter={filter}
         onChange={setFilter}
         onClear={clear}
-        tasks={tasks}
+        tasks={loaded}
         combined
         statuses={statuses}
         extra={
