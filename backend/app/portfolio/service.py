@@ -29,7 +29,7 @@ from app.portfolio.schemas import (
     PortfolioStage,
 )
 from app.projects import service as project_service
-from app.projects.membership import visible_project_ids
+from app.projects.membership import oversight_project_ids
 from app.projects.models import Project, ProjectMember
 from app.projects.schemas import TaskSummary
 from app.reporting.service import latest_published
@@ -83,7 +83,7 @@ async def portfolio(
     """Active projects: all of them for a Manager, an Account Manager's clients' for them."""
     conditions: list[ColumnElement[bool]] = [Project.archived_at.is_(None)]
     if not sees_all_projects(user):
-        conditions.append(Project.id.in_(visible_project_ids(user)))
+        conditions.append(Project.id.in_(oversight_project_ids(user)))
     if status:
         conditions.append(Project.status == status.value)
     if stage == "active":

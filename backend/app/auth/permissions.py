@@ -6,7 +6,7 @@ so this module stays free of database access and is easy to test.
 """
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from sqlalchemy import ColumnElement
@@ -20,6 +20,9 @@ class Action(StrEnum):
     PROJECT_CREATE = "project:create"
     PROJECT_UPDATE = "project:update"
     PROJECT_ARCHIVE = "project:archive"
+    # Only the project's status (PATCH with `status` alone): leads, Managers and the client's
+    # Account Manager (Account Manager role guide). Every other project field is PROJECT_UPDATE.
+    PROJECT_STATUS = "project:status"
     PROJECT_LIST = "project:list"
     PROJECT_VIEW = "project:view"
     MEMBER_MANAGE = "member:manage"
@@ -127,14 +130,23 @@ NOT_FOR_LEADS = frozenset(
         Action.SCHEDULE_MANAGE,
     }
 )
-# Account Managers read, and handle reports, stakeholders and money; on a project only when its
-# client is assigned to them.
+# Account Managers (Account Manager role guide, 26.11.2026): the same workspace as a PM
+# (dashboard, My Tasks, projects). On projects of their assigned clients they read delivery and
+# handle project status, reports, stakeholders and money. In a project they are a member of,
+# they have a developer member's rights; they are never project lead.
 _ACCOUNT_MANAGER_ANYWHERE = frozenset(
-    {Action.PROJECT_LIST, Action.PORTFOLIO_VIEW, Action.ORGANISATION_VIEW}
+    {
+        Action.PROJECT_LIST,
+        Action.PORTFOLIO_VIEW,
+        Action.ORGANISATION_VIEW,
+        Action.DASHBOARD_VIEW,
+        Action.MY_TASKS,
+    }
 )
 _ACCOUNT_MANAGER_ON_PROJECT = frozenset(
     {
         Action.PROJECT_VIEW,
+        Action.PROJECT_STATUS,
         Action.TASK_VIEW,
         Action.STATUS_REPORT_MANAGE,
         Action.STAKEHOLDER_MANAGE,
@@ -207,6 +219,19 @@ def is_client(user: User) -> bool:
     return user.global_role == GlobalRole.CLIENT
 
 
+def joins_projects_condition() -> ColumnElement[bool]:
+    """SQL condition for the roles that can be project members and get tasks: the project
+    workers plus Account Managers (who never lead a project)."""
+    return User.global_role.in_(
+        [
+            GlobalRole.PM.value,
+            GlobalRole.DEVELOPER.value,
+            GlobalRole.MANAGER.value,
+            GlobalRole.ACCOUNT_MANAGER.value,
+        ]
+    )
+
+
 def account_manager_condition() -> ColumnElement[bool]:
     """SQL condition for "is an Account Manager" (only they can be assigned to a client)."""
     return User.global_role == GlobalRole.ACCOUNT_MANAGER.value
@@ -249,9 +274,14 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
         return True
     resource = resource or Resource()
     if is_account_manager(user):
-        if action in _ACCOUNT_MANAGER_ON_PROJECT:
-            return resource.is_account_manager
-        return action in _ACCOUNT_MANAGER_ANYWHERE
+        if resource.is_account_manager and action in _ACCOUNT_MANAGER_ON_PROJECT:
+            return True
+        if action in _ACCOUNT_MANAGER_ANYWHERE:
+            return True
+        if not resource.is_member:
+            return False
+        # A member of the project: the developer member rules below, never a lead's rights.
+        resource = replace(resource, is_project_lead=False)
     if action in NOT_FOR_LEADS:
         return False
     if user.global_role == GlobalRole.PM:
@@ -260,7 +290,7 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
         if resource.is_member and has_lead_rights(user, is_project_lead=resource.is_project_lead):
             return True
         # Otherwise rights follow the project role: a plain member is treated like a developer.
-    elif user.global_role != GlobalRole.DEVELOPER:
+    elif user.global_role not in (GlobalRole.DEVELOPER, GlobalRole.ACCOUNT_MANAGER):
         return False
     if action in _ANY_USER:
         return True
