@@ -4,6 +4,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import flowLogo from '@/assets/borek-flow-nav-white.svg';
 import solutionsLogo from '@/assets/borek-solutions-nav-white.svg';
+import { UserMenu } from '@/features/client/UserMenu';
+import '@/features/client/clientPortal.css';
 import { DevProjectsNav } from './DevProjectsNav';
 import './pmShell.css';
 
@@ -13,12 +15,6 @@ export function AppLayout() {
   const { t } = usePrefs();
   if (!user) return null;
 
-  const initials = user.name
-    .split(' ')
-    .map((p) => p.charAt(0))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
   const title =
     pathname === paths.profile || pathname.startsWith(`${paths.profile}/`)
       ? 'Profile'
@@ -77,10 +73,7 @@ export function AppLayout() {
                 </svg>
               </span>
               <span className="topbar-divider" aria-hidden="true" />
-              <Link to={paths.profile} className="user">
-                <span className="avatar" aria-hidden="true">{initials}</span>
-                <span className="user-name">{user.name}</span>
-              </Link>
+              <UserMenu profilePath={paths.profile} />
             </div>
           </div>
         </header>

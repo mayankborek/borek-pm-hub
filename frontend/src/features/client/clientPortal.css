@@ -329,7 +329,7 @@ h3.cp-sec{font-size:var(--fs-18);font-weight:600;margin-top:32px}
 :root[data-theme=dark] .am.am-slate .cx-stat .cx-stat-ico.cx-red{color:#FFA7A2}
 
 /* ───── Tablet (601–1024px): notifications panel and user menu, from notifications-and-user-menu.html ───── */
-.cp-notif-sub,.cp-notif-avatar,.cp-notif-dot,.cp-menu{display:none}
+.cp-notif-sub,.cp-notif-avatar,.cp-notif-dot{display:none}
 @media (min-width:601px) and (max-width:1024px){
   .cp-notif{width:400px;padding:0;border-radius:12px;overflow:hidden}
   .cp-notif-title{padding:24px 21px 0;font-size:var(--fs-16);line-height:24px}
@@ -349,17 +349,18 @@ h3.cp-sec{font-size:var(--fs-18);font-weight:600;margin-top:32px}
   .cp-notif-headline,.cp-notif-meta{margin-left:46px}
   .cp-notif-dot{display:none;position:absolute;top:18px;right:22px;width:6px;height:6px;border-radius:50%;background:var(--blue)}
   .cp-notif-item.cp-unread .cp-notif-dot{display:block}
-
-  .cp-usermenu-wrap{position:relative;display:flex}
-  .am .topbar .cp-usermenu-wrap>button.user{cursor:pointer}
-  .cp-menu{display:block;position:absolute;top:calc(100% + 8px);right:0;z-index:10;width:247px;padding:18px 12px 12px;background:#202B3D;border:1px solid #465773;border-radius:12px;color:#E8EDF7}
-  .cp-menu-user{display:flex;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid #1D3153}
-  .cp-menu-avatar{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#121A29;font-size:var(--fs-10);font-weight:500}
-  .cp-menu-name{font-size:var(--fs-14);line-height:18px;font-weight:500}
-  .cp-menu-email{font-size:var(--fs-11);line-height:14px;color:#B6C2D5}
-  .cp-menu-item{display:block;width:100%;margin-top:4px;padding:9px 10px;border-radius:6px;text-align:left;font-size:var(--fs-14);line-height:20px;color:#E8EDF7}
-  .cp-menu-user+.cp-menu-item{margin-top:8px}
-  :where(.cp) a.cp-menu-item{color:#E8EDF7}
-  .cp-menu-item:hover{background:rgba(255,255,255,.06);text-decoration:none}
-  .cp-menu-link,:where(.cp) a.cp-menu-link{color:#A9C9FF}
 }
+
+/* ───── Profile dropdown (admin-style), all viewports ───── */
+.cp-usermenu-wrap{position:relative;display:flex}
+.am .topbar .cp-usermenu-wrap>button.user,.shell.pm .topbar .cp-usermenu-wrap>button.user{cursor:pointer;background:none;border:0;font:inherit;color:inherit}
+.cp-menu{position:absolute;top:calc(100% + 8px);right:0;z-index:50;width:247px;padding:10px 8px 8px;background:var(--surface,#fff);border:1px solid var(--line,#e5e8f0);border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.12);color:var(--ink,#1a2540)}
+.cp-menu-user{display:flex;gap:10px;align-items:center;padding:0 6px 10px;border-bottom:1px solid var(--line,#e5e8f0)}
+.cp-menu-avatar{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:var(--bg,#eef0f7);font-size:var(--fs-10);font-weight:700}
+.cp-menu-name{font-size:var(--fs-14);line-height:18px;font-weight:600}
+.cp-menu-email{font-size:var(--fs-11);line-height:14px;color:var(--muted,#6b7690)}
+.cp-menu-item{display:block;width:100%;margin-top:4px;padding:8px 10px;border-radius:5px;text-align:left;font-size:var(--fs-13);line-height:18px;font-weight:500;color:var(--ink,#1a2540);background:none;border:0;cursor:pointer}
+.cp-menu-user+.cp-menu-item{margin-top:6px}
+:where(.cp) a.cp-menu-item{color:var(--ink,#1a2540)}
+.cp-menu-item:hover{background:var(--bg,#eef0f7);text-decoration:none}
+.cp-menu-link,:where(.cp) a.cp-menu-link{color:var(--blue,#2f5bd8)}

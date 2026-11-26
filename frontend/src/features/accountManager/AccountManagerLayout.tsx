@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import flowLogo from '@/assets/borek-flow-nav-white.svg';
 import solutionsLogo from '@/assets/borek-solutions-nav-white.svg';
-import { initialsOf } from '@/features/client/format';
+import { UserMenu } from '@/features/client/UserMenu';
 import { Notifications } from '@/features/client/Notifications';
 import './am.css';
 import '@/features/client/clientPortal.css';
@@ -80,10 +80,7 @@ export function AccountManagerLayout() {
                 <span className="cp cp-tools">
                   <Notifications />
                 </span>
-                <Link to={paths.amProfile} className="user">
-                  <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
-                  {user.name}
-                </Link>
+                <UserMenu profilePath={paths.amProfile} />
               </div>
             </header>
             <main className="content">

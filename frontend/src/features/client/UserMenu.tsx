@@ -1,28 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { initialsOf } from './format';
 
-const TABLET = '(min-width:601px) and (max-width:1024px)';
-
-function useTablet() {
-  const [match, setMatch] = useState(() => window.matchMedia(TABLET).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(TABLET);
-    const onChange = () => setMatch(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return match;
-}
-
-/** Top-bar user. Desktop: link to the profile. Tablet: dropdown with Account settings and Log out. */
-export function UserMenu() {
+/** Top-bar user dropdown (as on the admin screens): name and email, Account settings, Log out. Shared by every role's shell. */
+export function UserMenu({ profilePath = paths.clientProfile }: { profilePath?: string }) {
   const { user, signOut } = useAuth();
   const { t } = usePrefs();
-  const tablet = useTablet();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -47,22 +34,12 @@ export function UserMenu() {
   }, [open]);
 
   if (!user) return null;
-  const avatar = <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>;
-
-  if (!tablet) {
-    return (
-      <Link to={paths.clientProfile} className="user">
-        {avatar}
-        {user.name}
-      </Link>
-    );
-  }
 
   return (
     <span ref={wrap} className="cp cp-usermenu-wrap">
       <button ref={button} type="button" className="user" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        {avatar}
-        {user.name}
+        <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
+        <span className="user-name">{user.name}</span>
       </button>
       {open && (
         <nav className="cp-menu" aria-label={t('User menu')}>
@@ -73,8 +50,14 @@ export function UserMenu() {
               <div className="cp-menu-email">{user.email}</div>
             </div>
           </div>
-          <Link className="cp-menu-item" to={paths.clientProfile} onClick={() => setOpen(false)}>{t('Account settings')}</Link>
-          <button type="button" className="cp-menu-item cp-menu-link" onClick={() => { setOpen(false); void signOut(); }}>{t('Log out')}</button>
+          <Link className="cp-menu-item" to={profilePath} onClick={() => setOpen(false)}>{t('Account settings')}</Link>
+          <button
+            type="button"
+            className="cp-menu-item cp-menu-link"
+            onClick={() => { setOpen(false); void signOut().then(() => navigate(paths.login, { replace: true })); }}
+          >
+            {t('Log out')}
+          </button>
         </nav>
       )}
     </span>
