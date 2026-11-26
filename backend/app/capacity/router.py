@@ -38,7 +38,7 @@ def _read_schedules(user: CurrentUser) -> None:
 async def workload(user: CurrentUser, session: SessionDep) -> WorkloadOut:
     """Open and overdue tasks and remaining estimated effort (person-days) per person and
     project, highest effort first, plus unassigned work."""
-    require(user, Action.TEAM_VIEW)
+    require(user, Action.TEAM_WORKLOAD)
     return await service.workload(session)
 
 

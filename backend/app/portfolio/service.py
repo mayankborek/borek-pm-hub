@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import (
     account_manager_condition,
+    client_condition,
     sees_all_projects,
     works_on_tasks_condition,
 )
@@ -30,7 +31,7 @@ from app.portfolio.schemas import (
 )
 from app.projects import service as project_service
 from app.projects.membership import oversight_project_ids
-from app.projects.models import Project, ProjectMember
+from app.projects.models import Project, ProjectClientContact, ProjectMember
 from app.projects.schemas import TaskSummary
 from app.reporting.service import latest_published
 from app.tasks.transfer import BOM, SEPARATOR, protect_cell
@@ -38,6 +39,7 @@ from app.users.models import User
 
 CLIENT_ASSIGNMENT = "client_assignment"
 ACCOUNT_MANAGER_ROLE = "account_manager"
+CLIENT_CONTACT = "client_contact"  # a named client contact of the project (role and source)
 
 
 def _order_by(sort: PortfolioSort) -> list[object]:
@@ -189,28 +191,40 @@ async def portfolio(
 
 
 def _access_conditions(
-    q: str | None, role: GlobalRole | None, project_id: uuid.UUID | None
+    q: str | None,
+    role: GlobalRole | None,
+    project_ids: list[uuid.UUID],
+    person_ids: list[uuid.UUID],
 ) -> list[ColumnElement[bool]]:
+    """People in the matrix: project workers, Account Managers and client contacts (handoff
+    09). Several projects = people reaching any of them; several people = only those."""
     conditions: list[ColumnElement[bool]] = [
-        or_(works_on_tasks_condition(), account_manager_condition())
+        or_(works_on_tasks_condition(), account_manager_condition(), client_condition())
     ]
     if role:
         conditions.append(User.global_role == role.value)
+    if person_ids:
+        conditions.append(User.id.in_(person_ids))
     if q and q.strip():
         pattern = f"%{like_escape(q.strip())}%"
         conditions.append(
             or_(User.name.ilike(pattern, escape="\\"), User.email.ilike(pattern, escape="\\"))
         )
-    if project_id:
-        client = select(Project.client_organisation_id).where(Project.id == project_id)
+    if project_ids:
+        clients = select(Project.client_organisation_id).where(Project.id.in_(project_ids))
         conditions.append(
             or_(
                 User.id.in_(
-                    select(ProjectMember.user_id).where(ProjectMember.project_id == project_id)
+                    select(ProjectMember.user_id).where(ProjectMember.project_id.in_(project_ids))
                 ),
                 User.id.in_(
                     select(OrganisationAccountManager.user_id).where(
-                        OrganisationAccountManager.organisation_id.in_(client)
+                        OrganisationAccountManager.organisation_id.in_(clients)
+                    )
+                ),
+                User.id.in_(
+                    select(ProjectClientContact.user_id).where(
+                        ProjectClientContact.project_id.in_(project_ids)
                     )
                 ),
             )
@@ -264,6 +278,21 @@ async def _access_rows(
                 source=CLIENT_ASSIGNMENT,
             )
         )
+    contacts = await session.execute(
+        select(ProjectClientContact.user_id, Project.id, Project.code, Project.name)
+        .join(Project, Project.id == ProjectClientContact.project_id)
+        .where(ProjectClientContact.user_id.in_(user_ids), Project.archived_at.is_(None))
+    )
+    for user_id, project_id, code, name in contacts.all():
+        found[user_id].append(
+            AccessProject(
+                project_id=project_id,
+                project_code=code,
+                project_name=name,
+                project_role=CLIENT_CONTACT,
+                source=CLIENT_CONTACT,
+            )
+        )
     for projects in found.values():
         projects.sort(key=lambda p: p.project_code)
     return found
@@ -274,12 +303,13 @@ async def access_overview(
     *,
     q: str | None,
     role: GlobalRole | None,
-    project_id: uuid.UUID | None,
+    project_ids: list[uuid.UUID],
+    person_ids: list[uuid.UUID] | None = None,
     page: int,
     page_size: int | None,
 ) -> tuple[list[AccessPerson], int]:
     """People and the active projects they reach. Without `page_size`: everyone (the export)."""
-    conditions = _access_conditions(q, role, project_id)
+    conditions = _access_conditions(q, role, project_ids, person_ids or [])
     total = await session.scalar(select(func.count(User.id)).where(*conditions)) or 0
     query = select(User).where(*conditions).order_by(User.name, User.id)
     if page_size is not None:

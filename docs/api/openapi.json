@@ -3767,6 +3767,56 @@
         "title": "CommentIn",
         "type": "object"
       },
+      "ControlOut": {
+        "properties": {
+          "customised": {
+            "description": "A switch is saved for this control.",
+            "title": "Customised",
+            "type": "boolean"
+          },
+          "default": {
+            "description": "What they could do without switches in this project.",
+            "title": "Default",
+            "type": "boolean"
+          },
+          "editable": {
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "enabled": {
+            "description": "What the person can do now.",
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "linked_with": {
+            "description": "Controls that switch the same server right: they change together.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Linked With",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "enabled",
+          "default",
+          "customised",
+          "editable",
+          "linked_with"
+        ],
+        "title": "ControlOut",
+        "type": "object"
+      },
       "DeliveryEvent": {
         "description": "For \"Recent updates\" (dashboard) and \"Recent activity\" (project overview).",
         "properties": {
@@ -5753,6 +5803,28 @@
         "title": "MyDashboard",
         "type": "object"
       },
+      "MyPermissionsOut": {
+        "properties": {
+          "permissions": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "Role matrix rows for the signed-in user (menus such as projects_menu).",
+            "title": "Permissions",
+            "type": "object"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "permissions"
+        ],
+        "title": "MyPermissionsOut",
+        "type": "object"
+      },
       "NewClientIn": {
         "additionalProperties": false,
         "description": "A client organisation made together with an external project, with its first contact.",
@@ -6026,21 +6098,209 @@
       },
       "OrganisationCreate": {
         "additionalProperties": false,
+        "description": "One call sets up the whole client (handoff 07): details, Account Managers, optional PM\nand the first client accounts. All or nothing.",
         "properties": {
+          "account_manager_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Account Manager Ids",
+            "type": "array"
+          },
+          "contacts": {
+            "description": "Client accounts to create; each gets an invite link (returned once).",
+            "items": {
+              "$ref": "#/components/schemas/OrganisationMemberCreate"
+            },
+            "maxItems": 20,
+            "title": "Contacts",
+            "type": "array"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
           "name": {
             "maxLength": 200,
             "title": "Name",
             "type": "string"
           },
+          "primary_contact_email": {
+            "anyOf": [
+              {
+                "maxLength": 320,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Email"
+          },
+          "project_manager_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional Project Manager (an active PM) for this client.",
+            "title": "Project Manager Id"
+          },
           "type": {
             "$ref": "#/components/schemas/OrganisationType",
             "default": "client"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
           }
         },
         "required": [
           "name"
         ],
         "title": "OrganisationCreate",
+        "type": "object"
+      },
+      "OrganisationCreatedOut": {
+        "properties": {
+          "account_managers": {
+            "items": {
+              "$ref": "#/components/schemas/PersonBrief"
+            },
+            "title": "Account Managers",
+            "type": "array"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "contact_count": {
+            "default": 0,
+            "description": "Active client accounts.",
+            "title": "Contact Count",
+            "type": "integer"
+          },
+          "contacts_created": {
+            "description": "The client accounts made in this call, with their invite links (once).",
+            "items": {
+              "$ref": "#/components/schemas/OrganisationMemberCreatedOut"
+            },
+            "title": "Contacts Created",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "primary_contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Email"
+          },
+          "project_manager": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projects": {
+            "description": "Active projects; empty = \"No project yet\".",
+            "items": {
+              "$ref": "#/components/schemas/OrganisationProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OrganisationType"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "archived_at",
+          "version",
+          "created_at",
+          "account_managers"
+        ],
+        "title": "OrganisationCreatedOut",
         "type": "object"
       },
       "OrganisationListOut": {
@@ -6263,6 +6523,12 @@
             ],
             "title": "Archived At"
           },
+          "contact_count": {
+            "default": 0,
+            "description": "Active client accounts.",
+            "title": "Contact Count",
+            "type": "integer"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -6273,9 +6539,49 @@
             "title": "Id",
             "type": "string"
           },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "primary_contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Email"
+          },
+          "project_manager": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonBrief"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projects": {
+            "description": "Active projects; empty = \"No project yet\".",
+            "items": {
+              "$ref": "#/components/schemas/OrganisationProject"
+            },
+            "title": "Projects",
+            "type": "array"
           },
           "type": {
             "$ref": "#/components/schemas/OrganisationType"
@@ -6283,6 +6589,17 @@
           "version": {
             "title": "Version",
             "type": "integer"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
           }
         },
         "required": [
@@ -6297,6 +6614,45 @@
         "title": "OrganisationOut",
         "type": "object"
       },
+      "OrganisationProject": {
+        "description": "A project of this client with its named client contacts.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/PersonBrief"
+            },
+            "title": "Contacts",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_contact": {
+            "description": "No named contact: show \"Contact needs assignment\".",
+            "title": "Needs Contact",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "contacts",
+          "needs_contact"
+        ],
+        "title": "OrganisationProject",
+        "type": "object"
+      },
       "OrganisationType": {
         "enum": [
           "internal",
@@ -6307,22 +6663,94 @@
       },
       "OrganisationUpdate": {
         "additionalProperties": false,
+        "description": "Send only what changes. null or \"\" clears an optional detail. `account_manager_ids`\nreplaces the whole list when sent.",
         "properties": {
+          "account_manager_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Manager Ids"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
           "name": {
-            "maxLength": 200,
-            "title": "Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "primary_contact_email": {
+            "anyOf": [
+              {
+                "maxLength": 320,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Email"
+          },
+          "project_manager_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional Project Manager (an active PM) for this client.",
+            "title": "Project Manager Id"
           },
           "version": {
             "description": "Version from the last read (optimistic locking).",
             "minimum": 1.0,
             "title": "Version",
             "type": "integer"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
           }
         },
         "required": [
-          "version",
-          "name"
+          "version"
         ],
         "title": "OrganisationUpdate",
         "type": "object"
@@ -6418,7 +6846,7 @@
             "title": "Next Unallocated Day"
           },
           "person": {
-            "$ref": "#/components/schemas/PersonRef"
+            "$ref": "#/components/schemas/app__capacity__schemas__PersonRef"
           },
           "schedule": {
             "$ref": "#/components/schemas/ScheduleOut"
@@ -6452,23 +6880,67 @@
         "title": "PersonCapacity",
         "type": "object"
       },
-      "PersonRef": {
+      "PersonProjectAccessOut": {
         "properties": {
+          "access": {
+            "enum": [
+              "project_lead",
+              "developer",
+              "account_manager",
+              "manager"
+            ],
+            "title": "Access",
+            "type": "string"
+          },
+          "person": {
+            "$ref": "#/components/schemas/app__access_policy__schemas__PersonRef"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SectionOut"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "person",
+          "project",
+          "access",
+          "sections"
+        ],
+        "title": "PersonProjectAccessOut",
+        "type": "object"
+      },
+      "PersonProjectOut": {
+        "properties": {
+          "access": {
+            "description": "Why the person reaches the project.",
+            "enum": [
+              "project_lead",
+              "developer",
+              "account_manager",
+              "manager"
+            ],
+            "title": "Access",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "customised": {
+            "description": "The person has switches set in this project.",
+            "title": "Customised",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
-          },
-          "job_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Job Title"
           },
           "name": {
             "title": "Name",
@@ -6477,10 +6949,38 @@
         },
         "required": [
           "id",
+          "code",
           "name",
-          "job_title"
+          "access",
+          "customised"
         ],
-        "title": "PersonRef",
+        "title": "PersonProjectOut",
+        "type": "object"
+      },
+      "PersonProjectsOut": {
+        "properties": {
+          "editable": {
+            "description": "False for administrators and client contacts (fixed).",
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PersonProjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "person": {
+            "$ref": "#/components/schemas/app__access_policy__schemas__PersonRef"
+          }
+        },
+        "required": [
+          "person",
+          "editable",
+          "items"
+        ],
+        "title": "PersonProjectsOut",
         "type": "object"
       },
       "PhaseCreate": {
@@ -7311,6 +7811,27 @@
           "tasks"
         ],
         "title": "ProjectCard",
+        "type": "object"
+      },
+      "ProjectContactsUpdate": {
+        "additionalProperties": false,
+        "description": "The complete list of a project's named client contacts (at least one).",
+        "properties": {
+          "user_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "user_ids"
+        ],
+        "title": "ProjectContactsUpdate",
         "type": "object"
       },
       "ProjectCreate": {
@@ -10180,7 +10701,7 @@
             "title": "Note"
           },
           "person": {
-            "$ref": "#/components/schemas/PersonRef"
+            "$ref": "#/components/schemas/app__capacity__schemas__PersonRef"
           },
           "project": {
             "$ref": "#/components/schemas/ProjectRef"
@@ -10458,6 +10979,112 @@
         "title": "RoadmapPhaseOut",
         "type": "object"
       },
+      "RoleCellOut": {
+        "properties": {
+          "default": {
+            "enum": [
+              "always",
+              "on",
+              "off",
+              "none"
+            ],
+            "title": "Default",
+            "type": "string"
+          },
+          "editable": {
+            "description": "A switch the administrator can change.",
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "value": {
+            "description": "always / on / off / none (a dash: not configured here).",
+            "enum": [
+              "always",
+              "on",
+              "off",
+              "none"
+            ],
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "section",
+          "value",
+          "default",
+          "editable"
+        ],
+        "title": "RoleCellOut",
+        "type": "object"
+      },
+      "RoleColumnOut": {
+        "properties": {
+          "customised": {
+            "description": "Some value differs from the default (offer reset).",
+            "title": "Customised",
+            "type": "boolean"
+          },
+          "editable": {
+            "description": "False for Administrator and Client (fixed policy).",
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/RoleCellOut"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "label",
+          "editable",
+          "customised",
+          "permissions"
+        ],
+        "title": "RoleColumnOut",
+        "type": "object"
+      },
+      "RoleMatrixOut": {
+        "properties": {
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleColumnOut"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roles"
+        ],
+        "title": "RoleMatrixOut",
+        "type": "object"
+      },
       "ScheduleIn": {
         "additionalProperties": false,
         "properties": {
@@ -10518,6 +11145,37 @@
           "source"
         ],
         "title": "ScheduleOut",
+        "type": "object"
+      },
+      "SectionOut": {
+        "properties": {
+          "controls": {
+            "items": {
+              "$ref": "#/components/schemas/ControlOut"
+            },
+            "title": "Controls",
+            "type": "array"
+          },
+          "customised": {
+            "title": "Customised",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "customised",
+          "controls"
+        ],
+        "title": "SectionOut",
         "type": "object"
       },
       "Segment": {
@@ -12269,6 +12927,20 @@
         "title": "StatusUpdate",
         "type": "object"
       },
+      "SwitchUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "SwitchUpdate",
+        "type": "object"
+      },
       "Table": {
         "properties": {
           "columns": {
@@ -13594,7 +14266,7 @@
             "type": "integer"
           },
           "person": {
-            "$ref": "#/components/schemas/PersonRef"
+            "$ref": "#/components/schemas/app__capacity__schemas__PersonRef"
           },
           "projects": {
             "items": {
@@ -13685,7 +14357,7 @@
           "most_open": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PersonRef"
+                "$ref": "#/components/schemas/app__capacity__schemas__PersonRef"
               },
               {
                 "type": "null"
@@ -13728,6 +14400,66 @@
           "most_open_count"
         ],
         "title": "WorkloadSummary",
+        "type": "object"
+      },
+      "app__access_policy__schemas__PersonRef": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role"
+        ],
+        "title": "PersonRef",
+        "type": "object"
+      },
+      "app__capacity__schemas__PersonRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "job_title"
+        ],
+        "title": "PersonRef",
         "type": "object"
       },
       "app__change_requests__schemas__AttachmentOut": {
@@ -14217,7 +14949,7 @@
   "paths": {
     "/api/v1/access-overview": {
       "get": {
-        "description": "Manager: who reaches which active project, and why (membership or client assignment).",
+        "description": "Person access (Manager, Administrator): each person's single global role and the active\nprojects they reach, and why (membership, client assignment, named client contact).",
         "operationId": "access_overview_api_v1_access_overview_get",
         "parameters": [
           {
@@ -14254,20 +14986,37 @@
             }
           },
           {
+            "description": "Repeat to filter by several projects (any of them).",
             "in": "query",
             "name": "project_id",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "format": "uuid",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Project Id"
+              "default": [],
+              "description": "Repeat to filter by several projects (any of them).",
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Project Id",
+              "type": "array"
+            }
+          },
+          {
+            "description": "Repeat to show only these people (multi-select).",
+            "in": "query",
+            "name": "person_id",
+            "required": false,
+            "schema": {
+              "default": [],
+              "description": "Repeat to show only these people (multi-select).",
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "maxItems": 200,
+              "title": "Person Id",
+              "type": "array"
             }
           },
           {
@@ -14325,7 +15074,7 @@
     },
     "/api/v1/access-overview/export": {
       "get": {
-        "description": "The access overview (same filters) as a CSV file.",
+        "description": "The whole filtered matrix (all pages, same order and fields) as CSV or PDF.",
         "operationId": "export_access_overview_api_v1_access_overview_export_get",
         "parameters": [
           {
@@ -14362,33 +15111,70 @@
             }
           },
           {
+            "description": "Repeat to filter by several projects (any of them).",
             "in": "query",
             "name": "project_id",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "format": "uuid",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "default": [],
+              "description": "Repeat to filter by several projects (any of them).",
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Project Id",
+              "type": "array"
+            }
+          },
+          {
+            "description": "Repeat to show only these people (multi-select).",
+            "in": "query",
+            "name": "person_id",
+            "required": false,
+            "schema": {
+              "default": [],
+              "description": "Repeat to show only these people (multi-select).",
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "maxItems": 200,
+              "title": "Person Id",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "csv",
+              "enum": [
+                "csv",
+                "pdf"
               ],
-              "title": "Project Id"
+              "title": "Format",
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
             "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
               "text/csv": {
                 "schema": {
                   "type": "string"
                 }
               }
             },
-            "description": "CSV file"
+            "description": "CSV or PDF file"
           },
           "422": {
             "content": {
@@ -14584,6 +15370,240 @@
         ]
       }
     },
+    "/api/v1/admin/people/{user_id}/project-access": {
+      "get": {
+        "description": "The person's active projects (Manage, \"All\"), and which have switches set.",
+        "operationId": "person_projects_api_v1_admin_people__user_id__project_access_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProjectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Person Projects",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
+    "/api/v1/admin/people/{user_id}/project-access/{project_id}": {
+      "get": {
+        "description": "The six sections with every control: what the person can do now, the default, and\nwhether a switch is saved. 409 NO_PROJECT_ACCESS when they no longer reach the project.",
+        "operationId": "person_project_access_api_v1_admin_people__user_id__project_access__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProjectAccessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Person Project Access",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
+    "/api/v1/admin/people/{user_id}/project-access/{project_id}/sections/{section}/reset": {
+      "post": {
+        "description": "Reset to default: this section, person and project only.",
+        "operationId": "reset_section_api_v1_admin_people__user_id__project_access__project_id__sections__section__reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "section",
+            "required": true,
+            "schema": {
+              "title": "Section",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProjectAccessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Section",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
+    "/api/v1/admin/people/{user_id}/project-access/{project_id}/{permission}": {
+      "put": {
+        "description": "Switch one control for this person in this project; saved at once. Returns the whole\nscreen so the switches show the confirmed state.",
+        "operationId": "set_project_control_api_v1_admin_people__user_id__project_access__project_id___permission__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "permission",
+            "required": true,
+            "schema": {
+              "title": "Permission",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonProjectAccessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Project Control",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
     "/api/v1/admin/picklists/{key}/values": {
       "post": {
         "description": "Added at the end. 409 DUPLICATE_VALUE when the list has it already (any letter case).",
@@ -14700,6 +15720,133 @@
         ]
       }
     },
+    "/api/v1/admin/role-permissions": {
+      "get": {
+        "description": "The role policy matrix: Manager, Project Manager, Account Manager, Developer (switches),\nAdministrator and Client (fixed). `always` and `none` cells are read-only.",
+        "operationId": "role_matrix_api_v1_admin_role_permissions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleMatrixOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Role Matrix",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
+    "/api/v1/admin/role-permissions/{role}/reset": {
+      "post": {
+        "description": "Back to the product defaults for this role only.",
+        "operationId": "reset_role_api_v1_admin_role_permissions__role__reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "role",
+            "required": true,
+            "schema": {
+              "title": "Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleMatrixOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Role",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
+    "/api/v1/admin/role-permissions/{role}/{permission}": {
+      "put": {
+        "description": "Switch one cell on or off; saved at once and applied to everyone with the role on their\nnext request. 409 FIXED_POLICY for fixed roles or cells.",
+        "operationId": "set_role_permission_api_v1_admin_role_permissions__role___permission__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "role",
+            "required": true,
+            "schema": {
+              "title": "Role",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "permission",
+            "required": true,
+            "schema": {
+              "title": "Permission",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleMatrixOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Role Permission",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
     "/api/v1/admin/roles": {
       "get": {
         "description": "The roles in the system and how many accounts hold each. The list is fixed: rights are\ndefined in the code, so an administrator gives roles to people but does not invent new ones.",
@@ -14731,7 +15878,7 @@
         "operationId": "list_users_api_v1_admin_users_get",
         "parameters": [
           {
-            "description": "Search name or email",
+            "description": "Search name, email or organisation",
             "in": "query",
             "name": "q",
             "required": false,
@@ -14745,7 +15892,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Search name or email",
+              "description": "Search name, email or organisation",
               "title": "Q"
             }
           },
@@ -16949,6 +18096,28 @@
         ]
       }
     },
+    "/api/v1/me/permissions": {
+      "get": {
+        "description": "The signed-in user's role matrix row (for example `projects_menu`, `my_tasks`), so the\nfrontend shows the same menus the server allows.",
+        "operationId": "my_permissions_api_v1_me_permissions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPermissionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Permissions",
+        "tags": [
+          "access policy"
+        ]
+      }
+    },
     "/api/v1/me/profile": {
       "get": {
         "description": "The signed-in person's own profile (any role, clients included).",
@@ -17452,6 +18621,7 @@
         ]
       },
       "post": {
+        "description": "Set up a client in one call: details, Account Managers, optional PM and the first client\naccounts. All or nothing. `contacts_created` carries each new account's invite link once.",
         "operationId": "create_organisation_api_v1_organisations_post",
         "requestBody": {
           "content": {
@@ -17468,7 +18638,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrganisationOut"
+                  "$ref": "#/components/schemas/OrganisationCreatedOut"
                 }
               }
             },
@@ -17901,6 +19071,70 @@
           }
         },
         "summary": "Renew Member Invite",
+        "tags": [
+          "organisations"
+        ]
+      }
+    },
+    "/api/v1/organisations/{organisation_id}/projects/{project_id}/contacts": {
+      "put": {
+        "description": "Replace the named client contacts of one of this client's active projects (at least\none; active client accounts of this organisation only).",
+        "operationId": "set_project_contacts_api_v1_organisations__organisation_id__projects__project_id__contacts_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectContactsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Project Contacts",
         "tags": [
           "organisations"
         ]

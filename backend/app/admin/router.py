@@ -68,7 +68,9 @@ async def list_roles(actor: CurrentUser, session: SessionDep) -> list[AdminRoleO
 async def list_users(
     actor: CurrentUser,
     session: SessionDep,
-    q: Annotated[str | None, Query(max_length=100, description="Search name or email")] = None,
+    q: Annotated[
+        str | None, Query(max_length=100, description="Search name, email or organisation")
+    ] = None,
     role: Annotated[GlobalRole | None, Query(description="Filter by role")] = None,
     organisation_id: Annotated[
         uuid.UUID | None, Query(description="Only people of this organisation (client contacts)")

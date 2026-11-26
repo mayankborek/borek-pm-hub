@@ -80,6 +80,7 @@ LIST_USERS = PROJECT_PEOPLE | ACCOUNT_MANAGERS
 NO_ROLE_RULE = {
     ("GET", "/auth/dev-users"),
     ("GET", "/auth/me"),
+    ("GET", "/me/permissions"),  # any signed-in user: their own role matrix row
     ("POST", "/auth/login"),
     ("POST", "/auth/accept-invite"),
     ("POST", "/auth/invite-info"),
@@ -183,7 +184,8 @@ def cases(w: World) -> list[Case]:
         # tasks across projects
         Case("GET", "/tasks", everywhere(LIST_USERS)),
         Case("GET", "/tasks/export", everywhere(LIST_USERS)),
-        Case("GET", "/me/tasks", everywhere(PROJECT_PEOPLE | ACCOUNT_MANAGERS)),
+        # My tasks is off for Managers by default (role matrix, Administrator handoff appendix A)
+        Case("GET", "/me/tasks", everywhere((PROJECT_PEOPLE | ACCOUNT_MANAGERS) - {"manager"})),
         # one task
         Case("GET", t, inside_project(READERS)),
         Case("PATCH", t, inside_project(LEADS), {"version": 999, "title": "x"}),
@@ -217,7 +219,7 @@ def cases(w: World) -> list[Case]:
         Case("DELETE", f"{t}/attachments/{{attachment_id}}", inside_project(OWNERS)),
         # dashboards and picker
         Case("GET", "/dashboard", everywhere({"manager"} | PMS | ACCOUNT_MANAGERS)),
-        Case("GET", "/dashboard/me", everywhere(PROJECT_PEOPLE | ACCOUNT_MANAGERS)),
+        Case("GET", "/dashboard/me", everywhere((PROJECT_PEOPLE | ACCOUNT_MANAGERS) - {"manager"})),
         Case("GET", "/users", everywhere({"manager"} | PMS)),
         # administration
         Case("GET", "/admin/users", everywhere({"admin"})),
@@ -254,6 +256,35 @@ def cases(w: World) -> list[Case]:
             "/organisations/{organisation_id}/account-managers",
             everywhere({"admin"}),
             {"user_ids": [v["am_own"]]},
+        ),
+        Case(
+            "PUT",
+            "/organisations/{organisation_id}/projects/{project_id}/contacts",
+            everywhere({"admin"}),
+            {"user_ids": [v["client"]]},
+        ),
+        # role permissions + project access (Administrator handoff 10 + 11); values are the
+        # defaults, so nothing changes for the cases that follow
+        Case("GET", "/admin/role-permissions", everywhere({"admin"})),
+        Case(
+            "PUT",
+            "/admin/role-permissions/{policy_role}/{policy_permission}",
+            everywhere({"admin"}),
+            {"enabled": True},
+        ),
+        Case("POST", "/admin/role-permissions/{policy_role}/reset", everywhere({"admin"})),
+        Case("GET", "/admin/people/{user_id}/project-access", everywhere({"admin"})),
+        Case("GET", "/admin/people/{user_id}/project-access/{project_id}", everywhere({"admin"})),
+        Case(
+            "PUT",
+            "/admin/people/{user_id}/project-access/{project_id}/{policy_control}",
+            everywhere({"admin"}),
+            {"enabled": True},
+        ),
+        Case(
+            "POST",
+            "/admin/people/{user_id}/project-access/{project_id}/sections/{policy_section}/reset",
+            everywhere({"admin"}),
         ),
         Case("GET", "/organisations/{organisation_id}/members", everywhere({"admin"})),
         Case(
@@ -567,8 +598,8 @@ def cases(w: World) -> list[Case]:
             {"version": 999},
         ),
         Case("DELETE", f"{p}/reservations/{{reservation_id}}", inside_project(LEADS)),
-        Case("GET", "/access-overview", everywhere({"manager"})),
-        Case("GET", "/access-overview/export", everywhere({"manager"})),
+        Case("GET", "/access-overview", everywhere({"manager", "admin"})),
+        Case("GET", "/access-overview/export", everywhere({"manager", "admin"})),
         # status reports
         Case("GET", f"{p}/status-reports", inside_project(READERS)),
         Case(
@@ -852,6 +883,10 @@ async def _build_world(connection: AsyncConnection) -> tuple[dict[str, uuid.UUID
         values["status_order"] = ",".join(str(r.id) for r in rows)
         values["move_to"] = str(rows[2].id)
         values["picklist_key"] = "project_category"
+        values["policy_role"] = "pm"
+        values["policy_permission"] = "create_projects"
+        values["policy_control"] = "create_tasks"
+        values["policy_section"] = "tasks_and_board"
     return ids, values
 
 
@@ -900,6 +935,10 @@ def _route_of(path: str) -> str:
         .replace("{issue_id}", "{item_id}")
         .replace("{decision_id}", "{item_id}")
         .replace("{picklist_key}", "{key}")
+        .replace("{policy_role}", "{role}")
+        .replace("{policy_permission}", "{permission}")
+        .replace("{policy_control}", "{permission}")
+        .replace("{policy_section}", "{section}")
         .replace("{picklist_value_id}", "{value_id}")
     )
 
@@ -917,6 +956,11 @@ def world_paths() -> set[tuple[str, str]]:
         "dev_out",
         "dev_other",
         "am_own",
+        "client",
+        "policy_role",
+        "policy_permission",
+        "policy_control",
+        "policy_section",
         "status_id",
         "status_order",
         "move_to",

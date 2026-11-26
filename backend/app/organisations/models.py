@@ -35,6 +35,14 @@ class Organisation(IdMixin, TimestampMixin, Base):
     version: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")
     )
+    # Administrator handoff (24.11.2026): organisation setup details.
+    industry: Mapped[str | None] = mapped_column(String(100))
+    website: Mapped[str | None] = mapped_column(String(300))
+    primary_contact_email: Mapped[str | None] = mapped_column(String(320))
+    # use_alter: users already point at organisations (no create-order cycle).
+    project_manager_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", use_alter=True)
+    )
 
     __mapper_args__ = {"version_id_col": version}
 

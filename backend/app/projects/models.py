@@ -106,3 +106,21 @@ class ProjectMember(IdMixin, TimestampMixin, Base):
     granted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
+
+
+class ProjectClientContact(IdMixin, Base):
+    """A named client contact of a project (Administrator handoff: every project needs one).
+    Only client accounts of the project's client organisation."""
+
+    __tablename__ = "project_client_contacts"
+    __table_args__ = (
+        UniqueConstraint("project_id", "user_id"),
+        Index("ix_project_client_contacts_user_id", "user_id"),
+    )
+
+    project_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("projects.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
+    assigned_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"))
+    assigned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
