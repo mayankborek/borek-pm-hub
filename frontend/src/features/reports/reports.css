@@ -85,3 +85,47 @@
 .rep-aud { display: flex; gap: 20px; flex-wrap: wrap; }
 .rep-aud label { display: flex !important; align-items: center; gap: 8px; font-weight: 400 !important; }
 .rep-aud input { width: auto !important; }
+
+/* Design pass (borek-flow reports): rounded cards, filled active tab, thicker status bar, stacked dialog. */
+.rep-filters button { height: 34px; padding: 0 14px; border: 0; border-radius: 6px; font-size: var(--fs-12); }
+.rep-filters button.req-on { background: var(--navy); color: #fff; font-weight: 500; }
+.rep-filters button.req-on span { color: #fff; }
+.rep-search { padding-left: 36px !important; border-radius: 6px; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%237a8099' stroke-width='1.6'%3E%3Ccircle cx='6' cy='6' r='4.5'/%3E%3Cpath d='m10 10 3 3'/%3E%3C/svg%3E") no-repeat 12px center; }
+.rep-lib { border-radius: 8px; }
+.rep-libh { height: 56px; }
+.rep-row:last-of-type { border-bottom: 0; }
+.rep-ico { width: 40px; height: 40px; border-radius: 8px; font-size: 16px; }
+.rep-draft { border-radius: 4px; height: 24px; }
+.rep-open { white-space: nowrap; }
+.rep-head .btn { height: 40px; border-radius: 8px; padding: 0 20px; }
+.rep-acts .btn { height: 38px; border-radius: 6px; }
+
+.rep-paper { border-radius: 8px; padding: 32px 28px 20px; }
+.rep-facts { gap: 56px; margin-top: 32px; }
+.rep-paper h4 { margin: 36px 0 12px; font-size: var(--fs-14); }
+.rep-stats { gap: 64px; margin-top: 16px; }
+.rep-stats b { font-size: 28px; }
+.rep-stats span { margin-top: 8px; }
+.rep-dist { gap: 2px; height: 10px; margin-top: 24px; border-radius: 5px; }
+.rep-dist i { min-width: 6px; }
+.rep-legend { margin-top: 10px; gap: 4px 18px; }
+.rep-table { margin-top: 24px; }
+.rep-table h4 { display: none; }
+.rep-tscroll { border-radius: 8px; }
+.rep-table table { table-layout: auto; }
+.rep-table th { padding: 14px 18px; font-size: var(--fs-10); }
+.rep-table td { padding: 17px 18px; border-top: 0; font-size: var(--fs-11); }
+.rep-table td:first-child, .rep-table th:first-child { width: 45%; }
+.rep-first { font-weight: 600; }
+.rep-tnote { margin: 0; padding: 14px 18px 18px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px; }
+.rep-tscroll { border-radius: 8px 8px 0 0; }
+.rep-foot { margin-top: 28px; }
+
+.rep-modal { padding: 32px 36px; gap: 14px; border-radius: 4px; }
+.rep-modal .rep-stack, .rep-modal .rep-pair { display: grid; gap: 14px; }
+.rep-modal .rep-pair { grid-template-columns: 1fr 1fr; }
+.rep-modal label { font-size: var(--fs-12); color: var(--navy); }
+.rep-modal textarea, .rep-modal input, .rep-modal select { min-height: 44px; border-color: #8c95b6; font-weight: 400; }
+.rep-modal textarea { min-height: 84px; }
+.rep-modal .rep-mact .btn { height: 44px; min-width: 176px; border-radius: 8px; }
+@media (max-width: 700px) { .rep-modal .rep-pair { grid-template-columns: 1fr; } .rep-modal { padding: 24px 20px; } }

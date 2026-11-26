@@ -9,7 +9,6 @@ import { ApiError, describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
-import { usePendingChangeRequests } from '@/features/changeRequests/changeRequestsStaffApi';
 import { useProject, useProjects } from './projectsApi';
 import { PmIcon } from './pmIcons';
 import type { Project } from './types';
@@ -113,7 +112,6 @@ export function ProjectLayout() {
   const { user } = useAuth();
   const { t } = usePrefs();
   const { data: project, isPending, error, refetch } = useProject(projectId);
-  const pendingRequests = usePendingChangeRequests(projectId, user?.role === 'pm').data ?? 0;
 
   if (isPending) return <LoadingState title="Loading project" text="Fetching project details." />;
   if (error || !project) {
@@ -139,7 +137,7 @@ export function ProjectLayout() {
     ...(user?.role === 'pm'
       ? [
           { label: 'Requirements', to: paths.projectRequirements(projectId) },
-          { label: 'Change Requests', to: paths.projectChangeRequests(projectId), badge: pendingRequests },
+          { label: 'Change Requests', to: paths.projectChangeRequests(projectId) },
           { label: 'Milestones', to: paths.projectMilestones(projectId) },
           { label: 'Reports', to: paths.projectReports(projectId) },
           { label: 'Settings', to: paths.projectSettings(projectId) },
@@ -165,7 +163,6 @@ export function ProjectLayout() {
           {tabs.map((tab) => (
             <NavLink key={tab.to} to={tab.to} end={tab.end} className={({ isActive }) => (isActive ? 'tab active' : 'tab')}>
               {t(tab.label)}
-              {!!tab.badge && <span className="crq-badge" aria-label={t('{n} new', { n: tab.badge })}>{tab.badge}</span>}
             </NavLink>
           ))}
         </nav>

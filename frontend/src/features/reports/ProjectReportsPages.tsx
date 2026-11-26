@@ -190,7 +190,7 @@ function ReportDialog({ projectId, report, onClose, onSaved }: { projectId: stri
         <h2>{t(report ? 'Edit report' : 'Generate report')}</h2>
         <p>{t('Create a report from the project updates shared with you.')}</p>
         <div className="rep-projbox"><span>{t('Project')}</span><b>{name}</b></div>
-        <div className="rep-two">
+        <div className="rep-stack">
           <label>{t('Report type')}
             <select value={f.kind} onChange={(e) => setKind(e.target.value as ReportKind)}>
               {KINDS.map((k) => <option key={k} value={k}>{t(KIND_LABEL[k])}</option>)}
@@ -200,7 +200,7 @@ function ReportDialog({ projectId, report, onClose, onSaved }: { projectId: stri
             <input value={f.title} maxLength={200} onChange={(e) => set('title', e.target.value)} placeholder={t(KIND_LABEL[f.kind])} />
           </label>
         </div>
-        <div className="rep-two">
+        <div className="rep-stack">
           {periods.length > 1 && (
             <label>{t('Period')}
               <select value={f.period_kind} onChange={(e) => set('period_kind', e.target.value as PeriodKind)}>
@@ -210,12 +210,14 @@ function ReportDialog({ projectId, report, onClose, onSaved }: { projectId: stri
             </label>
           )}
           {f.period_kind !== 'overall' && (
-            <label>{t(f.period_kind === 'weekly' ? 'Any day of the week' : 'Start')}
-              <input type="date" required value={f.start} onChange={(e) => set('start', e.target.value)} />
-            </label>
-          )}
-          {f.period_kind === 'custom' && (
-            <label>{t('End')}<input type="date" required min={f.start} value={f.end} onChange={(e) => set('end', e.target.value)} /></label>
+            <div className="rep-pair">
+              <label>{t(f.period_kind === 'weekly' ? 'Any day of the week' : 'Start')}
+                <input type="date" required value={f.start} onChange={(e) => set('start', e.target.value)} />
+              </label>
+              {f.period_kind === 'custom' && (
+                <label>{t('End')}<input type="date" required min={f.start} value={f.end} onChange={(e) => set('end', e.target.value)} /></label>
+              )}
+            </div>
           )}
         </div>
         <label>{f.kind === 'other' ? t('Summary') : t('Summary (optional)')}
@@ -299,7 +301,7 @@ export function ProjectReportPage() {
     <section className="rep" aria-label={t('Report preview')}>
       <Link className="rep-back" to={paths.projectReports(project.id)}>← {t('All reports')}</Link>
       <div className="rep-head">
-        <h2>{t('Report preview')} <StateBadge report={r} /></h2>
+        <h2>{t('Report preview')}</h2>
         <div className="rep-acts">
           <button type="button" className="btn secondary" disabled={downloading} onClick={onDownload}>{t('Download report')}</button>
           <button type="button" className="btn" onClick={() => setSending((v) => !v)}>{t('Send report')}</button>

@@ -61,7 +61,7 @@ export function ProjectBoardPage() {
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
   const { data: statuses } = useProjectStatuses(project.id);
 
-  const { columns, shown } = useMemo(() => {
+  const { columns } = useMemo(() => {
     const tasks = (data?.items ?? []).filter((t) => t.status.category !== 'backlog');
     const cols = new Map<string, Column>();
     (statuses ?? [])
@@ -72,7 +72,7 @@ export function ProjectBoardPage() {
       col.tasks.push(t);
       cols.set(col.id, col);
     });
-    return { columns: [...cols.values()], shown: tasks.length };
+    return { columns: [...cols.values()] };
   }, [data, statuses]);
 
   const all = statuses ?? [];
@@ -227,12 +227,15 @@ export function ProjectBoardPage() {
                           setDragOver(null);
                         }}
                       >
-                        <span className="kcard-title">{t.title}</span>
-                        <span className="kcard-meta">
-                          <CardAssignee task={t} editable={isPm} onChange={(assignee_id) => edit(t, { assignee_id })} />
+                        <span className="kcard-top">
+                          <span className="kchip"><i />{tr(col.name)}</span>
                           <CardPriority task={t} editable={canMove(t)} onChange={(priority) => edit(t, { priority })} />
                         </span>
-                        <span className="kcard-due">{t.due_date ? tr('Due {date}', { date: shortDate(t.due_date) }) : tr('No due date')}</span>
+                        <span className="kcard-title">{t.title}</span>
+                        <span className="kcard-foot">
+                          <CardAssignee task={t} editable={isPm} onChange={(assignee_id) => edit(t, { assignee_id })} />
+                          <span className="kcard-due">{t.due_date ? tr('Due {date}', { date: shortDate(t.due_date) }) : tr('No due date')}</span>
+                        </span>
                       </Link>
                     </li>
                   ))}
@@ -253,9 +256,6 @@ export function ProjectBoardPage() {
               {actionError}
             </p>
           )}
-          <p className="kanban-count">
-            {tr('Showing {n} of {total} tasks', { n: shown, total: data.total })}
-          </p>
         </>
       )}
     </>

@@ -122,3 +122,32 @@
 .kpick-list li[aria-selected='true'] { background: #e3edfc; }
 :root[data-theme=dark] .kpick-list li[aria-selected='true'] { background: var(--line); }
 .kpick-empty { color: var(--muted); cursor: default !important; }
+
+/* Design pass (borek-flow Board): rounded borderless columns, status chip on cards, divider footer, dashed add button. */
+.kanban { gap: 16px; padding-bottom: 8px; }
+.kcol { flex: 0 0 220px; min-width: 220px; min-height: 558px; padding: 0 8px 14px; border: 0; border-radius: 12px; background: var(--surface-2); }
+.kcol-bar { height: 36px; margin-top: 2px; }
+.kcol-head { font-size: var(--fs-12); font-weight: 500; }
+.kcol-list { gap: 12px; }
+.kcard { gap: 0; min-height: 0; padding: 12px; border-radius: 8px; box-shadow: 0 1px 2px rgba(13, 18, 64, .04); }
+.kcard-top { display: flex; align-items: center; justify-content: space-between; height: 24px; margin-bottom: 8px; }
+.kchip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 4px; background: var(--surface-2); font-size: var(--fs-10); color: var(--muted); }
+.kchip i { width: 5px; height: 5px; border-radius: 50%; background: #868a9e; }
+.tone-in_progress .kchip i { background: #2e61d6; }
+.tone-review .kchip i { background: #7b4fc4; }
+.tone-blocked .kchip i { background: #c43d3d; }
+.tone-testing .kchip i { background: #e07b00; }
+.tone-done .kchip i { background: #17785a; }
+.kcard-title { margin: 0 0 14px; min-height: 36px; font-size: var(--fs-14); font-weight: 600; line-height: 18px; color: var(--navy); }
+.kcard-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--line); }
+.kcard-foot .avatar.round { width: 24px; height: 24px; border: 0; border-radius: 50%; box-sizing: border-box; }
+.kcard-due { font-size: var(--fs-11); }
+.kcol-link { height: 36px; margin-top: 4px; border: 1px dashed #8c95b6; border-radius: 6px; background: var(--surface); text-align: center; font-weight: 500; font-size: var(--fs-12); }
+.kcol-link:hover { text-decoration: none; background: #f7f9fd; }
+.kcol-list:not(:empty) { margin-bottom: 12px; }
+
+.sprint-bar { height: 60px; padding: 0 16px; gap: 16px; border-radius: 12px; }
+.sprint-bar b { min-width: 120px; font-size: var(--fs-15, 15px); }
+.sprint-chip { font-weight: 500; font-size: var(--fs-10); }
+.sprint-gap { margin-left: auto; }
+.sprint-bar .btn { margin-left: 0; height: 36px; border-radius: 6px; }

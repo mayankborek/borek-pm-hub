@@ -48,6 +48,7 @@ export function SprintBar({ projectId }: { projectId: string }) {
       <span className="sprint-chip">{t('Active')}</span>
       {active.start_date && <span>{formatDate(active.start_date)}</span>}
       {active.end_date && <span>– {formatDate(active.end_date)}</span>}
+      <span className="sprint-gap" />
       {user?.role === 'pm' && (
         <button type="button" className="btn" disabled={complete.isPending} onClick={confirmComplete}>
           {t('Complete sprint')}
