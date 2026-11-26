@@ -390,10 +390,10 @@ function RequestPage({ cr, projectId, canReply, onBack }: { cr: CrItem; projectI
           <div className="cp-card cr-box">
             <h3 className="cr-h-blue">{t('Request details')}</h3>
             <hr />
-            {cr.impact_schedule_days !== null ? (
+            {cr.impact_schedule_value !== null ? (
               <>
                 <div className="cr-k">{t('Schedule impact')}</div>
-                <div className="cr-big">{`${cr.impact_schedule_days > 0 ? '+' : ''}${t('{n} days', { n: cr.impact_schedule_days })}${open ? ` ${t('proposed')}` : ''}`}</div>
+                <div className="cr-big">{`${cr.impact_schedule_value > 0 ? '+' : ''}${t(`{n} ${cr.impact_schedule_unit ?? 'days'}`, { n: cr.impact_schedule_value })}${open ? ` ${t('proposed')}` : ''}`}</div>
                 {open && <p>{t('Delivery dates stay unchanged until approval.')}</p>}
               </>
             ) : (

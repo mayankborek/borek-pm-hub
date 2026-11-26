@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { homeFor, paths, withInvitation } from '@/app/routes';
-import ms365Logo from '@/assets/ms365-logo.png';
 import { useAuth } from '../AuthContext';
 import { InvalidCredentialsError, NoAccessError, signInWithMicrosoft, signInWithPassword } from '../authService';
 import type { User } from '../types';
@@ -72,7 +71,12 @@ export function ClientLoginPage() {
 
       <button type="button" className="btn" disabled={busy} onClick={() => void run(signInWithMicrosoft)}>
         <span className="ms" aria-hidden="true">
-          <img src={ms365Logo} alt="" />
+          <svg viewBox="0 0 21 21" width="18" height="18" focusable="false">
+            <rect x="0" y="0" width="10" height="10" fill="#F25022" />
+            <rect x="11" y="0" width="10" height="10" fill="#7FBA00" />
+            <rect x="0" y="11" width="10" height="10" fill="#00A4EF" />
+            <rect x="11" y="11" width="10" height="10" fill="#FFB900" />
+          </svg>
         </span>
         {login.microsoft}
       </button>

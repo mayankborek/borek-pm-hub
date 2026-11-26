@@ -10,7 +10,6 @@ import {
 } from './authService';
 import type { User } from './types';
 import borekLogo from '@/assets/borek-logo.png';
-import ms365Logo from '@/assets/ms365-logo.png';
 import heroArt from '@/assets/login-hero.jpg';
 import { writeCookie } from '@/shared/prefs/cookies';
 import { LOGIN_STRINGS, initialLang, type Lang } from './loginStrings';
@@ -104,7 +103,12 @@ export function LoginPage() {
 
             <button type="button" className="btn" disabled={busy} onClick={() => void run(signInWithMicrosoft)}>
               <span className="ms" aria-hidden="true">
-                <img src={ms365Logo} alt="" />
+                <svg viewBox="0 0 21 21" width="18" height="18" focusable="false">
+                  <rect x="0" y="0" width="10" height="10" fill="#F25022" />
+                  <rect x="11" y="0" width="10" height="10" fill="#7FBA00" />
+                  <rect x="0" y="11" width="10" height="10" fill="#00A4EF" />
+                  <rect x="11" y="11" width="10" height="10" fill="#FFB900" />
+                </svg>
               </span>
               {t.microsoft}
             </button>

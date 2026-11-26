@@ -51,8 +51,8 @@
   .btn:hover{background:var(--l-btn-hover)}
   .btn:focus-visible,input:focus-visible,a:focus-visible,.check input:focus-visible{outline:2px solid var(--l-action);outline-offset:2px}
   .btn[disabled]{background:var(--disabled);cursor:not-allowed}
-  .ms{position:relative;display:block;width:18px;height:18px;overflow:hidden;flex:none}
-  .ms img{position:absolute;left:50%;top:calc(50% + .5px);width:54px;height:41px;max-width:none;object-fit:cover;transform:translate(-50%,-50%)}
+  .ms{display:block;width:18px;height:18px;flex:none}
+  .ms svg{display:block}
   .field{margin-top:16px}
   .field:first-of-type{margin-top:20px}
   label{display:block;font-size:var(--fs-11);line-height:16px;font-weight:600;margin-bottom:4px;color:var(--l-navy)}

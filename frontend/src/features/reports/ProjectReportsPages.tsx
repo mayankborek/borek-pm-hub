@@ -30,6 +30,13 @@ const KIND_LABEL: Record<ReportKind, string> = {
   other: 'Custom report',
 };
 const KINDS = Object.keys(KIND_LABEL) as ReportKind[];
+const KIND_CHOICE: Record<ReportKind, [string, string]> = {
+  tasks: ['Tasks', 'Status, priorities and completed work'],
+  milestones: ['Milestones', 'Delivery dates and progress'],
+  change_requests: ['Change requests', 'Requests and review decisions'],
+  project_status: ['Project status', 'Overall health and key updates'],
+  other: ['Other', 'Your own analysis and free notes'],
+};
 const AUDIENCE_LABEL: Record<Audience, string> = { account_manager: 'Account Manager', client: 'Client', manager: 'Manager' };
 const SLICE_COLOR: Record<string, string> = { done: '#17785a', in_progress: '#3b6bdb', todo: '#868a9e', backlog: '#b4b7c6', blocked: '#c43d3d' };
 const NAME_COLOR: Record<string, string> = { 'code review': '#7b4fc4', testing: '#e07b00' };
@@ -191,11 +198,15 @@ function ReportDialog({ projectId, report, onClose, onSaved }: { projectId: stri
         <p>{t('Create a report from the project updates shared with you.')}</p>
         <div className="rep-projbox"><span>{t('Project')}</span><b>{name}</b></div>
         <div className="rep-stack">
-          <label>{t('Report type')}
-            <select value={f.kind} onChange={(e) => setKind(e.target.value as ReportKind)}>
-              {KINDS.map((k) => <option key={k} value={k}>{t(KIND_LABEL[k])}</option>)}
-            </select>
-          </label>
+          <fieldset className="rep-types">
+            <legend>{t('Report type')}</legend>
+            {KINDS.map((k) => (
+              <label key={k} className="rep-type">
+                <input type="radio" name="report-type" checked={f.kind === k} onChange={() => setKind(k)} />
+                <span><b>{t(KIND_CHOICE[k][0])}</b><small>{t(KIND_CHOICE[k][1])}</small></span>
+              </label>
+            ))}
+          </fieldset>
           <label>{f.kind === 'other' ? t('Report name') : `${t('Report name')} (${t('optional')})`}
             <input value={f.title} maxLength={200} onChange={(e) => set('title', e.target.value)} placeholder={t(KIND_LABEL[f.kind])} />
           </label>

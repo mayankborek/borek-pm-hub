@@ -138,7 +138,7 @@ export function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: strin
   const start = useStartReview(projectId, cr);
   const open = cr.status === 'pending' || cr.status === 'in_review';
   const files = useStaffAttachments(projectId, cr.id);
-  const assessed = cr.impact_schedule_days !== null;
+  const assessed = cr.impact_schedule_value !== null;
   // Choosing a date happens on this page only; once the impact is saved the discussion step takes over.
   const [choosing, setChoosing] = useState(false);
   const [stage, setStage] = useState<'assess' | 'decision'>('assess');
@@ -226,8 +226,8 @@ export function RequestDetail({ cr, projectId }: { cr: StaffCr; projectId: strin
               <strong className="crq-big">
                 {cr.milestone && cr.requested_date
                   ? t(workingDaysLabel(workingDaysBetween(cr.milestone.due_date, cr.requested_date)))
-                  : cr.impact_schedule_days
-                    ? t('{n} days', { n: cr.impact_schedule_days })
+                  : cr.impact_schedule_value
+                    ? t(`{n} ${cr.impact_schedule_unit ?? 'days'}`, { n: cr.impact_schedule_value })
                     : t('No schedule impact')}
               </strong>
               <p className="req-hint">
@@ -263,8 +263,10 @@ function DatePicker({ cr, projectId, onDone }: { cr: StaffCr; projectId: string;
     const date = picked === 'none' ? null : picked;
     save.mutate(
       {
-        impact_schedule_days: date ? daysBetween(due, date) : 0,
-        impact_effort_hours: cr.impact_effort_hours,
+        impact_schedule_value: date ? daysBetween(due, date) : 0,
+        impact_schedule_unit: 'days',
+        impact_effort_value: cr.impact_effort_value,
+        impact_effort_unit: cr.impact_effort_unit,
         impact_scope: cr.impact_scope,
         requested_date: date,
       },
@@ -335,10 +337,10 @@ function DateImpact({ cr }: { cr: StaffCr }) {
 
 function ImpactSummary({ cr }: { cr: StaffCr }) {
   const { t } = usePrefs();
-  if (cr.impact_effort_hours === null && !cr.impact_scope) return null;
+  if (cr.impact_effort_value === null && !cr.impact_scope) return null;
   return (
     <dl className="crq-dl">
-      {cr.impact_effort_hours !== null && <><dt>{t('Effort')}</dt><dd>{t('{n} hours', { n: cr.impact_effort_hours })}</dd></>}
+      {cr.impact_effort_value !== null && <><dt>{t('Effort')}</dt><dd>{t(`{n} ${cr.impact_effort_unit ?? 'hours'}`, { n: cr.impact_effort_value })}</dd></>}
       {cr.impact_scope && <><dt>{t('Scope impact')}</dt><dd>{cr.impact_scope}</dd></>}
     </dl>
   );
@@ -349,14 +351,21 @@ function ImpactForm({ cr, projectId }: { cr: StaffCr; projectId: string }) {
   const { t } = usePrefs();
   const toast = useToast();
   const save = useSaveImpact(projectId, cr);
-  const [days, setDays] = useState(cr.impact_schedule_days?.toString() ?? '');
-  const [hours, setHours] = useState(cr.impact_effort_hours?.toString() ?? '');
+  const [days, setDays] = useState(cr.impact_schedule_value?.toString() ?? '');
+  const [hours, setHours] = useState(cr.impact_effort_value?.toString() ?? '');
   const [scope, setScope] = useState(cr.impact_scope ?? '');
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     save.mutate(
-      { impact_schedule_days: num(days), impact_effort_hours: num(hours), impact_scope: scope.trim() || null, requested_date: null },
+      {
+        impact_schedule_value: num(days),
+        impact_schedule_unit: num(days) === null ? null : 'days',
+        impact_effort_value: num(hours),
+        impact_effort_unit: num(hours) === null ? null : 'hours',
+        impact_scope: scope.trim() || null,
+        requested_date: null,
+      },
       {
         onSuccess: () => toast.success(t('Impact saved')),
         onError: (err) => toast.error(describeApiError(err, t('The impact could not be saved.'))),
@@ -396,7 +405,14 @@ function DiscussionPrep({ cr, projectId, onSend }: { cr: StaffCr; projectId: str
 
   const send = () =>
     save.mutate(
-      { impact_schedule_days: cr.impact_schedule_days, impact_effort_hours: cr.impact_effort_hours, impact_scope: optionB.trim() || null, requested_date: cr.requested_date },
+      {
+        impact_schedule_value: cr.impact_schedule_value,
+        impact_schedule_unit: cr.impact_schedule_unit,
+        impact_effort_value: cr.impact_effort_value,
+        impact_effort_unit: cr.impact_effort_unit,
+        impact_scope: optionB.trim() || null,
+        requested_date: cr.requested_date,
+      },
       {
         onSuccess: onSend,
         onError: (err) => toast.error(describeApiError(err, t('The assessment could not be saved.'))),
@@ -488,19 +504,22 @@ function DecisionRecord({ cr }: { cr: StaffCr }) {
   );
 }
 
+const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+const stamp = (iso: string) => `${new Date(iso).getDate()} ${MONTH[new Date(iso).getMonth()]}, ${new Date(iso).toTimeString().slice(0, 5)}`;
+
+/** Comments the client sees: one line per message, then a single composer. */
 function Conversation({ cr, projectId }: { cr: StaffCr; projectId: string }) {
   const { t } = usePrefs();
   const toast = useToast();
   const comments = useStaffComments(projectId, cr.id);
   const add = useStaffAddComment(projectId, cr.id);
   const [body, setBody] = useState('');
-  const [internal, setInternal] = useState(false);
 
   const send = (e: FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
     add.mutate(
-      { body: body.trim(), internal },
+      { body: body.trim(), internal: false },
       {
         onSuccess: () => setBody(''),
         onError: (err) => toast.error(describeApiError(err, t('Your message could not be sent.'))),
@@ -510,29 +529,24 @@ function Conversation({ cr, projectId }: { cr: StaffCr; projectId: string }) {
 
   return (
     <>
-      <h4>{t('Conversation')}</h4>
+      <h3>{t('Comments')}</h3>
       {comments.isError && <p className="field-error" role="alert">{t('The conversation could not be loaded.')}</p>}
       <ul className="crq-thread">
         {comments.data?.map((c) => (
-          <li key={c.id} className={c.internal ? 'crq-internal' : c.author_is_client ? 'crq-client' : undefined}>
-            <b>{c.author.name}</b>
-            {c.internal && <small>{t('Internal note: the client does not see this')}</small>}
-            <small>{day(c.created_at)}</small>
-            <p>{c.body}</p>
+          <li key={c.id} className={c.internal ? 'crq-internal' : undefined}>
+            <span className="crq-av" aria-hidden="true">{c.author_is_client ? 'CL' : initials(c.author.name)}</span>
+            <div>
+              <small>{c.author_is_client ? t('Client contact') : c.author.name} · {stamp(c.created_at)}{c.internal && ` · ${t('Internal note: the client does not see this')}`}</small>
+              <p>{c.body}</p>
+            </div>
           </li>
         ))}
-        {comments.data?.length === 0 && <li>{t('No messages yet.')}</li>}
       </ul>
       <form className="crq-reply" onSubmit={send}>
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={2} aria-label={t('Message')} placeholder={t(internal ? 'Write a note for the team' : 'Reply to the client')} />
-        <label className="crq-check">
-          <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} />
-          {t('Internal note (client does not see it)')}
-        </label>
-        <div className="req-actions">
-          <button type="submit" className="btn" disabled={add.isPending || !body.trim()}>{t('Send')}</button>
-        </div>
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={2} aria-label={t('Message')} placeholder={t('Write a comment…')} />
+        <button type="submit" className="crq-send" aria-label={t('Send')} disabled={add.isPending || !body.trim()}>↑</button>
       </form>
+      <small className="crq-flag">{t('Comments are visible to the client.')}</small>
     </>
   );
 }

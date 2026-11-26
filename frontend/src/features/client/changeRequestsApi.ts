@@ -15,7 +15,8 @@ export interface CrItem {
   milestone: { code: string; name: string } | null;
   requested_date: string | null;
   review_started_at: string | null;
-  impact_schedule_days: number | null;
+  impact_schedule_value: number | null;
+  impact_schedule_unit: 'hours' | 'days' | 'weeks' | null;
   impact_scope: string | null;
   decision_note: string | null;
   decided_at: string | null;

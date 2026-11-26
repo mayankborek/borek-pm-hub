@@ -129,3 +129,13 @@
 .rep-modal textarea { min-height: 84px; }
 .rep-modal .rep-mact .btn { height: 44px; min-width: 176px; border-radius: 8px; }
 @media (max-width: 700px) { .rep-modal .rep-pair { grid-template-columns: 1fr; } .rep-modal { padding: 24px 20px; } }
+
+/* Report type as a list of radio rows with a one-line description (project.html). */
+.rep-types { display: grid; gap: 4px; margin: 0; padding: 0; border: 0; }
+.rep-types legend { padding: 0; margin-bottom: 6px; font-size: var(--fs-12); font-weight: 600; color: var(--navy); }
+.rep-modal .rep-type { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: 400; }
+.rep-modal .rep-type input { width: 18px; min-height: 0; height: 18px; padding: 0; accent-color: var(--navy); }
+.rep-type span { display: grid; gap: 2px; }
+.rep-type b { font-size: var(--fs-13); color: var(--navy); }
+.rep-type small { font-size: var(--fs-12); color: var(--muted); }
+.rep-modal .rep-type:has(input:checked) { border-color: var(--navy); }

@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -12,6 +12,7 @@ import {
   useAddComment,
   useAttachmentActions,
   useComments,
+  useDeleteTask,
   useEditComment,
   useProjectMembers,
   useAttachments,
@@ -106,6 +107,22 @@ export function TaskDetailPage() {
   // Attachments save as soon as they are picked, but the Save button stays active so the page can be confirmed.
   const [filesChanged, setFilesChanged] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [dropping, setDropping] = useState(false);
+  const confirm = useRef<HTMLDialogElement>(null);
+  const del = useDeleteTask();
+  // The ••• menu closes on any outside click or Escape.
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(false);
+    const esc = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && close();
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [menu]);
   // No relations endpoint yet: kept in page state until the backend adds one.
   const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
   // Unsaved edits, sent together by the Save button.
@@ -200,15 +217,28 @@ export function TaskDetailPage() {
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
   const edit = (patch: TaskPatch) =>
     isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))) });
+  const upload = (picked: File[]) => {
+    if (!picked.length) return;
+    setFileError('');
+    files.upload.mutate(picked, {
+      onSuccess: () => setFilesChanged(true),
+      onError: (err) =>
+        setFileError(err instanceof ApiError && err.status === 413 ? t('That file is too large (25 MB max).') : describeApiError(err, t('Could not upload the file.'))),
+    });
+  };
   const conflict = update.error instanceof ApiError && update.error.status === 409;
   // Return to wherever the user came from; fall back to the list/board when the page was opened directly.
   const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(isPm ? paths.tasks : paths.projectBoard(task.project_id)));
 
   return (
     <section className={isPm ? 'page-body task-detail' : 'page-body task-detail td-dev'}>
-      <button type="button" className="td-back" onClick={goBack}>
-        ← {t('Back')}
-      </button>
+      <div className="td-crumbs">
+        <button type="button" className="td-back" onClick={goBack}>
+          ← {t('Back')}
+        </button>
+        <b>{task.key}</b>
+        <span className="td-link">{t('Project task')}</span>
+      </div>
       <div className="td-head">
         {isPm ? (
           <input
@@ -226,6 +256,29 @@ export function TaskDetailPage() {
         <button type="button" className="btn" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
           {t(update.isPending ? 'Saving…' : 'Save')}
         </button>
+        {isPm && (
+          <div className="td-more">
+            <button
+              type="button"
+              className="td-more-btn"
+              aria-label={t('More actions')}
+              aria-expanded={menu}
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenu((m) => !m);
+              }}
+            >
+              •••
+            </button>
+            {menu && (
+              <div className="td-menu" role="menu">
+                <button type="button" role="menuitem" onClick={() => confirm.current?.showModal()}>
+                  {t('Delete task')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {isPm && (
         <p className="td-meta">
@@ -241,13 +294,16 @@ export function TaskDetailPage() {
       )}
 
       <div className="td-grid">
-        <div className="td-col">
+        <div className="td-col td-main">
           <section className="td-card">
             <h3>{t('Description')}</h3>
             <p className="td-sub">{t('Task context and acceptance criteria')}</p>
             {isPm && <p className="td-hint">{t('Click the text to edit · press Save to apply your changes')}</p>}
             <Description value={view.description} readOnly={!isPm} onChange={(description) => stage({ description })} onSubmit={() => !missingReason && !update.isPending && save()} />
-            <div className="td-attach">
+          </section>
+
+          <section className="td-card">
+            <div className="td-attach td-attach-flat">
               <strong>
                 {t('Attachments')} · {attachments.data?.length ?? 0} {t(attachments.data?.length === 1 ? 'file' : 'files')}
               </strong>
@@ -289,17 +345,27 @@ export function TaskDetailPage() {
                 onChange={(e) => {
                   const picked = Array.from(e.target.files ?? []);
                   e.target.value = '';
-                  if (!picked.length) return;
-                  setFileError('');
-                  files.upload.mutate(picked, {
-                    onSuccess: () => setFilesChanged(true),
-                    onError: (err) =>
-                      setFileError(err instanceof ApiError && err.status === 413 ? t('That file is too large (25 MB max).') : describeApiError(err, t('Could not upload the file.'))),
-                  });
+                  upload(picked);
                 }}
               />
-              <button type="button" className="td-outline" disabled={files.upload.isPending} onClick={() => picker.current?.click()}>
-                {t(files.upload.isPending ? 'Uploading…' : '+ Attach files')}
+              <button
+                type="button"
+                className={dropping ? 'td-drop on' : 'td-drop'}
+                disabled={files.upload.isPending}
+                onClick={() => picker.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDropping(true);
+                }}
+                onDragLeave={() => setDropping(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDropping(false);
+                  upload(Array.from(e.dataTransfer.files));
+                }}
+              >
+                <i aria-hidden="true">⇧</i>
+                {files.upload.isPending ? t('Uploading…') : t('Drop files here, or browse files')}
               </button>
               {fileError && (
                 <p className="td-error" role="alert">
@@ -321,7 +387,7 @@ export function TaskDetailPage() {
                   className={tab === k ? 'td-tab on' : 'td-tab'}
                   onClick={() => setTab(k)}
                 >
-                  {t(k === 'all' ? 'All' : k === 'comments' ? 'Comments' : 'Audit log')}
+                  {t(k === 'all' ? 'All' : k === 'comments' ? 'Comments' : 'Logs')}
                 </button>
               ))}
             </div>
@@ -416,6 +482,9 @@ export function TaskDetailPage() {
                   value={comment}
                   onChange={setComment}
                 />
+                <button type="button" className="td-at" aria-label={t('Mention someone')} onClick={() => setComment((c) => c + '@')}>
+                  @
+                </button>
                 <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
                   {t(addComment.isPending ? 'Sending…' : 'Send')}
                 </button>
@@ -426,8 +495,20 @@ export function TaskDetailPage() {
 
         <div className="td-col">
           <section className="td-card">
-            <h3>{t('Task details')}</h3>
+            <h3>{t('Properties')}</h3>
             <p className="td-sub">{t(isPm ? 'Ownership, schedule, and priority' : update.isPending ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved')}</p>
+            <h4 className="td-group">{t('ASSIGNMENT')}</h4>
+            <Row label="Assignee">
+              {isPm ? (
+                <AssigneeSelect projectId={task.project_id} value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
+              ) : (
+                <span className="td-static">{task.assignee?.name || t('Unassigned')}</span>
+              )}
+            </Row>
+            <Row label="Reporter">
+              <span className="td-static">{task.reporter.name || '—'}</span>
+            </Row>
+            <h4 className="td-group">{t('TASK INFORMATION')}</h4>
             <Row label="Task status">
               {canStatus ? (
                 <StatusSelect
@@ -469,44 +550,6 @@ export function TaskDetailPage() {
             )}
             <Row label="Priority">
               <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
-            </Row>
-            <Row label="Assignee">
-              {isPm ? (
-                <AssigneeSelect projectId={task.project_id} value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
-              ) : (
-                <span className="td-static">{task.assignee?.name || t('Unassigned')}</span>
-              )}
-            </Row>
-            <Row label="Reporter">
-              <span className="td-static">{task.reporter.name || '—'}</span>
-            </Row>
-            <Row label="Start date">
-              {canSchedule ? (              <DatePicker
-                  label="Start date"
-                  value={view.start_date}
-                  max={view.due_date}
-                  hint="Start date must be on or before due date."
-                  error="Pick a date on or before the due date."
-                  onChange={(start_date) => edit({ start_date })}
-                />
-              
-              ) : (
-                <span className="td-static">{view.start_date ? formatDate(view.start_date) : '—'}</span>
-              )}
-            </Row>
-            <Row label="Due date">
-              {canSchedule ? (              <DatePicker
-                  label="Due date"
-                  value={view.due_date}
-                  min={view.start_date}
-                  hint="Due date must be on or after start date."
-                  error="Pick a date on or after the start date."
-                  onChange={(due_date) => edit({ due_date })}
-                />
-              
-              ) : (
-                <span className="td-static">{view.due_date ? formatDate(view.due_date) : '—'}</span>
-              )}
             </Row>
             <Row label="Estimate">
               {isPm ? (
@@ -553,6 +596,35 @@ export function TaskDetailPage() {
                 <LabelChips labels={task.labels} />
               )}
             </Row>
+            <h4 className="td-group">{t('SCHEDULE')}</h4>
+            <Row label="Start date">
+              {canSchedule ? (              <DatePicker
+                  label="Start date"
+                  value={view.start_date}
+                  max={view.due_date}
+                  hint="Start date must be on or before due date."
+                  error="Pick a date on or before the due date."
+                  onChange={(start_date) => edit({ start_date })}
+                />
+              
+              ) : (
+                <span className="td-static">{view.start_date ? formatDate(view.start_date) : '—'}</span>
+              )}
+            </Row>
+            <Row label="Due date">
+              {canSchedule ? (              <DatePicker
+                  label="Due date"
+                  value={view.due_date}
+                  min={view.start_date}
+                  hint="Due date must be on or after start date."
+                  error="Pick a date on or after the start date."
+                  onChange={(due_date) => edit({ due_date })}
+                />
+              
+              ) : (
+                <span className="td-static">{view.due_date ? formatDate(view.due_date) : '—'}</span>
+              )}
+            </Row>
           </section>
 
           <section className="td-card">
@@ -582,6 +654,32 @@ export function TaskDetailPage() {
           </section>
         </div>
       </div>
+      <dialog ref={confirm} className="td-dialog" aria-labelledby="td-del-h">
+        <h3 id="td-del-h">{t('Delete task?')}</h3>
+        <p>
+          {t('Delete {key} · {title}?', { key: task.key, title: task.title })}
+          <br />
+          {t('This action cannot be undone.')}
+        </p>
+        {del.isError && (
+          <p className="td-error" role="alert">
+            {describeApiError(del.error, t('Could not delete the task.'))}
+          </p>
+        )}
+        <div className="td-acts">
+          <button type="button" className="btn secondary" onClick={() => confirm.current?.close()}>
+            {t('Cancel')}
+          </button>
+          <button
+            type="button"
+            className="btn td-danger"
+            disabled={del.isPending}
+            onClick={() => del.mutate(task.id, { onSuccess: () => navigate(isPm ? paths.tasks : paths.projectBoard(task.project_id), { replace: true }) })}
+          >
+            {t('Delete task')}
+          </button>
+        </div>
+      </dialog>
       {drawer && (
         <RelatedTaskDrawer
           task={task}

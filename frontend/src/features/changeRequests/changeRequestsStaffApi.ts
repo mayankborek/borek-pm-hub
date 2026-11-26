@@ -3,6 +3,8 @@ import { api } from '@/shared/api/client';
 import type { CrStatus } from '@/features/client/changeRequestsApi';
 
 /** Staff side of change requests (/projects/{id}/change-requests): the PM queue. Same statuses as the client portal. */
+export type ImpactUnit = 'hours' | 'days' | 'weeks';
+
 export interface Person {
   id: string;
   name: string;
@@ -19,8 +21,10 @@ export interface StaffCr {
   requested_date: string | null;
   status: CrStatus;
   review_started_at: string | null;
-  impact_schedule_days: number | null;
-  impact_effort_hours: number | null;
+  impact_schedule_value: number | null;
+  impact_schedule_unit: ImpactUnit | null;
+  impact_effort_value: number | null;
+  impact_effort_unit: ImpactUnit | null;
   impact_scope: string | null;
   decision_note: string | null;
   decided_by: Person | null;
@@ -63,8 +67,10 @@ export interface StaffComment {
 }
 
 export interface ImpactDraft {
-  impact_schedule_days: number | null;
-  impact_effort_hours: number | null;
+  impact_schedule_value: number | null;
+  impact_schedule_unit: ImpactUnit | null;
+  impact_effort_value: number | null;
+  impact_effort_unit: ImpactUnit | null;
   impact_scope: string | null;
   /** The new milestone date; the milestone only moves when the request is approved. */
   requested_date: string | null;
