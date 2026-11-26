@@ -427,7 +427,7 @@ async def test_one_of_two_leads_can_go_and_a_plain_member_is_never_blocked(
     assert blocked.status_code == 409
 
 
-@pytest.mark.parametrize("role", [GlobalRole.ADMIN, GlobalRole.ACCOUNT_MANAGER, GlobalRole.CLIENT])
+@pytest.mark.parametrize("role", [GlobalRole.ADMIN, GlobalRole.CLIENT])  # AMs may join (26.11)
 async def test_people_outside_project_work_cannot_be_members(
     client: httpx.AsyncClient, session: AsyncSession, world: World, role: GlobalRole
 ) -> None:

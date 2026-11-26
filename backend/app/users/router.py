@@ -5,7 +5,7 @@ from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.auth.permissions import Action, require, works_on_tasks_condition
+from app.auth.permissions import Action, joins_projects_condition, require
 from app.common.enums import GlobalRole
 from app.common.validation import PageParam, PageSizeParam, like_escape
 from app.core.database import SessionDep
@@ -23,14 +23,16 @@ async def list_users(
     user: CurrentUser,
     session: SessionDep,
     q: Annotated[str | None, Query(max_length=100, description="Search name or email")] = None,
-    role: Annotated[GlobalRole | None, Query(description="pm, manager or developer")] = None,
+    role: Annotated[
+        GlobalRole | None, Query(description="pm, manager, developer or account_manager")
+    ] = None,
     page: PageParam = 1,
     page_size: PageSizeParam = 50,
 ) -> UserListOut:
-    """Active PMs, Managers and developers, for the assignee picker (PMs and Managers). The other
-    roles do no project work, so they are not listed."""
+    """Active PMs, Managers, developers and Account Managers, for the member and assignee pickers
+    (Account Managers can be members, never lead). Admins and clients are not listed."""
     require(user, Action.USER_LIST)
-    conditions: list[ColumnElement[bool]] = [User.is_active.is_(True), works_on_tasks_condition()]
+    conditions: list[ColumnElement[bool]] = [User.is_active.is_(True), joins_projects_condition()]
     if role:
         conditions.append(User.global_role == role.value)
     if q and q.strip():

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import StaleDataError
 
-from app.auth.permissions import works_on_tasks_condition
+from app.auth.permissions import joins_projects_condition
 from app.common.enums import (
     ProjectStatus,
     StatusCategory,
@@ -418,7 +418,7 @@ async def _check_assignee(
     as a member first). Assigning never adds anyone to the project."""
     eligible = await session.scalar(
         select(User.id).where(
-            User.id == user_id, User.is_active.is_(True), works_on_tasks_condition()
+            User.id == user_id, User.is_active.is_(True), joins_projects_condition()
         )
     )
     if eligible is None:

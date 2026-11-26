@@ -12,7 +12,9 @@ from sqlalchemy.orm.exc import StaleDataError
 from app.audit.service import record_audit
 from app.auth.permissions import (
     Action,
+    account_manager_condition,
     can,
+    joins_projects_condition,
     may_lead_projects,
     require,
     sees_all_projects,
@@ -322,7 +324,7 @@ async def _check_member_users(session: AsyncSession, members: list[MemberIn]) ->
     found = set(
         await session.scalars(
             select(User.id).where(
-                User.id.in_(ids), User.is_active.is_(True), works_on_tasks_condition()
+                User.id.in_(ids), User.is_active.is_(True), joins_projects_condition()
             )
         )
     )
@@ -335,6 +337,30 @@ async def _check_member_users(session: AsyncSession, members: list[MemberIn]) ->
             [
                 {"field": "members", "issue": "unknown_user", "message": f"Unknown user {i}."}
                 for i in missing
+            ],
+        )
+    leads = [m.user_id for m in members if m.project_role == ProjectRole.PROJECT_LEAD]
+    if leads:
+        await _refuse_account_manager_leads(session, leads)
+
+
+async def _refuse_account_manager_leads(session: AsyncSession, ids: list[uuid.UUID]) -> None:
+    """An Account Manager can be a project member but never its lead (role guide)."""
+    found = list(
+        await session.scalars(select(User.id).where(User.id.in_(ids), account_manager_condition()))
+    )
+    if found:
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "An Account Manager cannot be project lead.",
+            [
+                {
+                    "field": "project_role",
+                    "issue": "account_manager_cannot_lead",
+                    "message": f"User {i} is an Account Manager.",
+                }
+                for i in found
             ],
         )
 
@@ -644,6 +670,8 @@ async def change_member_role(
     actor: User,
 ) -> tuple[ProjectMember, User]:
     member = await _get_member(session, project_id, user_id)
+    if role == ProjectRole.PROJECT_LEAD:
+        await _refuse_account_manager_leads(session, [user_id])
     if role != ProjectRole.PROJECT_LEAD:
         await _ensure_another_lead(session, member)
     if member.project_role != role.value:
