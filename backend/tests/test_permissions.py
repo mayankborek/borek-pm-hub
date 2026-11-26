@@ -121,12 +121,19 @@ def test_nobody_but_clients_uses_the_client_portal(role: GlobalRole) -> None:
     assert not can(make(role), Action.CLIENT_PORTAL, MEMBER)
 
 
-def test_account_manager_only_reads_and_only_their_clients_projects() -> None:
+def test_account_manager_rights_follow_the_role_guide() -> None:
     manager = make(GlobalRole.ACCOUNT_MANAGER)
     assigned = Resource(project_id=PROJECT_ID, is_account_manager=True)
-    anywhere = {Action.PROJECT_LIST, Action.PORTFOLIO_VIEW, Action.ORGANISATION_VIEW}
+    anywhere = {
+        Action.PROJECT_LIST,
+        Action.PORTFOLIO_VIEW,
+        Action.ORGANISATION_VIEW,
+        Action.DASHBOARD_VIEW,
+        Action.MY_TASKS,
+    }
     on_project = {
         Action.PROJECT_VIEW,
+        Action.PROJECT_STATUS,
         Action.TASK_VIEW,
         Action.STATUS_REPORT_MANAGE,
         Action.STAKEHOLDER_MANAGE,
@@ -136,8 +143,29 @@ def test_account_manager_only_reads_and_only_their_clients_projects() -> None:
         Action.PEOPLE_VIEW,  # People & Access of their client's projects
     }
     assert {a for a in Action if can(manager, a, assigned)} == anywhere | on_project
-    # being listed as a member gives an Account Manager nothing
-    assert {a for a in Action if can(manager, a, MEMBER)} == anywhere
+    # a member of a project (not their client's): the developer member's rights, never a lead's
+    as_member = {Action.PROJECT_VIEW, Action.TASK_VIEW, Action.TASK_CREATE}
+    as_member |= {Action.TASK_COMMENT, Action.TASK_LINK}
+    assert {a for a in Action if can(manager, a, MEMBER)} == anywhere | as_member
+    lead_row = Resource(project_id=PROJECT_ID, is_member=True, is_project_lead=True)
+    assert not can(manager, Action.STATUS_MANAGE, lead_row)
+    assert not can(manager, Action.PROJECT_UPDATE, lead_row)
+    own = Resource(
+        project_id=PROJECT_ID, is_member=True, assignee_id=manager.id, creator_id=manager.id
+    )
+    assert can(manager, Action.TASK_CHANGE_STATUS, own)
+    assert can(manager, Action.TASK_EDIT_SCHEDULE, own)
+    # neither client nor member: nothing on the project
+    outside = Resource(project_id=PROJECT_ID)
+    assert {a for a in Action if can(manager, a, outside)} == anywhere
+
+
+def test_only_leads_managers_and_the_clients_account_manager_change_project_status() -> None:
+    assert can(make(GlobalRole.PM), Action.PROJECT_STATUS, LEAD)
+    assert not can(make(GlobalRole.PM), Action.PROJECT_STATUS, MEMBER)
+    assert can(make(GlobalRole.MANAGER), Action.PROJECT_STATUS)
+    assert not can(make(GlobalRole.DEVELOPER), Action.PROJECT_STATUS, LEAD)
+    assert not can(make(GlobalRole.ADMIN), Action.PROJECT_STATUS, LEAD)
 
 
 @pytest.mark.parametrize("resource", [LEAD, MEMBER])

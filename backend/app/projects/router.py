@@ -248,7 +248,10 @@ async def get_project(
 async def update_project(
     project_id: uuid.UUID, body: ProjectUpdate, user: CurrentUser, session: SessionDep
 ) -> ProjectDetailOut:
-    await _require_manage(session, user, project_id, Action.PROJECT_UPDATE)
+    # Changing only the status is its own right (the client's Account Manager has it too).
+    only_status = body.model_fields_set - {"version"} == {"status"}
+    action = Action.PROJECT_STATUS if only_status else Action.PROJECT_UPDATE
+    await _require_manage(session, user, project_id, action)
     project = await service.update_project(session, project_id, body, user)
     return await _detail(session, project)
 

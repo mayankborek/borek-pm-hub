@@ -443,13 +443,15 @@ async def test_account_manager_cannot_change_anything_in_their_clients_projects(
         assert response.status_code == 403, (method, url, response.text)
 
 
-async def test_account_manager_has_no_dashboard_picker_or_my_work(
+async def test_account_manager_has_dashboard_and_my_work_but_no_access_overview(
     client: httpx.AsyncClient, world: World
 ) -> None:
+    """Account Manager role guide (26.11.2026): same workspace as a PM."""
     headers = as_user(world.am)
-    for url in ("/api/v1/dashboard", "/api/v1/dashboard/me", "/api/v1/users", "/api/v1/me/tasks"):
+    for url in ("/api/v1/dashboard", "/api/v1/dashboard/me", "/api/v1/me/tasks"):
+        assert (await client.get(url, headers=headers)).status_code == 200, url
+    for url in ("/api/v1/users", ACCESS):
         assert (await client.get(url, headers=headers)).status_code == 403, url
-    assert (await client.get(ACCESS, headers=headers)).status_code == 403
 
 
 async def test_archived_projects_are_gone_for_the_account_manager(

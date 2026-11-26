@@ -3,7 +3,7 @@
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.permissions import (
@@ -50,19 +50,33 @@ def assigned_clients(user: User) -> Select[tuple[uuid.UUID]]:
     )
 
 
-def visible_project_ids(user: User) -> Select[tuple[uuid.UUID]]:
-    """Active projects the user reaches without seeing everything: an Account Manager those of
-    their clients, everyone else the ones they are a member of."""
+def oversight_project_ids(user: User) -> Select[tuple[uuid.UUID]]:
+    """Projects in the user's oversight views (portfolio with money, oversight dashboard): an
+    Account Manager only their clients' active projects, never ones they merely belong to."""
     if is_account_manager(user):
         return select(Project.id).where(
             Project.client_organisation_id.in_(assigned_clients(user)),
             Project.archived_at.is_(None),
         )
-    return (
+    return visible_project_ids(user)
+
+
+def visible_project_ids(user: User) -> Select[tuple[uuid.UUID]]:
+    """Active projects the user reaches without seeing everything: an Account Manager those of
+    their clients, everyone else the ones they are a member of."""
+    member_of = (
         select(ProjectMember.project_id)
         .join(Project, Project.id == ProjectMember.project_id)
         .where(ProjectMember.user_id == user.id, Project.archived_at.is_(None))
     )
+    if is_account_manager(user):
+        clients = select(Project.id).where(
+            Project.client_organisation_id.in_(assigned_clients(user)),
+            Project.archived_at.is_(None),
+        )
+        both = union(clients, member_of).subquery()
+        return select(both.c[0])
+    return member_of
 
 
 async def project_access(session: AsyncSession, user: User, project: Project) -> ProjectAccess:
@@ -70,15 +84,24 @@ async def project_access(session: AsyncSession, user: User, project: Project) ->
     write refuses it) only to a PM who led it or archived it. An Account Manager reaches the
     active projects of their clients."""
     if is_account_manager(user):
-        if project.archived_at is not None or project.client_organisation_id is None:
+        if project.archived_at is not None:
             return ProjectAccess()
-        assigned = await session.scalar(
-            select(OrganisationAccountManager.id).where(
-                OrganisationAccountManager.user_id == user.id,
-                OrganisationAccountManager.organisation_id == project.client_organisation_id,
+        assigned = project.client_organisation_id is not None and (
+            await session.scalar(
+                select(OrganisationAccountManager.id).where(
+                    OrganisationAccountManager.user_id == user.id,
+                    OrganisationAccountManager.organisation_id == project.client_organisation_id,
+                )
+            )
+            is not None
+        )
+        member = await session.scalar(
+            select(ProjectMember.id).where(
+                ProjectMember.user_id == user.id, ProjectMember.project_id == project.id
             )
         )
-        return ProjectAccess(is_account_manager=assigned is not None)
+        # Never project lead, even if a lead row slipped in.
+        return ProjectAccess(is_member=member is not None, is_account_manager=assigned)
     role = await session.scalar(
         select(ProjectMember.project_role).where(
             ProjectMember.user_id == user.id, ProjectMember.project_id == project.id

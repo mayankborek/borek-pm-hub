@@ -16321,7 +16321,7 @@
     },
     "/api/v1/dashboard": {
       "get": {
-        "description": "PMs and Managers: metrics for active projects plus the blocked and overdue tasks. A PM gets\ntheir own projects, a Manager all of them.",
+        "description": "PMs, Managers and Account Managers: metrics for active projects plus the blocked and\noverdue tasks. A PM gets their own projects, an Account Manager their clients' projects and\nthose they are a member of, a Manager all of them.",
         "operationId": "pm_dashboard_api_v1_dashboard_get",
         "parameters": [
           {
@@ -26210,7 +26210,7 @@
     },
     "/api/v1/users": {
       "get": {
-        "description": "Active PMs, Managers and developers, for the assignee picker (PMs and Managers). The other\nroles do no project work, so they are not listed.",
+        "description": "Active PMs, Managers, developers and Account Managers, for the member and assignee pickers\n(Account Managers can be members, never lead). Admins and clients are not listed.",
         "operationId": "list_users_api_v1_users_get",
         "parameters": [
           {
@@ -26233,7 +26233,7 @@
             }
           },
           {
-            "description": "pm, manager or developer",
+            "description": "pm, manager, developer or account_manager",
             "in": "query",
             "name": "role",
             "required": false,
@@ -26246,7 +26246,7 @@
                   "type": "null"
                 }
               ],
-              "description": "pm, manager or developer",
+              "description": "pm, manager, developer or account_manager",
               "title": "Role"
             }
           },

@@ -26,7 +26,7 @@ from app.manager.schemas import (
 from app.milestones import service as roadmap
 from app.milestones.models import Milestone
 from app.milestones.schemas import MilestoneOut
-from app.projects.membership import visible_project_ids
+from app.projects.membership import oversight_project_ids
 from app.projects.models import Project
 from app.reporting.models import StatusReport
 from app.requirements.models import Requirement, RequirementStatus, RequirementVersion
@@ -41,7 +41,7 @@ def scope(user: User) -> list[ColumnElement[bool]]:
     """Active projects the user oversees: every one for a Manager, else the visible ones."""
     conditions: list[ColumnElement[bool]] = [Project.archived_at.is_(None)]
     if not sees_all_projects(user):
-        conditions.append(Project.id.in_(visible_project_ids(user)))
+        conditions.append(Project.id.in_(oversight_project_ids(user)))
     return conditions
 
 

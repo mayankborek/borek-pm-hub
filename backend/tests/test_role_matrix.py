@@ -183,7 +183,7 @@ def cases(w: World) -> list[Case]:
         # tasks across projects
         Case("GET", "/tasks", everywhere(LIST_USERS)),
         Case("GET", "/tasks/export", everywhere(LIST_USERS)),
-        Case("GET", "/me/tasks", everywhere(PROJECT_PEOPLE)),
+        Case("GET", "/me/tasks", everywhere(PROJECT_PEOPLE | ACCOUNT_MANAGERS)),
         # one task
         Case("GET", t, inside_project(READERS)),
         Case("PATCH", t, inside_project(LEADS), {"version": 999, "title": "x"}),
@@ -216,8 +216,8 @@ def cases(w: World) -> list[Case]:
         Case("GET", f"{t}/attachments/{{attachment_id}}/download", inside_project(READERS)),
         Case("DELETE", f"{t}/attachments/{{attachment_id}}", inside_project(OWNERS)),
         # dashboards and picker
-        Case("GET", "/dashboard", everywhere({"manager"} | PMS)),
-        Case("GET", "/dashboard/me", everywhere(PROJECT_PEOPLE)),
+        Case("GET", "/dashboard", everywhere({"manager"} | PMS | ACCOUNT_MANAGERS)),
+        Case("GET", "/dashboard/me", everywhere(PROJECT_PEOPLE | ACCOUNT_MANAGERS)),
         Case("GET", "/users", everywhere({"manager"} | PMS)),
         # administration
         Case("GET", "/admin/users", everywhere({"admin"})),
