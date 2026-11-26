@@ -36,7 +36,7 @@ import { AmHomePage } from '@/features/accountManager/AmHomePage';
 import { AmProjectsPage } from '@/features/accountManager/AmProjectsPage';
 import { AmProjectLayout } from '@/features/accountManager/AmProjectLayout';
 import { AmOverviewPage } from '@/features/accountManager/AmOverviewPage';
-import { AmNotificationsPage, AmPreferencesPage, AmProfilePage, AmSecurityPage } from '@/features/accountManager/AmSettingsPages';
+import { AmNotificationsPage, AmPreferencesPage, AmProfilePage, AmSecurityPage, PmSettings } from '@/features/accountManager/AmSettingsPages';
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
 import { AdminOrganisationsPage } from '@/features/admin/AdminOrganisationsPage';
@@ -256,7 +256,10 @@ export const router = createBrowserRouter([
               { path: 'settings/people', element: <ProjectPeoplePage /> },
             ],
           },
-          { path: 'profile', element: <ProfilePage /> },
+          { path: 'profile', element: <ByRole developer={<ProfilePage />} other={<PmSettings><AmProfilePage /></PmSettings>} /> },
+          { path: 'profile/security', element: <PmSettings><AmSecurityPage /></PmSettings> },
+          { path: 'profile/notifications', element: <PmSettings><AmNotificationsPage /></PmSettings> },
+          { path: 'profile/preferences', element: <PmSettings><AmPreferencesPage /></PmSettings> },
           { path: 'tasks', element: <TasksPage /> },
           { path: 'tasks/new', element: <TaskCreatePage /> },
           { path: 'tasks/:taskId', element: <ByRole developer={<DevTaskPage />} other={<TaskDetailPage />} /> },

@@ -20,7 +20,7 @@ export function AppLayout() {
     .slice(0, 2)
     .toUpperCase();
   const title =
-    pathname === paths.profile
+    pathname === paths.profile || pathname.startsWith(`${paths.profile}/`)
       ? 'Profile'
       : pathname === paths.myWork
         ? 'My Work'
