@@ -49,32 +49,10 @@ const changeText = (field: string, [from, to]: [unknown, unknown], t: (s: string
 function Row({ label, children }: { label: string; children: ReactNode }) {
   const { t } = usePrefs();
   return (
-    <div className="td-row">
+    <div className="tdx-row">
       <label>{t(label)}</label>
       {children}
     </div>
-  );
-}
-
-function Description({ value, onChange, onSubmit, readOnly }: { value: string; onChange: (d: string) => void; onSubmit: () => void; readOnly?: boolean }) {
-  const { t } = usePrefs();
-  if (readOnly) return <p className="td-desc-static">{value || t('No description added.')}</p>;
-  return (
-    <textarea
-      className="td-desc"
-      aria-label={t('Description')}
-      placeholder={t('Add a description and acceptance criteria')}
-      rows={6}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      // Enter saves; Shift+Enter adds a new line.
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-          e.preventDefault();
-          onSubmit();
-        }
-      }}
-    />
   );
 }
 
@@ -103,6 +81,7 @@ export function TaskDetailPage() {
     ...(tab === 'comments' ? [] : (activity.data?.items ?? []).map((a) => ({ kind: 'audit' as const, a, at: a.created_at }))),
   ].sort((x, y) => (x.at < y.at ? 1 : -1));
   const picker = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
   const [fileError, setFileError] = useState('');
   // Attachments save as soon as they are picked, but the Save button stays active so the page can be confirmed.
   const [filesChanged, setFilesChanged] = useState(false);
@@ -230,62 +209,57 @@ export function TaskDetailPage() {
   // Return to wherever the user came from; fall back to the list/board when the page was opened directly.
   const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(isPm ? paths.tasks : paths.projectBoard(task.project_id)));
 
+  const fileList = attachments.data ?? [];
+
   return (
-    <section className={isPm ? 'page-body task-detail' : 'page-body task-detail td-dev'}>
-      <div className="td-crumbs">
-        <button type="button" className="td-back" onClick={goBack}>
-          ← {t('Back')}
+    <section className="page-body task-detail tdx">
+      <div className="tdx-top">
+        <button type="button" className="tdx-back" onClick={goBack}>
+          ← &nbsp;{t('Back')}
         </button>
-        <b>{task.key}</b>
-        <span className="td-link">{t('Project task')}</span>
+        <span className="tdx-id">{task.key}</span>
+        <span className="tdx-link">{t('Project task')}</span>
+        <div className="tdx-right">
+          <button type="button" className="tdx-btn primary" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
+            {t(update.isPending ? 'Saving…' : 'Save')}
+          </button>
+          {isPm && (
+            <div className="td-more">
+              <button
+                type="button"
+                className="tdx-more"
+                aria-label={t('Task actions')}
+                aria-expanded={menu}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenu((m) => !m);
+                }}
+              >
+                •••
+              </button>
+              {menu && (
+                <div className="tdx-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={() => confirm.current?.showModal()}>
+                    {t('Delete task')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="td-head">
-        {isPm ? (
-          <input
-            className="td-title"
-            aria-label={t('Task title')}
-            aria-invalid={missingTitle}
-            maxLength={200}
-            value={title}
-            onChange={(e) => stage({ title: e.target.value })}
-            onKeyDown={saveOnEnter}
-          />
-        ) : (
-          <h2 className="td-title">{task.title}</h2>
-        )}
-        <button type="button" className="btn" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
-          {t(update.isPending ? 'Saving…' : 'Save')}
-        </button>
-        {isPm && (
-          <div className="td-more">
-            <button
-              type="button"
-              className="td-more-btn"
-              aria-label={t('More actions')}
-              aria-expanded={menu}
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenu((m) => !m);
-              }}
-            >
-              •••
-            </button>
-            {menu && (
-              <div className="td-menu" role="menu">
-                <button type="button" role="menuitem" onClick={() => confirm.current?.showModal()}>
-                  {t('Delete task')}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      {isPm && (
-        <p className="td-meta">
-          {task.key} · {t('Updated')} {stamp(task.updated_at)}
-          {update.isPending && ` · ${t('Saving…')}`}
-          {!dirty && update.isSuccess && ` · ✓ ${t('Saved')}`}
-        </p>
+      {isPm ? (
+        <input
+          className="tdx-title"
+          aria-label={t('Task title')}
+          aria-invalid={missingTitle}
+          maxLength={200}
+          value={title}
+          onChange={(e) => stage({ title: e.target.value })}
+          onKeyDown={saveOnEnter}
+        />
+      ) : (
+        <h2 className="tdx-title">{task.title}</h2>
       )}
       {update.isError && (
         <p className="td-error" role="alert">
@@ -293,354 +267,364 @@ export function TaskDetailPage() {
         </p>
       )}
 
-      <div className="td-grid">
-        <div className="td-col td-main">
-          <section className="td-card">
+      <div className="tdx-grid">
+        <section className="tdx-card tdx-main">
+          <div className="tdx-head">
             <h3>{t('Description')}</h3>
-            <p className="td-sub">{t('Task context and acceptance criteria')}</p>
-            {isPm && <p className="td-hint">{t('Click the text to edit · press Save to apply your changes')}</p>}
-            <Description value={view.description} readOnly={!isPm} onChange={(description) => stage({ description })} onSubmit={() => !missingReason && !update.isPending && save()} />
-          </section>
-
-          <section className="td-card">
-            <div className="td-attach td-attach-flat">
-              <strong>
-                {t('Attachments')} · {attachments.data?.length ?? 0} {t(attachments.data?.length === 1 ? 'file' : 'files')}
-              </strong>
-              {(attachments.data ?? []).map((a) => (
-                <div key={a.id} className="td-file">
-                  {a.kind === 'link' ? (
-                    <a href={a.url ?? '#'} target="_blank" rel="noreferrer noopener">{a.name}</a>
-                  ) : (
-                    <button type="button" className="td-link" onClick={() => downloadAttachment(a).catch(() => setFileError(t('Could not download the file.')))}>
-                      {a.name}
-                    </button>
-                  )}
-                  <span>{fileSize(a.size_bytes)}</span>
-                  {/* The backend only lets the uploader or a PM delete an attachment. */}
-                  {(isPm || a.uploaded_by.id === user?.id) && (
-                    <button
-                      type="button"
-                      className="td-link"
-                      aria-label={t('Remove {name}', { name: a.name })}
-                      disabled={files.remove.isPending}
-                      onClick={() =>
-                        files.remove.mutate(a.id, {
-                          onSuccess: () => setFilesChanged(true),
-                          onError: (e) => setFileError(describeApiError(e, t('Could not remove the file.'))),
-                        })
-                      }
-                    >
-                      {t('Remove')}
-                    </button>
-                  )}
-                </div>
-              ))}
-              <input
-                ref={picker}
-                type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.md,.rtf,.odt,.ods,.png,.jpg,.jpeg,.gif,.webp,.mp3,.m4a,.wav,.ogg,.opus,.aac,.weba"
-                multiple
-                hidden
-                onChange={(e) => {
-                  const picked = Array.from(e.target.files ?? []);
-                  e.target.value = '';
-                  upload(picked);
+            {isPm && (
+              <button type="button" className="tdx-link" onClick={() => descRef.current?.focus()}>
+                {t('Edit description')}
+              </button>
+            )}
+          </div>
+          <div className="tdx-editor">
+            {isPm ? (
+              <textarea
+                ref={descRef}
+                aria-label={t('Description')}
+                placeholder={t('No description added.')}
+                value={view.description}
+                onChange={(e) => stage({ description: e.target.value })}
+                // Enter saves; Shift+Enter adds a new line.
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    if (!missingReason && !update.isPending) save();
+                  }
                 }}
               />
-              <button
-                type="button"
-                className={dropping ? 'td-drop on' : 'td-drop'}
-                disabled={files.upload.isPending}
-                onClick={() => picker.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDropping(true);
-                }}
-                onDragLeave={() => setDropping(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDropping(false);
-                  upload(Array.from(e.dataTransfer.files));
-                }}
-              >
-                <i aria-hidden="true">⇧</i>
-                {files.upload.isPending ? t('Uploading…') : t('Drop files here, or browse files')}
-              </button>
-              {fileError && (
-                <p className="td-error" role="alert">
-                  {fileError}
-                </p>
+            ) : (
+              <p>{view.description || t('No description added.')}</p>
+            )}
+          </div>
+          <hr />
+
+          <h3>{t('Attachments')}</h3>
+          <input
+            ref={picker}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.md,.rtf,.odt,.ods,.png,.jpg,.jpeg,.gif,.webp,.mp3,.m4a,.wav,.ogg,.opus,.aac,.weba"
+            multiple
+            hidden
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              e.target.value = '';
+              upload(picked);
+            }}
+          />
+          <button
+            type="button"
+            className={dropping ? 'tdx-drop on' : 'tdx-drop'}
+            disabled={files.upload.isPending}
+            onClick={() => picker.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDropping(true);
+            }}
+            onDragLeave={() => setDropping(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDropping(false);
+              upload(Array.from(e.dataTransfer.files));
+            }}
+          >
+            <span className="tdx-up" aria-hidden="true">⇧</span>
+            {files.upload.isPending ? t('Uploading…') : <>{t('Drop files here, or')} <span className="tdx-link">{t('browse files')}</span></>}
+          </button>
+          {fileError && (
+            <p className="td-error" role="alert">
+              {fileError}
+            </p>
+          )}
+          {fileList.length === 0 && !files.upload.isPending && <p className="tdx-none">{t('No files attached to this task.')}</p>}
+          {fileList.map((a) => (
+            <div key={a.id} className="td-file">
+              {a.kind === 'link' ? (
+                <a href={a.url ?? '#'} target="_blank" rel="noreferrer noopener">{a.name}</a>
+              ) : (
+                <button type="button" className="td-link" onClick={() => downloadAttachment(a).catch(() => setFileError(t('Could not download the file.')))}>
+                  {a.name}
+                </button>
+              )}
+              <span>{fileSize(a.size_bytes)}</span>
+              {/* The backend only lets the uploader or a PM delete an attachment. */}
+              {(isPm || a.uploaded_by.id === user?.id) && (
+                <button
+                  type="button"
+                  className="td-link"
+                  aria-label={t('Remove {name}', { name: a.name })}
+                  disabled={files.remove.isPending}
+                  onClick={() =>
+                    files.remove.mutate(a.id, {
+                      onSuccess: () => setFilesChanged(true),
+                      onError: (e) => setFileError(describeApiError(e, t('Could not remove the file.'))),
+                    })
+                  }
+                >
+                  {t('Remove')}
+                </button>
               )}
             </div>
-          </section>
+          ))}
+          <hr />
 
-          <section className="td-card" aria-labelledby="td-activity-h">
+          <div className="tdx-head">
             <h3 id="td-activity-h">{t('Activity')}</h3>
-            <div className="td-tabs" role="tablist" aria-label={t('Activity')}>
+            <div className="tdx-seg" role="tablist" aria-label={t('Activity')}>
               {(['all', 'comments', 'history'] as const).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === k}
-                  className={tab === k ? 'td-tab on' : 'td-tab'}
-                  onClick={() => setTab(k)}
-                >
+                <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : undefined} onClick={() => setTab(k)}>
                   {t(k === 'all' ? 'All' : k === 'comments' ? 'Comments' : 'Logs')}
                 </button>
               ))}
             </div>
-            {entries.length ? (
-              <ul className="td-comments td-scroll">
-                {entries.map((e) =>
-                  e.kind === 'comment' ? (
-                    <li key={`c-${e.c.id}`} className="td-comment">
-                      <Avatar user={e.c.author} round />
-                      <div>
-                        <strong>{e.c.author.name}</strong> <span>{stamp(e.c.created_at)}</span>
-                        {editing?.id === e.c.id ? (
-                          <form
-                            className="td-composer"
-                            onSubmit={(ev) => {
-                              ev.preventDefault();
-                              const body = editing.text.trim();
-                              if (!body) return;
-                              editComment.mutate(
-                                { id: editing.id, body, mention_ids: mentionIdsFor(body, members) },
-                                { onSuccess: () => setEditing(null), onError: () => toast.error(t('Could not save your comment.')) },
-                              );
-                            }}
-                          >
-                            <MentionInput
-                              projectId={task.project_id}
-                              label={t('Edit comment')}
-                              value={editing.text}
-                              onChange={(text) => setEditing({ id: editing.id, text })}
-                              autoFocus
-                            />
-                            <button type="submit" className="btn" disabled={!editing.text.trim() || editComment.isPending}>
-                              {t('Save')}
+          </div>
+          {tab !== 'history' && (
+            <form
+              className="tdx-comment"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const body = comment.trim();
+                if (!body) return;
+                addComment.mutate(
+                  { body, mention_ids: mentionIdsFor(body, members) },
+                  {
+                    onSuccess: () => setComment(''),
+                    onError: () => toast.error(t('Could not post your comment.')),
+                  },
+                );
+              }}
+            >
+              <MentionInput projectId={task.project_id} label={t('Comment')} placeholder={t('Type a comment...')} value={comment} onChange={setComment} />
+              <button type="button" className="tdx-at" aria-label={t('Mention someone')} onClick={() => setComment((c) => c + '@')}>
+                @
+              </button>
+              <button type="submit" className={comment.trim() ? 'tdx-send on' : 'tdx-send'} aria-label={t('Send')} disabled={!comment.trim() || addComment.isPending}>
+                ↑
+              </button>
+            </form>
+          )}
+          {entries.length ? (
+            <ul className="td-comments td-scroll">
+              {entries.map((e) =>
+                e.kind === 'comment' ? (
+                  <li key={`c-${e.c.id}`} className="td-comment">
+                    <Avatar user={e.c.author} round />
+                    <div>
+                      <strong>{e.c.author.name}</strong> <span>{stamp(e.c.created_at)}</span>
+                      {editing?.id === e.c.id ? (
+                        <form
+                          className="td-composer"
+                          onSubmit={(ev) => {
+                            ev.preventDefault();
+                            const body = editing.text.trim();
+                            if (!body) return;
+                            editComment.mutate(
+                              { id: editing.id, body, mention_ids: mentionIdsFor(body, members) },
+                              { onSuccess: () => setEditing(null), onError: () => toast.error(t('Could not save your comment.')) },
+                            );
+                          }}
+                        >
+                          <MentionInput
+                            projectId={task.project_id}
+                            label={t('Edit comment')}
+                            value={editing.text}
+                            onChange={(text) => setEditing({ id: editing.id, text })}
+                            autoFocus
+                          />
+                          <button type="submit" className="tdx-btn primary" disabled={!editing.text.trim() || editComment.isPending}>
+                            {t('Save')}
+                          </button>
+                          <button type="button" className="tdx-btn" onClick={() => setEditing(null)}>
+                            {t('Cancel')}
+                          </button>
+                        </form>
+                      ) : (
+                        <>
+                          <p>{e.c.body}</p>
+                          {/* Only the author can edit a comment. */}
+                          {e.c.author.id === user?.id && (
+                            <button type="button" className="td-link" onClick={() => setEditing({ id: e.c.id, text: e.c.body })}>
+                              {t('Edit')}
                             </button>
-                            <button type="button" className="btn secondary" onClick={() => setEditing(null)}>
-                              {t('Cancel')}
-                            </button>
-                          </form>
-                        ) : (
-                          <>
-                            <p>{e.c.body}</p>
-                            {/* Only the author can edit a comment. */}
-                            {e.c.author.id === user?.id && (
-                              <button type="button" className="td-link" onClick={() => setEditing({ id: e.c.id, text: e.c.body })}>
-                                {t('Edit')}
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ) : (
-                    <li key={`a-${e.a.id}`} className="td-comment">
-                      <Avatar user={e.a.actor} round />
-                      <div>
-                        <strong>{e.a.actor.name}</strong> <span>{stamp(e.a.created_at)}</span>
-                        <p>{t(e.a.action.replace(/_/g, ' '))}</p>
-                        {Object.entries(e.a.changes).map(([field, change]) => (
-                          <p key={field}>{changeText(field, change, t)}</p>
-                        ))}
-                      </div>
-                    </li>
-                  ),
-                )}
-              </ul>
-            ) : tab !== 'comments' && activity.isError ? (
-              <p className="td-empty">{t('Audit log could not be loaded.')}</p>
-            ) : (
-              !comments.isPending &&
-              !activity.isPending && <p className="td-none">{t(tab === 'history' ? 'No activity recorded yet.' : 'No comments yet.')}</p>
-            )}
-            {tab !== 'history' && (
-              <form
-                className="td-composer"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const body = comment.trim();
-                  if (!body) return;
-                  addComment.mutate(
-                    { body, mention_ids: mentionIdsFor(body, members) },
-                    {
-                      onSuccess: () => setComment(''),
-                      onError: () => toast.error(t('Could not post your comment.')),
-                    },
-                  );
-                }}
-              >
-                <MentionInput
-                  projectId={task.project_id}
-                  label={t('Add a comment')}
-                  placeholder={t('Add a comment… use @ to mention someone')}
-                  value={comment}
-                  onChange={setComment}
-                />
-                <button type="button" className="td-at" aria-label={t('Mention someone')} onClick={() => setComment((c) => c + '@')}>
-                  @
-                </button>
-                <button type="submit" className="btn" disabled={!comment.trim() || addComment.isPending}>
-                  {t(addComment.isPending ? 'Sending…' : 'Send')}
-                </button>
-              </form>
-            )}
-          </section>
-        </div>
-
-        <div className="td-col">
-          <section className="td-card">
-            <h3>{t('Properties')}</h3>
-            <p className="td-sub">{t(isPm ? 'Ownership, schedule, and priority' : update.isPending ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved')}</p>
-            <h4 className="td-group">{t('ASSIGNMENT')}</h4>
-            <Row label="Assignee">
-              {isPm ? (
-                <AssigneeSelect projectId={task.project_id} value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
-              ) : (
-                <span className="td-static">{task.assignee?.name || t('Unassigned')}</span>
-              )}
-            </Row>
-            <Row label="Reporter">
-              <span className="td-static">{task.reporter.name || '—'}</span>
-            </Row>
-            <h4 className="td-group">{t('TASK INFORMATION')}</h4>
-            <Row label="Task status">
-              {canStatus ? (
-                <StatusSelect
-                  value={view.status_id}
-                  options={statuses.data ?? [task.status]}
-                  onChange={(status_id) => {
-                    // Developers apply a status straight away; a blocked status first needs its reason, which Save sends.
-                    const next = (statuses.data ?? []).find((s) => s.id === status_id);
-                    if (isPm || next?.category === 'blocked') return stage({ status_id });
-                    update.mutate(
-                      { status_id },
-                      {
-                        // Drop any staged blocked choice so the dropdown shows the saved status.
-                        onSuccess: () => setDraft((d) => ({ ...d, status_id: undefined, blocked_reason: undefined })),
-                        onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
-                      },
-                    );
-                  }}
-                />
-              ) : (
-                <span className="td-static">{t(task.status.name)}</span>
-              )}
-            </Row>
-            {blocking && (
-              <Row label="Blocked reason">
-                {canStatus ? (
-                  <input
-                    aria-label={t('Blocked reason')}
-                    aria-invalid={missingReason}
-                    placeholder={t('Why is this blocked?')}
-                    value={reason}
-                    onChange={(e) => stage({ blocked_reason: e.target.value })}
-                    onKeyDown={saveOnEnter}
-                  />
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </li>
                 ) : (
-                  <span className="td-static">{task.blocked_reason || '—'}</span>
+                  <li key={`a-${e.a.id}`} className="td-comment">
+                    <Avatar user={e.a.actor} round />
+                    <div>
+                      <strong>{e.a.actor.name}</strong> <span>{stamp(e.a.created_at)}</span>
+                      <p>{t(e.a.action.replace(/_/g, ' '))}</p>
+                      {Object.entries(e.a.changes).map(([field, change]) => (
+                        <p key={field}>{changeText(field, change, t)}</p>
+                      ))}
+                    </div>
+                  </li>
+                ),
+              )}
+            </ul>
+          ) : tab !== 'comments' && activity.isError ? (
+            <p className="tdx-sub">{t('Audit log could not be loaded.')}</p>
+          ) : (
+            !comments.isPending &&
+            !activity.isPending && (
+              <>
+                <h4>{t('Nothing here yet')}</h4>
+                <p className="tdx-sub">{t('Comments and task updates will appear here.')}</p>
+              </>
+            )
+          )}
+        </section>
+
+        <div>
+          <section className="tdx-card tdx-props">
+            <h3>{t('Properties')}</h3>
+            <div className="tdx-group">
+              <h5>{t('ASSIGNMENT')}</h5>
+              <Row label="Assignee">
+                {isPm ? (
+                  <AssigneeSelect projectId={task.project_id} value={view.assignee_id} current={task.assignee} onChange={(assignee_id) => edit({ assignee_id })} />
+                ) : (
+                  <span className="td-static">{task.assignee?.name || t('Unassigned')}</span>
                 )}
               </Row>
-            )}
-            <Row label="Priority">
-              <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
-            </Row>
-            <Row label="Estimate">
-              {isPm ? (
-                <span className="td-estimate">
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    aria-label={t('Estimate amount')}
-                    value={estimate.value ?? ''}
-                    onKeyDown={saveOnEnter}
-                    onChange={(e) => {
-                      const n = Math.floor(Number(e.target.value));
-                      // Amount and unit travel together: clearing one clears the other.
-                      stage(e.target.value === '' || n < 1 ? { estimate_value: null, estimate_unit: null } : { estimate_value: n, estimate_unit: estimate.unit ?? 'hours' });
+              <Row label="Reporter">
+                <span className="td-static">{task.reporter.name || '—'}</span>
+              </Row>
+            </div>
+            <div className="tdx-group">
+              <h5>{t('TASK INFORMATION')}</h5>
+              <Row label="Status">
+                {canStatus ? (
+                  <StatusSelect
+                    value={view.status_id}
+                    options={statuses.data ?? [task.status]}
+                    onChange={(status_id) => {
+                      // Developers apply a status straight away; a blocked status first needs its reason, which Save sends.
+                      const next = (statuses.data ?? []).find((s) => s.id === status_id);
+                      if (isPm || next?.category === 'blocked') return stage({ status_id });
+                      update.mutate(
+                        { status_id },
+                        {
+                          // Drop any staged blocked choice so the dropdown shows the saved status.
+                          onSuccess: () => setDraft((d) => ({ ...d, status_id: undefined, blocked_reason: undefined })),
+                          onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
+                        },
+                      );
                     }}
                   />
-                  <select
-                    aria-label={t('Estimate unit')}
-                    value={estimate.unit ?? 'hours'}
-                    disabled={estimate.value == null}
-                    onChange={(e) => stage({ estimate_unit: e.target.value as EstimateUnit })}
-                  >
-                    {ESTIMATE_UNITS.map((u) => (
-                      <option key={u} value={u}>
-                        {t(u)}
-                      </option>
-                    ))}
-                  </select>
-                </span>
-              ) : (
-                <span className="td-static">{task.estimate_value != null ? `${task.estimate_value} ${t(task.estimate_unit ?? '')}` : '—'}</span>
+                ) : (
+                  <span className="td-static">{t(task.status.name)}</span>
+                )}
+              </Row>
+              {blocking && (
+                <Row label="Blocked reason">
+                  {canStatus ? (
+                    <input
+                      aria-label={t('Blocked reason')}
+                      aria-invalid={missingReason}
+                      placeholder={t('Why is this blocked?')}
+                      value={reason}
+                      onChange={(e) => stage({ blocked_reason: e.target.value })}
+                      onKeyDown={saveOnEnter}
+                    />
+                  ) : (
+                    <span className="td-static">{task.blocked_reason || '—'}</span>
+                  )}
+                </Row>
               )}
-            </Row>
-            <Row label="Labels">
-              {isPm ? (
-                <LabelPicker
-                  projectId={task.project_id}
-                  value={draft.labels ?? task.labels}
-                  onChange={(labels) => stage({ labels })}
-                  onSubmit={() => !missingReason && !update.isPending && save()}
-                />
-              ) : (
-                <LabelChips labels={task.labels} />
-              )}
-            </Row>
-            <h4 className="td-group">{t('SCHEDULE')}</h4>
-            <Row label="Start date">
-              {canSchedule ? (              <DatePicker
-                  label="Start date"
-                  value={view.start_date}
-                  max={view.due_date}
-                  hint="Start date must be on or before due date."
-                  error="Pick a date on or before the due date."
-                  onChange={(start_date) => edit({ start_date })}
-                />
-              
-              ) : (
-                <span className="td-static">{view.start_date ? formatDate(view.start_date) : '—'}</span>
-              )}
-            </Row>
-            <Row label="Due date">
-              {canSchedule ? (              <DatePicker
-                  label="Due date"
-                  value={view.due_date}
-                  min={view.start_date}
-                  hint="Due date must be on or after start date."
-                  error="Pick a date on or after the start date."
-                  onChange={(due_date) => edit({ due_date })}
-                />
-              
-              ) : (
-                <span className="td-static">{view.due_date ? formatDate(view.due_date) : '—'}</span>
-              )}
-            </Row>
+              <Row label="Priority">
+                <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
+              </Row>
+              <Row label="Labels">
+                {isPm ? (
+                  <LabelPicker
+                    projectId={task.project_id}
+                    value={draft.labels ?? task.labels}
+                    onChange={(labels) => stage({ labels })}
+                    onSubmit={() => !missingReason && !update.isPending && save()}
+                  />
+                ) : (
+                  <LabelChips labels={task.labels} />
+                )}
+              </Row>
+              <Row label="Estimate">
+                {isPm ? (
+                  <span className="td-estimate">
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      aria-label={t('Estimate amount')}
+                      value={estimate.value ?? ''}
+                      onKeyDown={saveOnEnter}
+                      onChange={(e) => {
+                        const n = Math.floor(Number(e.target.value));
+                        // Amount and unit travel together: clearing one clears the other.
+                        stage(e.target.value === '' || n < 1 ? { estimate_value: null, estimate_unit: null } : { estimate_value: n, estimate_unit: estimate.unit ?? 'hours' });
+                      }}
+                    />
+                    <select
+                      aria-label={t('Estimate unit')}
+                      value={estimate.unit ?? 'hours'}
+                      disabled={estimate.value == null}
+                      onChange={(e) => stage({ estimate_unit: e.target.value as EstimateUnit })}
+                    >
+                      {ESTIMATE_UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {t(u)}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                ) : (
+                  <span className="td-static">{task.estimate_value != null ? `${task.estimate_value} ${t(task.estimate_unit ?? '')}` : '—'}</span>
+                )}
+              </Row>
+            </div>
+            <div className="tdx-group">
+              <h5>{t('SCHEDULE')}</h5>
+              <Row label="Start date">
+                {canSchedule ? (
+                  <DatePicker
+                    label="Start date"
+                    value={view.start_date}
+                    max={view.due_date}
+                    hint="Start date must be on or before due date."
+                    error="Pick a date on or before the due date."
+                    onChange={(start_date) => edit({ start_date })}
+                  />
+                ) : (
+                  <span className="td-static">{view.start_date ? formatDate(view.start_date) : '—'}</span>
+                )}
+              </Row>
+              <Row label="Due date">
+                {canSchedule ? (
+                  <DatePicker
+                    label="Due date"
+                    value={view.due_date}
+                    min={view.start_date}
+                    hint="Due date must be on or after start date."
+                    error="Pick a date on or after the start date."
+                    onChange={(due_date) => edit({ due_date })}
+                  />
+                ) : (
+                  <span className="td-static">{view.due_date ? formatDate(view.due_date) : '—'}</span>
+                )}
+              </Row>
+            </div>
           </section>
 
-          <section className="td-card">
-            <div className="td-card-head">
+          <section className="tdx-card tdx-related">
+            <div className="tdx-head">
               <h3>{t('Related tasks')}</h3>
-              {isPm ? (
-                <button type="button" className="btn td-relate" onClick={() => setDrawer(true)}>
-                  {t('Related Task')}
-                </button>
-              ) : (
-                <button type="button" className="btn td-relate" onClick={() => setDrawer(true)}>
-                  {t('Relate Task')}
-                </button>
-              )}
+              <button type="button" className="tdx-link" onClick={() => setDrawer(true)}>
+                {t('Relate task')}
+              </button>
             </div>
-            {isPm && related.length === 0 && <p className="td-empty">{t('No related tasks.')}</p>}
+            {related.length === 0 && <p className="tdx-empty">{t('No related tasks yet.')}</p>}
             {related.map((r) => (
               <div key={`${r.relation}-${r.task.id}`} className="td-related">
                 <Link to={paths.task(r.task.id)}>

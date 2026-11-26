@@ -1,4 +1,5 @@
-import { Link, Navigate, NavLink } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { initialsOf } from '@/features/projects/MemberPicker';
@@ -8,9 +9,10 @@ import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
 import { useProjectContext } from './ProjectLayout';
-import { STATUS_LABEL, formatDate } from './projectUi';
-import { useSyncMembers } from './projectsApi';
-import type { Project } from './types';
+import { STATUS_LABEL } from './projectUi';
+import { useOrganisations } from '@/features/admin/organisationsApi';
+import { parseApiError, useSyncMembers, useUpdateProject, type FieldErrors } from './projectsApi';
+import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './pmSettings.css';
 
 /** Sub-navigation shared by both Settings pages (Figma "Settings"). */
@@ -24,64 +26,170 @@ function SettingsTabs({ project }: { project: Project }) {
   );
 }
 
-/** "24–31 Oct 2026" when both dates share a month, otherwise the two full dates. */
-function dateRange(start: string | null, end: string | null, t: (s: string) => string) {
-  if (!start && !end) return t('Dates to be planned');
-  if (start && end) {
-    const [sy, sm, sd] = start.split('-');
-    const [ey, em] = end.split('-');
-    if (sy === ey && sm === em) return `${Number(sd)}–${formatDate(end)}`;
-    return `${formatDate(start)} – ${formatDate(end)}`;
-  }
-  return formatDate(start ?? end);
-}
-
-/** Settings → Project details: the essentials, ownership and delivery dates. */
+/** Settings → Edit project details (project-settings.html): general information, ownership and delivery schedule. */
 export function ProjectSettingsPage() {
   const project = useProjectContext();
   const { user } = useAuth();
   const { t } = usePrefs();
+  const navigate = useNavigate();
+  const update = useUpdateProject(project.id);
+  const clients = useOrganisations();
+  const initial = {
+    name: project.name,
+    type: project.type ?? 'internal',
+    status: project.status,
+    description: project.description ?? '',
+    client: project.client_organisation?.id ?? '',
+    start_date: project.start_date ?? '',
+    target_end_date: project.target_end_date ?? '',
+  };
+  const [form, setForm] = useState(initial);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState('');
   if (user?.role !== 'pm') return <Navigate to={paths.project(project.id)} replace />;
-  const initials = project.name.split(' ').filter(Boolean).map((w) => w.charAt(0)).join('').slice(0, 2).toUpperCase();
+
+  const set = <K extends keyof typeof initial>(key: K, value: (typeof initial)[K]) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    setErrors((e) => ({ ...e, [key]: '' }));
+  };
+
+  const onSubmit = (ev: FormEvent) => {
+    ev.preventDefault();
+    setFormError('');
+    const found: FieldErrors = {};
+    if (!form.name.trim()) found.name = t('Project name is required.');
+    if (!form.start_date) found.start_date = t('Start date is required.');
+    if (form.start_date && form.target_end_date && form.target_end_date < form.start_date) found.target_end_date = t('Target end date cannot be before the start date.');
+    if (form.type === 'external' && !form.client) found.client = t('Choose a client for an external project.');
+    setErrors(found);
+    if (Object.keys(found).length) return;
+    const input: Omit<ProjectInput, 'code'> = {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      status: form.status,
+      start_date: form.start_date || null,
+      target_end_date: form.target_end_date || null,
+      type: form.type,
+      category: project.category ?? null,
+      priority: project.priority,
+      client_organisation_id: form.type === 'external' ? form.client : null,
+    };
+    update.mutate(
+      { input, version: project.version },
+      {
+        onSuccess: () => navigate(paths.project(project.id)),
+        onError: (err) => {
+          const parsed = parseApiError(err);
+          setErrors(parsed.fields);
+          setFormError(parsed.message);
+        },
+      },
+    );
+  };
+
+  const err = (id: string) => errors[id] && <span className="ps-err">{errors[id]}</span>;
 
   return (
-    <div className="set">
-      <SettingsTabs project={project} />
-      <div className="set-head">
-        <div>
-          <h2>{t('Project details')}</h2>
-          <p>{t('The essentials, ownership and delivery dates for this project.')}</p>
+    <div className="ps">
+      <h2 className="ps-h2">{t('Edit project details')}</h2>
+      <p className="ps-lead">{t('Update the project information, ownership and delivery schedule.')}</p>
+      {formError && (
+        <div className="form-alert" role="alert">
+          {t(formError)}
         </div>
-        <Link className="btn" to={paths.projectEdit(project.id)}>{t('Edit details')}</Link>
-      </div>
-      <div className="set-grid">
-        <section className="card set-card">
-          <div className="set-id">
-            <span className="set-mark">{initials}</span>
-            <div>
-              <h3>{project.name}</h3>
-              <p>{t(project.type === 'internal' ? 'Internal project' : 'External project')}</p>
+      )}
+      <form
+        onSubmit={onSubmit}
+        onReset={() => {
+          setForm(initial);
+          setErrors({});
+          setFormError('');
+        }}
+        noValidate
+      >
+        <div className="ps-grid">
+          <section className="ps-card">
+            <h3>{t('General information')}</h3>
+            <p>{t('Keep the project name and description easy to recognise.')}</p>
+            <label className="ps-f">
+              {t('Project name')}
+              <input value={form.name} maxLength={200} onChange={(e) => set('name', e.target.value)} aria-invalid={!!errors.name} />
+              {err('name')}
+            </label>
+            <div className="ps-two">
+              <label className="ps-f">
+                {t('Project type')}
+                <select value={form.type} onChange={(e) => set('type', e.target.value as 'internal' | 'external')}>
+                  <option value="external">{t('External project')}</option>
+                  <option value="internal">{t('Internal project')}</option>
+                </select>
+              </label>
+              <label className="ps-f">
+                {t('Project status')}
+                <select value={form.status} onChange={(e) => set('status', e.target.value as ProjectStatus)}>
+                  {PROJECT_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(STATUS_LABEL[s])}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label className="ps-f">
+              {t('Description')}
+              <textarea value={form.description} onChange={(e) => set('description', e.target.value)} />
+            </label>
+          </section>
+          <div>
+            <section className="ps-card">
+              <h3>{t('Ownership')}</h3>
+              <p>{t('Choose who is responsible for this project.')}</p>
+              <label className="ps-f">
+                {t('Project Manager')}
+                <select value={user.id} disabled>
+                  <option value={user.id}>{user.name}</option>
+                </select>
+              </label>
+              <label className="ps-f">
+                {t('Client organisation')}
+                <select value={form.client} disabled={form.type === 'internal'} onChange={(e) => set('client', e.target.value)} aria-invalid={!!errors.client}>
+                  <option value="">{t('Select client organisation')}</option>
+                  {(clients.data?.items ?? []).map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                {err('client')}
+              </label>
+            </section>
+            <section className="ps-card ps-sched">
+              <h3>{t('Delivery schedule')}</h3>
+              <p>{t('Set the planned start and target finish.')}</p>
+              <div className="ps-two">
+                <label className="ps-f">
+                  {t('Start date')}
+                  <input type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} aria-invalid={!!errors.start_date} />
+                  {err('start_date')}
+                </label>
+                <label className="ps-f">
+                  {t('Target finish')}
+                  <input type="date" value={form.target_end_date} min={form.start_date || undefined} onChange={(e) => set('target_end_date', e.target.value)} aria-invalid={!!errors.target_end_date} />
+                  {err('target_end_date')}
+                </label>
+              </div>
+            </section>
+            <div className="ps-actions">
+              <button type="reset" className="ps-btn">
+                {t('Cancel')}
+              </button>
+              <button type="submit" className="ps-btn primary" disabled={update.isPending}>
+                {t(update.isPending ? 'Saving…' : 'Save changes')}
+              </button>
             </div>
           </div>
-          <div className="set-facts">
-            <div><span>{t('Project status')}</span><b>{t(STATUS_LABEL[project.status])}</b></div>
-            <div><span>{t('Project dates')}</span><b>{dateRange(project.start_date, project.target_end_date, t)}</b></div>
-          </div>
-          <div className="set-desc">
-            <span>{t('Description')}</span>
-            <p>{project.description || t('No description yet.')}</p>
-          </div>
-        </section>
-        <aside className="card set-card set-own">
-          <h3>{t('Ownership')}</h3>
-          <span className="set-label">{t('Project Manager')}</span>
-          <div className="set-person"><span className="set-avatar">{initialsOf(user.name)}</span>{user.name}</div>
-          <hr />
-          <span className="set-label">{t('Client organisation')}</span>
-          <b>{project.client_organisation?.name ?? t('Not assigned')}</b>
-          {!project.client_organisation && project.type === 'external' && <p>{t('Add a client organisation in Edit details.')}</p>}
-        </aside>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }
