@@ -133,7 +133,7 @@ export function ProjectBoardPage() {
   return (
     <>
       <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
-      <SprintBar projectId={project.id} />
+      <SprintBar projectId={project.id} projectName={project.name} />
       {columns.length === 0 && !isPm ? (
         <EmptyState
           title={filtered ? 'No matching tasks' : 'No tasks on the board'}

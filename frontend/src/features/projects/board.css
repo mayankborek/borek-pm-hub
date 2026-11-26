@@ -146,8 +146,15 @@
 .kcol-link:hover { text-decoration: none; background: #f7f9fd; }
 .kcol-list:not(:empty) { margin-bottom: 12px; }
 
-.sprint-bar { height: 60px; padding: 0 16px; gap: 16px; border-radius: 12px; }
-.sprint-bar b { min-width: 120px; font-size: var(--fs-15, 15px); }
-.sprint-chip { font-weight: 500; font-size: var(--fs-10); }
-.sprint-gap { margin-left: auto; }
-.sprint-bar .btn { margin-left: 0; height: 36px; border-radius: 6px; }
+/* board.html card and column metrics */
+.kcol { border-radius: 10px; padding: 12px 8px; }
+.kcol-bar { margin-top: 0; height: 24px; margin-bottom: 10px; }
+.kcol-list { gap: 19px; }
+.kcard { min-height: 138px; padding: 13px 12px 12px; border-radius: 10px; box-shadow: 0 2px 5px #0e12400d; }
+.kcard-top { height: auto; margin-bottom: 0; }
+.kchip { height: auto; padding: 4px 7px; border-radius: 6px; font-size: var(--fs-11); }
+.kchip i { width: 6px; height: 6px; }
+.kcard-title { margin: 13px 0 0; height: 39px; min-height: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-bottom: 1px solid var(--line); font-size: var(--fs-13); }
+.kcard-foot { margin-top: 9px; padding-top: 0; border-top: 0; }
+.kcol-list:not(:empty) { margin-bottom: 19px; }
+.kcol-link { margin-top: 0; }

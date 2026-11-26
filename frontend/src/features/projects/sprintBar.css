@@ -1,6 +1,39 @@
-.sprint-bar { display: flex; align-items: center; gap: 14px; margin: 0 0 16px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: var(--fs-13); color: var(--muted); }
-.sprint-bar b { font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
-.sprint-chip { padding: 3px 10px; border-radius: 4px; background: #e1ecfd; color: #124f94; font-size: var(--fs-11); font-weight: 600; }
-.sprint-bar .btn { margin-left: auto; height: 34px; padding: 0 18px; }
-.sprint-chev { margin-left: -8px; font-size: var(--fs-13); color: var(--ink); }
-.sprint-menu { font-size: var(--fs-18); color: var(--ink); }
+/* Board sprint header and Manage sprints dialog: follows board.html. */
+.sprint-bar { display: flex; align-items: center; height: 60px; margin: 0 0 18px; padding: 0 16px; background: #fff; border: 1px solid #e2e3eb; border-radius: 12px; color: #0e1240; }
+.sprint-bar .sname { display: flex; justify-content: space-between; min-width: 122px; margin-right: 18px; font-size: 15px; font-weight: 600; }
+.badge { display: inline-block; padding: 5px 8px; border-radius: 5px; background: #f3f4f8; color: #5d6178; font-size: 12px; font-weight: 400; }
+.badge.active { background: #eaf2ff; color: #14508f; }
+.sprint-bar .badge { padding: 6px 15px; }
+.sprint-bar .dates { margin-left: 10px; color: #5d6178; font-size: 13px; }
+.sprint-bar .burger { margin-left: auto; margin-right: 22px; padding: 0; border: 0; background: none; color: #0e1240; cursor: pointer; }
+.sprint-bar .btn { height: 34px; padding: 0 24px; border: 1px solid #0e1240; border-radius: 6px; background: #0e1240; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sprint-bar .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.msd { width: 900px; max-width: 94vw; margin: auto; padding: 28px; border: 1px solid #e2e3eb; border-radius: 16px; color: #0e1240; }
+.msd::backdrop { background: #0e12403d; }
+.msd .mh { display: flex; align-items: center; gap: 16px; }
+.msd .mh h3 { margin: 0 auto 0 0; font-size: 22px; }
+.msd .btn { height: 34px; padding: 0 20px; border: 1px solid #e2e3eb; border-radius: 6px; background: #fff; color: #0e1240; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.msd .btn.primary { background: #0e1240; border-color: #0e1240; color: #fff; }
+.msd .btn:disabled { opacity: .45; cursor: not-allowed; }
+.msd .mh .btn { width: 126px; height: 36px; padding: 0; font-size: 14px; }
+.msd .x { width: 40px; height: 40px; border: 0; border-radius: 10px; background: #f3f4f8; color: #0e1240; cursor: pointer; }
+.msd .ms { margin: 12px 0 18px; color: #5d6178; font-size: 12px; }
+.msd .table { overflow: auto; border: 1px solid #e2e3eb; border-radius: 12px; }
+.msd .sr { display: grid; grid-template-columns: 276px 116px 1fr auto; align-items: center; min-width: 760px; min-height: 76px; padding: 0 14px 0 16px; border-bottom: 1px solid #e2e3eb; }
+.msd .sr:last-child { border-bottom: 0; }
+.msd .sr.th { min-height: 40px; height: 40px; border: 0; background: #f3f4f8; color: #5d6178; font-size: 11px; }
+.msd .sr small { display: block; margin-top: 6px; color: #5d6178; font-size: 11px; }
+.msd .acts, .msd .more { display: flex; gap: 8px; }
+.msd .acts button:not(.btn) { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #e2e3eb; border-radius: 6px; background: none; color: #5d6178; cursor: pointer; }
+.msd .acts button:disabled { opacity: .4; cursor: not-allowed; }
+.msd .acts .e { color: #14508f; }
+.msd .acts .d { color: #a91d1d; }
+.msd .sr-edit { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; }
+.msd .sr-edit input { height: 30px; padding: 0 8px; border: 1px solid #e2e3eb; border-radius: 5px; font: inherit; font-size: 12px; }
+.msd .ms-add { padding: 14px 16px; border-bottom: 1px solid #e2e3eb; background: #f3f4f8; font-size: 12px; }
+.msd .ms-add ul { margin: 8px 0; padding: 0; list-style: none; max-height: 180px; overflow-y: auto; }
+.msd .ms-add li label { display: flex; gap: 8px; padding: 4px 0; }
+.msd .ms-add p { margin: 8px 0; color: #5d6178; }
+.msd .ms-add-acts { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 800px) { .sprint-bar { flex-wrap: wrap; height: auto; gap: 10px; padding-block: 10px; } }
