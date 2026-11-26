@@ -35,21 +35,25 @@ export function SprintBar({ projectId }: { projectId: string }) {
     onError: (e) => toast.error(describeApiError(e, t('Could not complete the sprint.'))),
   });
 
-  const active = sprints.data?.items.find((s) => s.state === 'active');
-  if (!active) return null;
+  const items = sprints.data?.items ?? [];
+  const active = items.find((s) => s.state === 'active');
+  // No active sprint: show the next planned one, or an empty bar, so the board header keeps its place.
+  const shown = active ?? items.find((s) => s.state === 'planned');
 
   const confirmComplete = () => {
-    if (window.confirm(t('Complete {name}? Unfinished tasks move back to the backlog.', { name: active.name }))) complete.mutate(active);
+    if (active && window.confirm(t('Complete {name}? Unfinished tasks move back to the backlog.', { name: active.name }))) complete.mutate(active);
   };
 
   return (
     <div className="sprint-bar">
-      <b>{active.name}</b>
-      <span className="sprint-chip">{t('Active')}</span>
-      {active.start_date && <span>{formatDate(active.start_date)}</span>}
-      {active.end_date && <span>– {formatDate(active.end_date)}</span>}
+      <b>{shown?.name ?? t('No active sprint')}</b>
+      {shown && <span className="sprint-chev" aria-hidden="true">⌄</span>}
+      {shown && <span className="sprint-chip">{t(shown.state === 'active' ? 'Active' : 'Planned')}</span>}
+      {shown?.start_date && <span>{formatDate(shown.start_date)}</span>}
+      {shown?.end_date && <span>– {formatDate(shown.end_date)}</span>}
       <span className="sprint-gap" />
-      {user?.role === 'pm' && (
+      <span className="sprint-menu" aria-hidden="true">≡</span>
+      {active && user?.role === 'pm' && (
         <button type="button" className="btn" disabled={complete.isPending} onClick={confirmComplete}>
           {t('Complete sprint')}
         </button>
