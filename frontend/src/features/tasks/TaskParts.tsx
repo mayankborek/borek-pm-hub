@@ -114,13 +114,14 @@ export function TaskRow({
           </Link>
         )}
       </div>
-      <div className={`cell-status cat-${task.status.category}`} role="cell">
+      <div className={`cell-status cat-${task.status.category} st-${task.status.name.toLowerCase().replace(/\s+/g, '-')}`} role="cell">
         {t(task.status.name)}
       </div>
       <div className="cell-muted" role="cell">
         {task.due_date ? formatDate(task.due_date) : '—'}
       </div>
-      <div className="cell-muted" role="cell">
+      <div className={`cell-muted cell-priority pr-${task.priority}`} role="cell">
+        <img src={(PRIORITY_OPTIONS.find((o) => o.value === task.priority) ?? PRIORITY_OPTIONS[2]).icon} alt="" width={16} height={16} />
         {t(PRIORITY_LABEL[task.priority])}
       </div>
       <div className="cell-assignee cell-muted" role="cell">

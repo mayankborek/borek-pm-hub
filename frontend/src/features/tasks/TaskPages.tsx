@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useProjects } from '@/features/projects/projectsApi';
 import { paths } from '@/app/routes';
@@ -14,6 +14,8 @@ import { JiraImportDialog } from './JiraImportDialog';
 import { isFiltered, useUrlFilter } from './useUrlFilter';
 import './tasks.css';
 
+const PER_PAGE = 10;
+
 /** Sidebar "Task List": GET /tasks across every project the user can access (backend scopes by role). */
 export function TasksPage() {
   const { t: tr } = usePrefs();
@@ -22,7 +24,7 @@ export function TasksPage() {
   const statuses = useProjectStatuses(params.get('project_id') ?? undefined).data;
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const projectId = params.get('project_id') ?? '';
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
   const isPm = useAuth().user?.role === 'pm';
   const toast = useToast();
   const [importing, setImporting] = useState(false);
@@ -31,8 +33,19 @@ export function TasksPage() {
   const deleteTask = useDeleteTask();
   const { data, isPending, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllTasks(projectId, applied);
 
-  const tasks = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
+  const loaded = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
   const total = data?.pages[0]?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const current = Math.min(page, pages);
+  const tasks = loaded.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const first = tasks.length ? (current - 1) * PER_PAGE + 1 : 0;
+
+  // Pages are fetched on demand: keep loading until the requested page is covered.
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage && loaded.length < current * PER_PAGE) void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, loaded.length, current, fetchNextPage]);
+  const filterKey = JSON.stringify(applied);
+  useEffect(() => setPage(1), [projectId, filterKey]);
   const filtered = !!projectId || isFiltered(applied);
 
   const setProject = (id: string) =>
@@ -52,14 +65,12 @@ export function TasksPage() {
       .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
       .finally(() => setExporting(false));
   };
-  const allSelected = tasks.length > 0 && tasks.every((t) => selected.has(t.id));
 
   return (
     <section className="page-body task-list-page">
       <div className="page-header">
         <div>
           <h1 className="page-title">{tr('All project tasks')}</h1>
-          <p className="page-desc">{tr('All accessible projects')}</p>
         </div>
         <div className="page-actions">
           {isPm && (
@@ -130,15 +141,15 @@ export function TasksPage() {
         />
       ) : (
         <>
-          <TaskGroup
-            title="All tasks"
-            count={total}
-            selectAll={{
-              checked: allSelected,
-              indeterminate: !allSelected && selected.size > 0,
-              onChange: (on) => setSelected(on ? new Set(tasks.map((t) => t.id)) : new Set()),
-            }}
-          >
+          <TaskGroup title="All tasks" count={total}>
+            <div className={`task-row task-table-head${isPm ? ' has-actions' : ''}`} role="row">
+              <div role="columnheader">{tr('Task / Project')}</div>
+              <div role="columnheader">{tr('Status')}</div>
+              <div role="columnheader">{tr('Due date')}</div>
+              <div role="columnheader">{tr('Priority')}</div>
+              <div role="columnheader">{tr('Assignee')}</div>
+              {isPm && <div role="columnheader" />}
+            </div>
             {tasks.map((t) => (
               <TaskRow
                 key={t.id}
@@ -149,42 +160,31 @@ export function TasksPage() {
                     ? () => {
                         if (!window.confirm(tr('Delete {key} · {title}?', { key: t.key, title: t.title }))) return;
                         deleteTask.mutate(t.id, {
-                          onSuccess: () => {
-                            setSelected((prev) => {
-                              const next = new Set(prev);
-                              next.delete(t.id);
-                              return next;
-                            });
-                            toast.success(tr('{key} deleted.', { key: t.key }));
-                          },
+                          onSuccess: () => toast.success(tr('{key} deleted.', { key: t.key })),
                           onError: (e) => toast.error(describeApiError(e, tr('Could not delete the task.'))),
                         });
                       }
                     : undefined
                 }
-                selected={selected.has(t.id)}
-                onSelect={(on) =>
-                  setSelected((prev) => {
-                    const next = new Set(prev);
-                    if (on) next.add(t.id);
-                    else next.delete(t.id);
-                    return next;
-                  })
-                }
               />
             ))}
           </TaskGroup>
-          <p className="task-foot">
-            {tr('Showing {n} of {total} tasks', { n: tasks.length, total })}
-            {hasNextPage && (
-              <>
-                {' · '}
-                <button type="button" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                  {tr(isFetchingNextPage ? 'Loading…' : 'Load more')}
-                </button>
-              </>
-            )}
-          </p>
+          <div className="task-foot task-pager">
+            <span>{tr('Showing {from}–{to} of {total} tasks · {n} per page', { from: first, to: first + tasks.length - 1, total, n: PER_PAGE })}</span>
+            <nav aria-label={tr('Pagination')}>
+              <span>{tr('Page {n} of {total}', { n: current, total: pages })}</span>
+              <button type="button" aria-label={tr('Previous page')} disabled={current === 1} onClick={() => setPage(current - 1)}>‹</button>
+              {Array.from({ length: pages }, (_, i) => i + 1)
+                .filter((n) => pages <= 7 || n === 1 || n === pages || Math.abs(n - current) <= 1)
+                .map((n, i, all) => (
+                  <span key={n} className="pager-item">
+                    {i > 0 && n - all[i - 1] > 1 && <span className="pager-gap">…</span>}
+                    <button type="button" aria-current={n === current ? 'page' : undefined} className={n === current ? 'on' : undefined} onClick={() => setPage(n)}>{n}</button>
+                  </span>
+                ))}
+              <button type="button" aria-label={tr('Next page')} disabled={current === pages} onClick={() => setPage(current + 1)}>›</button>
+            </nav>
+          </div>
         </>
       )}
     </section>

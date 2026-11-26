@@ -128,3 +128,34 @@
 .export-list { position: absolute; right: 0; top: 100%; z-index: 5; margin: 4px 0 0; padding: 4px 0; list-style: none; min-width: 120px; border: 1px solid var(--line); background: var(--surface); }
 .export-list button { display: block; width: 100%; padding: 8px 12px; border: 0; background: none; text-align: left; font: 400 var(--fs-14) Inter, sans-serif; color: var(--ink); cursor: pointer; }
 .export-list button:hover { background: var(--line); }
+
+/* Design pass (borek-flow Task List): column heading row, bold titles, coloured priority, numbered pager. */
+.task-list-page .task-group { border: 1px solid var(--line); border-radius: 8px; }
+.task-list-page .task-group-head { height: 48px; background: var(--surface-2); }
+.task-list-page .task-group-head strong { font-size: var(--fs-14); font-weight: 600; color: var(--navy); }
+.task-list-page .task-group-head span { font-size: var(--fs-12); }
+.task-list-page .task-table-head { position: static; top: auto; min-height: 44px; border-top: 0; border-bottom: 0; background: var(--surface-2); font-size: var(--fs-12); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.task-list-page .task-table-head > div { padding-left: 12px; }
+.task-list-page .task-table-head > div:first-child { padding-left: 17px; }
+.task-list-page .task-row { min-height: 48px; }
+.task-list-page .task-row .task-title, .task-list-page .task-title-line .proj-link { font-weight: 600; color: var(--navy); }
+.task-list-page .task-row .cell-muted, .task-list-page .task-row .cell-status { font-size: var(--fs-13); }
+.cell-priority { display: flex; align-items: center; gap: 6px; }
+.pr-highest, .pr-high { color: #c94a32 !important; }
+.pr-medium { color: var(--ink) !important; }
+.pr-low { color: #2e61d6 !important; }
+.pr-lowest { color: #7a8aa8 !important; }
+.st-code-review { color: #7b4fc4; }
+.st-testing { color: #7c450f; }
+.st-in-progress { color: #1b4fb4; }
+.task-pager { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.task-pager nav { display: flex; align-items: center; gap: 4px; }
+.task-pager nav > span:first-child { margin-right: 8px; }
+.task-pager .pager-item { display: inline-flex; align-items: center; }
+.task-pager .pager-gap { padding: 0 4px; }
+.task-pager button { min-width: 28px; height: 28px; padding: 0 6px; border: 0; border-radius: 4px; background: none; font: 500 var(--fs-13) Inter, sans-serif; color: var(--muted); text-decoration: none; cursor: pointer; }
+.task-pager button.on { color: var(--navy); font-weight: 700; background: var(--surface-2); }
+.task-pager button:disabled { opacity: .4; cursor: default; }
+:root[data-theme=dark] .st-code-review { color: #cab1ff; }
+:root[data-theme=dark] .st-testing { color: #8eddd5; }
+:root[data-theme=dark] .st-in-progress { color: #a9c9ff; }
