@@ -4,7 +4,9 @@
 .bl2 .task-filters { gap: 17px; min-height: 36px; padding: 0; margin: 0; background: none; }
 .bl2 .task-filters .input { height: 36px; border-radius: 3px; background: var(--surface); }
 .bl2 .task-filters .search { width: 260px; }
-.bl2 .more { margin-left: auto; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 9px; letter-spacing: 1px; cursor: pointer; }
+.bl2 .more-menu { position: relative; margin-left: auto; }
+.bl2 .more-menu .export-list { min-width: 160px; }
+.bl2 .more {width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 9px; letter-spacing: 1px; cursor: pointer; }
 .bl2 .more:focus-visible, .bl2 .row-act:focus-visible { outline: 2px solid #1e8df2; outline-offset: 2px; }
 
 .bl2 .sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
