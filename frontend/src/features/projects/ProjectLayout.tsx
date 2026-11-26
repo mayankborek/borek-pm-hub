@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
-import { exportFilter, exportTasks } from '@/features/tasks/jiraApi';
+import { EXPORT_FORMATS, exportFilter, exportTasks, type ExportFormat } from '@/features/tasks/jiraApi';
 import { JiraImportDialog } from '@/features/tasks/JiraImportDialog';
 import { useUrlFilter } from '@/features/tasks/useUrlFilter';
 import { ApiError, describeApiError } from '@/shared/api/client';
@@ -14,6 +14,7 @@ import { PmIcon } from './pmIcons';
 import type { Project } from './types';
 import '@/features/changeRequests/changeRequests.css';
 import '@/features/reports/reports.css';
+import '@/features/tasks/tasks.css';
 import './projects.css';
 import './pmSettings.css';
 
@@ -26,10 +27,12 @@ function BacklogActions({ project }: { project: Project }) {
   const { applied } = useUrlFilter();
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportMenu, setExportMenu] = useState(false);
 
-  const runExport = () => {
+  const runExport = (format: ExportFormat) => {
+    setExportMenu(false);
     setExporting(true);
-    exportTasks({ project_id: project.id, filter: exportFilter(applied) })
+    exportTasks({ project_id: project.id, filter: exportFilter(applied), format })
       .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
       .finally(() => setExporting(false));
   };
@@ -39,9 +42,30 @@ function BacklogActions({ project }: { project: Project }) {
       <button type="button" className="btn secondary" onClick={() => setImporting(true)}>
         {tr('Import')}
       </button>
-      <button type="button" className="btn secondary" disabled={exporting} onClick={runExport}>
-        {tr(exporting ? 'Exporting…' : 'Export')}
-      </button>
+      <div className="export-menu">
+        <button
+          type="button"
+          className="btn secondary"
+          aria-haspopup="menu"
+          aria-expanded={exportMenu}
+          disabled={exporting}
+          onClick={() => setExportMenu((o) => !o)}
+          onKeyDown={(e) => e.key === 'Escape' && setExportMenu(false)}
+        >
+          {tr(exporting ? 'Exporting…' : 'Export')} ▾
+        </button>
+        {exportMenu && (
+          <ul className="export-list" role="menu">
+            {EXPORT_FORMATS.map((f) => (
+              <li key={f} role="none">
+                <button type="button" role="menuitem" onClick={() => runExport(f)}>
+                  {f.toUpperCase()}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {importing && <JiraImportDialog projects={[project]} defaultProjectId={project.id} onClose={() => setImporting(false)} />}
     </>
   );
