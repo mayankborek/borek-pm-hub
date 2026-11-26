@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin import service as admin_service
@@ -20,9 +21,11 @@ from app.auth.permissions import CLIENT_CONTACT_ROLE, is_client
 from app.common.enums import OrganisationType
 from app.core.config import Settings
 from app.core.errors import AppError
+from app.organisations import service as organisation_service
 from app.organisations.models import Organisation
 from app.organisations.schemas import (
     MemberStatus,
+    OrganisationCreate,
     OrganisationMemberCreate,
     OrganisationMemberOut,
 )
@@ -174,6 +177,7 @@ async def remove_member(
             "This person is not a client contact. Change the account in Users.",
         )
     if user.is_active:
+        await refuse_last_contact(session, user)
         record_audit(
             session,
             actor,
@@ -184,3 +188,54 @@ async def remove_member(
         )
     await admin_service.set_active(session, actor, user.id, active=False)
     return user
+
+
+async def refuse_last_contact(session: AsyncSession, user: User) -> None:
+    """409 when the person is the last named contact of an active project (handoff 08)."""
+    projects = await organisation_service.projects_left_without_contact(session, user)
+    if projects:
+        names = ", ".join(p.name for p in projects)
+        raise AppError(
+            409,
+            "LAST_PROJECT_CONTACT",
+            f"Assign another contact to {names} before removing {user.name}.",
+            [
+                {"field": "project_id", "issue": "last_contact", "message": str(p.id)}
+                for p in projects
+            ],
+        )
+
+
+async def create_organisation(
+    session: AsyncSession, actor: User, data: OrganisationCreate, settings: Settings
+) -> tuple[Organisation, list[tuple[User, str, datetime]]]:
+    """The whole setup in one transaction: organisation, details, Account Managers, optional
+    PM and the first client accounts with invite links. Commits."""
+    emails = [c.email for c in data.contacts]
+    duplicates = sorted({e for e in emails if emails.count(e) > 1})
+    if duplicates:
+        raise AppError(
+            422,
+            "VALIDATION_ERROR",
+            "Each contact email can be used once.",
+            [{"field": "contacts", "issue": "duplicate_email", "message": e} for e in duplicates],
+        )
+    if data.contacts and data.type != OrganisationType.CLIENT:
+        raise AppError(
+            422, "VALIDATION_ERROR", "Only client organisations have client contacts here."
+        )
+    async with session.begin_nested():  # any refusal undoes the whole setup
+        organisation = await organisation_service.insert_organisation(session, actor, data)
+        created = [
+            await insert_member(session, actor, organisation, contact, settings)
+            for contact in data.contacts
+        ]
+    try:
+        await session.commit()
+    except IntegrityError:  # the same name or email saved by someone else at the same moment
+        await session.rollback()
+        raise AppError(
+            409, "CONFLICT", "Something was saved by someone else. Reload and try again."
+        ) from None
+    await session.refresh(organisation)
+    return organisation, created

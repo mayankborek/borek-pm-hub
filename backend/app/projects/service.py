@@ -41,7 +41,7 @@ from app.organisations.schemas import OrganisationBrief, OrganisationCreate
 from app.picklists import service as picklists
 from app.picklists.models import PicklistKey
 from app.projects.membership import project_access, visible_project_ids
-from app.projects.models import Project, ProjectMember
+from app.projects.models import Project, ProjectClientContact, ProjectMember
 from app.projects.schemas import (
     CategoryOut,
     MemberIn,
@@ -428,6 +428,8 @@ async def create_project(
         await session.rollback()
         raise _duplicate_code(data.code) from None
     await statuses.create_defaults(session, project.id)
+    if contact is not None:  # the first contact is the project's named client contact
+        session.add(ProjectClientContact(project_id=project.id, user_id=contact.user.id))
     # The creator always leads the project, even when also listed as a plain member.
     roles = {member.user_id: member.project_role for member in data.members}
     roles[user.id] = ProjectRole.PROJECT_LEAD

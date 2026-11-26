@@ -55,7 +55,8 @@ _STAFF_ACTIONS = [a for a in Action if a not in ADMIN_ONLY and a is not Action.C
 
 @pytest.mark.parametrize("action", _STAFF_ACTIONS)
 def test_manager_can_do_everything_except_administration_in_any_project(action: Action) -> None:
-    assert can(make(GlobalRole.MANAGER), action, OUTSIDER)
+    # My tasks is off for Managers by default (role matrix, Administrator handoff appendix A)
+    assert can(make(GlobalRole.MANAGER), action, OUTSIDER) is (action is not Action.MY_TASKS)
 
 
 @pytest.mark.parametrize(
@@ -98,7 +99,8 @@ def test_only_the_administrator_may_administer_users(role: GlobalRole) -> None:
     [
         a
         for a in Action
-        if a not in ADMIN_ONLY and a not in (Action.ORGANISATION_VIEW, Action.SCHEDULE_MANAGE)
+        if a not in ADMIN_ONLY
+        and a not in (Action.ORGANISATION_VIEW, Action.SCHEDULE_MANAGE, Action.ACCESS_OVERVIEW)
     ],
 )
 def test_administrator_has_no_access_to_project_data(action: Action) -> None:
@@ -297,7 +299,11 @@ def test_no_role_comparison_outside_the_permission_module() -> None:
     """New roles must only change `permissions.py`: no other module checks a specific role,
     neither through the enum (`GlobalRole.PM`) nor as a string (`global_role == "pm"`)."""
     app_dir = Path(__file__).resolve().parents[1] / "app"
-    allowed = {app_dir / "auth" / "permissions.py", app_dir / "common" / "enums.py"}
+    allowed = {
+        app_dir / "auth" / "permissions.py",
+        app_dir / "auth" / "policy.py",  # the role matrix defaults (Administrator handoff)
+        app_dir / "common" / "enums.py",
+    }
     offenders = [
         f"{path.relative_to(app_dir)}:{number}"
         for path in app_dir.rglob("*.py")

@@ -11,6 +11,7 @@ from enum import StrEnum
 
 from sqlalchemy import ColumnElement
 
+from app.auth.policy import role_policy_allows
 from app.common.enums import GlobalRole
 from app.core.errors import AppError
 from app.users.models import User
@@ -71,9 +72,12 @@ class Action(StrEnum):
     PEOPLE_VIEW = "people:view"
     # Configurable dropdown values (administrator). Reading them: anyone signed in on staff.
     PICKLIST_MANAGE = "picklist:manage"
+    # Role permissions matrix and per-person project switches (Administrator handoff 10 + 11).
+    ACCESS_POLICY_MANAGE = "access_policy:manage"
     # Team capacity (Manager Role Guide): workload and capacity across people (Managers only),
     # reservations of a project's people (leads + Managers), working schedules (Admin + Managers).
-    TEAM_VIEW = "team:view"
+    TEAM_VIEW = "team:view"  # capacity
+    TEAM_WORKLOAD = "team:workload"
     RESERVATION_MANAGE = "reservation:manage"
     SCHEDULE_MANAGE = "schedule:manage"
     # The client portal (/client/...): client contacts only, and only their organisation's
@@ -91,6 +95,14 @@ class Resource:
     is_account_manager: bool = False  # the project's client is assigned to this Account Manager
     assignee_id: uuid.UUID | None = None
     creator_id: uuid.UUID | None = None
+    # The user's own switches in this project, per action (Administrator screen 10).
+    overrides: tuple[tuple[str, bool], ...] = ()
+
+    def override_for(self, action: "Action") -> bool | None:
+        for name, enabled in self.overrides:
+            if name == action.value:
+                return enabled
+        return None
 
 
 _PM_ONLY = frozenset(
@@ -127,6 +139,7 @@ NOT_FOR_LEADS = frozenset(
         Action.ACCESS_OVERVIEW,
         Action.FINANCE_MANAGE,
         Action.TEAM_VIEW,
+        Action.TEAM_WORKLOAD,
         Action.SCHEDULE_MANAGE,
     }
 )
@@ -174,6 +187,7 @@ ADMIN_ONLY = frozenset(
         Action.AUDIT_VIEW,
         Action.ORGANISATION_MANAGE,
         Action.PICKLIST_MANAGE,
+        Action.ACCESS_POLICY_MANAGE,
     }
 )
 
@@ -242,6 +256,11 @@ def client_condition() -> ColumnElement[bool]:
     return User.global_role == GlobalRole.CLIENT.value
 
 
+def pm_condition() -> ColumnElement[bool]:
+    """SQL condition for "is a Project Manager" (an organisation's optional PM)."""
+    return User.global_role == GlobalRole.PM.value
+
+
 def manager_condition() -> ColumnElement[bool]:
     """SQL condition for "is a Manager" (oversight notifications)."""
     return User.global_role == GlobalRole.MANAGER.value
@@ -260,6 +279,23 @@ def works_on_tasks_condition() -> ColumnElement[bool]:
 
 
 def can(user: User, action: Action, resource: Resource | None = None) -> bool:
+    """Built-in rules, then the administrator's settings (app.auth.policy): fixed rules win, then
+    the user's switch in this project, then their role's matrix switch."""
+    allowed = _built_in(user, action, resource)
+    if not user.is_active or is_admin(user) or is_client(user) or action in ADMIN_ONLY:
+        return allowed
+    if resource is not None and (
+        resource.is_member or resource.is_account_manager or sees_all_projects(user)
+    ):
+        override = resource.override_for(action)
+        if override is not None and action not in NOT_FOR_LEADS:
+            return override
+    if not role_policy_allows(user, action):
+        return False
+    return allowed
+
+
+def _built_in(user: User, action: Action, resource: Resource | None) -> bool:
     if not user.is_active:
         return False
     if action is Action.CLIENT_PORTAL or is_client(user):
@@ -267,7 +303,11 @@ def can(user: User, action: Action, resource: Resource | None = None) -> bool:
         return action is Action.CLIENT_PORTAL and is_client(user)
     if is_admin(user):
         # No project data: denied by default.
-        return action in ADMIN_ONLY or action in (Action.ORGANISATION_VIEW, Action.SCHEDULE_MANAGE)
+        return action in ADMIN_ONLY or action in (
+            Action.ORGANISATION_VIEW,
+            Action.SCHEDULE_MANAGE,
+            Action.ACCESS_OVERVIEW,  # Person access matrix (Administrator handoff 09)
+        )
     if action in ADMIN_ONLY:
         return False
     if sees_all_projects(user):

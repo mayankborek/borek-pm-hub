@@ -1,5 +1,6 @@
 """Imports every model so Base.metadata knows all tables (used by Alembic and tests)."""
 
+from app.access_policy import models as _access_policy  # noqa: F401
 from app.audit import models as _audit  # noqa: F401
 from app.capacity import models as _capacity  # noqa: F401
 from app.change_requests import models as _change_requests  # noqa: F401

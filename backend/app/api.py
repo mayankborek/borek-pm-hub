@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from app.access_policy.router import router as access_policy_router
 from app.admin.router import roles_router as admin_roles_router
 from app.admin.router import router as admin_router
 from app.audit.router import router as audit_router
@@ -56,3 +57,4 @@ api_router.include_router(task_links_router)
 api_router.include_router(registers_router)
 api_router.include_router(picklists_router)
 api_router.include_router(project_reports_router)
+api_router.include_router(access_policy_router)

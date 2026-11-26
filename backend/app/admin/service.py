@@ -156,8 +156,14 @@ async def list_users(
         conditions.append(User.is_active.is_(False))
     if q and q.strip():
         pattern = f"%{like_escape(q.strip())}%"
+        # "Search name, email or organisation" (Administrator handoff, Users directory)
+        organisations = select(Organisation.id).where(Organisation.name.ilike(pattern, escape="\\"))
         conditions.append(
-            or_(User.name.ilike(pattern, escape="\\"), User.email.ilike(pattern, escape="\\"))
+            or_(
+                User.name.ilike(pattern, escape="\\"),
+                User.email.ilike(pattern, escape="\\"),
+                User.organisation_id.in_(organisations),
+            )
         )
     total = await session.scalar(select(func.count(User.id)).where(*conditions)) or 0
     active_total = (

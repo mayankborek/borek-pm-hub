@@ -535,13 +535,15 @@ async def test_portfolio_filters_sorting_and_paging(
 
 
 @pytest.mark.parametrize("attr", ["admin", "pm", "dev"])
-async def test_other_roles_have_no_portfolio_or_access_overview(
+async def test_other_roles_have_no_portfolio_and_only_admin_reads_access(
     client: httpx.AsyncClient, world: World, attr: str
 ) -> None:
     headers = as_user(getattr(world, attr))
     assert (await client.get(PORTFOLIO, headers=headers)).status_code == 403
-    assert (await client.get(ACCESS, headers=headers)).status_code == 403
-    assert (await client.get(f"{ACCESS}/export", headers=headers)).status_code == 403
+    # the administrator reads the person access matrix (Administrator handoff 09)
+    expected = 200 if attr == "admin" else 403
+    assert (await client.get(ACCESS, headers=headers)).status_code == expected
+    assert (await client.get(f"{ACCESS}/export", headers=headers)).status_code == expected
 
 
 # --- access overview ----------------------------------------------------------------------------
