@@ -24,6 +24,7 @@ from decimal import Decimal
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.core.model_registry  # noqa: F401  (every table, so foreign keys resolve)
 from app.auth.security import hash_password
 from app.common.enums import (
     FinanceEntryKind,

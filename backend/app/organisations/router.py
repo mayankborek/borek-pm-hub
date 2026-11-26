@@ -19,14 +19,17 @@ from app.organisations.schemas import (
     AccountManagersUpdate,
     MemberInviteOut,
     OrganisationCreate,
+    OrganisationCreatedOut,
     OrganisationListOut,
     OrganisationMemberCreate,
     OrganisationMemberCreatedOut,
     OrganisationMemberListOut,
     OrganisationMemberOut,
     OrganisationOut,
+    OrganisationProject,
     OrganisationUpdate,
     PersonBrief,
+    ProjectContactsUpdate,
 )
 from app.users.models import User
 
@@ -77,14 +80,24 @@ async def list_organisations(
     )
 
 
-@router.post("", response_model=OrganisationOut, status_code=201)
+@router.post("", response_model=OrganisationCreatedOut, status_code=201)
 async def create_organisation(
-    body: OrganisationCreate, user: CurrentUser, session: SessionDep, response: Response
-) -> OrganisationOut:
+    body: OrganisationCreate,
+    user: CurrentUser,
+    session: SessionDep,
+    response: Response,
+    settings: SettingsDep,
+) -> OrganisationCreatedOut:
+    """Set up a client in one call: details, Account Managers, optional PM and the first client
+    accounts. All or nothing. `contacts_created` carries each new account's invite link once."""
     require(user, Action.ORGANISATION_MANAGE)
-    organisation = await service.create_organisation(session, user, body)
+    organisation, created = await members.create_organisation(session, user, body, settings)
     response.headers["Location"] = f"/api/v1/organisations/{organisation.id}"
-    return (await service.to_out(session, [organisation]))[0]
+    out = (await service.to_out(session, [organisation]))[0]
+    contacts: list[OrganisationMemberCreatedOut] = []
+    for person, token, expires_at in created:
+        contacts.append(await _with_invite(session, response, settings, person, token, expires_at))
+    return OrganisationCreatedOut(**out.model_dump(), contacts_created=contacts)
 
 
 @router.get("/{organisation_id}", response_model=OrganisationOut)
@@ -121,6 +134,22 @@ async def set_account_managers(
     """Replace the account managers of a client. They see that client's projects, read-only."""
     require(user, Action.ORGANISATION_MANAGE)
     return await service.set_account_managers(session, user, organisation_id, body.user_ids)
+
+
+@router.put("/{organisation_id}/projects/{project_id}/contacts", response_model=OrganisationProject)
+async def set_project_contacts(
+    organisation_id: uuid.UUID,
+    project_id: uuid.UUID,
+    body: ProjectContactsUpdate,
+    user: CurrentUser,
+    session: SessionDep,
+) -> OrganisationProject:
+    """Replace the named client contacts of one of this client's active projects (at least
+    one; active client accounts of this organisation only)."""
+    require(user, Action.ORGANISATION_MANAGE)
+    return await service.set_project_contacts(
+        session, user, organisation_id, project_id, body.user_ids
+    )
 
 
 # --- members (client contacts), administrator only ----------------------------------------------

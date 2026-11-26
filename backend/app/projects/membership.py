@@ -1,17 +1,19 @@
 """Membership lookups used by auth. Other modules call these instead of touching the tables."""
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlalchemy import Select, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.access_policy.models import ProjectPermissionSetting
 from app.auth.permissions import (
     Resource,
     has_lead_rights,
     is_account_manager,
     may_lead_projects,
 )
+from app.auth.policy import action_overrides
 from app.common.enums import ProjectRole
 from app.organisations.models import OrganisationAccountManager
 from app.projects.models import Project, ProjectMember
@@ -25,6 +27,7 @@ class ProjectAccess:
     is_member: bool = False
     is_project_lead: bool = False
     is_account_manager: bool = False
+    overrides: tuple[tuple[str, bool], ...] = ()  # the user's switches here (Admin screen 10)
 
     def resource(
         self,
@@ -38,6 +41,7 @@ class ProjectAccess:
             is_member=self.is_member,
             is_project_lead=self.is_project_lead,
             is_account_manager=self.is_account_manager,
+            overrides=self.overrides,
             assignee_id=assignee_id,
             creator_id=creator_id,
         )
@@ -80,6 +84,24 @@ def visible_project_ids(user: User) -> Select[tuple[uuid.UUID]]:
 
 
 async def project_access(session: AsyncSession, user: User, project: Project) -> ProjectAccess:
+    """What the user is in the project, with their own switches there (Administrator screen
+    10) when an administrator set any."""
+    access = await _membership_access(session, user, project)
+    if not (access.is_member or access.is_account_manager):
+        return access
+    rows = await session.execute(
+        select(ProjectPermissionSetting.permission, ProjectPermissionSetting.enabled).where(
+            ProjectPermissionSetting.project_id == project.id,
+            ProjectPermissionSetting.user_id == user.id,
+        )
+    )
+    saved = {permission: enabled for permission, enabled in rows.all()}
+    if not saved:
+        return access
+    return replace(access, overrides=action_overrides(saved))
+
+
+async def _membership_access(session: AsyncSession, user: User, project: Project) -> ProjectAccess:
     """Membership counts in active projects. An archived project stays visible (read-only: every
     write refuses it) only to a PM who led it or archived it. An Account Manager reaches the
     active projects of their clients."""
