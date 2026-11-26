@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
-import { usePermissions, type AreaId } from '@/features/admin/adminStore';
+import { usePermissions, type AreaId } from '@/features/admin/permissionsStore';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useClientPortal } from './clientPortalApi';

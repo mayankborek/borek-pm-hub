@@ -7,7 +7,7 @@ import type { ProjectContext } from '@/features/client/ClientProjectLayout';
 import type { ClientProject } from '@/features/client/types';
 import { EmptyCard, PortalPending } from '@/features/client/ui';
 import '@/features/client/clientPortal.css';
-import '@/features/admin/admin.css';
+import '@/features/admin/adminLegacy.css';
 
 /** Project name with a menu to jump to another project. */
 function Switcher({ current, projects }: { current: ClientProject; projects: ClientProject[] }) {

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { describeApiError } from '@/shared/api/client';
-import { usePermissions } from '@/features/admin/adminStore';
+import { usePermissions } from '@/features/admin/permissionsStore';
 import { useProjectContext } from './ClientProjectLayout';
 import { Badge, EmptyCard, ErrorCard, LoadingCard } from './ui';
 import { longDate, paddedDate } from './format';

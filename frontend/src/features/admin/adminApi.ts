@@ -12,6 +12,8 @@ export interface AdminUser {
   role: string;
   is_active: boolean;
   join_date: string | null;
+  job_title: string | null;
+  organisation: { id: string; name: string } | null;
   password_set: boolean;
   invite_pending: boolean;
   projects: { id: string; code: string; name: string }[];
@@ -36,6 +38,7 @@ export interface UserInput {
   email: string;
   role: AssignableRole;
   join_date?: string | null;
+  job_title?: string | null;
 }
 
 export const ROLE_LABEL: Record<string, string> = {

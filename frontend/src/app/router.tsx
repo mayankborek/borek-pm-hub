@@ -39,12 +39,10 @@ import { AmOverviewPage } from '@/features/accountManager/AmOverviewPage';
 import { AmNotificationsPage, AmPreferencesPage, AmProfilePage, AmSecurityPage } from '@/features/accountManager/AmSettingsPages';
 import { AdminLayout } from '@/features/admin/AdminLayout';
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage';
-import { AdminUserPage } from '@/features/admin/AdminUserPage';
-import { AdminInvitationPage } from '@/features/admin/AdminInvitationPage';
 import { AdminOrganisationsPage } from '@/features/admin/AdminOrganisationsPage';
-import { AdminOrganisationPage } from '@/features/admin/AdminOrganisationPage';
-import { AdminRolesPage } from '@/features/admin/AdminRolesPage';
-import { AdminRolePage } from '@/features/admin/AdminRolePage';
+import { AdminOrganisationFormPage } from '@/features/admin/AdminOrganisationFormPage';
+import { AdminAccessPage, AdminPersonAccessPage } from '@/features/admin/AdminAccessPages';
+import { AdminSettingsPage } from '@/features/admin/AdminSettingsPages';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { ProjectLayout } from '@/features/projects/ProjectLayout';
@@ -59,8 +57,14 @@ import { TaskCreatePage } from '@/features/tasks/TaskCreatePage';
 import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
+import { DeveloperLayout } from '@/features/developer/DeveloperLayout';
+import { DevProjectLayout } from '@/features/developer/DevProjectLayout';
+import { DevOverviewPage } from '@/features/developer/DevOverviewPage';
+import { DevBacklogPage } from '@/features/developer/DevBacklogPage';
+import { DevBoardPage } from '@/features/developer/DevBoardPage';
+import { DevTaskPage } from '@/features/developer/DevTaskPage';
 import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';
-import { RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly } from './guards';
+import { ByRole, RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly } from './guards';
 
 export const router = createBrowserRouter([
   // Public, reachable even while signed in (an administrator may open a link in their own browser)
@@ -188,13 +192,18 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <Navigate to={paths.adminUsers} replace /> },
               { path: 'users', element: <AdminUsersPage /> },
-              { path: 'users/:userId', element: <AdminUserPage /> },
-              { path: 'users/:userId/invitation', element: <AdminInvitationPage /> },
+              { path: 'users/:userId', element: <AdminUsersPage /> },
               { path: 'organisations', element: <AdminOrganisationsPage /> },
-              { path: 'organisations/:orgId', element: <AdminOrganisationPage /> },
-              { path: 'roles', element: <AdminRolesPage /> },
-              { path: 'roles/:roleId', element: <AdminRolePage /> },
-              { path: 'profile', element: <ProfilePage /> },
+              { path: 'organisations/new', element: <AdminOrganisationFormPage /> },
+              { path: 'organisations/:orgId', element: <AdminOrganisationFormPage /> },
+              { path: 'access', element: <AdminAccessPage tab="people" /> },
+              { path: 'access/roles', element: <AdminAccessPage tab="roles" /> },
+              { path: 'access/people/:userId', element: <AdminPersonAccessPage /> },
+              { path: 'access/people/:userId/:projectId', element: <AdminPersonAccessPage /> },
+              { path: 'profile', element: <AdminSettingsPage section="profile" /> },
+              { path: 'profile/security', element: <AdminSettingsPage section="security" /> },
+              { path: 'profile/notifications', element: <AdminSettingsPage section="notifications" /> },
+              { path: 'profile/preferences', element: <AdminSettingsPage section="preferences" /> },
             ],
           },
         ],
@@ -204,7 +213,7 @@ export const router = createBrowserRouter([
         element: <StaffOnly />,
         children: [
       {
-        element: <AppLayout />,
+        element: <ByRole developer={<DeveloperLayout />} other={<AppLayout />} />,
         children: [
           { index: true, element: <RoleHome /> },
 
@@ -231,16 +240,16 @@ export const router = createBrowserRouter([
           },
           {
             path: 'projects/:projectId',
-            element: <ProjectLayout />,
+            element: <ByRole developer={<DevProjectLayout />} other={<ProjectLayout />} />,
             children: [
-              { index: true, element: <ProjectOverviewPage /> },
-              { path: 'board', element: <ProjectBoardPage /> },
+              { index: true, element: <ByRole developer={<DevOverviewPage />} other={<ProjectOverviewPage />} /> },
+              { path: 'board', element: <ByRole developer={<DevBoardPage />} other={<ProjectBoardPage />} /> },
               { path: 'requirements', element: <ProjectRequirementsPage /> },
               { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
               { path: 'change-requests/:requestId', element: <ProjectChangeRequestPage /> },
               { path: 'reports', element: <ProjectReportsPage /> },
               { path: 'reports/:reportId', element: <ProjectReportPage /> },
-              { path: 'list', element: <ProjectListPage /> },
+              { path: 'list', element: <ByRole developer={<DevBacklogPage />} other={<ProjectListPage />} /> },
               { path: 'members', element: <ProjectMembersPage /> },
               { path: 'milestones', element: <MilestonesPage /> },
               { path: 'settings', element: <ProjectSettingsPage /> },
@@ -250,7 +259,7 @@ export const router = createBrowserRouter([
           { path: 'profile', element: <ProfilePage /> },
           { path: 'tasks', element: <TasksPage /> },
           { path: 'tasks/new', element: <TaskCreatePage /> },
-          { path: 'tasks/:taskId', element: <TaskDetailPage /> },
+          { path: 'tasks/:taskId', element: <ByRole developer={<DevTaskPage />} other={<TaskDetailPage />} /> },
 
           { path: 'forbidden', element: <ForbiddenPage /> },
           { path: '*', element: <NotFoundPage /> },

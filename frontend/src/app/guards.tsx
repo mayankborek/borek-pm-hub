@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { Role } from '@/features/auth/types';
@@ -42,4 +43,10 @@ export function RequireRole({ roles }: { roles: Role[] }) {
 export function RoleHome() {
   const { user } = useAuth();
   return <Navigate to={user ? homeFor(user.role) : paths.login} replace />;
+}
+
+/** Developers get their own screens (borek-flow-screens) at the shared staff URLs; everyone else keeps the PM ones. */
+export function ByRole({ developer, other }: { developer: ReactElement; other: ReactElement }) {
+  const { user } = useAuth();
+  return user?.role === 'developer' ? developer : other;
 }

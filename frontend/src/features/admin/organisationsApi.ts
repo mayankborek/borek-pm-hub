@@ -49,10 +49,10 @@ export const useOrganisations = (q = '') =>
   });
 
 export const useOrganisation = (id: string) =>
-  useQuery({ queryKey: keys.one(id), queryFn: () => api<Organisation>(`/organisations/${id}`) });
+  useQuery({ queryKey: keys.one(id), queryFn: () => api<Organisation>(`/organisations/${id}`), enabled: !!id });
 
 export const useOrgMembers = (id: string) =>
-  useQuery({ queryKey: keys.members(id), queryFn: () => api<{ items: OrgMember[] }>(`/organisations/${id}/members?page_size=100`) });
+  useQuery({ queryKey: keys.members(id), queryFn: () => api<{ items: OrgMember[] }>(`/organisations/${id}/members?page_size=100`), enabled: !!id });
 
 function useOrgMutation<V, R>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient();
@@ -85,3 +85,20 @@ export const useRenewMemberInvite = (orgId: string) =>
 
 export const useRemoveMember = (orgId: string) =>
   useOrgMutation((userId: string) => api<OrgMember>(`/organisations/${orgId}/members/${userId}`, { method: 'DELETE' }));
+
+/** Same as `useAddMember`/`useRemoveMember`, for when the organisation is only known at call time (it was just created). */
+export const useAddMemberTo = () =>
+  useOrgMutation(({ orgId, ...input }: { orgId: string; name: string; email: string; job_title?: string | null }) =>
+    api<CreatedMember>(`/organisations/${orgId}/members`, { method: 'POST', body: JSON.stringify(input) }),
+  );
+
+export const useRemoveMemberFrom = () =>
+  useOrgMutation(({ orgId, userId }: { orgId: string; userId: string }) =>
+    api<OrgMember>(`/organisations/${orgId}/members/${userId}`, { method: 'DELETE' }),
+  );
+
+/** Active client contacts of one organisation. */
+export const useActiveOrgMembers = (id: string) => {
+  const q = useOrgMembers(id);
+  return { ...q, members: (q.data?.items ?? []).filter((m) => m.status !== 'deactivated') };
+};
