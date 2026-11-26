@@ -8,7 +8,7 @@ import { PRIORITY_OPTIONS } from './PrioritySelect';
 import './tasks.css';
 
 const AVATAR_COLORS = ['#673AB7', '#16836F', '#F08C00', '#6B7280'];
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
+export const PRIORITY_LABEL: Record<TaskPriority, string> = {
   highest: 'Highest',
   high: 'High',
   medium: 'Medium',
@@ -348,6 +348,7 @@ export function TaskFilters({
   onClear,
   combined,
   statuses,
+  trailing,
 }: {
   filter: TaskFilter;
   onChange: (f: TaskFilter) => void;
@@ -358,6 +359,8 @@ export function TaskFilters({
   combined?: boolean;
   /** The project's statuses, listed in the combined Filter menu. */
   statuses?: TaskStatusOption[];
+  /** Pushed to the far right of the bar (Backlog: Manage phases). */
+  trailing?: ReactNode;
 }) {
   const { t } = usePrefs();
   const assignees = useSeenAssignees(tasks);
@@ -428,6 +431,7 @@ export function TaskFilters({
           {t('Clear all')}
         </button>
       )}
+      {trailing}
     </div>
   );
 }

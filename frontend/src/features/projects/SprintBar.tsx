@@ -193,7 +193,7 @@ function ManageSprints({ projectId, projectName, items, onChange, onClose }: { p
 }
 
 /** Board header (board.html): the active sprint, its dates, the Manage sprints burger and Complete sprint. Unfinished tasks go back to the backlog. */
-export function SprintBar({ projectId, projectName = '' }: { projectId: string; projectName?: string }) {
+export function SprintBar({ projectId, projectName = '', collapsed, onToggle }: { projectId: string; projectName?: string; collapsed?: boolean; onToggle?: () => void }) {
   const { t } = usePrefs();
   const { user } = useAuth();
   const toast = useToast();
@@ -225,7 +225,12 @@ export function SprintBar({ projectId, projectName = '' }: { projectId: string; 
     <div className="sprint-bar">
       <span className="sname">
         {shown?.name ?? t('No active sprint')}
-        {shown && <span aria-hidden="true">⌄</span>}
+        {shown && !onToggle && <span aria-hidden="true">⌄</span>}
+        {shown && onToggle && (
+          <button type="button" className="toggle" aria-expanded={!collapsed} aria-label={t(collapsed ? 'Expand sprint' : 'Collapse sprint')} onClick={onToggle}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" style={{ transform: collapsed ? 'rotate(-90deg)' : undefined }}><path d="M5 6l3 4 3-4" /></svg>
+          </button>
+        )}
       </span>
       {shown && <span className={shown.state === 'active' ? 'badge active' : 'badge'}>{t(shown.state === 'active' ? 'Active' : 'Planned')}</span>}
       {shown && <span className="dates">{formatDate(shown.start_date)} – {formatDate(shown.end_date)}</span>}

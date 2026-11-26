@@ -122,6 +122,8 @@ textarea.input { height: auto; padding: 10px 12px; max-width: none; resize: vert
 .project-head .page-title { font-size: var(--fs-26); font-weight: 700; line-height: 34px; margin: 0 0 4px; color: var(--ink); }
 .project-sub { margin: 0; font-size: var(--fs-14); color: var(--muted); }
 .project-head .btn { height: 44px; flex: none; }
+.project-head .page-actions { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 12px; align-items: center; flex: none; }
+.project-head .page-actions .btn.secondary { width: auto; min-width: 148px; padding: 0 16px; }
 
 .page-crumb { font-size: var(--fs-12); color: var(--muted); margin: 0 0 8px; }
 .empty-art { gap: 24px; }

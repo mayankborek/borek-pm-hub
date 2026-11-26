@@ -1,26 +1,43 @@
-/* ---- Create / edit project (Figma "Create Project"): type cards, two columns, sticky action bar ---- */
-.pform.pform-new { margin: 0; gap: 0; min-height: 100%; }
-.pform-new .pf { display: flex; flex-direction: column; min-height: calc(100vh - 70px); }
-.pform-new .pf-scroll { flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 28px 32px 32px; }
-.pform-new h2 { margin: 0; font-size: var(--fs-26); line-height: 34px; font-weight: 700; color: var(--ink); }
-.pf-h { margin: 8px 0 0; font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
-.pf-types { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.pf-type { display: flex; align-items: center; gap: 18px; height: 68px; padding: 0 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
-.pf-type.on { background: #e8f0fd; border-color: #2f6fd1; }
-.pf-type input { position: absolute; opacity: 0; pointer-events: none; }
-.pf-type input:focus-visible + .pf-radio { outline: 2px solid var(--link); outline-offset: 2px; }
-.pf-radio { width: 14px; height: 14px; border: 1.5px solid var(--ink); border-radius: 50%; flex: none; box-sizing: border-box; }
-.pf-type.on .pf-radio { border-width: 4px; }
-.pf-type b { display: block; font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
-.pf-type small { display: block; margin-top: 2px; font-size: var(--fs-12); color: var(--muted); }
-.pf-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 28px; }
-.pf-col { display: flex; flex-direction: column; gap: 14px; }
-.pf-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.pf-three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-.pform-new .pf-client { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; padding-top: 20px; border-top: 1px solid var(--line); }
-.pf-tabs { display: flex; gap: 36px; border-bottom: 1px solid var(--line); }
-.pf-tabs button { padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink); font: inherit; font-size: var(--fs-13); cursor: pointer; margin-bottom: -1px; }
-.pf-tabs button.on { border-bottom-color: var(--ink); font-weight: 600; }
-.pform-new .pf-foot { justify-content: flex-end; height: auto; padding: 16px 32px; background: var(--surface); border-top: 1px solid var(--line); }
-.pform-new .pform-btn { border-radius: 6px; }
-@media (max-width: 900px) { .pf-cols, .pf-types, .pf-three { grid-template-columns: 1fr; } }
+/* Create / edit project: follows borek-flow-create-project.html (intro, one white card, 3-column rows, Cancel / Create). */
+.pform.pform-new { margin: 0; gap: 16px; padding: 24px 32px 32px; box-sizing: border-box; }
+.pform-new .intro { min-height: 66px; }
+.pform-new .intro p { margin: 0; font-size: 12px; line-height: 16px; color: var(--muted); }
+.pform-new .intro h1 { margin: 0; font-size: 28px; line-height: 33px; color: var(--ink); }
+.pform-new .intro .lede { font-size: 13px; line-height: 17px; }
+.pform-new .pf { display: block; padding: 28px 0 24px; background: var(--surface); container-type: inline-size; }
+.pform-new .ptitle { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+.pform-new .ptitle .tile { display: grid; place-items: center; width: 40px; height: 40px; flex: none; background: var(--surface-2); }
+.pform-new .ptitle h2 { margin: 0; font-size: 16px; line-height: 22px; font-weight: 600; color: var(--ink); }
+.pform-new .ptitle p { margin: 0; font-size: 12px; color: var(--muted); }
+.pform-new .grid { display: grid; gap: 0 16px; grid-template-columns: 1fr 1fr; }
+.pform-new .grid.three { grid-template-columns: minmax(0, 2.12fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; margin-bottom: 24px; }
+.pform-new .grid.top-row { margin-bottom: 34px; }
+.pform-new .desc { margin-bottom: 17px; }
+.pform-new .field { display: block; min-width: 0; }
+.pform-new .field label { display: block; margin-bottom: 3px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--muted); }
+.pform-new .field .input { display: block; width: 100%; max-width: none; height: 38px; border: 1px solid #7c839a; border-radius: 0; background-color: var(--surface); color: var(--ink); font-size: 12px; padding: 0 12px; }
+.pform-new .field textarea.input { height: 72px; padding: 10px 12px; resize: vertical; }
+.pform-new .field [aria-invalid='true'] { border-color: #c93434; }
+.pform-new .field-error, .pform-new .hint { display: block; min-height: 14px; margin-top: 4px; font-size: 10px; line-height: 14px; color: #ad1f1f; }
+.pform-new .hint { color: var(--muted); }
+.pform-new .field-error { font-size: 12px; font-weight: 600; line-height: 16px; }
+.pform-new .pf-client { margin: -8px 0 24px; }
+.pform-new .pf-tabs { display: flex; gap: 36px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.pform-new .pf-tabs button { margin-bottom: -1px; padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.pform-new .pf-tabs button.on { border-bottom-color: var(--ink); font-weight: 600; }
+.pform-new .members label { margin-bottom: 8px; }
+.pform-new .members .input { height: 40px; }
+.pform-new .chips { gap: 24px; margin-top: 10px; min-height: 26px; }
+.pform-new .chip { height: auto; padding: 0; gap: 8px; }
+.pform-new .chip-av { width: 26px; height: 26px; font-size: 10px; font-weight: 500; }
+.pform-new .chip-name { font-weight: 400; }
+.pform-new .end { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.pform-new .end .pform-btn { height: 40px; width: 120px; border-radius: 0; font-size: 14px; font-weight: 500; }
+.pform-new .end .pform-btn.primary { width: 140px; border: 0; background: var(--ink); color: var(--surface); }
+.pform-new .end .pform-btn.primary:disabled { background: #5c6178; }
+@container (max-width: 700px) {
+  .pform-new .grid, .pform-new .grid.three { grid-template-columns: minmax(0, 1fr); }
+  .pform-new .field { margin-bottom: 12px; }
+  .pform-new .grid.top-row, .pform-new .desc, .pform-new .grid.three { margin-bottom: 8px; }
+}
+@media (max-width: 640px) { .pform.pform-new { padding: 20px 16px; } }

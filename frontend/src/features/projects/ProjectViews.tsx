@@ -1,24 +1,77 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { paths } from '@/app/routes';
+import { useAuth } from '@/features/auth/AuthContext';
 import { PagePlaceholder } from '@/shared/ui/PagePlaceholder';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { QuickCreateTask } from '@/features/tasks/QuickCreateTask';
-import { TaskFilters, TaskGroup, TaskRow } from '@/features/tasks/TaskParts';
+import { Avatar, PRIORITY_LABEL, TaskFilters } from '@/features/tasks/TaskParts';
+import { PRIORITY_OPTIONS } from '@/features/tasks/PrioritySelect';
 import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
 import { useMoveTask, useProjectStatuses, useProjectTasks, type Task } from '@/features/tasks/tasksApi';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { useProjectContext } from './ProjectLayout';
+import { ManagePhases } from './ManagePhases';
+import { SprintBar } from './SprintBar';
+import { formatDate } from './projectUi';
+import './backlog.css';
 
-const BOARD_PAGE = 6;
+const PER_PAGE = 10;
 
-/** Backlog tab: GET /projects/{id}/tasks, a Board group (planned work) above the Backlog group; new tasks land in Backlog by default. */
+/** One task table of the Backlog tab (borek-flow-backlog2.html): Task, Status, Due date, Priority, Assignee. */
+function TaskTable({ tasks, label, action }: { tasks: Task[]; label: string; action?: { text: string; onClick: (t: Task) => void; busy?: string } }) {
+  const { t: tr } = usePrefs();
+  return (
+    <div className="scroll">
+      <table aria-label={label}>
+        <colgroup>
+          <col /><col className="c-status" /><col className="c-due" /><col className="c-pri" /><col className="c-who" />
+          {action && <col className="c-act" />}
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">{tr('Task')}</th>
+            <th scope="col">{tr('Status')}</th>
+            <th scope="col">{tr('Due date')}</th>
+            <th scope="col">{tr('Priority')}</th>
+            <th scope="col">{tr('Assignee')}</th>
+            {action && <th scope="col"><span className="sr-only">{tr('Actions')}</span></th>}
+          </tr>
+        </thead>
+        <tbody>
+          {tasks.map((k) => {
+            const pri = PRIORITY_OPTIONS.find((o) => o.value === k.priority) ?? PRIORITY_OPTIONS[2];
+            return (
+              <tr key={k.id}>
+                <th scope="row"><Link to={paths.task(k.id)}>{k.key} · {k.title}</Link></th>
+                <td className={`cat-${k.status.category} st-${k.status.name.toLowerCase().replace(/\s+/g, '-')}`}>{tr(k.status.name)}</td>
+                <td>{k.due_date ? <time dateTime={k.due_date}>{formatDate(k.due_date)}</time> : '—'}</td>
+                <td className={`pr-${k.priority}`}><span className="pri"><img src={pri.icon} alt="" width={16} height={16} />{tr(PRIORITY_LABEL[k.priority])}</span></td>
+                <td>
+                  {k.assignee ? <span className="who"><Avatar user={k.assignee} round />{k.assignee.name}</span> : tr('Unassigned')}
+                </td>
+                {action && (
+                  <td><button type="button" className="row-act" disabled={action.busy === k.id} onClick={() => action.onClick(k)}>{action.text}</button></td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Backlog tab: a Sprint sheet (planned work, 10 per page) above the Backlog sheet; new tasks land in Backlog by default. */
 export function ProjectListPage() {
   const project = useProjectContext();
   const [creating, setCreating] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [boardSelected, setBoardSelected] = useState<Set<string>>(new Set());
-  const [boardShown, setBoardShown] = useState(BOARD_PAGE);
+  const [phases, setPhases] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [page, setPage] = useState(1);
+  const isPm = useAuth().user?.role === 'pm';
   const { filter, applied, setFilter, clear } = useUrlFilter();
   const { data: statuses } = useProjectStatuses(project.id);
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
@@ -29,143 +82,92 @@ export function ProjectListPage() {
   const toast = useToast();
   const moveTask = useMoveTask();
 
+  const pages = Math.max(1, Math.ceil(board.length / PER_PAGE));
+  const current = Math.min(page, pages);
+  const shown = board.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const filterKey = JSON.stringify(applied);
+  useEffect(() => setPage(1), [filterKey]);
+
   // A planned task starts in the first "To do" status, else the first non-Backlog status on the Board.
   const boardStatuses = [...(statuses ?? [])].filter((s) => s.category !== 'backlog').sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const target = boardStatuses.find((s) => s.category === 'todo') ?? boardStatuses[0];
-
   const backlogStatus = [...(statuses ?? [])].filter((s) => s.category === 'backlog').sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
 
-  const moveToBacklog = (task: Task) => {
-    if (!backlogStatus) {
-      toast.error(tr('This project has no Backlog status to move the task to.'));
+  const moveTo = (task: Task, status: { id: string } | undefined, ok: string, missing: string, failed: string) => {
+    if (!status) {
+      toast.error(tr(missing));
       return;
     }
     moveTask.mutate(
-      { task, statusId: backlogStatus.id },
+      { task, statusId: status.id },
       {
-        onSuccess: () => {
-          setBoardSelected((prev) => {
-            const next = new Set(prev);
-            next.delete(task.id);
-            return next;
-          });
-          toast.success(tr('{key} moved to the Backlog.', { key: task.key }));
-        },
-        onError: (e) => toast.error(describeApiError(e, tr('Could not move the task to the Backlog.'))),
+        onSuccess: () => toast.success(tr(ok, { key: task.key })),
+        onError: (e) => toast.error(describeApiError(e, tr(failed))),
       },
     );
   };
-
-  const moveToBoard = (task: Task) => {
-    if (!target) {
-      toast.error(tr('This project has no Board status to move the task to.'));
-      return;
-    }
-    moveTask.mutate(
-      { task, statusId: target.id },
-      {
-        onSuccess: () => toast.success(tr('{key} moved to the Board.', { key: task.key })),
-        onError: (e) => toast.error(describeApiError(e, tr('Could not move the task to the Board.'))),
-      },
-    );
-  };
+  const moveToBacklog = (task: Task) =>
+    moveTo(task, backlogStatus, '{key} moved to the Backlog.', 'This project has no Backlog status to move the task to.', 'Could not move the task to the Backlog.');
+  const moveToBoard = (task: Task) =>
+    moveTo(task, target, '{key} moved to the Board.', 'This project has no Board status to move the task to.', 'Could not move the task to the Board.');
+  const busy = moveTask.isPending ? moveTask.variables?.task.id : undefined;
 
   if (isPending) return <LoadingState title="Loading tasks" text="Fetching this project’s tasks." />;
   if (isError) return <ErrorState title="We couldn’t load tasks" text="Check your connection and try again." onRetry={() => void refetch()} />;
 
   const filtered = isFiltered(applied);
-
-  const chosen = backlog.filter((t) => selected.has(t.id));
-  const allSelected = backlog.length > 0 && chosen.length === backlog.length;
-  const toggle = (id: string, checked: boolean) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-
-  const boardChosen = board.filter((t) => boardSelected.has(t.id));
-  const boardAll = board.length > 0 && boardChosen.length === board.length;
-  const boardVisible = board.slice(0, boardShown);
-  const toggleBoard = (id: string, checked: boolean) =>
-    setBoardSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+  const from = board.length ? (current - 1) * PER_PAGE + 1 : 0;
 
   return (
-    <div className="task-list-page">
-      <TaskFilters filter={filter} onChange={setFilter} onClear={clear} tasks={data.items} combined statuses={statuses} />
-      <TaskGroup
-        title="Board"
-        count={board.length}
-        countLabel={board.length === 1 ? 'work item' : 'work items'}
-        empty={filtered ? 'No matching board tasks. Try changing or clearing the filters.' : 'No tasks on the Board yet.'}
-        selectAll={{
-          checked: boardAll,
-          indeterminate: boardChosen.length > 0 && !boardAll,
-          onChange: (checked) => setBoardSelected(checked ? new Set(board.map((t) => t.id)) : new Set()),
-        }}
-        action={
-          boardChosen.length > 0 && (
-            <button type="button" className="outline-btn" onClick={() => boardChosen.forEach(moveToBacklog)}>
-              {tr('Move to Backlog')}
-            </button>
+    <div className="task-list-page bl2">
+      <TaskFilters
+        filter={filter}
+        onChange={setFilter}
+        onClear={clear}
+        tasks={data.items}
+        combined
+        statuses={statuses}
+        trailing={
+          isPm && (
+            <button type="button" className="more" aria-label={tr('Manage phases')} title={tr('Manage phases')} onClick={() => setPhases(true)}>•••</button>
           )
         }
-        footer={
-          board.length > boardVisible.length && (
-            <div className="task-group-more">
-              {tr('Showing {shown} of {total} tasks', { shown: boardVisible.length, total: board.length })} ·{' '}
-              <button type="button" className="link-btn" onClick={() => setBoardShown((n) => n + BOARD_PAGE)}>
-                {tr('Load more')}
-              </button>
+      />
+      <section className="sheet" aria-label={tr('Sprint')}>
+        <SprintBar projectId={project.id} projectName={project.name} collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+        {!collapsed && (
+          <>
+            {board.length === 0 ? (
+              <p className="sheet-empty">{tr(filtered ? 'No matching board tasks. Try changing or clearing the filters.' : 'No tasks on the Board yet.')}</p>
+            ) : (
+              <TaskTable tasks={shown} label={tr('Sprint')} action={isPm ? { text: tr('Move to Backlog'), onClick: moveToBacklog, busy } : undefined} />
+            )}
+            <div className="pager">
+              <p>{tr('Showing {from}–{to} of {total} tasks · {n} per page', { from, to: from + Math.max(shown.length - 1, 0), total: board.length, n: PER_PAGE })}</p>
+              <nav aria-label={tr('Pagination')}>
+                <button type="button" disabled={current === 1} onClick={() => setPage(current - 1)}>{tr('Previous')}</button>
+                {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
+                  <button key={n} type="button" aria-current={n === current ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button>
+                ))}
+                <button type="button" disabled={current === pages} onClick={() => setPage(current + 1)}>{tr('Next')}</button>
+              </nav>
             </div>
-          )
-        }
-      >
-        {boardVisible.map((t) => (
-          <TaskRow key={t.id} task={t} selected={boardSelected.has(t.id)} onSelect={(checked) => toggleBoard(t.id, checked)} />
-        ))}
-      </TaskGroup>
-      <TaskGroup
-        title="Backlog"
-        count={backlog.length}
-        countLabel={backlog.length === 1 ? 'task' : 'tasks'}
-        empty={filtered ? 'No matching backlog tasks. Try changing or clearing the filters.' : 'No backlog tasks yet. Tasks here stay off the Board until planned.'}
-        selectAll={{
-          checked: allSelected,
-          indeterminate: chosen.length > 0 && !allSelected,
-          onChange: (checked) => setSelected(checked ? new Set(backlog.map((t) => t.id)) : new Set()),
-        }}
-        action={
-          chosen.length > 0 && (
-            <button type="button" className="outline-btn" onClick={() => chosen.forEach(moveToBoard)}>
-              {tr('Move to Board')}
-            </button>
-          )
-        }
-        footer={
-          <button type="button" className="create-task" onClick={() => setCreating(true)}>
-            <span aria-hidden="true">＋</span> {tr('Create task')}
-          </button>
-        }
-      >
-        {backlog.map((t) => (
-          <TaskRow
-            key={t.id}
-            task={t}
-            selected={selected.has(t.id)}
-            onSelect={(checked) => toggle(t.id, checked)}
-            onMoveToBoard={() => moveToBoard(t)}
-            moving={moveTask.isPending && moveTask.variables?.task.id === t.id}
-          />
-        ))}
-      </TaskGroup>
+          </>
+        )}
+      </section>
+      <section className="sheet backlog" aria-label={tr('Backlog')}>
+        <h2>{tr('Backlog')}</h2>
+        {backlog.length === 0 ? (
+          <p className="sheet-empty">{tr(filtered ? 'No matching backlog tasks. Try changing or clearing the filters.' : 'No backlog tasks yet. Tasks here stay off the Board until planned.')}</p>
+        ) : (
+          <TaskTable tasks={backlog} label={tr('Backlog')} action={isPm ? { text: tr('Move to Board'), onClick: moveToBoard, busy } : undefined} />
+        )}
+        <button type="button" className="create-task" onClick={() => setCreating(true)}>
+          <span aria-hidden="true">＋</span> {tr('Create task')}
+        </button>
+      </section>
       {creating && <QuickCreateTask projectId={project.id} statuses={statuses} onClose={() => setCreating(false)} />}
+      {phases && <ManagePhases projectId={project.id} onClose={() => setPhases(false)} />}
     </div>
   );
 }
