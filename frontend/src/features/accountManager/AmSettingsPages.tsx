@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -110,7 +110,7 @@ export function AmProfilePage() {
 }
 
 export function AmSecurityPage() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const { t } = usePrefs();
   const pw = usePasswordChange();
@@ -144,6 +144,14 @@ export function AmSecurityPage() {
             <button className="btn blue" type="submit" disabled={pw.busy}>{t('Change password')}</button>
           </div>
         </form>
+      </div>
+      <div className="divider" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <div>
+          <h5 style={{ margin: 0, fontSize: 'var(--fs-14)' }}>{t('Forgot your current password?')}</h5>
+          <p className="sd">{t('Start a secure password reset for your account. We email you a one-time link.')}</p>
+        </div>
+        <Link className="btn primary" to={paths.forgotPassword} state={{ email: user?.email }}>{t('Reset password')}</Link>
       </div>
       <div className="divider" />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

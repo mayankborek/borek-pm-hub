@@ -3,6 +3,7 @@ import { paths } from './routes';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { SetPasswordPage } from '@/features/auth/SetPasswordPage';
+import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { ClientLoginPage } from '@/features/auth/client/ClientLoginPage';
 import {
   ClientAccessUnavailablePage,
@@ -52,7 +53,7 @@ import { ProjectBoardPage } from '@/features/projects/ProjectBoardPage';
 import { SprintPlanningPage } from '@/features/projects/SprintPlanningPage';
 import { ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
 import { MilestonesPage } from '@/features/milestones/MilestonesPage';
-import { ProjectPeoplePage, ProjectSettingsPage } from '@/features/projects/ProjectSettingsPages';
+import { ProjectMemberPage, ProjectPeoplePage, ProjectSettingsPage } from '@/features/projects/ProjectSettingsPages';
 import { TasksPage } from '@/features/tasks/TaskPages';
 import { TaskCreatePage } from '@/features/tasks/TaskCreatePage';
 import { MyWorkPage } from '@/features/tasks/MyWorkPage';
@@ -70,6 +71,7 @@ import { ByRole, RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly
 export const router = createBrowserRouter([
   // Public, reachable even while signed in (an administrator may open a link in their own browser)
   { path: 'set-password', element: <SetPasswordPage /> },
+  { path: 'forgot-password', element: <ForgotPasswordPage /> },
 
   // Public
   {
@@ -259,6 +261,7 @@ export const router = createBrowserRouter([
               { path: 'milestones', element: <MilestonesPage /> },
               { path: 'settings', element: <ProjectSettingsPage /> },
               { path: 'settings/people', element: <ProjectPeoplePage /> },
+              { path: 'settings/people/:userId', element: <ProjectMemberPage /> },
             ],
           },
           { path: 'profile', element: <ByRole developer={<AdminSettingsPage section="profile" area="developer" />} other={<PmSettings><AmProfilePage /></PmSettings>} /> },

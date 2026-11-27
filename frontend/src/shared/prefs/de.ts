@@ -975,5 +975,13 @@ export const DE: Record<string, string> = {
   'Tasks by status': 'Aufgaben nach Status',
   'Tasks by priority': 'Aufgaben nach Priorität',
   '{active} active tasks · {done} done': '{active} aktive Aufgaben · {done} erledigt',
+  'Project membership and responsibility': 'Projektmitgliedschaft und Verantwortung',
+  'Member access details': 'Zugriffsdetails des Mitglieds',
+  'Back to team': 'Zurück zum Team',
+  'Scope': 'Umfang',
+  'Project planning, delivery and access.': 'Projektplanung, Lieferung und Zugriff.',
+  'Assigned project work.': 'Zugewiesene Projektarbeit.',
+  'Assign another Project Manager before removing the current owner.': 'Weisen Sie einen anderen Projektmanager zu, bevor Sie den aktuellen Eigentümer entfernen.',
+  'Forgot your current password?': 'Aktuelles Passwort vergessen?',
+  'Start a secure password reset for your account. We email you a one-time link.': 'Starten Sie ein sicheres Zurücksetzen Ihres Passworts. Wir senden Ihnen einen Einmal-Link per E-Mail.',
 };
-

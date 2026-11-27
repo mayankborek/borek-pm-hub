@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState, type FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { homeFor } from '@/app/routes';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { homeFor, paths } from '@/app/routes';
 import { useAuth } from './AuthContext';
 import {
   InvalidCredentialsError,
@@ -157,6 +157,9 @@ export function LoginPage() {
               <label className="check">
                 <input type="checkbox" disabled={busy} /> {t.keepSignedIn}
               </label>
+              <p className="help forgot">
+                <Link to={paths.forgotPassword} state={{ email }}>{t.forgot}</Link>
+              </p>
             </form>
 
             {view === 'error' && (

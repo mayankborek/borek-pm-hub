@@ -30,6 +30,7 @@ export function SetPasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(token ? null : 'This link is invalid. Ask your administrator for a new one.');
   const [busy, setBusy] = useState(false);
+  const [expired, setExpired] = useState(false);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -58,6 +59,7 @@ export function SetPasswordPage() {
       });
       navigate(isClient ? paths.clientLogin : paths.login, { replace: true, state: { email } });
     } catch (err) {
+      if (err instanceof ApiError && err.status === 400) setExpired(true);
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       setBusy(false);
     }
@@ -76,6 +78,17 @@ export function SetPasswordPage() {
 
         <main className="panel">
           <div className="form-wrap" aria-busy={busy}>
+            {expired && (
+              <>
+                <h2>This link is no longer valid</h2>
+                <p className="sub">Your link has expired or has already been used. Request a new link to continue.</p>
+                <Link className="btn login" to={paths.forgotPassword}>Request a new link</Link>
+                <p className="help">
+                  <Link to={paths.login}>Back to sign in</Link>
+                </p>
+              </>
+            )}
+            {!expired && <>
             <h2>Set your password</h2>
             <p className="sub">Choose a password to finish setting up your account.</p>
 
@@ -115,6 +128,7 @@ export function SetPasswordPage() {
             <p className="help">
               <Link to={paths.login}>Back to sign in</Link>
             </p>
+            </>}
           </div>
         </main>
       </div>

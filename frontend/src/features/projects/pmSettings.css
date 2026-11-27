@@ -70,3 +70,16 @@
 .ps-btn.primary { padding: 0 27px; background: #0e1240; border-color: #0e1240; color: #fff; }
 .ps-btn:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 1100px) { .ps-grid { grid-template-columns: 1fr; } }
+
+/* ---- Member details (read only) ---- */
+a.set-person { color: inherit; text-decoration: none; }
+a.set-person:hover b { text-decoration: underline; }
+.mem-h2 { margin: 28px 0 0; font-size: var(--fs-22, 22px); font-weight: 600; }
+.mem-lead { margin: 10px 0 20px; color: var(--muted); }
+.mem-card { padding: 24px; border-radius: 12px; }
+.mem-card table { width: 100%; border-collapse: collapse; }
+.mem-card th { padding: 16px; text-align: left; background: #f7f8fb; font-size: var(--fs-12); font-weight: 600; color: var(--muted); }
+.mem-card td { padding: 28px 16px; font-size: var(--fs-14); color: var(--ink); }
+.mem-card > p { margin: 16px 0 0; color: var(--muted); }
+.mem-card .mem-note { margin-top: 18px; }
+.mem-back { display: inline-flex; align-items: center; justify-content: center; margin-top: 24px; height: 44px; padding: 0 40px; border-color: var(--ink); text-decoration: none; }

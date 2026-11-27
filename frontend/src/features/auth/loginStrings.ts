@@ -22,6 +22,7 @@ export const LOGIN_STRINGS = {
     noAccessTitle: 'No workspace access',
     noAccessText: 'Contact your workspace administrator to request an account.',
     language: 'Language',
+    forgot: 'Forgot password?',
     help: 'Need access? Contact your workspace administrator.',
   },
   de: {
@@ -43,6 +44,7 @@ export const LOGIN_STRINGS = {
     noAccessTitle: 'Kein Zugriff auf den Arbeitsbereich',
     noAccessText: 'Wenden Sie sich an Ihren Administrator, um ein Konto anzufordern.',
     language: 'Sprache',
+    forgot: 'Passwort vergessen?',
     help: 'Zugriff benötigt? Wenden Sie sich an Ihren Administrator.',
   },
 } as const;

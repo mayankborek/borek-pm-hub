@@ -93,17 +93,21 @@ function Timeline({ r, onOpen }: { r: Roadmap; onOpen: (id: string) => void }) {
           <span key={d} style={{ left: `calc(var(--ms-label) + (100% - var(--ms-label)) * ${(day(d) - start) / span})` }}>{short(d)}</span>
         ))}
       </div>
-      {r.phases.map((p) => (
-        <div className="ms-row" key={p.id}>
-          <div className="ms-label"><b>{p.name}</b><span>{p.is_late ? t('Running late') : t(PHASE_LABEL[p.status])}</span></div>
-          <div className="ms-track">
-            <div className="ms-bar" style={{ left: pos(p.start_date), width: `calc(${pos(p.end_date)} - ${pos(p.start_date)})` }}>
-              <i style={{ width: `${p.status === 'completed' ? 100 : p.progress ?? 0}%` }} />
+      {r.phases.map((p) => {
+        const share = Math.round(p.status === 'completed' ? 100 : p.progress ?? 0);
+        const range = `${short(p.start_date)}–${short(p.end_date)}`;
+        return (
+          <div className="ms-row" key={p.id}>
+            <div className="ms-label"><b>{p.name}</b><span className={p.is_late ? 'late' : undefined}>{p.is_late ? t('Running late') : t(PHASE_LABEL[p.status])} · {share}%</span></div>
+            <div className="ms-track">
+              <div className="ms-bar" role="img" title={`${p.name}: ${range} · ${t('Completed share')} ${share}%`} aria-label={`${p.name}, ${range}, ${t('Completed share')} ${share}%`} style={{ left: pos(p.start_date), width: `calc(${pos(p.end_date)} - ${pos(p.start_date)})` }}>
+                <i style={{ width: `${share}%` }} />
+              </div>
+              {p.milestones.map(diamond)}
             </div>
-            {p.milestones.map(diamond)}
           </div>
-        </div>
-      ))}
+        );
+      })}
       {r.unphased_milestones.length > 0 && (
         <div className="ms-row">
           <div className="ms-label"><b>{t('Other milestones')}</b><span>{t('Not in a phase')}</span></div>

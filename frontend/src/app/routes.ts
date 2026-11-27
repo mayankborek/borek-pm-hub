@@ -4,6 +4,7 @@ import type { Role } from '@/features/auth/types';
 export const paths = {
   login: '/login',
   setPassword: '/set-password',
+  forgotPassword: '/forgot-password',
   dashboard: '/dashboard',
   myWork: '/my-work',
   projects: '/projects',
@@ -17,6 +18,7 @@ export const paths = {
   projectMilestones: (id: string) => `/projects/${id}/milestones`,
   projectSettings: (id: string) => `/projects/${id}/settings`,
   projectSettingsPeople: (id: string) => `/projects/${id}/settings/people`,
+  projectMember: (id: string, userId: string) => `/projects/${id}/settings/people/${userId}`,
   projectChangeRequests: (id: string) => `/projects/${id}/change-requests`,
   projectRequirement: (id: string, requirementId: string) => `/projects/${id}/change-requests/requirements/${requirementId}`,
   projectChangeRequest: (id: string, crId: string) => `/projects/${id}/change-requests/${crId}`,

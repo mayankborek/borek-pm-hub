@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate, NavLink, useNavigate } from 'react-router-dom';
+import { Link, Navigate, NavLink, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { initialsOf } from '@/features/projects/MemberPicker';
@@ -241,7 +241,7 @@ export function ProjectPeoplePage() {
             </thead>
             <tbody>
               <tr>
-                <td><span className="set-person"><span className="set-avatar">{initialsOf(user.name)}</span><span><b>{user.name} ({t('you')})</b><small>{t('Internal')}</small></span></span></td>
+                <td><Link className="set-person" to={paths.projectMember(project.id, user.id)}><span className="set-avatar">{initialsOf(user.name)}</span><span><b>{user.name} ({t('you')})</b><small>{t('Internal')}</small></span></Link></td>
                 <td>{t('Project Manager')}</td>
                 <td className="muted">{t('Manage project')}</td>
                 <td><span className="set-status">{t('Active')}</span></td>
@@ -249,7 +249,7 @@ export function ProjectPeoplePage() {
               </tr>
               {people.map((m) => (
                 <tr key={m.user_id}>
-                  <td><span className="set-person"><span className="set-avatar">{initialsOf(m.name)}</span><span><b>{m.name}</b><small>{t('Internal')}</small></span></span></td>
+                  <td><Link className="set-person" to={paths.projectMember(project.id, m.user_id)}><span className="set-avatar">{initialsOf(m.name)}</span><span><b>{m.name}</b><small>{t('Internal')}</small></span></Link></td>
                   <td>{t('Developer')}</td>
                   <td className="muted">{t('Assigned project work')}</td>
                   <td><span className="set-status">{t('Active')}</span></td>
@@ -263,6 +263,52 @@ export function ProjectPeoplePage() {
           <footer>{t(total === 1 ? '{n} person in this project' : '{n} people in this project', { n: total })}</footer>
         </section>
       )}
+    </div>
+  );
+}
+
+/** Settings → People & access → a person: their project role and scope, read only (Figma "Member details"). */
+export function ProjectMemberPage() {
+  const project = useProjectContext();
+  const { user } = useAuth();
+  const { t } = usePrefs();
+  const { userId } = useParams();
+  const members = useProjectMembers(project.id);
+  if (user?.role !== 'pm') return <Navigate to={paths.project(project.id)} replace />;
+
+  const back = paths.projectSettingsPeople(project.id);
+  if (members.isPending) return <LoadingState title={t('Loading people')} text={t('Fetching the project team.')} />;
+  if (members.isError) return <ErrorState title={t('We couldn’t load the team')} text={t('Check your connection and try again.')} onRetry={() => void members.refetch()} />;
+
+  const isYou = userId === user.id;
+  const found = members.data.find((m) => m.user_id === userId);
+  const name = isYou ? user.name : found?.name;
+  if (!name) return <Navigate to={back} replace />;
+  const lead = isYou; // the signed-in Project Manager owns the project; everyone else is a developer
+
+  return (
+    <div className="set">
+      <SettingsTabs project={project} />
+      <h2 className="mem-h2">{name}</h2>
+      <p className="mem-lead">{t('Project membership and responsibility')}</p>
+      <section className="card mem-card" aria-label={t('Member access details')}>
+        <table>
+          <thead>
+            <tr><th>{t('Person')}</th><th>{t('Project role')}</th><th>{t('Scope')}</th><th>{t('Status')}</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>{name}</b></td>
+              <td>{lead ? t('Project Manager') : t('Developer')}</td>
+              <td>{project.name}</td>
+              <td><span className="set-status">{t('Active')}</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p>{lead ? t('Project planning, delivery and access.') : t('Assigned project work.')}</p>
+        <p className="mem-note">{lead ? t('Assign another Project Manager before removing the current owner.') : t('Remove this person from People & access when they leave the project.')}</p>
+        <Link className="ps-btn mem-back" to={back}>{t('Back to team')}</Link>
+      </section>
     </div>
   );
 }
