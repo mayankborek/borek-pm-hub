@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
-import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -91,7 +90,6 @@ export function ClientProjectLayout() {
         [pp.milestones(project.id), 'Milestones'],
         [pp.reports(project.id), 'Reports'],
         [pp.changeRequests(project.id), 'Change Requests'],
-        ...(role === 'client' ? ([[paths.clientRequirements(project.id), 'Requirements']] as Tab[]) : []),
         [pp.people(project.id), isManager ? 'Stakeholders' : 'Contacts'],
       ];
   // The server decides what each role may open; every tab of the project is listed.

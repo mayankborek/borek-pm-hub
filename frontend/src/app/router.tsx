@@ -58,7 +58,6 @@ import { TasksPage } from '@/features/tasks/TaskPages';
 import { TaskCreatePage } from '@/features/tasks/TaskCreatePage';
 import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
-import { ClientRequirementsPage } from '@/features/requirements/ClientRequirementsPage';
 import { ManagerChangeRequestPage, ManagerChangeRequestsPage } from '@/features/changeRequests/ManagerChangeRequests';
 import { DeveloperLayout } from '@/features/developer/DeveloperLayout';
 import { DevProjectLayout } from '@/features/developer/DevProjectLayout';
@@ -114,7 +113,6 @@ export const router = createBrowserRouter([
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
                   { path: 'change-requests', element: <ClientChangeRequestsPage /> },
-                  { path: 'requirements', element: <ClientRequirementsPage /> },
                   { path: 'contacts', element: <ClientContactsPage /> },
                 ],
               },
