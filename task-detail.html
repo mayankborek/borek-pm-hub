@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BO-214 · Update brand guidelines</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0d1040;--muted:#5c607a;--blue:#0f4c92;--line:#e0e2ec;--bg:#f3f4f8;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14.67px/1.35 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 38.5px 40px}
+button,input,select{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.link{color:var(--blue);font-weight:500}
+header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:17px}
+.top{display:flex;align-items:center;height:37px}
+.back{display:flex;align-items:center;gap:12px;font-size:15.5px;font-weight:500;margin-right:40px}
+.key{color:var(--muted);font-weight:600;margin-right:15px}
+.more{margin-left:auto;align-self:flex-start;width:43px;height:38px;border:1px solid var(--line);border-radius:9px;font-weight:700;letter-spacing:1px;margin-top:0}
+h1{font-size:33.5px;font-weight:700;line-height:1.2;margin-top:9px;letter-spacing:-.2px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 347px;gap:38.5px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+main{padding:29px 27px 31px}
+h2{font-size:19px;font-weight:600}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+hr{border:0;border-top:1px solid var(--line)}
+.editor{border:1px solid var(--line);border-radius:10px;margin-top:11px;padding:12px 14px 0;height:125px}
+.toolbar{display:flex;align-items:center;gap:6px;height:43px;background:var(--bg);border-radius:7px;padding:0 4px;overflow-x:auto}
+.toolbar button{padding:4px 7px;font-weight:500;white-space:nowrap;border-radius:5px;min-width:26px}
+.toolbar button:hover{background:#e4e6ee}
+#desc{margin-top:20px;font-size:17px;color:var(--ink);outline:0;min-height:30px}
+#desc:empty::before{content:attr(data-placeholder);color:var(--muted)}
+main hr{margin:27px 0 29px}
+.drop{display:flex;align-items:center;gap:17px;height:67px;margin-top:15px;padding:0 17px;background:var(--bg);border:1px dashed #d5d8e4;border-radius:9px;color:var(--muted);font-size:16px}
+.drop.over{border-color:var(--blue)}
+.drop svg{color:var(--blue)}
+#files{margin-top:14px;color:#000;font-size:15.3px;list-style:none}
+#files+hr{margin:28px 0 26px}
+.tabs{display:flex;gap:3px;background:var(--bg);border-radius:10px;padding:4px}
+.tabs button{height:33px;padding:0 21px;font-weight:600;border:1px solid transparent;border-radius:6px;min-width:62px}
+.tabs button[aria-selected=true]{background:#fff;border-color:var(--line)}
+.composer{display:flex;align-items:center;height:76px;background:var(--bg);border-radius:18px;padding:0 19px;margin-top:19px}
+.composer input{flex:1;min-width:0;font-size:17px;cursor:text}
+.composer input::placeholder{color:var(--muted)}
+.at{color:var(--blue);font-size:21px;margin-right:55px}
+.send{width:38px;height:38px;border-radius:9px;background:#e2e4ec;color:#8a8da3;font-size:20px}
+.send:not(:disabled){background:var(--blue);color:#fff}
+.send:disabled{cursor:default}
+.empty{margin-top:27px}
+.empty strong{display:block;font-size:16px;font-weight:600}
+.empty p{color:var(--muted);margin-top:3px}
+.comment{background:var(--bg);border-radius:10px;padding:12px 16px;margin-top:12px;overflow-wrap:anywhere}
+aside{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.layout>*{min-width:0}
+.props{padding:22px 17px 17px 19px}
+h3{font-size:17px;font-weight:600}
+.props h3{padding-bottom:19px;border-bottom:1px solid var(--line)}
+section{padding:18px 0 12px;border-bottom:1px solid var(--line)}
+section:last-child{border:0;padding-bottom:0}
+h4{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
+.row{display:grid;grid-template-columns:128px minmax(0,1fr);align-items:center;min-height:40.5px}
+.label{color:var(--muted)}
+.value{display:flex;justify-content:space-between;align-items:center;text-align:left;font-weight:500;padding-right:8px;min-height:30px}
+.blue{color:var(--blue)}
+.chev{width:5px;height:5px;border:solid var(--muted);border-width:0 1.3px 1.3px 0;transform:rotate(45deg)}
+.row.short{min-height:31px}
+.estimate{display:flex;gap:5px}
+.estimate input,.estimate select{height:31px;border:1px solid var(--line);border-radius:6px;padding:0 9px;font-weight:500;cursor:text}
+.estimate input{width:71px}
+.estimate select{width:101px;appearance:none;cursor:pointer}
+.related{padding:26px 17px 19px 19px}
+.none{background:var(--bg);border-radius:9px;padding:0 14px;height:50px;display:flex;align-items:center;margin-top:18px}
+@media (max-width:960px){.layout{grid-template-columns:minmax(0,1fr);gap:20px}}
+@media (max-width:560px){body{padding:16px}main{padding:20px 16px}h1{font-size:27px}.at{margin-right:12px}.tabs button{padding:0 12px}.toolbar{gap:0}.drop{flex-wrap:wrap;height:auto;padding:16px;gap:8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <button class="back" type="button"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#5c607a" stroke-width="1.6" aria-hidden="true"><path d="M13 7H1.5M7 1.5 1.5 7 7 12.5"/></svg>Back</button>
+    <span class="key">BO-214</span><a class="link" style="text-decoration:none" href="#">Project task</a>
+    <button class="more" type="button" aria-label="More actions">•••</button>
+  </div>
+  <h1>Update brand guidelines</h1>
+</header>
+
+<div class="layout">
+<main class="card">
+  <div class="head"><h2>Description</h2><button class="link" id="edit" type="button">Edit description</button></div>
+  <div class="editor" style="height:auto;min-height:125px;padding-bottom:12px">
+    <div class="toolbar" role="toolbar" aria-label="Formatting">
+      <button type="button">Text ▾</button>
+      <button type="button" data-cmd="bold" aria-label="Bold"><b>B</b></button>
+      <button type="button" data-cmd="italic" aria-label="Italic">I</button>
+      <button type="button" data-cmd="formatBlock" data-arg="h2" aria-label="Heading 2">H<sub>2</sub></button>
+      <button type="button" data-cmd="insertUnorderedList">• List</button>
+      <button type="button" data-cmd="insertOrderedList">1. List</button>
+      <button type="button" aria-label="Link"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.700 1.7M14 11a5 5 0 0 0-7.500-.5l-3 3a5 5 0 0 0 7 7l1.700-1.700"/></svg></button>
+      <button type="button" aria-label="Code">&lt;/&gt;</button>
+      <button type="button" aria-label="Mention">@</button>
+    </div>
+    <div id="desc" contenteditable="true" role="textbox" aria-label="Description" data-placeholder="No description added."></div>
+  </div>
+  <hr>
+  <h2>Attachments</h2>
+  <div class="drop" id="drop">
+    <svg width="22" height="21" viewBox="0 0 22 21" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 2 2 11h5v8h8v-8h5z"/></svg>
+    <span>Drop files here, or</span><button class="link" id="browse" type="button">browse files</button>
+    <input type="file" id="picker" multiple hidden>
+  </div>
+  <ul id="files"><li>No files attached to this task.</li></ul>
+  <hr>
+  <div class="head"><h2>Activity</h2>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="true">All</button><button role="tab" aria-selected="false">Comments</button><button role="tab" aria-selected="false">Logs</button></div>
+  </div>
+  <form class="composer" id="form">
+    <input id="comment" placeholder="Type a comment..." aria-label="Comment" autocomplete="off">
+    <button class="at" type="button" aria-label="Mention">@</button>
+    <button class="send" id="send" aria-label="Send" disabled>↑</button>
+  </form>
+  <div id="feed"></div>
+  <div class="empty" id="empty"><strong>Nothing here yet</strong><p>Comments and task updates will appear here.</p></div>
+</main>
+
+<aside>
+  <div class="card props">
+    <h3>Properties</h3>
+    <section><h4>Assignment</h4><div class="row"><span class="label">Assignee</span><button class="value " type="button">Mia Chen<span class="chev"></span></button></div><div class="row"><span class="label">Reporter</span><button class="value " type="button">—<span class="chev"></span></button></div></section>
+    <section><h4>Task information</h4><div class="row"><span class="label">Status</span><button class="value blue" type="button">To do<span class="chev"></span></button></div><div class="row"><span class="label">Priority</span><button class="value " type="button">Medium<span class="chev"></span></button></div><div class="row"><span class="label">Task type</span><button class="value " type="button">Task<span class="chev"></span></button></div>
+      <div class="row short"><span class="label">Labels</span><button class="value blue" type="button">+ Add</button></div>
+      <div class="row"><span class="label">Estimate</span><div class="estimate"><input type="number" min="0" value="0" aria-label="Estimate amount"><select aria-label="Estimate unit"><option>hours</option><option>days</option></select></div></div>
+    </section>
+    <section><h4>Schedule</h4><div class="row"><span class="label">Start date</span><button class="value " type="button">—<span class="chev"></span></button></div><div class="row"><span class="label">Due date</span><button class="value " type="button">30 Oct 2026<span class="chev"></span></button></div></section>
+    <section><h4>Additional</h4><div class="row"><span class="label">Sprint</span><button class="value " type="button">Sprint 04 · Active<span class="chev"></span></button></div><div class="row"><span class="label">Milestone</span><button class="value " type="button">None linked<span class="chev"></span></button></div></section>
+  </div>
+  <div class="card related">
+    <div class="head"><h3>Related tasks</h3><button class="link" type="button">Relate task</button></div>
+    <div class="none">No related tasks yet.</div>
+  </div>
+</aside>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+$('edit').onclick = () => $('desc').focus();
+document.querySelectorAll('[data-cmd]').forEach(b => {
+  b.onmousedown = e => e.preventDefault();
+  b.onclick = () => { $('desc').focus(); document.execCommand(b.dataset.cmd, false, b.dataset.arg); };
+});
+function showFiles(list){
+  if(!list.length) return;
+  $('files').replaceChildren(...[...list].map(f => Object.assign(document.createElement('li'), {textContent:f.name})));
+}
+$('browse').onclick = () => $('picker').click();
+$('picker').onchange = e => showFiles(e.target.files);
+$('drop').ondragover = e => { e.preventDefault(); $('drop').classList.add('over'); };
+$('drop').ondragleave = () => $('drop').classList.remove('over');
+$('drop').ondrop = e => { e.preventDefault(); $('drop').classList.remove('over'); showFiles(e.dataTransfer.files); };
+let tab = 'All';
+function refresh(){
+  const logs = tab === 'Logs';
+  $('feed').hidden = logs;
+  $('empty').hidden = !logs && $('feed').children.length > 0;
+}
+document.querySelectorAll('[role=tab]').forEach(t => t.onclick = () => {
+  document.querySelectorAll('[role=tab]').forEach(o => o.setAttribute('aria-selected', o === t));
+  tab = t.textContent; refresh();
+});
+$('comment').oninput = () => $('send').disabled = !$('comment').value.trim();
+$('form').onsubmit = e => {
+  e.preventDefault();
+  const text = $('comment').value.trim();
+  if(!text) return;
+  $('feed').append(Object.assign(document.createElement('div'), {className:'comment', textContent:text}));
+  $('comment').value = ''; $('send').disabled = true; refresh();
+};
+</script>
+</body>
+</html>

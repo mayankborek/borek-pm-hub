@@ -194,6 +194,18 @@ export function TaskDetailPage() {
     value: draft.estimate_value !== undefined ? draft.estimate_value : task.estimate_value,
     unit: draft.estimate_unit !== undefined ? draft.estimate_unit : task.estimate_unit,
   };
+  // Toolbar buttons wrap the selected text (or insert the marker) in the description.
+  const format = (pre: string, post: string) => {
+    const el = descRef.current;
+    if (!el || (!pre && !post)) return;
+    const { selectionStart: a, selectionEnd: b, value } = el;
+    const next = value.slice(0, a) + pre + value.slice(a, b) + post + value.slice(b);
+    stage({ description: next });
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(a + pre.length, b + pre.length);
+    });
+  };
   const canStatus = isPm || task.assignee?.id === user?.id;
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
   const edit = (patch: TaskPatch) =>
@@ -215,9 +227,11 @@ export function TaskDetailPage() {
 
   return (
     <section className="page-body task-detail tdx">
+      <header className="tdx-header">
       <div className="tdx-top">
         <button type="button" className="tdx-back" onClick={goBack}>
-          ← &nbsp;{t('Back')}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M13 7H1.5M7 1.5 1.5 7 7 12.5" /></svg>
+          {t('Back')}
         </button>
         <span className="tdx-id">{task.key}</span>
         <span className="tdx-link">{t('Project task')}</span>
@@ -263,6 +277,7 @@ export function TaskDetailPage() {
       ) : (
         <h2 className="tdx-title">{task.title}</h2>
       )}
+      </header>
       {update.isError && (
         <p className="td-error" role="alert">
           {conflict ? t('Someone else changed this task. The latest version has been loaded; try again.') : describeApiError(update.error, t('Could not save your change.'))}
@@ -280,6 +295,25 @@ export function TaskDetailPage() {
             )}
           </div>
           <div className="tdx-editor">
+            {isPm && (
+              <div className="tdx-toolbar" role="toolbar" aria-label={t('Formatting')}>
+                {([
+                  ['Text ▾', '', '', t('Text')],
+                  ['B', '**', '**', t('Bold')],
+                  ['I', '_', '_', t('Italic')],
+                  ['H2', '## ', '', t('Heading 2')],
+                  ['• List', '- ', '', t('Bullet list')],
+                  ['1. List', '1. ', '', t('Numbered list')],
+                  ['🔗', '[', '](https://)', t('Link')],
+                  ['</>', '`', '`', t('Code')],
+                  ['@', '@', '', t('Mention')],
+                ] as const).map(([label, pre, post, name]) => (
+                  <button key={name} type="button" aria-label={name} onMouseDown={(e) => e.preventDefault()} onClick={() => format(pre, post)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             {isPm ? (
               <textarea
                 ref={descRef}
@@ -540,6 +574,9 @@ export function TaskDetailPage() {
               <Row label="Priority">
                 <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
               </Row>
+              <Row label="Task type">
+                <span className="td-static">{t('Task')}</span>
+              </Row>
               <Row label="Labels">
                 {isPm ? (
                   <LabelPicker
@@ -615,6 +652,15 @@ export function TaskDetailPage() {
                 ) : (
                   <span className="td-static">{view.due_date ? formatDate(view.due_date) : '—'}</span>
                 )}
+              </Row>
+            </div>
+            <div className="tdx-group">
+              <h5>{t('ADDITIONAL')}</h5>
+              <Row label="Sprint">
+                <span className="td-static">—</span>
+              </Row>
+              <Row label="Milestone">
+                <span className="td-static">{t('None linked')}</span>
               </Row>
             </div>
           </section>

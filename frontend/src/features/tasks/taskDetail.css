@@ -291,3 +291,44 @@ input.td-title[aria-invalid='true'] { border-color: var(--err); }
 .tdx-empty { margin: 14px 0 0; padding: 13px 12px; border-radius: 8px; background: #f3f4f8; font-size: 13px; }
 .tdx-related .td-related { margin-top: 10px; }
 @media (max-width: 1000px) { .tdx-grid { grid-template-columns: 1fr; } }
+
+/* ---- Sizing, header and rounded components per task-detail.html ---- */
+.tdx { background: #f3f4f8; }
+.tdx-header { margin-bottom: 17px; padding-bottom: 20px; border-bottom: 1px solid #e0e2ec; }
+.tdx-header .tdx-title { margin: 9px 0 0; padding: 0; border: 0; font-size: 33px; line-height: 1.2; }
+.tdx-back { display: inline-flex; align-items: center; gap: 12px; margin-right: 24px; font-weight: 500; }
+.tdx-back svg { color: #5c607a; }
+.tdx-grid { grid-template-columns: minmax(0, 1fr) 347px; gap: 38px; }
+.tdx-card { border-radius: 14px; border-color: #e0e2ec; }
+.tdx-related { margin-top: 20px; }
+.tdx-editor { padding: 12px 14px; border-radius: 10px; border-color: #e0e2ec; }
+.tdx-toolbar { display: flex; align-items: center; gap: 6px; height: 43px; padding: 0 4px; margin-bottom: 12px; overflow-x: auto; border-radius: 7px; background: #f3f4f8; }
+.tdx-toolbar button { min-width: 26px; padding: 4px 7px; border: 0; border-radius: 5px; background: none; font: inherit; font-weight: 500; color: #0d1040; white-space: nowrap; cursor: pointer; }
+.tdx-toolbar button:hover { background: #e4e6ee; }
+.tdx-drop { height: 67px; border-radius: 9px; }
+.tdx-seg { padding: 4px; border-radius: 10px; }
+.tdx-seg button { height: 33px; border: 1px solid transparent; border-radius: 6px; }
+.tdx-seg button.on { border-color: #e0e2ec; box-shadow: none; }
+.tdx-comment { height: 76px; padding: 0 19px; border-radius: 18px; }
+.tdx-send { width: 38px; height: 38px; border-radius: 9px; }
+.tdx-send.on { background: #0f4c92; }
+.td-comment { padding: 12px 16px; border-radius: 10px; background: #f3f4f8; }
+.tdx-row { grid-template-columns: 128px minmax(0, 1fr); min-height: 40px; }
+.tdx-row > :not(label) { justify-self: stretch; }
+.tdx-row .td-static { font-weight: 500; }
+.tdx-row .ss, .tdx-row .ps, .tdx-row .dp, .tdx-row .as { width: 100%; }
+.tdx-row input, .tdx-row select { height: 31px; padding: 0 9px; border-radius: 6px; }
+.tdx-group h5 { font-size: 12px; text-transform: uppercase; }
+.tdx-btn, .tdx-more { border-radius: 9px; }
+.tdx-empty { height: 50px; display: flex; align-items: center; border-radius: 9px; }
+
+/* Rounded dropdowns, pickers, chips and dialogs */
+.ss-btn, .ps-btn, .dp-btn, .lb-box, .as-search { border-radius: 8px; }
+.ss-list, .ps-list, .dp-pop, .as-pop, .lb-menu, .tdx-menu, .rd-results { border-radius: 10px; box-shadow: 0 8px 24px rgba(13, 16, 64, .12); }
+.ss-list li, .ps-list li, .as-pop li, .lb-opt, .dp-grid button, .dp-head button { border-radius: 6px; }
+.lb-chip { border-radius: 6px; }
+.td-dialog, .rd-drawer { border-radius: 14px; }
+.rd-drawer { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.rd-field select, .rd-field input, .td-mention input { border-radius: 8px; }
+.td-danger, .rd-btn { border-radius: 8px; }
+.td-file { padding: 8px 12px; border-radius: 8px; background: #f3f4f8; }
