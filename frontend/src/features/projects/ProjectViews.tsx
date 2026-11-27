@@ -8,9 +8,6 @@ import { QuickCreateTask } from '@/features/tasks/QuickCreateTask';
 import { Avatar, PRIORITY_LABEL, TaskFilters } from '@/features/tasks/TaskParts';
 import { PRIORITY_OPTIONS } from '@/features/tasks/PrioritySelect';
 import { isFiltered, useUrlFilter } from '@/features/tasks/useUrlFilter';
-import { EXPORT_FORMATS, exportFilter, exportTasks, type ExportFormat } from '@/features/tasks/jiraApi';
-import { JiraImportDialog } from '@/features/tasks/JiraImportDialog';
-import type { Project } from './types';
 import { useMoveTask, useProjectStatuses, useProjectTasks, type Task } from '@/features/tasks/tasksApi';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -23,7 +20,7 @@ import './backlog.css';
 
 const PER_PAGE = 10;
 
-/** One task table of the Backlog tab (borek-flow-backlog2.html): Task, Status, Due date, Priority, Assignee. */
+/** One task table of the Backlog tab (borek-flow-backlog.html): Task, Status, Due date, Priority, Assignee. */
 function TaskTable({ tasks, label, action }: { tasks: Task[]; label: string; action?: { text: string; onClick: (t: Task) => void; busy?: string } }) {
   const { t: tr } = usePrefs();
   return (
@@ -67,35 +64,12 @@ function TaskTable({ tasks, label, action }: { tasks: Task[]; label: string; act
   );
 }
 
-/** The ••• menu above the Backlog tables: Manage phases, Import, and Export (follows the active filters). */
-function BacklogMenu({ project, applied, onManagePhases }: { project: Project; applied: Parameters<typeof exportFilter>[0]; onManagePhases: () => void }) {
+/** The ••• button above the Backlog tables opens Manage phases (borek-flow-backlog.html). */
+function ManagePhasesButton({ onClick }: { onClick: () => void }) {
   const { t: tr } = usePrefs();
-  const toast = useToast();
-  const [open, setOpen] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [exporting, setExporting] = useState(false);
-
-  const runExport = (format: ExportFormat) => {
-    setOpen(false);
-    setExporting(true);
-    exportTasks({ project_id: project.id, filter: exportFilter(applied), format })
-      .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
-      .finally(() => setExporting(false));
-  };
-
   return (
-    <div className="more-menu" onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
-      <button type="button" className="more" aria-label={tr('More actions')} title={tr('More actions')} aria-haspopup="menu" aria-expanded={open} disabled={exporting} onClick={() => setOpen((o) => !o)}>•••</button>
-      {open && (
-        <ul className="export-list" role="menu">
-          <li role="none"><button type="button" role="menuitem" onClick={() => { setOpen(false); onManagePhases(); }}>{tr('Manage phases')}</button></li>
-          <li role="none"><button type="button" role="menuitem" onClick={() => { setOpen(false); setImporting(true); }}>{tr('Import')}</button></li>
-          {EXPORT_FORMATS.map((f) => (
-            <li key={f} role="none"><button type="button" role="menuitem" onClick={() => runExport(f)}>{tr('Export')} {f.toUpperCase()}</button></li>
-          ))}
-        </ul>
-      )}
-      {importing && <JiraImportDialog projects={[project]} defaultProjectId={project.id} onClose={() => setImporting(false)} />}
+    <div className="more-menu">
+      <button type="button" className="more" aria-label={tr('Manage phases')} title={tr('Manage phases')} onClick={onClick}>•••</button>
     </div>
   );
 }
@@ -165,7 +139,7 @@ export function ProjectListPage() {
         statuses={statuses}
         trailing={
           isPm && (
-            <BacklogMenu project={project} applied={applied} onManagePhases={() => setPhases(true)} />
+            <ManagePhasesButton onClick={() => setPhases(true)} />
           )
         }
       />

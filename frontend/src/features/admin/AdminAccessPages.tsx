@@ -44,7 +44,7 @@ function useProjectTones(users: AdminUser[]) {
 export function AdminAccessPage({ tab }: { tab: 'people' | 'roles' }) {
   const { t } = usePrefs();
   return (
-    <main className="bf-content" style={{ paddingTop: 24 }}>
+    <main className={`bf-content${tab === 'people' ? ' bf-pa' : ''}`} style={{ paddingTop: 24 }}>
       <h1>{t(tab === 'people' ? 'Person access' : 'Role permissions')}</h1>
       <p className="bf-sub">
         {t(tab === 'people' ? 'See who has access to each project and manage permissions for individual users.' : 'Configure which pages and actions are available to each role.')}
@@ -120,7 +120,7 @@ function PersonAccess() {
           )}
         </div>
         <div className="bf-row">
-          <input className="bf-input strong" style={{ width: 218 }} type="search" placeholder={`⌕  ${t('Search people')}`} aria-label={t('Search people')} value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="bf-input strong" style={{ width: 249 }} type="search" placeholder={`⌕  ${t('Search people')}`} aria-label={t('Search people')} value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="bf-anchor" ref={exportMenu.ref}>
             <button type="button" className="bf-btn" aria-label={t('Export')} aria-haspopup="menu" aria-expanded={exportMenu.open} onClick={() => exportMenu.setOpen((o) => !o)}>⋮</button>
             {exportMenu.open && (
@@ -145,9 +145,9 @@ function PersonAccess() {
             <tr>
               <th style={{ width: '15%' }}>{t('Person')}</th>
               <th style={{ width: '15%' }}>{t('Role')}</th>
-              <th>{t('Projects they can access')}</th>
-              <th className="c" style={{ width: '8%' }}>{t('Total')}</th>
-              <th className="r" style={{ width: '13%' }}>{t('Action')}</th>
+              <th className="projects-col">{t('Projects they can access')}</th>
+              <th className="c" style={{ width: '11%' }}>{t('Total')}</th>
+              <th className="r" style={{ width: '12%' }}>{t('Action')}</th>
             </tr>
           </thead>
           <tbody>

@@ -1,4 +1,4 @@
-/* Backlog tab: follows borek-flow-backlog2.html (tools row, Sprint sheet, Backlog sheet, Manage phases dialogs). */
+/* Backlog tab: follows borek-flow-backlog.html (tools row, Sprint sheet, Backlog sheet, Manage phases dialogs). */
 .project-page > .task-list-page.bl2 { gap: 17px; overflow: auto; padding: 0 0 8px; }
 .bl2 > * { flex: none; }
 .bl2 .task-filters { gap: 17px; min-height: 36px; padding: 0; margin: 0; background: none; }
@@ -58,7 +58,7 @@
 .bl2 .sr-only, .bl-dialog .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Manage phases dialogs. */
-.bl-dialog { --w: 900px; margin: 120px auto auto; width: min(var(--w), calc(100vw - 32px)); max-height: calc(100vh - 160px); overflow: auto; padding: 25px 28px; border: 1px solid #dcdeea; border-radius: 14px; background: var(--surface); color: var(--ink); }
+.bl-dialog { --w: 900px; margin: 180px auto auto; width: min(var(--w), calc(100vw - 32px)); max-height: calc(100vh - 200px); overflow: auto; padding: 25px 28px; border: 1px solid #dcdeea; border-radius: 14px; background: var(--surface); color: var(--ink); }
 .bl-dialog::backdrop { background: rgba(0, 0, 0, .235); }
 .bl-dialog h2 { margin: 0; font-size: 22px; line-height: 28px; letter-spacing: -.01em; }
 .bl-dialog.form { --w: 560px; }
