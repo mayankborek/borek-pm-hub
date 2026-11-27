@@ -102,7 +102,6 @@ export function ProjectLayout() {
   const tabs = [
     { label: 'Overview', to: paths.project(projectId), end: true },
     { label: 'Backlog', to: paths.projectList(projectId) },
-    ...(isPm ? [{ label: 'Sprint Planning', to: paths.projectSprintPlanning(projectId) }] : []),
     { label: 'Board', to: paths.projectBoard(projectId) },
     ...(isPm
       ? [
