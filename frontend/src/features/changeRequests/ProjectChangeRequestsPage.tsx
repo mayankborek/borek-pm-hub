@@ -1,13 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { Pill, type Tone } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useProjectContext } from '@/features/projects/ProjectLayout';
 import { downloadAttachment, type CrStatus } from '@/features/client/changeRequestsApi';
 import {
   useDecide,
@@ -40,13 +38,7 @@ const num = (v: string) => (v.trim() === '' ? null : Number(v));
 
 /** Change Requests tab: the queue of requests clients raise, with impact, decision and the shared conversation. */
 export function ProjectChangeRequestsPage() {
-  const projectId = useProjectContext().id;
-  return (
-    <>
-      <ChangeRequestsView projectId={projectId} requestPath={paths.projectChangeRequest} />
-      <RequirementsSection />
-    </>
-  );
+  return <RequirementsSection />;
 }
 
 /** The queue for one project; `requestPath` is where "Review request" goes, so the Manager's shell can reuse it. */
