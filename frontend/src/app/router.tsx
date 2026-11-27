@@ -49,6 +49,7 @@ import { ProjectLayout } from '@/features/projects/ProjectLayout';
 import { ProjectCreatePage, ProjectEditPage } from '@/features/projects/ProjectFormPage';
 import { ProjectOverviewPage } from '@/features/projects/ProjectOverviewPage';
 import { ProjectBoardPage } from '@/features/projects/ProjectBoardPage';
+import { SprintPlanningPage } from '@/features/projects/SprintPlanningPage';
 import { ProjectListPage, ProjectMembersPage } from '@/features/projects/ProjectViews';
 import { MilestonesPage } from '@/features/milestones/MilestonesPage';
 import { ProjectPeoplePage, ProjectSettingsPage } from '@/features/projects/ProjectSettingsPages';
@@ -245,6 +246,7 @@ export const router = createBrowserRouter([
             element: <ByRole developer={<DevProjectLayout />} other={<ProjectLayout />} />,
             children: [
               { index: true, element: <ByRole developer={<DevOverviewPage />} other={<ProjectOverviewPage />} /> },
+              { path: 'sprint-planning', element: <ByRole developer={<Navigate to="../board" replace />} other={<SprintPlanningPage />} /> },
               { path: 'board', element: <ByRole developer={<DevBoardPage />} other={<ProjectBoardPage />} /> },
               { path: 'requirements', element: <Navigate to="../change-requests" replace /> },
               { path: 'change-requests', element: <ProjectChangeRequestsPage /> },

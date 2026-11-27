@@ -1,0 +1,42 @@
+/* Sprint Planning tab and Create sprint dialog: follows sprint-planning.html. */
+.sp-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin: 26px 0 23px; }
+.sp-head h2 { margin: 0; font-size: 20px; }
+.sp-acts { display: flex; gap: 13px; }
+.sp-acts .btn { min-width: 159px; text-align: center; text-decoration: none; }
+.sp-card { margin-bottom: 21px; padding: 18px 20px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.sp-card h3 { margin: 0 0 8px; font-size: 16px; line-height: 20px; }
+.sp-card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 20px; }
+.sp-card p + p { margin-top: 7px; }
+.sp-card .sp-goal { margin-top: 3px; color: var(--ink); }
+.sp-card .sp-note { margin-top: 3px; font-size: 13px; }
+.sp-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.sp-card-top .btn { min-width: 184px; }
+.sp-backlog { min-height: 304px; }
+.sp-row { display: grid; grid-template-columns: minmax(0, 1fr) 136px 195px 150px; align-items: center; min-height: 60px; margin-top: 8px; font-size: 14px; }
+.sp-row span { color: var(--muted); font-size: 13px; }
+.sp-row .sp-title { overflow: hidden; color: var(--ink); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.sp-row button { justify-self: start; padding: 0; border: 0; background: none; color: var(--link); font-size: 12px; cursor: pointer; }
+.sp-row button:disabled { color: var(--muted); cursor: default; }
+#planned .sp-row button:disabled { color: var(--link); }
+
+.spd { width: 600px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); margin: auto; padding: 30px 23px 26px; border: 0; border-radius: 12px; color: var(--ink); box-shadow: 0 12px 40px #0d124033; }
+.spd::backdrop { background: #0d124059; }
+.spd-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.spd-head h2 { margin: 0; font-size: 25px; }
+.spd-x { border: 0; background: none; color: var(--muted); font-size: 24px; cursor: pointer; }
+.spd-hint { margin: 0; color: var(--muted); font-size: 12px; }
+.spd label, .spd legend { display: block; margin: 18px 0 6px; color: var(--muted); font-size: 12px; }
+.spd input[type=text], .spd input[type=date] { width: 100%; height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font: inherit; }
+.spd fieldset { margin: 18px 0 0; padding: 0; border: 0; }
+.spd legend { margin-top: 0; padding: 0; }
+.spd-seg { display: flex; gap: 12px; }
+.spd-seg button { width: 120px; height: 38px; border: 1px solid var(--line); border-radius: 7px; background: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.spd-seg button[aria-pressed=true] { border-color: var(--navy); background: #edf3fd; }
+.spd-hint + .spd-hint { margin-top: 6px; }
+.spd label + input + .spd-hint, .spd input[type=date] + .spd-hint { margin-top: 16px; }
+.spd-foot { display: flex; gap: 12px; margin-top: 20px; }
+
+@media (max-width: 760px) {
+  .sp-row { grid-template-columns: 1fr auto; row-gap: 4px; padding: 10px 0; min-height: 0; }
+  .sp-card-top { flex-direction: column; }
+}
