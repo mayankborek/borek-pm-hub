@@ -97,24 +97,24 @@ export function ProjectLayout() {
     );
   }
 
+  const isPm = user?.role === 'pm';
   const closed = project.status === 'completed' || project.status === 'cancelled';
   const tabs = [
     { label: 'Overview', to: paths.project(projectId), end: true },
     { label: 'Backlog', to: paths.projectList(projectId) },
-    { label: 'Sprint Planning', to: paths.projectSprintPlanning(projectId) },
+    ...(isPm ? [{ label: 'Sprint Planning', to: paths.projectSprintPlanning(projectId) }] : []),
     { label: 'Board', to: paths.projectBoard(projectId) },
-    // Developers read the roadmap; change requests, reports and settings are the project lead's.
-    ...(user?.role === 'pm' ? [{ label: 'Change Requests', to: paths.projectChangeRequests(projectId) }] : []),
-    { label: 'Milestones', to: paths.projectMilestones(projectId) },
-    ...(user?.role === 'pm'
+    ...(isPm
       ? [
+          { label: 'Change Requests', to: paths.projectChangeRequests(projectId) },
+          { label: 'Milestones', to: paths.projectMilestones(projectId) },
           { label: 'Reports', to: paths.projectReports(projectId) },
           { label: 'Settings', to: paths.projectSettings(projectId) },
         ]
       : []),
   ];
 
-  return (
+  const page = (
     <div className="project-page">
       <div className="project-head">
         <div className="page-header">
@@ -134,4 +134,6 @@ export function ProjectLayout() {
       {closed && pathname === paths.project(projectId) ? <ClosedProject project={project} /> : <Outlet context={project} />}
     </div>
   );
+  // The PM page styles are scoped to `.shell.pm`; developers sit in their own shell, so the pages get that scope here.
+  return isPm ? page : <div className="shell pm" style={{ display: 'contents' }}>{page}</div>;
 }

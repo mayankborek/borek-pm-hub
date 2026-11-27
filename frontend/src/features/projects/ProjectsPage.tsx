@@ -3,70 +3,23 @@ import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
-import { Pill, ProgressBar } from '@/shared/ui/Pill';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useProjects } from './projectsApi';
 import type { Project } from './types';
 import emptyIllustration from './assets/empty-projects.jpg';
 import { PmIcon } from './pmIcons';
-import { STATUS_LABEL, STATUS_TONE, completionOf, formatDate, healthOf } from './projectUi';
+import { STATUS_LABEL, completionOf, formatDate, healthOf } from './projectUi';
 import { PROJECT_STATUSES, type ProjectStatus } from './types';
 import './projects.css';
 import './pmProjects.css';
 import '@/features/tasks/tasks.css';
 
-/** Developer "My Projects" grid, styled like the PM Task List (Figma "01 PM Task List — Primary"). */
-function DevProjectGrid({ projects, total }: { projects: Project[]; total: number }) {
-  const { t } = usePrefs();
-  return (
-    <>
-      <section className="task-group table" role="table" aria-label={t('My projects')}>
-        <div className="task-row task-table-head proj-row" role="row">
-          <div role="columnheader">{t('Project / Code')}</div>
-          <div role="columnheader">{t('Status')}</div>
-          <div role="columnheader">{t('Progress')}</div>
-          <div role="columnheader">{t('Tasks')}</div>
-          <div role="columnheader">{t('Overdue')}</div>
-          <div role="columnheader">{t('Target end')}</div>
-        </div>
-        {projects.map((p) => (
-          <div className="task-row proj-row" role="row" key={p.id}>
-            <div className="task-title" role="cell">
-              <span className="task-title-stack">
-                <Link to={paths.project(p.id)}>{p.name}</Link>
-                <span className="proj-code">{p.code}</span>
-              </span>
-            </div>
-            <div role="cell">
-              <Pill tone={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
-            </div>
-            <div role="cell">
-              <ProgressBar percent={completionOf(p)} label={t('{name} completion', { name: p.name })} />
-            </div>
-            <div className="cell-muted" role="cell">
-              {p.task_summary?.total ?? '—'}
-            </div>
-            <div className={p.task_summary?.overdue ? 'warn' : 'cell-muted'} role="cell">
-              {p.task_summary?.overdue ?? '—'}
-            </div>
-            <div className="cell-muted" role="cell">
-              {formatDate(p.target_end_date)}
-            </div>
-          </div>
-        ))}
-      </section>
-      <p className="task-foot">
-        {t(total === 1 ? 'Showing {n} of {total} project' : 'Showing {n} of {total} projects', { n: projects.length, total })}
-      </p>
-    </>
-  );
-}
-
 const HEALTH_TONE = { 'On Track': 'good', 'At Risk': 'warn', 'Off Track': 'bad' } as const;
 
-/** Figma "Projects" (PM): project cards on the left, the portfolio summary on the right. */
-function PmProjectGrid({ projects, total }: { projects: Project[]; total: number }) {
+/** "Projects at a glance" cards on the left, the portfolio summary on the right. Both roles see the projects the backend lets them see. */
+function ProjectGrid({ projects, total }: { projects: Project[]; total: number }) {
   const { t } = usePrefs();
+  const isPm = useAuth().user?.role === 'pm';
   const [status, setStatus] = useState<ProjectStatus | ''>('');
   const shown = status ? projects.filter((p) => p.status === status) : projects;
   const count = (s: ProjectStatus) => projects.filter((p) => p.status === s).length;
@@ -74,7 +27,7 @@ function PmProjectGrid({ projects, total }: { projects: Project[]; total: number
   return (
     <>
       <div className="pj-bar">
-        <h2>{t('All projects')} · {total}</h2>
+        <h2>{t(isPm ? 'All projects' : 'My projects')} · {total}</h2>
         <select className="pj-filter" aria-label={t('Filter by status')} value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus | '')}>
           <option value="">{t('All projects')}</option>
           {PROJECT_STATUSES.map((s) => (
@@ -109,6 +62,7 @@ function PmProjectGrid({ projects, total }: { projects: Project[]; total: number
                   <i style={{ width: `${eligible ? pct : 0}%` }} />
                 </div>
                 <p className="glance-note">{eligible ? t('{done} of {total} tasks complete', { done: p.task_summary?.completed ?? 0, total: eligible }) : t('No eligible tasks planned yet')}</p>
+                {!!p.task_summary?.overdue && <p className="glance-note"><b>{t(p.task_summary.overdue === 1 ? '{n} task overdue' : '{n} tasks overdue', { n: p.task_summary.overdue })}</b></p>}
                 <p className="glance-note">{p.target_end_date ? t('Due {date}', { date: formatDate(p.target_end_date) }) : t('Dates to be planned')}</p>
                 <Link className="pj-open" to={paths.project(p.id)}>{t('View project')} →</Link>
               </article>
@@ -148,7 +102,7 @@ export function ProjectsPage() {
     </Link>
   );
 
-  return (
+  const page = (
     <section className={`page-body task-list-page${isPm ? '' : ' dev-projects'}`}>
       <div className="page-header">
         <div>
@@ -190,11 +144,11 @@ export function ProjectsPage() {
             action={newButton || undefined}
           />
         )
-      ) : !isPm ? (
-        <DevProjectGrid projects={data.items} total={data.total} />
       ) : (
-        <PmProjectGrid projects={data.items} total={data.total} />
+        <ProjectGrid projects={data.items} total={data.total} />
       )}
     </section>
   );
+  // The PM card styles are scoped to `.shell.pm`; developers sit in their own shell, so they get that scope here.
+  return isPm ? page : <div className="shell pm" style={{ display: 'contents' }}>{page}</div>;
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { paths } from '@/app/routes';
+import { useAuth } from '@/features/auth/AuthContext';
 import { emptyFilter, useProjectMembers, useProjectStatuses, useProjectTasks } from '@/features/tasks/tasksApi';
 import type { StatusCategory, Task, TaskPriority } from '@/features/tasks/tasksApi';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
@@ -52,6 +53,7 @@ function dueThisWeek(tasks: Task[]) {
 export function ProjectOverviewPage() {
   const { t } = usePrefs();
   const project = useProjectContext();
+  const isPm = useAuth().user?.role === 'pm';
   const { data, isPending, isError, refetch } = useProjectTasks(project.id, emptyFilter);
   const { data: statuses } = useProjectStatuses(project.id);
   const { data: members } = useProjectMembers(project.id);
@@ -127,7 +129,7 @@ export function ProjectOverviewPage() {
             <b>{t('Next milestone')}</b>
             <span>{next ? `${next.name} · ${formatDate(next.due_date)}` : target}</span>
           </div>
-          <Link to={paths.projectMilestones(project.id)}>{t('View milestones')}</Link>
+          {isPm && <Link to={paths.projectMilestones(project.id)}>{t('View milestones')}</Link>}
         </section>
         <section className="ov-alert" aria-label={t('Blockers')}>
           <div>

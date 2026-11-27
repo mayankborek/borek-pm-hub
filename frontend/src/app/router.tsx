@@ -242,15 +242,15 @@ export const router = createBrowserRouter([
             element: <ProjectLayout />,
             children: [
               { index: true, element: <ProjectOverviewPage /> },
-              { path: 'sprint-planning', element: <SprintPlanningPage /> },
               { path: 'board', element: <ProjectBoardPage /> },
               { path: 'list', element: <ProjectListPage /> },
               { path: 'members', element: <ProjectMembersPage /> },
-              { path: 'milestones', element: <MilestonesPage /> },
-              // Change requests, reports and settings are PM only (the backend refuses developers).
+              // Developers get Overview, Backlog and Board; the rest is PM only (and the backend refuses developers).
               {
                 element: <RequireRole roles={['pm']} />,
                 children: [
+                  { path: 'sprint-planning', element: <SprintPlanningPage /> },
+                  { path: 'milestones', element: <MilestonesPage /> },
                   { path: 'requirements', element: <Navigate to="../change-requests" replace /> },
                   { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
                   { path: 'change-requests/requirements/:requirementId', element: <RequirementDetailPage /> },

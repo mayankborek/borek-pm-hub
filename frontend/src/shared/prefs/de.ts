@@ -53,6 +53,8 @@ export const DE: Record<string, string> = {
   'Nothing is blocked or overdue. Nice work.': 'Nichts ist blockiert oder überfällig. Gut gemacht.',
   '1 day overdue': '1 Tag überfällig',
   '{n} days overdue': '{n} Tage überfällig',
+  '{n} task overdue': '{n} Aufgabe überfällig',
+  '{n} tasks overdue': '{n} Aufgaben überfällig',
   Overdue: 'Überfällig',
   Blocked: 'Blockiert',
   blocked: 'blockiert',
