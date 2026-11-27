@@ -96,6 +96,9 @@ export const useProjectTasks = (projectId: string, f: TaskFilter) =>
 export interface TaskDetail extends Task {
   description: string | null;
   start_date: string | null;
+  milestone_id: string | null;
+  /** Null = the backlog. */
+  sprint_id: string | null;
   reporter: UserBrief;
   blocked_reason: string | null;
   updated_at: string;
@@ -128,9 +131,11 @@ export type TaskPatch = Partial<{
   estimate_unit: EstimateUnit | null;
   assignee_id: string | null;
   blocked_reason: string | null;
+  milestone_id: string | null;
+  sprint_id: string | null;
 }>;
 
-export const useTask = (id: string) =>
+export const useTask =(id: string) =>
   useQuery({ queryKey: [...taskKeys.all, 'detail', id], queryFn: () => api<TaskDetail>(`/tasks/${id}`), enabled: !!id });
 
 export const useProjectStatuses = (projectId?: string) =>
@@ -170,6 +175,35 @@ export const useProjectLabels = (projectId: string | undefined, search: string, 
     enabled: enabled && !!projectId,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+
+export interface SprintOption {
+  id: string;
+  name: string;
+  state: 'planned' | 'active' | 'completed';
+}
+
+/** GET /projects/{id}/sprints: active first, then planned, then completed; for the task's Sprint picker. */
+export const useProjectSprints = (projectId?: string) =>
+  useQuery({
+    queryKey: ['projects', 'sprints', projectId, 'options'],
+    queryFn: () => api<{ items: SprintOption[] }>(`/projects/${projectId}/sprints${qs({ page_size: 100 })}`),
+    enabled: !!projectId,
+    select: (page) => page.items,
+  });
+
+export interface MilestoneOption {
+  id: string;
+  code: string;
+  name: string;
+}
+
+/** GET /projects/{id}/milestones: active milestones by due date; for the task's Milestone picker. */
+export const useProjectMilestoneOptions = (projectId?: string) =>
+  useQuery({
+    queryKey: ['projects', 'milestones', projectId, 'options'],
+    queryFn: () => api<MilestoneOption[]>(`/projects/${projectId}/milestones`),
+    enabled: !!projectId,
   });
 
 export const useProjectMembers =(projectId?: string) =>

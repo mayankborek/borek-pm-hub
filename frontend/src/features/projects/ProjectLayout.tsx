@@ -103,10 +103,11 @@ export function ProjectLayout() {
     { label: 'Backlog', to: paths.projectList(projectId) },
     { label: 'Sprint Planning', to: paths.projectSprintPlanning(projectId) },
     { label: 'Board', to: paths.projectBoard(projectId) },
+    // Developers read the roadmap; change requests, reports and settings are the project lead's.
+    ...(user?.role === 'pm' ? [{ label: 'Change Requests', to: paths.projectChangeRequests(projectId) }] : []),
+    { label: 'Milestones', to: paths.projectMilestones(projectId) },
     ...(user?.role === 'pm'
       ? [
-          { label: 'Change Requests', to: paths.projectChangeRequests(projectId) },
-          { label: 'Milestones', to: paths.projectMilestones(projectId) },
           { label: 'Reports', to: paths.projectReports(projectId) },
           { label: 'Settings', to: paths.projectSettings(projectId) },
         ]

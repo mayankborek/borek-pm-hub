@@ -1,6 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
-import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { parseApiError } from '@/features/projects/projectsApi';
 import { useProjectContext } from '@/features/projects/ProjectLayout';
@@ -28,7 +26,8 @@ export function MilestonesPage() {
   const [creating, setCreating] = useState(false);
   const [phases, setPhases] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
-  if (user?.role !== 'pm') return <Navigate to={paths.project(project.id)} replace />;
+  // Mirrors the backend: everyone on the project reads the roadmap; only project leads change it.
+  const isPm = user?.role === 'pm';
 
   if (roadmap.isPending) return <LoadingState title={t('Loading roadmap')} text={t('Fetching phases and milestones.')} />;
   if (roadmap.isError) return <ErrorState title={t('We couldn’t load the roadmap')} text={t('Check your connection and try again.')} onRetry={() => void roadmap.refetch()} />;
@@ -41,12 +40,14 @@ export function MilestonesPage() {
           <h2>{t('Project roadmap')}</h2>
           <p>{t('Project phases and delivery milestones')}{r.range_start && r.range_end ? ` · ${short(r.range_start)}–${formatDate(r.range_end)}` : ''}</p>
         </div>
-        <div className="ms-actions">
-          <button type="button" className="btn" onClick={() => setPhases(true)}>{t('Manage phases')}</button>
-          <button type="button" className="btn primary" onClick={() => setCreating(true)}>{t('Create milestone')}</button>
-        </div>
+        {isPm && (
+          <div className="ms-actions">
+            <button type="button" className="btn" onClick={() => setPhases(true)}>{t('Manage phases')}</button>
+            <button type="button" className="btn primary" onClick={() => setCreating(true)}>{t('Create milestone')}</button>
+          </div>
+        )}
       </header>
-      <Timeline r={r} onOpen={setEditing} />
+      <Timeline r={r} onOpen={isPm ? setEditing : undefined} />
       <ul className="ms-legend">
         <li><i className="done" />{t('Completed share')}</li>
         <li><i className="rest" />{t('Remaining work')}</li>
@@ -66,11 +67,11 @@ export function MilestonesPage() {
 
 const allMilestones = (r: Roadmap): Milestone[] => [...r.phases.flatMap((p) => p.milestones), ...r.unphased_milestones];
 
-function Timeline({ r, onOpen }: { r: Roadmap; onOpen: (id: string) => void }) {
+function Timeline({ r, onOpen }: { r: Roadmap; onOpen?: (id: string) => void }) {
   const { t } = usePrefs();
   const all = [...r.phases.flatMap((p) => [p.start_date, p.end_date, ...p.milestones.map((m) => m.due_date)]), ...r.unphased_milestones.map((m) => m.due_date), r.today];
   if (r.phases.length === 0 && r.unphased_milestones.length === 0) {
-    return <p className="ms-empty">{t('No phases or milestones yet. Create a milestone to start the roadmap.')}</p>;
+    return <p className="ms-empty">{onOpen ? t('No phases or milestones yet. Create a milestone to start the roadmap.') : t('No phases or milestones yet.')}</p>;
   }
   const start = Math.min(...all.map(day), r.range_start ? day(r.range_start) : Infinity);
   const end = Math.max(...all.map(day), r.range_end ? day(r.range_end) : -Infinity);
@@ -79,7 +80,7 @@ function Timeline({ r, onOpen }: { r: Roadmap; onOpen: (id: string) => void }) {
   const ticks = Array.from({ length: 5 }, (_, i) => iso(start + (span * i) / 4));
 
   const diamond = (m: Milestone) => (
-    <button type="button" className="ms-dia" key={m.id} style={{ left: pos(m.due_date) }} aria-label={t('Edit milestone {name}', { name: m.name })} onClick={() => onOpen(m.id)}>
+    <button type="button" className="ms-dia" key={m.id} style={{ left: pos(m.due_date) }} aria-label={onOpen ? t('Edit milestone {name}', { name: m.name }) : m.name} disabled={!onOpen} onClick={() => onOpen?.(m.id)}>
       <i className={m.done ? 'on' : ''} />
       <span className="ms-dia-name">{m.name}</span>
       <span className={`ms-dia-date${m.state === 'late' ? ' late' : ''}`}>{short(m.due_date)}{m.state === 'late' ? ` · ${t('Running late')}` : ''}</span>

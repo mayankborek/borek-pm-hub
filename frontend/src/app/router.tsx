@@ -60,10 +60,6 @@ import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
 import { ManagerChangeRequestPage, ManagerChangeRequestsPage } from '@/features/changeRequests/ManagerChangeRequests';
 import { DeveloperLayout } from '@/features/developer/DeveloperLayout';
-import { DevProjectLayout } from '@/features/developer/DevProjectLayout';
-import { DevOverviewPage } from '@/features/developer/DevOverviewPage';
-import { DevBacklogPage } from '@/features/developer/DevBacklogPage';
-import { DevBoardPage } from '@/features/developer/DevBoardPage';
 import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';
 import { ByRole, RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly } from './guards';
 
@@ -243,23 +239,29 @@ export const router = createBrowserRouter([
           },
           {
             path: 'projects/:projectId',
-            element: <ByRole developer={<DevProjectLayout />} other={<ProjectLayout />} />,
+            element: <ProjectLayout />,
             children: [
-              { index: true, element: <ByRole developer={<DevOverviewPage />} other={<ProjectOverviewPage />} /> },
-              { path: 'sprint-planning', element: <ByRole developer={<Navigate to="../board" replace />} other={<SprintPlanningPage />} /> },
-              { path: 'board', element: <ByRole developer={<DevBoardPage />} other={<ProjectBoardPage />} /> },
-              { path: 'requirements', element: <Navigate to="../change-requests" replace /> },
-              { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
-              { path: 'change-requests/requirements/:requirementId', element: <RequirementDetailPage /> },
-              { path: 'change-requests/:requestId', element: <ProjectChangeRequestPage /> },
-              { path: 'reports', element: <ProjectReportsPage /> },
-              { path: 'reports/:reportId', element: <ProjectReportPage /> },
-              { path: 'list', element: <ByRole developer={<DevBacklogPage />} other={<ProjectListPage />} /> },
+              { index: true, element: <ProjectOverviewPage /> },
+              { path: 'sprint-planning', element: <SprintPlanningPage /> },
+              { path: 'board', element: <ProjectBoardPage /> },
+              { path: 'list', element: <ProjectListPage /> },
               { path: 'members', element: <ProjectMembersPage /> },
               { path: 'milestones', element: <MilestonesPage /> },
-              { path: 'settings', element: <ProjectSettingsPage /> },
-              { path: 'settings/people', element: <ProjectPeoplePage /> },
-              { path: 'settings/people/:userId', element: <ProjectMemberPage /> },
+              // Change requests, reports and settings are PM only (the backend refuses developers).
+              {
+                element: <RequireRole roles={['pm']} />,
+                children: [
+                  { path: 'requirements', element: <Navigate to="../change-requests" replace /> },
+                  { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
+                  { path: 'change-requests/requirements/:requirementId', element: <RequirementDetailPage /> },
+                  { path: 'change-requests/:requestId', element: <ProjectChangeRequestPage /> },
+                  { path: 'reports', element: <ProjectReportsPage /> },
+                  { path: 'reports/:reportId', element: <ProjectReportPage /> },
+                  { path: 'settings', element: <ProjectSettingsPage /> },
+                  { path: 'settings/people', element: <ProjectPeoplePage /> },
+                  { path: 'settings/people/:userId', element: <ProjectMemberPage /> },
+                ],
+              },
             ],
           },
           { path: 'profile', element: <ByRole developer={<AdminSettingsPage section="profile" area="developer" />} other={<PmSettings><AmProfilePage /></PmSettings>} /> },

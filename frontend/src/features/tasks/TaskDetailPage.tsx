@@ -15,6 +15,8 @@ import {
   useDeleteTask,
   useEditComment,
   useProjectMembers,
+  useProjectMilestoneOptions,
+  useProjectSprints,
   useAttachments,
   useProjectStatuses,
   useTask,
@@ -73,6 +75,8 @@ export function TaskDetailPage() {
   const addComment = useAddComment(taskId);
   const editComment = useEditComment(taskId);
   const members = useProjectMembers(task?.project_id).data ?? [];
+  const sprints = useProjectSprints(task?.project_id).data ?? [];
+  const milestones = useProjectMilestoneOptions(task?.project_id).data ?? [];
   const [comment, setComment] = useState('');
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [tab, setTab] = useState<'all' | 'comments' | 'history'>('all');
@@ -139,6 +143,8 @@ export function TaskDetailPage() {
     estimate_unit: task.estimate_unit,
     blocked_reason: task.blocked_reason,
     labels: task.labels,
+    sprint_id: task.sprint_id,
+    milestone_id: task.milestone_id,
   };
   // Mirrors the backend: only a PM edits task details; a developer changes the status of their own tasks.
   const isPm = user?.role === 'pm';
@@ -189,7 +195,13 @@ export function TaskDetailPage() {
     assignee_id: draft.assignee_id !== undefined ? draft.assignee_id : (task.assignee?.id ?? null),
     start_date: draft.start_date !== undefined ? draft.start_date : task.start_date,
     due_date: draft.due_date !== undefined ? draft.due_date : task.due_date,
+    sprint_id: draft.sprint_id !== undefined ? draft.sprint_id : task.sprint_id,
+    milestone_id: draft.milestone_id !== undefined ? draft.milestone_id : task.milestone_id,
   };
+  // Only planned and active sprints accept tasks; a completed sprint stays selectable only while the task is already in it.
+  const sprintOptions = sprints.filter((s) => s.state !== 'completed' || s.id === task.sprint_id);
+  const sprintName = sprints.find((s) => s.id === task.sprint_id)?.name;
+  const milestone = milestones.find((m) => m.id === task.milestone_id);
   const estimate = {
     value: draft.estimate_value !== undefined ? draft.estimate_value : task.estimate_value,
     unit: draft.estimate_unit !== undefined ? draft.estimate_unit : task.estimate_unit,
@@ -663,10 +675,33 @@ export function TaskDetailPage() {
             <div className="tdx-group">
               <h5>{t('ADDITIONAL')}</h5>
               <Row label="Sprint">
-                <span className="td-static">—</span>
+                {isPm ? (
+                  <select aria-label={t('Sprint')} value={view.sprint_id ?? ''} onChange={(e) => stage({ sprint_id: e.target.value || null })}>
+                    <option value="">{t('Backlog')}</option>
+                    {sprintOptions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {s.state === 'completed' ? ` (${t('completed')})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="td-static">{task.sprint_id ? (sprintName ?? '…') : t('Backlog')}</span>
+                )}
               </Row>
               <Row label="Milestone">
-                <span className="td-static">{t('None linked')}</span>
+                {isPm ? (
+                  <select aria-label={t('Milestone')} value={view.milestone_id ?? ''} onChange={(e) => stage({ milestone_id: e.target.value || null })}>
+                    <option value="">{t('None linked')}</option>
+                    {milestones.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.code} · {m.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="td-static">{task.milestone_id ? (milestone ? `${milestone.code} · ${milestone.name}` : '…') : t('None linked')}</span>
+                )}
               </Row>
             </div>
           </section>

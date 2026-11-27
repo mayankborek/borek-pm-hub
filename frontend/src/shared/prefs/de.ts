@@ -781,6 +781,8 @@ export const DE: Record<string, string> = {
   'Request': 'Antrag',
   'Reason': 'Begründung',
   'Milestone': 'Meilenstein',
+  'None linked': 'Keine Verknüpfung',
+  'completed': 'abgeschlossen',
   'Raised by': 'Gestellt von',
   'Proposed schedule impact': 'Vorgeschlagene Terminauswirkung',
   'Schedule impact': 'Terminauswirkung',

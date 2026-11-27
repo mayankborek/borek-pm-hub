@@ -6,6 +6,7 @@ import { api, describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
+import { useAuth } from '@/features/auth/AuthContext';
 import { useProjectTasks, emptyFilter, type Task } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
 import { formatDate, todayIso } from './projectUi';
@@ -97,14 +98,14 @@ function CreateSprint({ projectId, nextName, onClose }: { projectId: string; nex
 }
 
 /** One task row: key and title, status, assignee and the add action. */
-function TaskRow({ task, action }: { task: Task; action: { text: string; disabled: boolean; onClick: () => void } }) {
+function TaskRow({ task, action }: { task: Task; action?: { text: string; disabled: boolean; onClick: () => void } }) {
   const { t } = usePrefs();
   return (
     <div className="sp-row">
       <Link className="sp-title" to={paths.task(task.id)}>{task.key} · {task.title}</Link>
       <span>{t(task.status.name)}</span>
       <span>{task.assignee?.name ?? t('Unassigned')}</span>
-      <button type="button" disabled={action.disabled} onClick={action.onClick}>{action.text}</button>
+      {action && <button type="button" disabled={action.disabled} onClick={action.onClick}>{action.text}</button>}
     </div>
   );
 }
@@ -118,6 +119,8 @@ export function SprintPlanningPage() {
   const toast = useToast();
   const qc = useQueryClient();
   const project = useProjectContext();
+  // Mirrors the backend: only project leads plan, start and complete sprints; developers read them.
+  const isPm = useAuth().user?.role === 'pm';
   const [creating, setCreating] = useState(false);
   const sprints = useQuery({ queryKey: sprintKey(project.id), queryFn: () => api<{ items: Sprint[] }>(`/projects/${project.id}/sprints`), retry: false });
   const tasks = useProjectTasks(project.id, emptyFilter);
@@ -160,7 +163,7 @@ export function SprintPlanningPage() {
         <h2>{t('Backlog & sprint planning')}</h2>
         <div className="sp-acts">
           <Link className="btn secondary" to={paths.projectBoard(project.id)}>{t('Active board')}</Link>
-          <button type="button" className="btn" disabled={!!planned} onClick={() => setCreating(true)}>{t('Create sprint')}</button>
+          {isPm && <button type="button" className="btn" disabled={!!planned} onClick={() => setCreating(true)}>{t('Create sprint')}</button>}
         </div>
       </div>
 
@@ -176,39 +179,43 @@ export function SprintPlanningPage() {
         <section className="sp-card" id="planned" aria-label={planned.name}>
           <div className="sp-card-top">
             <h3>{planned.name} · {t('Planned')}</h3>
-            <button type="button" className="btn" disabled={!!active || start.isPending} onClick={() => start.mutate(planned)}>{t('Start sprint')}</button>
+            {isPm && <button type="button" className="btn" disabled={!!active || start.isPending} onClick={() => start.mutate(planned)}>{t('Start sprint')}</button>}
           </div>
           <p>{range(planned)} · {count(inSprint.length)}</p>
           {planned.goal && <p className="sp-goal">{t('Goal: {goal}', { goal: planned.goal })}</p>}
-          {active && <p className="sp-note">{t('Add work below. Finish {name} before starting this sprint.', { name: active.name })}</p>}
+          {active && isPm && <p className="sp-note">{t('Add work below. Finish {name} before starting this sprint.', { name: active.name })}</p>}
           {inSprint.map((k) => (
-            <TaskRow key={k.id} task={k} action={{ text: t('In {name}', { name: planned.name }), disabled: true, onClick: () => undefined }} />
+            <TaskRow key={k.id} task={k} action={isPm ? { text: t('In {name}', { name: planned.name }), disabled: true, onClick: () => undefined } : undefined} />
           ))}
         </section>
       ) : (
         <section className="sp-card" id="empty">
           <div className="sp-card-top">
             <div>
-              <h3>{t('Plan the next sprint')}</h3>
-              <p>{t('Create a 1- or 2-week sprint, then add tasks from the backlog.')}</p>
+              <h3>{isPm ? t('Plan the next sprint') : t('No sprint planned')}</h3>
+              <p>{isPm ? t('Create a 1- or 2-week sprint, then add tasks from the backlog.') : t('The project lead plans the next sprint.')}</p>
             </div>
-            <button type="button" className="btn" onClick={() => setCreating(true)}>{t('Create sprint')}</button>
+            {isPm && <button type="button" className="btn" onClick={() => setCreating(true)}>{t('Create sprint')}</button>}
           </div>
         </section>
       )}
 
       <section className="sp-card sp-backlog" aria-label={t('Backlog')}>
         <h3>{t('Backlog')} · {count(backlog.length)}</h3>
-        <p>{t('Work waiting to be planned. Add tasks to a planned sprint before starting it.')}</p>
+        <p>{isPm ? t('Work waiting to be planned. Add tasks to a planned sprint before starting it.') : t('Work waiting to be planned.')}</p>
         {backlog.map((k) => (
           <TaskRow
             key={k.id}
             task={k}
-            action={{
-              text: planned ? t('Add to {name}', { name: planned.name }) : t('Plan sprint first'),
-              disabled: !planned || add.isPending,
-              onClick: () => add.mutate(k),
-            }}
+            action={
+              isPm
+                ? {
+                    text: planned ? t('Add to {name}', { name: planned.name }) : t('Plan sprint first'),
+                    disabled: !planned || add.isPending,
+                    onClick: () => add.mutate(k),
+                  }
+                : undefined
+            }
           />
         ))}
       </section>
