@@ -1,0 +1,16 @@
+/* Requirement details: follows requirement-details.html. */
+.rqd { color: #0d1040; }
+.rqd-card { margin-top: 30px; padding: 30px 29px 25px; border: 1px solid #e0e2ec; border-radius: 14px; background: #fff; }
+.rqd-card h2 { margin: 0; font-size: 21px; line-height: 26px; font-weight: 600; }
+.rqd-owner { margin: 18px 0 0; line-height: 21px; color: #5c607a; }
+.rqd .rqd-req { margin-top: 21px; }
+.rqd-version { margin: 17px 0 0; line-height: 21px; }
+.rqd-summary { margin: 18px 0 0; line-height: 21px; }
+.rqd-card h3 { margin: 20px 0 0; font-size: 15px; line-height: 18px; font-weight: 500; color: #5c607a; }
+.rqd-card ol { margin: 20px 0 0; padding: 0; list-style-position: inside; line-height: 20px; }
+.rqd-actions { display: flex; flex-wrap: wrap; gap: 14px; margin: 29px 0; }
+.rqd-btn { display: inline-flex; align-items: center; justify-content: center; height: 52px; border: 1px solid #0d1040; border-radius: 7px; background: none; color: #0d1040; font: inherit; font-weight: 500; text-decoration: none; cursor: pointer; }
+.rqd-btn.primary { width: 261px; background: #0d1040; color: #fff; }
+.rqd-btn.secondary { width: 297px; }
+.req-title { margin: 28px 0 0; font-size: var(--fs-18); font-weight: 600; }
+@media (max-width: 600px) { .rqd-card { padding: 22px 18px; } .rqd-btn { width: 100%; } }

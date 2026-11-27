@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 
 interface Props {
@@ -42,6 +42,30 @@ export function DatePicker({ label, value, onChange, min, max, hint, error }: Pr
   });
   const [rejected, setRejected] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
+
+  // The popover is fixed to the viewport so the scrolling page never clips it; it flips above the field when there is no room below.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const field = root.current?.getBoundingClientRect();
+      const box = pop.current?.getBoundingClientRect();
+      if (!field || !box) return;
+      const gap = 4;
+      const below = window.innerHeight - field.bottom - gap;
+      const top = below >= box.height || field.top < box.height ? Math.min(field.bottom + gap, Math.max(gap, window.innerHeight - box.height - gap)) : field.top - box.height - gap;
+      const left = Math.max(gap, Math.min(field.left, window.innerWidth - box.width - gap));
+      setPos({ position: 'fixed', top, left, right: 'auto' });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, view, rejected]);
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +85,7 @@ export function DatePicker({ label, value, onChange, min, max, hint, error }: Pr
       setView({ y, m });
     }
     setRejected(false);
+    setPos({ visibility: 'hidden' });
     setOpen(!open);
   };
 
@@ -81,7 +106,7 @@ export function DatePicker({ label, value, onChange, min, max, hint, error }: Pr
         {value ? show(value, lang) : t('Not set')}
       </button>
       {open && (
-        <div className="dp-pop" role="dialog" aria-label={`${t(label)}, ${monthName(lang, view.m, 'long')} ${view.y}`}>
+        <div className="dp-pop" ref={pop} style={pos} role="dialog" aria-label={`${t(label)}, ${monthName(lang, view.m, 'long')} ${view.y}`}>
           <div className="dp-head">
             <button type="button" aria-label={t('Previous month')} onClick={() => step(-1)}>‹</button>
             <span aria-live="polite">{monthName(lang, view.m, 'long')} {view.y}</span>

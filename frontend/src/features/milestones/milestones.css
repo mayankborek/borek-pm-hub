@@ -1,9 +1,15 @@
 /* ---- Milestones (Figma "Milestones"): roadmap card and New milestone dialog ---- */
-.ms { --ms-label: 150px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 8px; }
+.ms { --ms-label: 150px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 30px 29px 27px; display: flex; flex-direction: column; gap: 8px; }
 .ms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .ms-head h2 { margin: 0; font-size: var(--fs-18); font-weight: 600; color: var(--ink); }
 .ms-head p { margin: 4px 0 0; font-size: var(--fs-12); color: var(--muted); }
-.ms-head .btn { height: 38px; padding: 0 20px; }
+.ms-head { min-height: 76px; padding-right: 75px; flex-wrap: wrap; }
+.ms-head h2 { font-size: 24px; line-height: 28px; }
+.ms-head p { margin-top: 12px; font-size: 15px; line-height: 21px; }
+.ms-actions { display: flex; gap: 12px; align-items: flex-start; margin-top: 7px; }
+.ms-head .btn { height: 43px; padding: 0 24px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 15px; cursor: pointer; }
+.ms-head .btn.primary { height: 45px; padding: 0 22px; border-color: var(--ink); background: var(--ink); color: var(--surface); font-weight: 500; }
+@media (max-width: 600px) { .ms-head { padding-right: 0; } .ms-actions { flex-wrap: wrap; } }
 .ms-empty { margin: 32px 0; color: var(--muted); font-size: var(--fs-14); }
 .ms-chart { position: relative; margin-top: 12px; padding-bottom: 12px; }
 .ms-axis { position: relative; height: 28px; font-size: var(--fs-11); color: var(--muted); }

@@ -13,7 +13,6 @@ import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { useProjectContext } from './ProjectLayout';
-import { ManagePhases } from './ManagePhases';
 import { SprintBar } from './SprintBar';
 import { formatDate } from './projectUi';
 import './backlog.css';
@@ -64,21 +63,10 @@ function TaskTable({ tasks, label, action }: { tasks: Task[]; label: string; act
   );
 }
 
-/** The ••• button above the Backlog tables opens Manage phases (borek-flow-backlog.html). */
-function ManagePhasesButton({ onClick }: { onClick: () => void }) {
-  const { t: tr } = usePrefs();
-  return (
-    <div className="more-menu">
-      <button type="button" className="more" aria-label={tr('Manage phases')} title={tr('Manage phases')} onClick={onClick}>•••</button>
-    </div>
-  );
-}
-
 /** Backlog tab: a Sprint sheet (planned work, 10 per page) above the Backlog sheet; new tasks land in Backlog by default. */
 export function ProjectListPage() {
   const project = useProjectContext();
   const [creating, setCreating] = useState(false);
-  const [phases, setPhases] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [page, setPage] = useState(1);
   const isPm = useAuth().user?.role === 'pm';
@@ -137,11 +125,6 @@ export function ProjectListPage() {
         tasks={data.items}
         combined
         statuses={statuses}
-        trailing={
-          isPm && (
-            <ManagePhasesButton onClick={() => setPhases(true)} />
-          )
-        }
       />
       <section className="sheet" aria-label={tr('Sprint')}>
         <SprintBar projectId={project.id} projectName={project.name} collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
@@ -177,7 +160,6 @@ export function ProjectListPage() {
         </button>
       </section>
       {creating && <QuickCreateTask projectId={project.id} statuses={statuses} onClose={() => setCreating(false)} />}
-      {phases && <ManagePhases projectId={project.id} onClose={() => setPhases(false)} />}
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { Pill, type Tone } from '@/shared/ui/Pill';
@@ -6,9 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States';
 import { useToast } from '@/shared/ui/Toast';
 import { useProjectContext } from '@/features/projects/ProjectLayout';
 import {
-  DECISION_LABEL,
   STATUS,
-  VERSION_STATE_LABEL,
   useCreateRequirement,
   useRequirements,
   useUpdateRequirement,
@@ -16,7 +16,6 @@ import {
   type RequirementDraft,
   type RequirementStatus,
 } from './requirementsApi';
-import { AcceptanceFlow } from './AcceptanceFlow';
 import './requirements.css';
 
 const PILL: Record<RequirementStatus, Tone> = {
@@ -28,11 +27,11 @@ const PILL: Record<RequirementStatus, Tone> = {
 };
 const FILTERS: (RequirementStatus | 'all')[] = ['all', 'draft', 'awaiting_acceptance', 'changes_requested', 'accepted', 'rejected'];
 
-const day = (stamp: string) => stamp.slice(0, 10);
 const toCriteria = (text: string) => text.split('\n').map((l) => l.trim()).filter(Boolean);
 
 /** Requirements tab: create and publish requirements for client acceptance, and track the answers. */
-export function ProjectRequirementsPage() {
+/** Requirements list under the Change Requests tab; each row opens the requirement details page. */
+export function RequirementsSection() {
   const project = useProjectContext();
   const { t } = usePrefs();
   const list = useRequirements(project.id);
@@ -47,6 +46,7 @@ export function ProjectRequirementsPage() {
 
   return (
     <section className="req" aria-label={t('Requirements')}>
+      <h2 className="req-title">{t('Requirements')}</h2>
       <div className="req-head">
         <p>{t('Publish a requirement for the client to accept, then follow their answer here.')}</p>
         {!composing && (
@@ -80,7 +80,7 @@ export function ProjectRequirementsPage() {
   );
 }
 
-function RequirementForm({ projectId, requirement, onDone }: { projectId: string; requirement?: Requirement; onDone: () => void }) {
+export function RequirementForm({ projectId, requirement, onDone }: { projectId: string; requirement?: Requirement; onDone: () => void }) {
   const { t } = usePrefs();
   const toast = useToast();
   const create = useCreateRequirement(projectId);
@@ -143,55 +143,15 @@ function RequirementForm({ projectId, requirement, onDone }: { projectId: string
 }
 
 function RequirementCard({ requirement: r, projectId }: { requirement: Requirement; projectId: string }) {
-  const { t } = usePrefs();
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
-
-  const closed = r.status === 'accepted' || r.status === 'rejected';
   const shownVersion = r.published_version ?? r.current_version;
-
   return (
     <li className="req-card">
-      <button type="button" className="req-summary" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+      <Link className="req-summary" to={paths.projectRequirement(projectId, r.id)}>
         <span className="req-code">{r.code}</span>
         <b>{r.title}</b>
         <span className="req-ver">v{shownVersion}</span>
         <Pill tone={PILL[r.status]}>{STATUS[r.status].label}</Pill>
-      </button>
-      {open && (
-        <div className="req-detail">
-          {r.has_unpublished_changes && <p className="req-hint">{t('Version {n} is a draft: the client still sees v{m}.', { n: r.current_version, m: r.published_version ?? '' })}</p>}
-          {!editing && <AcceptanceFlow requirement={r} projectId={projectId} onCorrect={() => setEditing(true)} />}
-          {!closed && !editing && (
-            <div className="req-actions">
-              <button type="button" className="btn secondary" onClick={() => setEditing(true)}>{t('Edit')}</button>
-            </div>
-          )}
-          {editing && <RequirementForm projectId={projectId} requirement={r} onDone={() => setEditing(false)} />}
-          <ol className="req-versions">
-            {r.versions.map((v) => (
-              <li key={v.number}>
-                <div className="req-vhead">
-                  <b>v{v.number}</b>
-                  <span>{t(VERSION_STATE_LABEL[v.state])}</span>
-                  {v.published_at && <small>{t('Published {date}', { date: day(v.published_at) })}</small>}
-                </div>
-                <p>{v.description}</p>
-                {v.change_note && <p className="req-note">{t('Changed: {note}', { note: v.change_note })}</p>}
-                {v.acceptance_criteria.length > 0 && (
-                  <ul>{v.acceptance_criteria.map((c) => <li key={c}>{c}</li>)}</ul>
-                )}
-                {v.response && v.responded_at && (
-                  <p className="req-answer">
-                    <b>{t(DECISION_LABEL[v.response])}</b> · {v.responded_by?.name} · {day(v.responded_at)}
-                    {v.response_comment && <> — {v.response_comment}</>}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
+      </Link>
     </li>
   );
 }

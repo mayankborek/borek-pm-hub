@@ -33,8 +33,6 @@ export function AppLayout() {
         ? 'Milestones'
         : /^\/projects\/[^/]+\/settings(\/|$)/.test(pathname)
         ? 'Settings'
-        : /^\/projects\/[^/]+\/requirements\/?$/.test(pathname)
-        ? 'Requirements'
         : /^\/projects\/[^/]+\/change-requests\/?$/.test(pathname)
         ? 'Change Requests'
         : /^\/projects\/(?!new$)[^/]+\/?$/.test(pathname)

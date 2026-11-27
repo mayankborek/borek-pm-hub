@@ -20,6 +20,7 @@ import {
   type CrDelivery,
   type StaffCr,
 } from './changeRequestsStaffApi';
+import { RequirementsSection } from '@/features/requirements/ProjectRequirementsPage';
 import '@/features/requirements/requirements.css';
 import './changeRequests.css';
 
@@ -39,7 +40,13 @@ const num = (v: string) => (v.trim() === '' ? null : Number(v));
 
 /** Change Requests tab: the queue of requests clients raise, with impact, decision and the shared conversation. */
 export function ProjectChangeRequestsPage() {
-  return <ChangeRequestsView projectId={useProjectContext().id} requestPath={paths.projectChangeRequest} />;
+  const projectId = useProjectContext().id;
+  return (
+    <>
+      <ChangeRequestsView projectId={projectId} requestPath={paths.projectChangeRequest} />
+      <RequirementsSection />
+    </>
+  );
 }
 
 /** The queue for one project; `requestPath` is where "Review request" goes, so the Manager's shell can reuse it. */

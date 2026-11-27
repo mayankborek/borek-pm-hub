@@ -29,7 +29,7 @@ import { LINK_KIND, LINK_LABEL, useAddTaskLink, useRemoveTaskLink, useTaskLinks 
 import { AssigneeSelect } from './AssigneeSelect';
 import { Avatar } from './TaskParts';
 import { DatePicker } from './DatePicker';
-import { PrioritySelect } from './PrioritySelect';
+import { PriorityIndicator, PrioritySelect } from './PrioritySelect';
 import { StatusSelect } from './StatusSelect';
 import { LabelChips, LabelPicker } from './LabelPicker';
 import { MentionInput, mentionIdsFor } from './MentionInput';
@@ -206,7 +206,9 @@ export function TaskDetailPage() {
       el.setSelectionRange(a + pre.length, b + pre.length);
     });
   };
+  // Status and priority are the developer's to change only on tasks assigned to them.
   const canStatus = isPm || task.assignee?.id === user?.id;
+  const canPriority = canStatus;
   // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
   const edit = (patch: TaskPatch) =>
     isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))) });
@@ -572,7 +574,11 @@ export function TaskDetailPage() {
                 </Row>
               )}
               <Row label="Priority">
-                <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
+                {canPriority ? (
+                  <PrioritySelect value={view.priority} onChange={(priority) => edit({ priority })} />
+                ) : (
+                  <PriorityIndicator priority={view.priority} />
+                )}
               </Row>
               <Row label="Task type">
                 <span className="td-static">{t('Task')}</span>

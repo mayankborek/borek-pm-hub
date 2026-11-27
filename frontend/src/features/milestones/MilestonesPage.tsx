@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { parseApiError } from '@/features/projects/projectsApi';
 import { useProjectContext } from '@/features/projects/ProjectLayout';
 import { formatDate } from '@/features/projects/projectUi';
+import { ManagePhases } from '@/features/projects/ManagePhases';
 import { useProjectMembers } from '@/features/tasks/tasksApi';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
@@ -25,6 +26,7 @@ export function MilestonesPage() {
   const { t } = usePrefs();
   const roadmap = useRoadmap(project.id);
   const [creating, setCreating] = useState(false);
+  const [phases, setPhases] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   if (user?.role !== 'pm') return <Navigate to={paths.project(project.id)} replace />;
 
@@ -39,7 +41,10 @@ export function MilestonesPage() {
           <h2>{t('Project roadmap')}</h2>
           <p>{t('Project phases and delivery milestones')}{r.range_start && r.range_end ? ` · ${short(r.range_start)}–${formatDate(r.range_end)}` : ''}</p>
         </div>
-        <button type="button" className="btn" onClick={() => setCreating(true)}>{t('Create milestone')}</button>
+        <div className="ms-actions">
+          <button type="button" className="btn" onClick={() => setPhases(true)}>{t('Manage phases')}</button>
+          <button type="button" className="btn primary" onClick={() => setCreating(true)}>{t('Create milestone')}</button>
+        </div>
       </header>
       <Timeline r={r} onOpen={setEditing} />
       <ul className="ms-legend">
@@ -50,6 +55,7 @@ export function MilestonesPage() {
         <li><i className="today" />{t('Today')}</li>
       </ul>
       <p className="ms-note">{t('Phase bars show duration. Diamonds mark milestone due dates. Progress comes from linked tasks.')}</p>
+      {phases && <ManagePhases projectId={project.id} onClose={() => setPhases(false)} />}
       {creating && <MilestoneDialog projectId={project.id} r={r} onClose={() => setCreating(false)} />}
       {editing && allMilestones(r).some((m) => m.id === editing) && (
         <MilestoneDialog key={editing} projectId={project.id} r={r} milestone={allMilestones(r).find((m) => m.id === editing)} onClose={() => setEditing(null)} />

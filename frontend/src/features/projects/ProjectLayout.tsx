@@ -2,13 +2,9 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
-import { EXPORT_FORMATS, exportFilter, exportTasks, type ExportFormat } from '@/features/tasks/jiraApi';
-import { JiraImportDialog } from '@/features/tasks/JiraImportDialog';
-import { useUrlFilter } from '@/features/tasks/useUrlFilter';
-import { ApiError, describeApiError } from '@/shared/api/client';
+import { ApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
-import { useToast } from '@/shared/ui/Toast';
 import { useProject, useProjects } from './projectsApi';
 import { PmIcon } from './pmIcons';
 import type { Project } from './types';
@@ -19,57 +15,6 @@ import './projects.css';
 import './pmSettings.css';
 
 export const useProjectContext = () => useOutletContext<Project>();
-
-/** Import / Export for the Backlog and Board tabs, shown next to Edit project. Export follows the tab's active filters. */
-function BacklogActions({ project }: { project: Project }) {
-  const { t: tr } = usePrefs();
-  const toast = useToast();
-  const { applied } = useUrlFilter();
-  const [importing, setImporting] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [exportMenu, setExportMenu] = useState(false);
-
-  const runExport = (format: ExportFormat) => {
-    setExportMenu(false);
-    setExporting(true);
-    exportTasks({ project_id: project.id, filter: exportFilter(applied), format })
-      .catch((e) => toast.error(describeApiError(e, tr('Could not export tasks.'))))
-      .finally(() => setExporting(false));
-  };
-
-  return (
-    <>
-      <button type="button" className="btn secondary" onClick={() => setImporting(true)}>
-        {tr('Import')}
-      </button>
-      <div className="export-menu">
-        <button
-          type="button"
-          className="btn secondary"
-          aria-haspopup="menu"
-          aria-expanded={exportMenu}
-          disabled={exporting}
-          onClick={() => setExportMenu((o) => !o)}
-          onKeyDown={(e) => e.key === 'Escape' && setExportMenu(false)}
-        >
-          {tr(exporting ? 'Exporting…' : 'Export')} ▾
-        </button>
-        {exportMenu && (
-          <ul className="export-list" role="menu">
-            {EXPORT_FORMATS.map((f) => (
-              <li key={f} role="none">
-                <button type="button" role="menuitem" onClick={() => runExport(f)}>
-                  {f.toUpperCase()}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {importing && <JiraImportDialog projects={[project]} defaultProjectId={project.id} onClose={() => setImporting(false)} />}
-    </>
-  );
-}
 
 /** Read-only archive shown in place of the Overview once a project is completed or cancelled. */
 function ClosedProject({ project }: { project: Project }) {
@@ -153,14 +98,12 @@ export function ProjectLayout() {
   }
 
   const closed = project.status === 'completed' || project.status === 'cancelled';
-  const onBacklog = pathname === paths.projectList(projectId) || pathname === paths.projectBoard(projectId);
   const tabs = [
     { label: 'Overview', to: paths.project(projectId), end: true },
     { label: 'Backlog', to: paths.projectList(projectId) },
     { label: 'Board', to: paths.projectBoard(projectId) },
     ...(user?.role === 'pm'
       ? [
-          { label: 'Requirements', to: paths.projectRequirements(projectId) },
           { label: 'Change Requests', to: paths.projectChangeRequests(projectId) },
           { label: 'Milestones', to: paths.projectMilestones(projectId) },
           { label: 'Reports', to: paths.projectReports(projectId) },
@@ -177,11 +120,6 @@ export function ProjectLayout() {
             <div className="proj-eyebrow">{project.type === 'internal' ? t('Internal project') : t('External project')}</div>
             <ProjectSwitcher project={project} />
           </div>
-          {user?.role === 'pm' && onBacklog && (
-            <div className="page-actions">
-              <BacklogActions project={project} />
-            </div>
-          )}
         </div>
         <nav className="tabs" aria-label={t('Project')}>
           {tabs.map((tab) => (

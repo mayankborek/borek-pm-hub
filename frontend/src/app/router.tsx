@@ -17,8 +17,8 @@ import { ClientProjectLayout } from '@/features/client/ClientProjectLayout';
 import { ClientOverviewPage } from '@/features/client/ClientOverviewPage';
 import { AmMilestonesPage } from '@/features/accountManager/AmMilestonesPage';
 import { ClientMilestonesPage } from '@/features/client/ClientMilestonesPage';
-import { ProjectRequirementsPage } from '@/features/requirements/ProjectRequirementsPage';
 import { ProjectChangeRequestsPage } from '@/features/changeRequests/ProjectChangeRequestsPage';
+import { RequirementDetailPage } from '@/features/requirements/RequirementDetailPage';
 import { ProjectChangeRequestPage } from '@/features/changeRequests/ProjectChangeRequestPage';
 import { ProjectReportsPage, ProjectReportPage } from '@/features/reports/ProjectReportsPages';
 import { ClientChangeRequestsPage } from '@/features/client/ClientChangeRequestsPage';
@@ -63,7 +63,6 @@ import { DevProjectLayout } from '@/features/developer/DevProjectLayout';
 import { DevOverviewPage } from '@/features/developer/DevOverviewPage';
 import { DevBacklogPage } from '@/features/developer/DevBacklogPage';
 import { DevBoardPage } from '@/features/developer/DevBoardPage';
-import { DevTaskPage } from '@/features/developer/DevTaskPage';
 import { ForbiddenPage, NotFoundPage } from '@/features/errors/ErrorPages';
 import { ByRole, RedirectIfAuthed, RequireAuth, RequireRole, RoleHome, StaffOnly } from './guards';
 
@@ -247,8 +246,9 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <ByRole developer={<DevOverviewPage />} other={<ProjectOverviewPage />} /> },
               { path: 'board', element: <ByRole developer={<DevBoardPage />} other={<ProjectBoardPage />} /> },
-              { path: 'requirements', element: <ProjectRequirementsPage /> },
+              { path: 'requirements', element: <Navigate to="../change-requests" replace /> },
               { path: 'change-requests', element: <ProjectChangeRequestsPage /> },
+              { path: 'change-requests/requirements/:requirementId', element: <RequirementDetailPage /> },
               { path: 'change-requests/:requestId', element: <ProjectChangeRequestPage /> },
               { path: 'reports', element: <ProjectReportsPage /> },
               { path: 'reports/:reportId', element: <ProjectReportPage /> },
@@ -265,7 +265,7 @@ export const router = createBrowserRouter([
           { path: 'profile/preferences', element: <ByRole developer={<AdminSettingsPage section="preferences" area="developer" />} other={<PmSettings><AmPreferencesPage /></PmSettings>} /> },
           { path: 'tasks', element: <TasksPage /> },
           { path: 'tasks/new', element: <TaskCreatePage /> },
-          { path: 'tasks/:taskId', element: <ByRole developer={<DevTaskPage />} other={<TaskDetailPage />} /> },
+          { path: 'tasks/:taskId', element: <TaskDetailPage /> },
 
           { path: 'forbidden', element: <ForbiddenPage /> },
           { path: '*', element: <NotFoundPage /> },

@@ -86,7 +86,7 @@ const SCREENS = {
     milestones: paths.projectMilestones,
     report: paths.projectReport,
     changeRequests: paths.projectChangeRequests,
-    requirements: (id: string) => `${paths.project(id)}/requirements`,
+    requirements: paths.projectChangeRequests,
   },
   account_manager: {
     projects: () => paths.amProjects,

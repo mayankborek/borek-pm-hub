@@ -223,21 +223,25 @@ export function SprintBar({ projectId, projectName = '', collapsed, onToggle }: 
 
   return (
     <div className="sprint-bar">
-      <span className="sname">
-        {shown?.name ?? t('No active sprint')}
-        {shown && !onToggle && <span aria-hidden="true">⌄</span>}
-        {shown && onToggle && (
-          <button type="button" className="toggle" aria-expanded={!collapsed} aria-label={t(collapsed ? 'Expand sprint' : 'Collapse sprint')} onClick={onToggle}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" style={{ transform: collapsed ? 'rotate(-90deg)' : undefined }}><path d="M5 6l3 4 3-4" /></svg>
-          </button>
-        )}
-      </span>
+      <h2 className="sname">{shown?.name ?? t('No active sprint')}</h2>
+      {shown && !onToggle && <span className="toggle" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 6l3 4 3-4" /></svg></span>}
+      {shown && onToggle && (
+        <button type="button" className="toggle" aria-expanded={!collapsed} aria-label={t(collapsed ? 'Expand sprint' : 'Collapse sprint')} onClick={onToggle}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" style={{ transform: collapsed ? 'rotate(-90deg)' : undefined }}><path d="M5 6l3 4 3-4" /></svg>
+        </button>
+      )}
       {shown && <span className={shown.state === 'active' ? 'badge active' : 'badge'}>{t(shown.state === 'active' ? 'Active' : 'Planned')}</span>}
-      {shown && <span className="dates">{formatDate(shown.start_date)} – {formatDate(shown.end_date)}</span>}
+      {shown && (
+        <>
+          <time dateTime={shown.start_date ?? undefined}>{formatDate(shown.start_date)}</time>
+          <span className="dash">–</span>
+          <time dateTime={shown.end_date ?? undefined}>{formatDate(shown.end_date)}</time>
+        </>
+      )}
       {isPm && (
-        <button type="button" className="burger" aria-label={t('Manage sprints')} onClick={() => setManaging(true)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 6h16M4 12h16M4 18h16" />
+        <button type="button" className="menu" aria-label={t('Manage sprints')} onClick={() => setManaging(true)}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M3 4h10M3 8h10M3 12h10" />
           </svg>
         </button>
       )}
