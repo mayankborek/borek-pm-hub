@@ -22,7 +22,10 @@ import {
   useTask,
   useUpdateTask,
   ESTIMATE_UNITS,
+  TASK_TYPES,
+  TASK_TYPE_LABEL,
   type EstimateUnit,
+  type TaskType,
   type TaskPatch,
 } from './tasksApi';
 import { formatDate } from '@/features/projects/projectUi';
@@ -58,7 +61,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Opens from the Task List (Figma "PM · Related Task · Added"). Edits are staged and sent together by the Save button via PATCH /tasks/{id}. */
+/** Opens from the Task List (Figma "PM · Related Task · Added"). Each field saves as it changes via PATCH /tasks/{id}; a rejected save offers Retry or Keep previous. */
 export function TaskDetailPage() {
   const { t } = usePrefs();
   const { taskId = '' } = useParams();
@@ -87,8 +90,6 @@ export function TaskDetailPage() {
   const picker = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
   const [fileError, setFileError] = useState('');
-  // Attachments save as soon as they are picked, but the Save button stays active so the page can be confirmed.
-  const [filesChanged, setFilesChanged] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [menu, setMenu] = useState(false);
   const [dropping, setDropping] = useState(false);
@@ -110,8 +111,12 @@ export function TaskDetailPage() {
   const addLink = useAddTaskLink(taskId);
   const removeLink = useRemoveTaskLink(taskId);
   const related = links.data ?? [];
-  // Unsaved edits, sent together by the Save button.
+  // Edits not yet accepted by the server: each field saves as soon as it changes (text fields on blur or Enter).
   const [draft, setDraft] = useState<TaskPatch>({});
+  // The last save the server rejected, kept so the user can retry it or keep the previous value.
+  const [failed, setFailed] = useState<{ changes: TaskPatch; error: unknown } | null>(null);
+  // Saves run one after another so each carries the version the previous one returned.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   if (isPending)
     return (
@@ -135,6 +140,7 @@ export function TaskDetailPage() {
     title: task.title,
     description: task.description,
     priority: task.priority,
+    task_type: task.task_type,
     status_id: task.status.id,
     assignee_id: task.assignee?.id ?? null,
     start_date: task.start_date,
@@ -150,15 +156,19 @@ export function TaskDetailPage() {
   const isPm = user?.role === 'pm';
   // A developer may also move the dates of a task they created for themselves.
   const canSchedule = isPm || (task.assignee?.id === user?.id && task.reporter.id === user?.id);
-  const changes: TaskPatch = {};
-  for (const key of Object.keys(draft) as (keyof TaskPatch)[]) {
-    // The backend rejects a developer's PATCH that carries PM-only fields, so Save sends just status fields for them.
-    if (!isPm && key !== 'status_id' && key !== 'blocked_reason' && !(canSchedule && (key === 'start_date' || key === 'due_date'))) continue;
-    const next =
-      key === 'title' ? draft.title?.trim() : key === 'description' ? draft.description?.trim() || null : key === 'blocked_reason' ? draft.blocked_reason?.trim() || null : draft[key];
-    if (JSON.stringify(next) !== JSON.stringify(saved[key])) Object.assign(changes, { [key]: next });
-  }
-  const dirty = Object.keys(changes).length > 0;
+  // What differs from the saved task, for a given set of edits.
+  const diff = (edits: TaskPatch) => {
+    const out: TaskPatch = {};
+    for (const key of Object.keys(edits) as (keyof TaskPatch)[]) {
+      // The backend rejects a developer's PATCH that carries PM-only fields, so only status fields are sent for them.
+      if (!isPm && key !== 'status_id' && key !== 'blocked_reason' && !(canSchedule && (key === 'start_date' || key === 'due_date'))) continue;
+      const next =
+        key === 'title' ? edits.title?.trim() : key === 'description' ? edits.description?.trim() || null : key === 'blocked_reason' ? edits.blocked_reason?.trim() || null : edits[key];
+      if (JSON.stringify(next) !== JSON.stringify(saved[key])) Object.assign(out, { [key]: next });
+    }
+    return out;
+  };
+  const dirty = Object.keys(diff(draft)).length > 0;
   // A blocked status needs a reason (the backend rejects it otherwise).
   const targetStatus = (statuses.data ?? [task.status]).find((s) => s.id === (draft.status_id ?? task.status.id)) ?? task.status;
   const blocking = targetStatus.category === 'blocked';
@@ -166,31 +176,52 @@ export function TaskDetailPage() {
   const title = draft.title !== undefined ? draft.title : task.title;
   // The backend rejects an empty title.
   const missingTitle = isPm && !title.trim();
-  const missingReason = (blocking && !reason.trim()) || missingTitle;
-  const save = () => {
-    if (!dirty) {
-      setFilesChanged(false);
-      return;
-    }
+  const missingReason = blocking && !reason.trim();
+  /** Sends the pending edits (plus `extra`, which state has not caught up with yet). Waits while a required field is empty. */
+  const commit = (extra: TaskPatch = {}) => {
+    const edits = { ...draft, ...extra };
+    const changes = diff(edits);
+    const nextStatus = (statuses.data ?? [task.status]).find((s) => s.id === (edits.status_id ?? task.status.id)) ?? task.status;
+    const nextReason = ((edits.blocked_reason !== undefined ? edits.blocked_reason : task.blocked_reason) ?? '').trim();
+    const needsReason = nextStatus.category === 'blocked' && !nextReason;
+    const emptyTitle = isPm && !(edits.title ?? task.title).trim();
+    if (!Object.keys(changes).length || needsReason || emptyTitle) return;
     // The reason travels with the status change that needs it, even when the task already had one.
-    if (blocking && changes.status_id && !('blocked_reason' in changes)) changes.blocked_reason = reason.trim();
-    update.mutate(changes, {
-      onSuccess: () => {
-        setDraft({});
-        setFilesChanged(false);
-      },
-      onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
-    });
+    if (nextStatus.category === 'blocked' && changes.status_id && !('blocked_reason' in changes)) changes.blocked_reason = nextReason;
+    setFailed(null);
+    queue.current = queue.current
+      .then(() => update.mutateAsync(changes))
+      .then(
+        () =>
+          // Drop what was saved, but keep anything typed while the request was in flight.
+          setDraft((d) => {
+            const rest = { ...d };
+            for (const key of Object.keys(changes) as (keyof TaskPatch)[]) if (d[key] === edits[key]) delete rest[key];
+            return rest;
+          }),
+        (error) => setFailed({ changes, error }),
+      );
   };
-  // Pressing Enter in a single-line field saves, same as the Save button.
+  const retry = () => failed && commit();
+  /** Drops the rejected edits so the field shows the saved value again. */
+  const keepPrevious = () => {
+    setDraft((d) => {
+      const rest = { ...d };
+      for (const key of Object.keys(failed?.changes ?? {}) as (keyof TaskPatch)[]) delete rest[key];
+      return rest;
+    });
+    setFailed(null);
+  };
+  // Pressing Enter in a single-line field saves it straight away.
   const saveOnEnter = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
     e.preventDefault();
-    if (!missingReason && !update.isPending) save();
+    commit();
   };
   const view = {
     description: draft.description !== undefined ? (draft.description ?? '') : (task.description ?? ''),
     priority: draft.priority ?? task.priority,
+    task_type: draft.task_type ?? task.task_type,
     status_id: draft.status_id ?? task.status.id,
     assignee_id: draft.assignee_id !== undefined ? draft.assignee_id : (task.assignee?.id ?? null),
     start_date: draft.start_date !== undefined ? draft.start_date : task.start_date,
@@ -221,19 +252,20 @@ export function TaskDetailPage() {
   // Status and priority are the developer's to change only on tasks assigned to them.
   const canStatus = isPm || task.assignee?.id === user?.id;
   const canPriority = canStatus;
-  // PMs stage edits for the Save button; developers apply each change straight away, as they do for status.
-  const edit = (patch: TaskPatch) =>
-    isPm ? stage(patch) : update.mutate(patch, { onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))) });
+  // Choosing a value saves it straight away.
+  const edit = (patch: TaskPatch) => {
+    stage(patch);
+    commit(patch);
+  };
   const upload = (picked: File[]) => {
     if (!picked.length) return;
     setFileError('');
     files.upload.mutate(picked, {
-      onSuccess: () => setFilesChanged(true),
       onError: (err) =>
         setFileError(err instanceof ApiError && err.status === 413 ? t('That file is too large (25 MB max).') : describeApiError(err, t('Could not upload the file.'))),
     });
   };
-  const conflict = update.error instanceof ApiError && update.error.status === 409;
+  const conflict = failed?.error instanceof ApiError && failed.error.status === 409;
   // Return to wherever the user came from; fall back to the list/board when the page was opened directly.
   const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(isPm ? paths.tasks : paths.projectBoard(task.project_id)));
 
@@ -250,9 +282,9 @@ export function TaskDetailPage() {
         <span className="tdx-id">{task.key}</span>
         <span className="tdx-link">{t('Project task')}</span>
         <div className="tdx-right">
-          <button type="button" className="tdx-btn primary" disabled={(!dirty && !filesChanged) || missingReason || update.isPending} onClick={save}>
-            {t(update.isPending ? 'Saving…' : 'Save')}
-          </button>
+          <span className="tdx-save-state" role="status" aria-live="polite">
+            {update.isPending ? t('Saving…') : failed ? '' : dirty ? t('Unsaved changes') : t('Saved')}
+          </span>
           {isPm && (
             <div className="td-more">
               <button
@@ -286,15 +318,22 @@ export function TaskDetailPage() {
           maxLength={200}
           value={title}
           onChange={(e) => stage({ title: e.target.value })}
+          onBlur={() => commit()}
           onKeyDown={saveOnEnter}
         />
       ) : (
         <h2 className="tdx-title">{task.title}</h2>
       )}
       </header>
-      {update.isError && (
+      {failed && (
         <p className="td-error" role="alert">
-          {conflict ? t('Someone else changed this task. The latest version has been loaded; try again.') : describeApiError(update.error, t('Could not save your change.'))}
+          {conflict ? t('Someone else changed this task. The latest version has been loaded; try again.') : describeApiError(failed.error, t('Could not save your change.'))}{' '}
+          <button type="button" className="tdx-link" onClick={retry}>
+            {t('Retry')}
+          </button>{' '}
+          <button type="button" className="tdx-link" onClick={keepPrevious}>
+            {t('Keep previous')}
+          </button>
         </p>
       )}
 
@@ -335,11 +374,12 @@ export function TaskDetailPage() {
                 placeholder={t('No description added.')}
                 value={view.description}
                 onChange={(e) => stage({ description: e.target.value })}
+                onBlur={() => commit()}
                 // Enter saves; Shift+Enter adds a new line.
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                     e.preventDefault();
-                    if (!missingReason && !update.isPending) save();
+                    commit();
                   }
                 }}
               />
@@ -406,7 +446,6 @@ export function TaskDetailPage() {
                   disabled={files.remove.isPending}
                   onClick={() =>
                     files.remove.mutate(a.id, {
-                      onSuccess: () => setFilesChanged(true),
                       onError: (e) => setFileError(describeApiError(e, t('Could not remove the file.'))),
                     })
                   }
@@ -551,19 +590,8 @@ export function TaskDetailPage() {
                   <StatusSelect
                     value={view.status_id}
                     options={statuses.data ?? [task.status]}
-                    onChange={(status_id) => {
-                      // Developers apply a status straight away; a blocked status first needs its reason, which Save sends.
-                      const next = (statuses.data ?? []).find((s) => s.id === status_id);
-                      if (isPm || next?.category === 'blocked') return stage({ status_id });
-                      update.mutate(
-                        { status_id },
-                        {
-                          // Drop any staged blocked choice so the dropdown shows the saved status.
-                          onSuccess: () => setDraft((d) => ({ ...d, status_id: undefined, blocked_reason: undefined })),
-                          onError: (e) => toast.error(describeApiError(e, t('Could not save your change.'))),
-                        },
-                      );
-                    }}
+                    // A blocked status waits for its reason, then saves with it.
+                    onChange={(status_id) => edit({ status_id })}
                   />
                 ) : (
                   <span className="td-static">{t(task.status.name)}</span>
@@ -578,6 +606,7 @@ export function TaskDetailPage() {
                       placeholder={t('Why is this blocked?')}
                       value={reason}
                       onChange={(e) => stage({ blocked_reason: e.target.value })}
+                      onBlur={() => commit()}
                       onKeyDown={saveOnEnter}
                     />
                   ) : (
@@ -593,15 +622,25 @@ export function TaskDetailPage() {
                 )}
               </Row>
               <Row label="Task type">
-                <span className="td-static">{t('Task')}</span>
+                {isPm ? (
+                  <select aria-label={t('Task type')} value={view.task_type} onChange={(e) => edit({ task_type: e.target.value as TaskType })}>
+                    {TASK_TYPES.map((v) => (
+                      <option key={v} value={v}>
+                        {t(TASK_TYPE_LABEL[v])}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="td-static">{t(TASK_TYPE_LABEL[task.task_type])}</span>
+                )}
               </Row>
               <Row label="Labels">
                 {isPm ? (
                   <LabelPicker
                     projectId={task.project_id}
                     value={draft.labels ?? task.labels}
-                    onChange={(labels) => stage({ labels })}
-                    onSubmit={() => !missingReason && !update.isPending && save()}
+                    onChange={(labels) => edit({ labels })}
+                    onSubmit={() => commit()}
                   />
                 ) : (
                   <LabelChips labels={task.labels} />
@@ -617,6 +656,7 @@ export function TaskDetailPage() {
                       aria-label={t('Estimate amount')}
                       value={estimate.value ?? ''}
                       onKeyDown={saveOnEnter}
+                      onBlur={() => commit()}
                       onChange={(e) => {
                         const n = Math.floor(Number(e.target.value));
                         // Amount and unit travel together: clearing one clears the other.
@@ -627,7 +667,7 @@ export function TaskDetailPage() {
                       aria-label={t('Estimate unit')}
                       value={estimate.unit ?? 'hours'}
                       disabled={estimate.value == null}
-                      onChange={(e) => stage({ estimate_unit: e.target.value as EstimateUnit })}
+                      onChange={(e) => edit({ estimate_unit: e.target.value as EstimateUnit })}
                     >
                       {ESTIMATE_UNITS.map((u) => (
                         <option key={u} value={u}>
@@ -676,7 +716,7 @@ export function TaskDetailPage() {
               <h5>{t('ADDITIONAL')}</h5>
               <Row label="Sprint">
                 {isPm ? (
-                  <select aria-label={t('Sprint')} value={view.sprint_id ?? ''} onChange={(e) => stage({ sprint_id: e.target.value || null })}>
+                  <select aria-label={t('Sprint')} value={view.sprint_id ?? ''} onChange={(e) => edit({ sprint_id: e.target.value || null })}>
                     <option value="">{t('Backlog')}</option>
                     {sprintOptions.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -691,7 +731,7 @@ export function TaskDetailPage() {
               </Row>
               <Row label="Milestone">
                 {isPm ? (
-                  <select aria-label={t('Milestone')} value={view.milestone_id ?? ''} onChange={(e) => stage({ milestone_id: e.target.value || null })}>
+                  <select aria-label={t('Milestone')} value={view.milestone_id ?? ''} onChange={(e) => edit({ milestone_id: e.target.value || null })}>
                     <option value="">{t('None linked')}</option>
                     {milestones.map((m) => (
                       <option key={m.id} value={m.id}>

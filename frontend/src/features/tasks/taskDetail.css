@@ -332,3 +332,4 @@ input.td-title[aria-invalid='true'] { border-color: var(--err); }
 .rd-field select, .rd-field input, .td-mention input { border-radius: 8px; }
 .td-danger, .rd-btn { border-radius: 8px; }
 .td-file { padding: 8px 12px; border-radius: 8px; background: #f3f4f8; }
+.tdx-save-state { font-size: var(--fs-13); color: #6b6f8c; }

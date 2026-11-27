@@ -9,6 +9,10 @@ export const ESTIMATE_UNITS = ['minutes', 'hours', 'weeks'] as const;
 export type EstimateUnit = (typeof ESTIMATE_UNITS)[number];
 export type StatusCategory = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'done';
 export type TaskPriority = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
+/** Mirrors backend TaskType (app/common/enums.py). */
+export const TASK_TYPES = ['task', 'bug', 'story'] as const;
+export type TaskType = (typeof TASK_TYPES)[number];
+export const TASK_TYPE_LABEL: Record<TaskType, string> = { task: 'Task', bug: 'Bug', story: 'Story' };
 
 export interface UserBrief {
   id: string;
@@ -25,6 +29,7 @@ export interface Task {
   title: string;
   status: { id: string; name: string; category: StatusCategory };
   priority: TaskPriority;
+  task_type: TaskType;
   labels: string[];
   due_date: string | null;
   estimate_value: number | null;
@@ -124,6 +129,7 @@ export type TaskPatch = Partial<{
   description: string | null;
   status_id: string;
   priority: TaskPriority;
+  task_type: TaskType;
   labels: string[];
   start_date: string | null;
   due_date: string | null;
