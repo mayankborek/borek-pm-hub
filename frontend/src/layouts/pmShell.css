@@ -31,10 +31,29 @@
 .shell.pm .topbar { justify-content: flex-start; align-items: stretch; height: 70px; padding: 0 50px 0 32px; }
 .shell.pm .topbar-row { height: 70px; align-items: flex-start; }
 .shell.pm .topbar-title { min-width: 286px; height: 70px; padding-top: 22px; font-size: var(--fs-18); line-height: 26px; font-weight: 500; border-bottom: 2px solid var(--navy); }
-.shell.pm .topbar-actions { height: 32px; margin-top: 22px; gap: 0; }
-.shell.pm .bell { display: grid; place-items: center; width: 32px; height: 32px; color: var(--navy); }
-.shell.pm .topbar-divider { height: 28px; margin: 0 8px 0 10px; }
-.shell.pm .avatar { border-radius: 50%; background: #eef0f7; color: var(--pm-navy); font-size: var(--fs-11); }
+.shell.pm .topbar { overflow: visible; position: relative; z-index: 20; }
+.shell.pm .topbar-actions { height: 36px; margin-top: 17px; gap: 0; }
+.shell.pm .bell,
+.shell.pm .cp-bell { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--navy); transition: background .15s; }
+.shell.pm .cp-bell:hover,
+.shell.pm .cp-bell[aria-expanded=true] { background: #e8eaf3; }
+:root[data-theme=dark] .shell.pm .cp-bell { color: var(--ink); }
+:root[data-theme=dark] .shell.pm .cp-bell:hover,
+:root[data-theme=dark] .shell.pm .cp-bell[aria-expanded=true] { background: var(--surface-2); }
+.shell.pm .cp-bell.has-unread::after { content: ""; position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: #d93025; border: 2px solid var(--pm-page); box-sizing: content-box; }
+.shell.pm .topbar-divider { height: 24px; margin: 6px 10px; align-self: center; }
+.shell.pm .topbar .cp-usermenu-wrap > button.user { height: 36px; padding: 0 8px 0 4px; border-radius: 18px; transition: background .15s; }
+.shell.pm .topbar .cp-usermenu-wrap > button.user:hover,
+.shell.pm .topbar .cp-usermenu-wrap > button.user[aria-expanded=true] { background: #e8eaf3; }
+:root[data-theme=dark] .shell.pm .topbar .cp-usermenu-wrap > button.user:hover,
+:root[data-theme=dark] .shell.pm .topbar .cp-usermenu-wrap > button.user[aria-expanded=true] { background: var(--surface-2); }
+.shell.pm .topbar .cp-usermenu-wrap > button.user::after { content: ""; width: 6px; height: 6px; margin: -3px 4px 0 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); opacity: .6; }
+.shell.pm .topbar .cp-usermenu-wrap > button.user[aria-expanded=true]::after { margin-top: 3px; transform: rotate(-135deg); }
+.shell.pm .cp-menu,
+.shell.pm .cp-notif { border-radius: var(--pm-r-panel); box-shadow: 0 12px 32px rgba(13, 18, 64, .16); }
+.shell.pm .cp-menu { top: calc(100% + 10px); }
+.shell.pm .cp-notif { top: calc(100% + 10px); max-height: min(560px, calc(100vh - 110px)); overflow-y: auto; }
+.shell.pm .avatar { border-radius: 50%; background: #e1e5f5; color: var(--pm-navy); font-size: var(--fs-12); font-weight: 600; }
 :root[data-theme=dark] .shell.pm .avatar { background: var(--surface-2); color: var(--ink); }
 .shell.pm .user { gap: 8px; margin-left: 0; }
 .shell.pm .user-name { font-size: var(--fs-14); }

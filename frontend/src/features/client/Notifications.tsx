@@ -47,11 +47,11 @@ export function Notifications() {
   const { items, unread } = feed;
 
   return (
-    <span ref={wrap}>
+    <span ref={wrap} className="cp-tools">
       <button
         ref={button}
         type="button"
-        className="cp-bell"
+        className={unread ? 'cp-bell has-unread' : 'cp-bell'}
         aria-label={unread ? t('Notifications ({n} unread)', { n: unread }) : t('Notifications')}
         aria-expanded={open}
         aria-controls="cp-notifications"
