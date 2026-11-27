@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { describeApiError } from '@/shared/api/client';
-import { usePermissions } from '@/features/admin/permissionsStore';
 import { useProjectContext } from './ClientProjectLayout';
 import { Badge, EmptyCard, ErrorCard, LoadingCard } from './ui';
 import { longDate, paddedDate } from './format';
@@ -51,9 +50,7 @@ export function ClientChangeRequestsPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const access = usePermissions('client')['change-requests'];
 
-  if (access === 'denied') return <EmptyCard title="Change requests are not available" text="Your access to change requests has been turned off." />;
   if (real.missing) {
     return <EmptyCard title="Change requests are not available" text="This project is not connected to the portal service yet." />;
   }
@@ -62,7 +59,7 @@ export function ClientChangeRequestsPage() {
 
   const { items, counts } = list.data;
   const opened = openId ? items.find((i) => i.id === openId) : undefined;
-  if (opened) return <RequestPage canReply={access === 'edit'} cr={opened} projectId={real.id} onBack={() => setOpenId(null)} />;
+  if (opened) return <RequestPage canReply cr={opened} projectId={real.id} onBack={() => setOpenId(null)} />;
   const q = query.trim().toLowerCase();
   const shown = items
     .filter((i) => filter === 'all' || i.status === filter)
@@ -77,7 +74,7 @@ export function ClientChangeRequestsPage() {
         </div>
         <div className="cr-head-act">
           <span className="cr-count">{counts.total ?? items.length}</span>
-          {!composing && access === 'edit' && (
+          {!composing && (
             <button type="button" className="cr-btn" onClick={() => { setSent(null); setComposing(true); }}>{t('New change request')}</button>
           )}
         </div>
@@ -97,7 +94,7 @@ export function ClientChangeRequestsPage() {
         </div>
       )}
 
-      {composing && access === 'edit' && (
+      {composing && (
         <NewRequest
           projectId={real.id}
           onDone={(result) => {

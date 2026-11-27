@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useToast } from '@/shared/ui/Toast';
 import { HEALTH_LABEL } from './labels';
-import { downloadReportPdf, useClientReport } from './reportsApi';
+import { downloadReportPdf, downloadSharedReportPdf, useClientReport, useClientSharedReport, useClientSharedReports, type SharedReportDetail } from './reportsApi';
 import { Link, useParams } from 'react-router-dom';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
@@ -25,9 +25,12 @@ export function ClientReportsPage() {
   const { project } = useProjectContext();
   const { t, lang } = usePrefs();
   const [search, setSearch] = useState('');
+  const sharedList = useClientSharedReports(project.id);
 
   const q = search.trim().toLowerCase();
   const shown = project.reports.filter((r) => !q || r.title.toLowerCase().includes(q));
+  const shared = (sharedList.data?.items ?? []).filter((r) => !q || r.title.toLowerCase().includes(q));
+  const total = project.reports.length + (sharedList.data?.total ?? 0);
 
   return (
     <>
@@ -36,15 +39,14 @@ export function ClientReportsPage() {
         <p>{t('View reports shared with you by your Project Manager.')}</p>
       </section>
       <div className="cx-rf">
-        <span className="cx-rchip">{t('All reports')} <span>{project.reports.length}</span></span>
+        <span className="cx-rchip">{t('All reports')} <span>{total}</span></span>
         <label className="cx-search">
           <Icon name="search" className="cx-ico cx-14" />
           <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search reports…')} aria-label={t('Search reports')} />
         </label>
       </div>
-      {!project.reports.length ? (
-        <EmptyCard />
-      ) : (
+      {!total && !sharedList.isPending && <EmptyCard />}
+      {!!project.reports.length && (
         <section className="cx-card cx-lib" aria-label={t('Report library')}>
           <div className="cx-lhd"><b>{t('Report library')}</b><span>{project.name}</span></div>
           <div className="cx-cols">
@@ -77,7 +79,116 @@ export function ClientReportsPage() {
           <div className="cx-cnt">{t('{n} reports', { n: shown.length })}</div>
         </section>
       )}
+      {!!shared.length && (
+        <section className="cx-card cx-lib" aria-label={t('Shared reports')} style={{ marginTop: 16 }}>
+          <div className="cx-lhd"><b>{t('Shared reports')}</b><span>{project.name}</span></div>
+          <div className="cx-cols">
+            <span>{t('Report')}</span>
+            <span>{t('Period')}</span>
+            <span>{t('Shared')}</span>
+            <span>{t('Prepared by')}</span>
+            <span />
+          </div>
+          {shared.map((r) => (
+            <div className="cx-rr" key={r.id}>
+              <div className="cx-nm2">
+                <span className="cx-ib"><Icon name="file" className="cx-ico cx-18" /></span>
+                <div>
+                  <div className="cx-t"><Link to={pp.report(project.id, r.id)}>{r.title}</Link></div>
+                  <div className="cx-s">{t(KIND_LABEL[r.kind])}</div>
+                </div>
+              </div>
+              <div className="cx-d">{periodLabel(lang, r, t('Overall'))}</div>
+              <div className="cx-d">{r.shared_at ? paddedDate(lang, r.shared_at.slice(0, 10)) : '–'}</div>
+              <div className="cx-d">{r.prepared_by}</div>
+              <button type="button" className="cx-btn cx-dl" onClick={() => downloadSharedReportPdf(project.id, r.id, r.title).catch(() => toast.error(t('The report could not be downloaded.')))}>
+                <Icon name="download" className="cx-ico cx-14" /> {t('Download')}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
     </>
+  );
+}
+
+const KIND_LABEL: Record<SharedReportDetail['kind'], string> = {
+  tasks: 'Tasks report',
+  milestones: 'Milestones report',
+  change_requests: 'Change requests report',
+  project_status: 'Project status report',
+  other: 'Report',
+};
+
+const periodLabel = (lang: Parameters<typeof longDate>[0], r: { period_start: string | null; period_end: string | null }, overall: string) =>
+  r.period_start && r.period_end ? `${longDate(lang, r.period_start)} – ${longDate(lang, r.period_end)}` : overall;
+
+/** A generated report the project team shared with the client: the same key figures, facts and tables as the PDF. */
+function SharedReportView({ projectId, report }: { projectId: string; report: SharedReportDetail }) {
+  const pp = usePortalPaths();
+  const { t, lang } = usePrefs();
+  const toast = useToast();
+  const c = report.content;
+  return (
+    <div className="cp-rd">
+      <Link className="cp-back" to={pp.reports(projectId)}>
+        {backIcon}
+        {t('Back')}
+      </Link>
+      <h2>{report.title}</h2>
+      <div className="cp-card">
+        <div className="cp-val" style={{ marginTop: 0, fontSize: 'var(--fs-12)' }}>{t('Prepared by {name}', { name: report.prepared_by })}</div>
+        <div className="cp-lbl">{t('Reporting period')}</div>
+        <div className="cp-val" style={{ marginTop: 12 }}>{periodLabel(lang, report, t('Overall'))}</div>
+        {report.shared_at && (
+          <>
+            <div className="cp-lbl">{t('Shared on')}</div>
+            <div className="cp-val" style={{ marginTop: 12 }}>{longDate(lang, report.shared_at.slice(0, 10))}</div>
+          </>
+        )}
+        {c.facts.map((f) => (
+          <div key={f.key}>
+            <div className="cp-lbl">{t(f.label)}</div>
+            <div className="cp-val" style={{ marginTop: 12 }}>{f.value}</div>
+          </div>
+        ))}
+        {c.kpis.map((k) => (
+          <div key={k.key}>
+            <div className="cp-lbl">{t(k.label)}</div>
+            <div className="cp-big">{k.value}</div>
+          </div>
+        ))}
+        {c.distribution.some((d) => d.count > 0) && (
+          <div>
+            <div className="cp-lbl">{t('By status')}</div>
+            <div className="cp-val" style={{ marginTop: 12 }}>{c.distribution.filter((d) => d.count > 0).map((d) => `${t(d.label)} ${d.count}`).join(' · ')}</div>
+          </div>
+        )}
+        {report.summary && (
+          <div>
+            <div className="cp-lbl">{t('Summary')}</div>
+            <div className="cp-val" style={{ marginTop: 12, whiteSpace: 'pre-line' }}>{report.summary}</div>
+          </div>
+        )}
+        {c.tables.map((tb) => (
+          <div key={tb.key} style={{ overflowX: 'auto' }}>
+            <div className="cp-lbl">{t(tb.heading)}</div>
+            <table style={{ width: '100%', marginTop: 12, fontSize: 'var(--fs-12)', textAlign: 'left' }}>
+              <thead><tr>{tb.columns.map((col) => <th key={col}>{t(col)}</th>)}</tr></thead>
+              <tbody>
+                {tb.rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}
+              </tbody>
+            </table>
+          </div>
+        ))}
+        <div style={{ marginTop: 16 }}>
+          <button type="button" className="cx-btn cx-dl" onClick={() => downloadSharedReportPdf(projectId, report.id, report.title).catch(() => toast.error(t('The report could not be downloaded.')))}>
+            <Icon name="download" className="cx-ico cx-14" /> {t('Download')}
+          </button>
+        </div>
+        <div className="cp-note">{t('Shared with your client organisation. Internal comments and working drafts are excluded.')}</div>
+      </div>
+    </div>
   );
 }
 
@@ -89,7 +200,10 @@ export function ClientReportPage() {
   const report = project.reports.find((r) => r.id === reportId);
   const detail = useClientReport(project.id, report?.id).data;
   const by = detail?.published_by ?? project.publishedBy;
+  const shared = useClientSharedReport(project.id, report ? undefined : reportId);
 
+  if (!report && shared.data) return <SharedReportView projectId={project.id} report={shared.data} />;
+  if (!report && shared.isPending && shared.fetchStatus !== 'idle') return <p className="cp-empty">{t('Loading…')}</p>;
   if (!report) {
     return (
       <EmptyCard
@@ -136,10 +250,4 @@ export function ClientReportPage() {
       </div>
     </div>
   );
-}
-
-/** Change Requests and Contacts have no supplied design yet; the design itself shows this notice. */
-export function ClientPlaceholderPage() {
-  const { t } = usePrefs();
-  return <p className="cp-empty">{t('This section isn’t part of the supplied designs yet.')}</p>;
 }

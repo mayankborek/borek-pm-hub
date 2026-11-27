@@ -39,9 +39,13 @@ const num = (v: string) => (v.trim() === '' ? null : Number(v));
 
 /** Change Requests tab: the queue of requests clients raise, with impact, decision and the shared conversation. */
 export function ProjectChangeRequestsPage() {
-  const project = useProjectContext();
+  return <ChangeRequestsView projectId={useProjectContext().id} requestPath={paths.projectChangeRequest} />;
+}
+
+/** The queue for one project; `requestPath` is where "Review request" goes, so the Manager's shell can reuse it. */
+export function ChangeRequestsView({ projectId, requestPath }: { projectId: string; requestPath: (projectId: string, requestId: string) => string }) {
   const { t } = usePrefs();
-  const list = useStaffChangeRequests(project.id);
+  const list = useStaffChangeRequests(projectId);
   const [filter, setFilter] = useState<CrStatus | 'all'>('pending');
 
   if (list.isError) return <ErrorState title="We couldn’t load the change requests" onRetry={() => void list.refetch()} />;
@@ -71,14 +75,14 @@ export function ProjectChangeRequestsPage() {
         />
       ) : (
         <ul className="req-list">
-          {shown.map((cr) => <RequestCard key={cr.id} cr={cr} projectId={project.id} />)}
+          {shown.map((cr) => <RequestCard key={cr.id} cr={cr} to={requestPath(projectId, cr.id)} />)}
         </ul>
       )}
     </section>
   );
 }
 
-function RequestCard({ cr, projectId }: { cr: StaffCr; projectId: string }) {
+function RequestCard({ cr, to }: { cr: StaffCr; to: string }) {
   const { t } = usePrefs();
   const s = STATUS[cr.status];
   return (
@@ -90,7 +94,7 @@ function RequestCard({ cr, projectId }: { cr: StaffCr; projectId: string }) {
           <span className="crq-flag">{cr.code} · {t('Submitted')} {day(cr.created_at)}</span>
         </div>
         <Pill tone={s.tone}>{s.label}</Pill>
-        <Link className="btn" to={paths.projectChangeRequest(projectId, cr.id)}>{t('Review request')} →</Link>
+        <Link className="btn" to={to}>{t('Review request')} →</Link>
       </div>
       {cr.status === 'pending' && <div className="crq-await">◷ {t('Awaiting your review')}</div>}
     </li>

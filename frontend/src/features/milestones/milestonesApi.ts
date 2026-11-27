@@ -14,6 +14,10 @@ export interface Milestone {
   done: boolean;
   progress: number | null;
   owner: { id: string; name: string } | null;
+  at_risk: boolean;
+  client_visible: boolean;
+  /** For optimistic locking on PATCH. */
+  version: number;
 }
 
 export interface RoadmapPhase {
@@ -54,6 +58,27 @@ export const useCreateMilestone = (projectId: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: MilestoneInput) => api<Milestone>(`/projects/${projectId}/milestones`, { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: roadmapKey(projectId) }),
+  });
+};
+
+/** PATCH /projects/{id}/milestones/{milestone_id}: the version from the last read plus only what changes; `done` marks it reached or opens it again. */
+export type MilestonePatch = Partial<MilestoneInput> & { done?: boolean };
+
+export const useUpdateMilestone = (projectId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ milestone, patch }: { milestone: Milestone; patch: MilestonePatch }) =>
+      api<Milestone>(`/projects/${projectId}/milestones/${milestone.id}`, { method: 'PATCH', body: JSON.stringify({ version: milestone.version, ...patch }) }),
+    onSettled: () => qc.invalidateQueries({ queryKey: roadmapKey(projectId) }),
+  });
+};
+
+/** DELETE /projects/{id}/milestones/{milestone_id}: archives it; its tasks lose the link. */
+export const useDeleteMilestone = (projectId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (milestoneId: string) => api<void>(`/projects/${projectId}/milestones/${milestoneId}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: roadmapKey(projectId) }),
   });
 };

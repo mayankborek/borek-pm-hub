@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import flowLogo from '@/assets/borek-flow-nav-white.svg';
 import solutionsLogo from '@/assets/borek-solutions-nav-white.svg';
+import { Notifications } from '@/features/client/Notifications';
 import { UserMenu } from '@/features/client/UserMenu';
 import '@/features/client/clientPortal.css';
 import { DevProjectsNav } from './DevProjectsNav';
@@ -66,12 +67,7 @@ export function AppLayout() {
           <div className="topbar-row">
             <h1 className="topbar-title">{t(title)}</h1>
             <div className="topbar-actions">
-              <span className="bell" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                  <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
-                </svg>
-              </span>
+              <Notifications />
               <span className="topbar-divider" aria-hidden="true" />
               <UserMenu profilePath={paths.profile} />
             </div>

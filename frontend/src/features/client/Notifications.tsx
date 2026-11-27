@@ -20,7 +20,7 @@ const bell = (
 export function Notifications() {
   const { t } = usePrefs();
   const role = useAuth().user?.role;
-  const feed = useNotificationFeed(role === 'client' || role === 'account_manager' || role === 'manager' ? role : undefined);
+  const feed = useNotificationFeed(role === 'client' || role === 'account_manager' || role === 'manager' || role === 'pm' ? role : undefined);
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const button = useRef<HTMLButtonElement>(null);

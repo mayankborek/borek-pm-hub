@@ -8,7 +8,7 @@ import { formatDate } from '@/features/projects/projectUi';
 import { useProjectMembers } from '@/features/tasks/tasksApi';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
-import { useCreateMilestone, useRoadmap, type Milestone, type Roadmap } from './milestonesApi';
+import { useCreateMilestone, useDeleteMilestone, useRoadmap, useUpdateMilestone, type Milestone, type MilestonePatch, type Roadmap } from './milestonesApi';
 import './milestones.css';
 
 const DAY = 86_400_000;
@@ -25,6 +25,7 @@ export function MilestonesPage() {
   const { t } = usePrefs();
   const roadmap = useRoadmap(project.id);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   if (user?.role !== 'pm') return <Navigate to={paths.project(project.id)} replace />;
 
   if (roadmap.isPending) return <LoadingState title={t('Loading roadmap')} text={t('Fetching phases and milestones.')} />;
@@ -40,7 +41,7 @@ export function MilestonesPage() {
         </div>
         <button type="button" className="btn" onClick={() => setCreating(true)}>{t('Create milestone')}</button>
       </header>
-      <Timeline r={r} />
+      <Timeline r={r} onOpen={setEditing} />
       <ul className="ms-legend">
         <li><i className="done" />{t('Completed share')}</li>
         <li><i className="rest" />{t('Remaining work')}</li>
@@ -49,12 +50,17 @@ export function MilestonesPage() {
         <li><i className="today" />{t('Today')}</li>
       </ul>
       <p className="ms-note">{t('Phase bars show duration. Diamonds mark milestone due dates. Progress comes from linked tasks.')}</p>
-      {creating && <NewMilestone projectId={project.id} r={r} onClose={() => setCreating(false)} />}
+      {creating && <MilestoneDialog projectId={project.id} r={r} onClose={() => setCreating(false)} />}
+      {editing && allMilestones(r).some((m) => m.id === editing) && (
+        <MilestoneDialog key={editing} projectId={project.id} r={r} milestone={allMilestones(r).find((m) => m.id === editing)} onClose={() => setEditing(null)} />
+      )}
     </section>
   );
 }
 
-function Timeline({ r }: { r: Roadmap }) {
+const allMilestones = (r: Roadmap): Milestone[] => [...r.phases.flatMap((p) => p.milestones), ...r.unphased_milestones];
+
+function Timeline({ r, onOpen }: { r: Roadmap; onOpen: (id: string) => void }) {
   const { t } = usePrefs();
   const all = [...r.phases.flatMap((p) => [p.start_date, p.end_date, ...p.milestones.map((m) => m.due_date)]), ...r.unphased_milestones.map((m) => m.due_date), r.today];
   if (r.phases.length === 0 && r.unphased_milestones.length === 0) {
@@ -67,11 +73,11 @@ function Timeline({ r }: { r: Roadmap }) {
   const ticks = Array.from({ length: 5 }, (_, i) => iso(start + (span * i) / 4));
 
   const diamond = (m: Milestone) => (
-    <div className="ms-dia" key={m.id} style={{ left: pos(m.due_date) }}>
+    <button type="button" className="ms-dia" key={m.id} style={{ left: pos(m.due_date) }} aria-label={t('Edit milestone {name}', { name: m.name })} onClick={() => onOpen(m.id)}>
       <i className={m.done ? 'on' : ''} />
       <span className="ms-dia-name">{m.name}</span>
       <span className={`ms-dia-date${m.state === 'late' ? ' late' : ''}`}>{short(m.due_date)}{m.state === 'late' ? ` · ${t('Running late')}` : ''}</span>
-    </div>
+    </button>
   );
 
   return (
@@ -105,14 +111,26 @@ function Timeline({ r }: { r: Roadmap }) {
   );
 }
 
-/** Figma "New milestone": title, phase, status, due date, owner, client visibility. The backend keeps a single due date per milestone. */
-function NewMilestone({ projectId, r, onClose }: { projectId: string; r: Roadmap; onClose: () => void }) {
+/** Figma "New milestone": title, phase, status, due date, owner, client visibility. With `milestone` it edits that milestone and can delete it. The backend keeps a single due date per milestone. */
+function MilestoneDialog({ projectId, r, milestone, onClose }: { projectId: string; r: Roadmap; milestone?: Milestone; onClose: () => void }) {
   const { t } = usePrefs();
   const create = useCreateMilestone(projectId);
+  const update = useUpdateMilestone(projectId);
+  const remove = useDeleteMilestone(projectId);
   const members = useProjectMembers(projectId);
-  const [form, setForm] = useState({ name: '', phase_id: '', status: 'planned', due_date: '', owner_id: '', client_visible: true });
+  const [form, setForm] = useState({
+    name: milestone?.name ?? '',
+    phase_id: milestone?.phase_id ?? '',
+    status: milestone?.at_risk ? 'at_risk' : 'planned',
+    due_date: milestone?.due_date ?? '',
+    owner_id: milestone?.owner?.id ?? '',
+    client_visible: milestone?.client_visible ?? true,
+    done: milestone?.done ?? false,
+  });
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const busy = create.isPending || update.isPending || remove.isPending;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -123,16 +141,26 @@ function NewMilestone({ projectId, r, onClose }: { projectId: string; r: Roadmap
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.due_date) return setError(t('Enter a title and a date.'));
-    create.mutate(
-      { name: form.name.trim(), due_date: form.due_date, phase_id: form.phase_id || null, owner_id: form.owner_id || null, at_risk: form.status === 'at_risk', client_visible: form.client_visible },
-      { onSuccess: onClose, onError: (err) => setError(parseApiError(err).message) },
-    );
+    const body = { name: form.name.trim(), due_date: form.due_date, phase_id: form.phase_id || null, owner_id: form.owner_id || null, at_risk: form.status === 'at_risk', client_visible: form.client_visible };
+    const handlers = { onSuccess: onClose, onError: (err: unknown) => setError(parseApiError(err).message) };
+    if (!milestone) return create.mutate(body, handlers);
+    // Only what changed goes to the server.
+    const patch: MilestonePatch = {};
+    if (body.name !== milestone.name) patch.name = body.name;
+    if (body.due_date !== milestone.due_date) patch.due_date = body.due_date;
+    if (body.phase_id !== milestone.phase_id) patch.phase_id = body.phase_id;
+    if (body.owner_id !== (milestone.owner?.id ?? null)) patch.owner_id = body.owner_id;
+    if (body.at_risk !== milestone.at_risk) patch.at_risk = body.at_risk;
+    if (body.client_visible !== milestone.client_visible) patch.client_visible = body.client_visible;
+    if (form.done !== milestone.done) patch.done = form.done;
+    if (!Object.keys(patch).length) return onClose();
+    update.mutate({ milestone, patch }, handlers);
   };
 
   return (
     <div className="ms-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="ms-dialog" role="dialog" aria-modal="true" aria-labelledby="ms-new" onSubmit={submit} noValidate>
-        <header><h3 id="ms-new">{t('New milestone')}</h3><button type="button" aria-label={t('Close')} onClick={onClose}>×</button></header>
+        <header><h3 id="ms-new">{t(milestone ? 'Edit milestone' : 'New milestone')}</h3><button type="button" aria-label={t('Close')} onClick={onClose}>×</button></header>
         {error && <div className="form-alert" role="alert">{error}</div>}
         <div className="field"><label htmlFor="ms-title">{t('Title')}</label><input id="ms-title" className="input" autoFocus placeholder={t('Enter milestone name')} value={form.name} onChange={(e) => set('name', e.target.value)} /></div>
         <div className="ms-two">
@@ -154,9 +182,18 @@ function NewMilestone({ projectId, r, onClose }: { projectId: string; r: Roadmap
             </select></div>
         </div>
         <label className="ms-check"><input type="checkbox" checked={form.client_visible} onChange={(e) => set('client_visible', e.target.checked)} />{t('Visible to the client')}</label>
+        {milestone && <label className="ms-check"><input type="checkbox" checked={form.done} onChange={(e) => set('done', e.target.checked)} />{t('Milestone reached')}</label>}
+        {confirming && milestone && (
+          <div className="form-alert" role="alertdialog" aria-label={t('Delete milestone?')}>
+            {t('Delete this milestone? Its tasks lose the link.')}{' '}
+            <button type="button" className="btn secondary" disabled={busy} onClick={() => setConfirming(false)}>{t('Keep')}</button>{' '}
+            <button type="button" className="btn" disabled={busy} onClick={() => remove.mutate(milestone.id, { onSuccess: onClose, onError: (err) => setError(parseApiError(err).message) })}>{t('Delete')}</button>
+          </div>
+        )}
         <footer>
+          {milestone && !confirming && <button type="button" className="btn secondary" style={{ marginRight: 'auto' }} disabled={busy} onClick={() => setConfirming(true)}>{t('Delete milestone')}</button>}
           <button type="button" className="btn secondary" onClick={onClose}>{t('Cancel')}</button>
-          <button type="submit" className="btn" disabled={create.isPending}>{t(create.isPending ? 'Creating…' : 'Create')}</button>
+          <button type="submit" className="btn" disabled={busy}>{t(milestone ? (update.isPending ? 'Saving…' : 'Save') : create.isPending ? 'Creating…' : 'Create')}</button>
         </footer>
       </form>
     </div>

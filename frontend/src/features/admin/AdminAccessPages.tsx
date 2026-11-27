@@ -3,20 +3,21 @@ import { Link, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
+import { useToast } from '@/shared/ui/Toast';
 import { ROLE_LABEL, useAdminUsers, type AdminUser } from './adminApi';
 import {
-  ACCESS_SECTIONS,
-  PERMISSION_GROUPS,
-  ROLES,
-  accessActions,
-  defaultCell,
-  roleActions,
-  useAccessSwitch,
-  useRoleCell,
-  type AccessSection,
-  type PermissionRow,
+  downloadAccessExport,
+  usePersonProjectAccess,
+  usePersonProjects,
+  useResetRole,
+  useResetSection,
+  useRoleMatrix,
+  useSetProjectControl,
+  useSetRolePermission,
+  type RoleCell,
   type RoleColumn,
-} from './adminStore';
+  type Section,
+} from './accessApi';
 import { Back, Modal, Tabs, initials, usePopover } from './AdminUi';
 
 const TONES = ['', 'g', 'y'] as const;
@@ -65,6 +66,7 @@ export function AdminAccessPage({ tab }: { tab: 'people' | 'roles' }) {
 
 function PersonAccess() {
   const { t } = usePrefs();
+  const toast = useToast();
   const list = useAdminUsers('', '', 'active');
   const users = useMemo(() => (list.data?.items ?? []).filter((u) => u.role !== 'admin'), [list.data]);
   const { projects, tone } = useProjectTones(users);
@@ -85,17 +87,10 @@ function PersonAccess() {
     peopleMenu.setOpen(!!id);
   };
 
-  const exportCsv = () => {
-    const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = [['Person', 'Role', 'Projects', 'Total'].map(cell).join(',')];
-    for (const u of rows) lines.push([u.name, t(roleName(u.role)), u.projects.map((p) => p.name).join('; '), u.projects.length].map(cell).join(','));
-    const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'person-access.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+  /** The server builds the file from the same filters as the table. */
+  const exportFile = (format: 'pdf' | 'csv') => {
     exportMenu.setOpen(false);
+    downloadAccessExport({ q, projectId, personIds: picked }, format).catch((e) => toast.error(describeApiError(e, t('The export didn’t work. Try again.'))));
   };
 
   return (
@@ -130,8 +125,8 @@ function PersonAccess() {
             <button type="button" className="bf-btn" aria-label={t('Export')} aria-haspopup="menu" aria-expanded={exportMenu.open} onClick={() => exportMenu.setOpen((o) => !o)}>⋮</button>
             {exportMenu.open && (
               <div className="bf-menu" role="menu" style={{ right: 0, top: 40, minWidth: 196 }}>
-                <button type="button" className="item" role="menuitem" onClick={() => { exportMenu.setOpen(false); window.print(); }}>{t('Export as PDF')}</button>
-                <button type="button" className="item" role="menuitem" onClick={exportCsv}>{t('Export as CSV')}</button>
+                <button type="button" className="item" role="menuitem" onClick={() => exportFile('pdf')}>{t('Export as PDF')}</button>
+                <button type="button" className="item" role="menuitem" onClick={() => exportFile('csv')}>{t('Export as CSV')}</button>
               </div>
             )}
           </div>
@@ -178,30 +173,64 @@ function PersonAccess() {
 
 // ---- Role permissions (role-permissions.html) --------------------------------------------------------
 
+const GROUP_TONES = ['', 'g', 'y'] as const;
+const ROLE_NAMES: Record<string, string> = {
+  manager: 'Manager',
+  pm: 'Project Manager',
+  account_manager: 'Account Manager',
+  developer: 'Developer',
+  admin: 'Administrator',
+  client: 'Client',
+};
+const nameOf = (r: RoleColumn) => ROLE_NAMES[r.role] ?? r.label;
+
+/** The matrix rows, grouped by section in the order the server lists them. */
+function groupRows(roles: RoleColumn[]) {
+  const groups: { section: string; cells: RoleCell[] }[] = [];
+  for (const cell of roles[0]?.permissions ?? []) {
+    const last = groups[groups.length - 1];
+    if (last?.section === cell.section) last.cells.push(cell);
+    else groups.push({ section: cell.section, cells: [cell] });
+  }
+  return groups;
+}
+
 function RolePermissions() {
   const { t } = usePrefs();
+  const toast = useToast();
+  const matrix = useRoleMatrix();
+  const setPermission = useSetRolePermission();
+  const reset = useResetRole();
   const [saved, setSaved] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const menu = usePopover();
-  const colspan = ROLES.length + 1;
+  const roles = matrix.data?.roles ?? [];
+  const fail = (e: unknown) => toast.error(describeApiError(e, t('That didn’t work. Try again.')));
 
   return (
     <>
+      {matrix.isError && (
+        <p className="bf-error" role="alert" style={{ marginBottom: 10 }}>
+          {describeApiError(matrix.error, t('We couldn’t load role permissions'))}{' '}
+          <button type="button" className="bf-link" onClick={() => matrix.refetch()}>{t('Retry')}</button>
+        </p>
+      )}
       <section className="bf-card bf-inset" style={{ marginTop: -1 }}>
-        <table className="bf-perm">
+        <table className="bf-perm" aria-busy={matrix.isFetching}>
           <thead>
             <tr>
               <th>{t('Permission')}</th>
-              {ROLES.map((r) => (
-                <th key={r.id}>
-                  {t(r.name)}
-                  <span className="bf-anchor" ref={open === r.id ? menu.ref : undefined}>
-                    <button type="button" className="bf-kebab" aria-label={t('{role} options', { role: t(r.name) })} aria-haspopup="menu" aria-expanded={open === r.id && menu.open} onClick={() => { setOpen(r.id); menu.setOpen(open !== r.id || !menu.open); }}>⋮</button>
-                    {open === r.id && menu.open && (
+              {roles.map((r) => (
+                <th key={r.role}>
+                  {t(nameOf(r))}
+                  <span className="bf-anchor" ref={open === r.role ? menu.ref : undefined}>
+                    <button type="button" className="bf-kebab" aria-label={t('{role} options', { role: t(nameOf(r)) })} aria-haspopup="menu" aria-expanded={open === r.role && menu.open} onClick={() => { setOpen(r.role); menu.setOpen(open !== r.role || !menu.open); }}>⋮</button>
+                    {open === r.role && menu.open && (
                       <RoleMenu
                         role={r}
-                        right={r.id === 'client' || r.id === 'administrator'}
-                        onReset={() => { roleActions.reset(r.id); menu.setOpen(false); setSaved(true); }}
+                        right={r.role === 'client' || r.role === 'admin'}
+                        busy={reset.isPending}
+                        onReset={() => reset.mutate(r.role, { onSuccess: () => { menu.setOpen(false); setSaved(true); }, onError: fail })}
                       />
                     )}
                   </span>
@@ -210,13 +239,27 @@ function RolePermissions() {
             </tr>
           </thead>
           <tbody>
-            {PERMISSION_GROUPS.map((g) => (
-              <Fragment key={g.id}>
-                <tr className={`group ${g.tone}`}><td colSpan={colspan}>{t(g.label)}</td></tr>
-                {g.rows.map((row) => (
-                  <tr key={row.id}>
+            {matrix.isPending && <tr><td className="bf-empty" colSpan={7}>{t('Loading…')}</td></tr>}
+            {groupRows(roles).map((g, gi) => (
+              <Fragment key={g.section}>
+                <tr className={`group ${GROUP_TONES[gi % GROUP_TONES.length]}`}><td colSpan={roles.length + 1}>{t(g.section)}</td></tr>
+                {g.cells.map((row) => (
+                  <tr key={row.key}>
                     <td>{t(row.label)}</td>
-                    {ROLES.map((r) => <PermissionCell key={r.id} row={row} role={r} />)}
+                    {roles.map((r) => {
+                      const cell = r.permissions.find((c) => c.key === row.key);
+                      return cell ? (
+                        <PermissionCell
+                          key={r.role}
+                          cell={cell}
+                          role={r}
+                          busy={setPermission.isPending}
+                          onChange={(enabled) => setPermission.mutate({ role: r.role, permission: cell.key, enabled }, { onSuccess: () => setSaved(true), onError: fail })}
+                        />
+                      ) : (
+                        <td key={r.role}>—</td>
+                      );
+                    })}
                   </tr>
                 ))}
               </Fragment>
@@ -226,7 +269,7 @@ function RolePermissions() {
       </section>
       {saved && (
         <Modal title="Role access saved" width={480} onClose={() => setSaved(false)}>
-          <p className="bf-muted" style={{ margin: '10px 0 14px' }}>{t('Changes apply to users of these roles on their next page load.')}</p>
+          <p className="bf-muted" style={{ margin: '10px 0 14px' }}>{t('Changes apply to users of these roles on their next request.')}</p>
           <button type="button" className="bf-btn primary" onClick={() => setSaved(false)}>{t('Done')}</button>
         </Modal>
       )}
@@ -234,10 +277,10 @@ function RolePermissions() {
   );
 }
 
-function RoleMenu({ role, right, onReset }: { role: RoleColumn; right: boolean; onReset: () => void }) {
+function RoleMenu({ role, right, busy, onReset }: { role: RoleColumn; right: boolean; busy: boolean; onReset: () => void }) {
   const { t } = usePrefs();
   const style = right ? { right: 0, top: 28, textAlign: 'left' as const, fontWeight: 500 } : { left: -60, top: 28, textAlign: 'left' as const, fontWeight: 500 };
-  if (role.fixed) {
+  if (!role.editable) {
     return (
       <div className="bf-menu" role="menu" style={style}>
         <a className="off" role="menuitem" aria-disabled="true">{t('Reset to default')}</a>
@@ -247,25 +290,24 @@ function RoleMenu({ role, right, onReset }: { role: RoleColumn; right: boolean; 
   }
   return (
     <div className="bf-menu" role="menu" style={style}>
-      <button type="button" className="item" role="menuitem" onClick={onReset}>{t('Reset to default')}</button>
+      <button type="button" className="item" role="menuitem" disabled={busy || !role.customised} onClick={onReset}>{t('Reset to default')}</button>
     </div>
   );
 }
 
-function PermissionCell({ row, role }: { row: PermissionRow; role: RoleColumn }) {
+function PermissionCell({ cell, role, busy, onChange }: { cell: RoleCell; role: RoleColumn; busy: boolean; onChange: (enabled: boolean) => void }) {
   const { t } = usePrefs();
-  const cell = useRoleCell(row, role.id);
-  if (cell === 'na') return <td>—</td>;
-  if (cell === 'always') return <td>{t('Always')}</td>;
-  const base = defaultCell(row, role.id) === 'on';
+  if (cell.value === 'none') return <td>—</td>;
+  if (cell.value === 'always') return <td>{t('Always')}</td>;
   return (
     <td>
       <input
         type="checkbox"
         className="bf-sw"
-        checked={cell === 'on'}
-        aria-label={`${t(row.label)}: ${t(role.name)}`}
-        onChange={(e) => roleActions.set(role.id, row.id, e.target.checked, base)}
+        checked={cell.value === 'on'}
+        disabled={!cell.editable || busy}
+        aria-label={`${t(cell.label)}: ${t(nameOf(role))}`}
+        onChange={(e) => onChange(e.target.checked)}
       />
     </td>
   );
@@ -277,8 +319,8 @@ export function AdminPersonAccessPage() {
   const { t } = usePrefs();
   const { userId = '', projectId = '' } = useParams();
   const list = useAdminUsers('', '', 'all');
-  const users = list.data?.items ?? [];
-  const user = users.find((u) => u.id === userId);
+  const projects = usePersonProjects(userId);
+  const user = (list.data?.items ?? []).find((u) => u.id === userId);
 
   if (!user) {
     return (
@@ -289,7 +331,8 @@ export function AdminPersonAccessPage() {
     );
   }
 
-  const project = user.projects.find((p) => p.id === projectId);
+  const items = projects.data?.items ?? [];
+  const project = items.find((p) => p.id === projectId);
 
   return (
     <main className="bf-content">
@@ -303,17 +346,24 @@ export function AdminPersonAccessPage() {
       </div>
       <div className="bf-seg">
         <Link className={!project ? 'on' : undefined} to={paths.adminAccessPerson(user.id)}>{t('All')}</Link>
-        {user.projects.map((p) => (
+        {items.map((p) => (
           <Link key={p.id} className={project?.id === p.id ? 'on' : undefined} to={paths.adminAccessProject(user.id, p.id)}>{p.name}</Link>
         ))}
       </div>
+      {projects.isError && (
+        <p className="bf-error" role="alert" style={{ marginTop: 16 }}>
+          {describeApiError(projects.error, t('We couldn’t load this person’s projects'))}{' '}
+          <button type="button" className="bf-link" onClick={() => projects.refetch()}>{t('Retry')}</button>
+        </p>
+      )}
       {project ? (
-        <ProjectPermissions user={user} projectId={project.id} />
+        <ProjectPermissions userId={user.id} projectId={project.id} editable={projects.data?.editable ?? false} />
       ) : (
         <>
           <h3 style={{ fontSize: 18, margin: '37px 0 12px' }}>{t('Projects')}</h3>
-          {!user.projects.length && <p className="bf-muted">{t('This person is not on any project yet.')}</p>}
-          {user.projects.map((p) => (
+          {projects.isPending && <p className="bf-muted">{t('Loading…')}</p>}
+          {projects.data && !items.length && <p className="bf-muted">{t('This person is not on any project yet.')}</p>}
+          {items.map((p) => (
             <div className="bf-proj" key={p.id}>
               <b>{p.name}</b>
               <Link to={paths.adminAccessProject(user.id, p.id)} style={{ fontWeight: 500 }}>{t('Manage permissions')}</Link>
@@ -325,46 +375,61 @@ export function AdminPersonAccessPage() {
   );
 }
 
-function ProjectPermissions({ user, projectId }: { user: AdminUser; projectId: string }) {
+function ProjectPermissions({ userId, projectId, editable }: { userId: string; projectId: string; editable: boolean }) {
   const { t } = usePrefs();
+  const access = usePersonProjectAccess(userId, projectId);
   const [step, setStep] = useState(0);
-  const section = ACCESS_SECTIONS[step];
+  const sections = access.data?.sections ?? [];
+  const section = sections[Math.min(step, sections.length - 1)];
+
+  if (access.isError) {
+    return (
+      <p className="bf-error" role="alert" style={{ marginTop: 16 }}>
+        {describeApiError(access.error, t('We couldn’t load this person’s access'))}{' '}
+        <button type="button" className="bf-link" onClick={() => access.refetch()}>{t('Retry')}</button>
+      </p>
+    );
+  }
+  if (!section) return <p className="bf-muted" style={{ marginTop: 16 }}>{t('Loading…')}</p>;
+
   return (
     <div className="bf-split">
       <nav className="bf-card bf-steps" aria-label={t('Permission sections')}>
-        {ACCESS_SECTIONS.map((s, i) => (
-          <button key={s.id} type="button" className={i === step ? 'on' : undefined} aria-current={i === step ? 'true' : undefined} onClick={() => setStep(i)}>
+        {sections.map((s, i) => (
+          <button key={s.key} type="button" className={s === section ? 'on' : undefined} aria-current={s === section ? 'true' : undefined} onClick={() => setStep(i)}>
             {t(s.label)}
           </button>
         ))}
       </nav>
-      <SectionPanel key={`${projectId}:${section.id}`} user={user} projectId={projectId} section={section} />
+      <SectionPanel key={`${projectId}:${section.key}`} userId={userId} projectId={projectId} section={section} editable={editable} />
     </div>
   );
 }
 
-function SectionPanel({ user, projectId, section }: { user: AdminUser; projectId: string; section: AccessSection }) {
+function SectionPanel({ userId, projectId, section, editable }: { userId: string; projectId: string; section: Section; editable: boolean }) {
   const { t } = usePrefs();
+  const toast = useToast();
+  const setControl = useSetProjectControl(userId, projectId);
+  const reset = useResetSection(userId, projectId);
+  const fail = (e: unknown) => toast.error(describeApiError(e, t('That didn’t work. Try again.')));
   return (
     <section className="bf-card bf-panel">
       <header>
         <h3>{t(section.label)}</h3>
-        <button type="button" onClick={() => accessActions.reset(user.id, projectId, section)}>{t('Reset to default')}</button>
+        <button type="button" disabled={!editable || !section.customised || reset.isPending} onClick={() => reset.mutate(section.key, { onError: fail })}>{t('Reset to default')}</button>
       </header>
-      {section.switches.map((s) => (
-        <SwitchRow key={s.id} user={user} projectId={projectId} def={s} />
+      {section.controls.map((c) => (
+        <label key={c.key}>
+          {t(c.label)}
+          <input
+            type="checkbox"
+            className="bf-sw"
+            checked={c.enabled}
+            disabled={!editable || !c.editable || setControl.isPending}
+            onChange={(e) => setControl.mutate({ permission: c.key, enabled: e.target.checked }, { onError: fail })}
+          />
+        </label>
       ))}
     </section>
-  );
-}
-
-function SwitchRow({ user, projectId, def }: { user: AdminUser; projectId: string; def: AccessSection['switches'][number] }) {
-  const { t } = usePrefs();
-  const on = useAccessSwitch(user.id, projectId, def, user.role);
-  return (
-    <label>
-      {t(def.label)}
-      <input type="checkbox" className="bf-sw" checked={on} onChange={(e) => accessActions.set(user.id, projectId, def, user.role, e.target.checked)} />
-    </label>
   );
 }

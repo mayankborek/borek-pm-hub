@@ -1,19 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useToast } from '@/shared/ui/Toast';
 import { useAdminUsers } from './adminApi';
-import { orgActions, useOrgExtras, type OrgExtras } from './adminStore';
 import {
   useActiveOrgMembers,
   useAddMemberTo,
   useCreateOrganisation,
   useOrganisation,
   useRemoveMemberFrom,
+  useSetProjectContacts,
   useUpdateOrganisation,
   type CreatedMember,
+  type OrgDetails,
 } from './organisationsApi';
 import { Back, EMAIL_RE, Field, Icon, ShareLinkModal, useAdminTitle } from './AdminUi';
 
@@ -24,6 +25,11 @@ interface Contact {
   name: string;
   email: string;
 }
+
+const EMPTY_DETAILS: OrgDetails = { industry: '', website: '', primaryContactEmail: '', projectManagerId: '' };
+
+const detailsOf = (org: { industry: string | null; website: string | null; primary_contact_email: string | null; project_manager: { id: string } | null } | undefined): OrgDetails =>
+  org ? { industry: org.industry ?? '', website: org.website ?? '', primaryContactEmail: org.primary_contact_email ?? '', projectManagerId: org.project_manager?.id ?? '' } : EMPTY_DETAILS;
 
 /** New client organisation (new-client-organisation.html) and Edit {organisation} (edit-org-*.html). */
 export function AdminOrganisationFormPage() {
@@ -53,12 +59,12 @@ function OrganisationForm({ orgId, orgName }: { orgId: string; orgName: string }
   const navigate = useNavigate();
   const editing = !!orgId;
   const org = useOrganisation(orgId).data;
-  const stored = useOrgExtras(orgId);
   const { members, isPending: membersPending } = useActiveOrgMembers(orgId);
   const create = useCreateOrganisation();
   const update = useUpdateOrganisation();
   const addMember = useAddMemberTo();
   const removeMember = useRemoveMemberFrom();
+  const setProjectContacts = useSetProjectContacts();
   const managers = useAdminUsers('', 'account_manager', 'active').data?.items ?? [];
   const pms = useAdminUsers('', 'pm', 'active').data?.items ?? [];
 
@@ -67,8 +73,10 @@ function OrganisationForm({ orgId, orgName }: { orgId: string; orgName: string }
   const nextKey = useRef(1);
   const blank = (): Contact => ({ key: nextKey.current++, name: '', email: '' });
   const [name, setName] = useState(orgName);
-  const [base, setBase] = useState<OrgExtras>(stored);
-  const [extras, setExtras] = useState<OrgExtras>(stored);
+  const base = useMemo(() => detailsOf(org), [org]);
+  const [extras, setExtras] = useState<OrgDetails>(base);
+  // Project id -> chosen contact ids, for the projects the person changed.
+  const [projectPicks, setProjectPicks] = useState<Record<string, string[]>>({});
   const [managerId, setManagerId] = useState(org?.account_managers[0]?.id ?? '');
   const [contacts, setContacts] = useState<Contact[]>(() => (editing ? [] : [blank()]));
   const [removed, setRemoved] = useState<string[]>([]);
@@ -84,26 +92,23 @@ function OrganisationForm({ orgId, orgName }: { orgId: string; orgName: string }
     if (!editing || loaded.current || membersPending) return;
     loaded.current = true;
     // Until it is set, the primary contact is the first client contact.
-    if (!stored.primaryEmail && members[0]) {
-      setBase((b) => ({ ...b, primaryEmail: members[0].email }));
-      setExtras((x) => ({ ...x, primaryEmail: x.primaryEmail || members[0].email }));
-    }
+    if (!base.primaryContactEmail && members[0]) setExtras((x) => ({ ...x, primaryContactEmail: x.primaryContactEmail || members[0].email }));
     setContacts(members.map((m) => ({ key: nextKey.current++, id: m.id, name: m.name, email: m.email })));
-  }, [editing, members, membersPending, stored.primaryEmail]);
+  }, [editing, members, membersPending, base.primaryContactEmail]);
 
   // Once every invitation link has been seen, leave.
   useEffect(() => {
     if (after && !links.length) navigate(after);
   }, [after, links.length, navigate]);
 
-  const set = <K extends keyof OrgExtras>(k: K, v: OrgExtras[K]) => setExtras((e) => ({ ...e, [k]: v }));
+  const set = <K extends keyof OrgDetails>(k: K, v: OrgDetails[K]) => setExtras((e) => ({ ...e, [k]: v }));
   const setContact = (key: number, patch: Partial<Contact>) => setContacts((c) => c.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const visible = contacts.filter((c) => !(c.id && removed.includes(c.id)));
   const fresh = visible.filter((c) => !c.id);
 
   const errors = {
     name: name.trim() ? '' : 'Enter an organisation name.',
-    primary: EMAIL_RE.test(extras.primaryEmail.trim()) ? '' : 'Enter a valid email address.',
+    primary: EMAIL_RE.test(extras.primaryContactEmail.trim()) ? '' : 'Enter a valid email address.',
   };
   const contactError = (c: Contact) => {
     if (c.id || (!c.name.trim() && !c.email.trim())) return '';
@@ -116,23 +121,25 @@ function OrganisationForm({ orgId, orgName }: { orgId: string; orgName: string }
     !editing ||
     name.trim() !== orgName ||
     managerId !== (org?.account_managers[0]?.id ?? '') ||
-    (Object.keys(extras) as (keyof OrgExtras)[]).some((k) => extras[k] !== base[k]) ||
+    (Object.keys(extras) as (keyof OrgDetails)[]).some((k) => extras[k] !== base[k]) ||
+    Object.keys(projectPicks).length > 0 ||
     removed.length > 0 ||
     fresh.some((c) => c.name.trim() || c.email.trim());
 
   const save = async () => {
     setTried(true);
     setError('');
-    if (errors.name || errors.primary || visible.some((c) => contactError(c))) return;
+    if (errors.name || errors.primary || visible.some((c) => contactError(c)) || Object.values(projectPicks).some((ids) => !ids.length)) return;
     setBusy(true);
     let id = orgId;
     try {
       if (editing && org) {
-        await update.mutateAsync({ org, name: name.trim(), managerId });
+        await update.mutateAsync({ org, name: name.trim(), managerId, details: extras });
       } else {
-        id = (await create.mutateAsync({ name: name.trim(), managerId })).id;
+        id = (await create.mutateAsync({ name: name.trim(), managerId, details: extras })).id;
       }
-      orgActions.set(id, { ...extras, primaryEmail: extras.primaryEmail.trim() });
+      // Before anyone is removed, so a project never loses its last named contact on the way.
+      for (const [projectId, userIds] of Object.entries(projectPicks)) await setProjectContacts.mutateAsync({ orgId: id, projectId, userIds });
       for (const userId of removed) await removeMember.mutateAsync({ orgId: id, userId });
       const created: CreatedMember[] = [];
       for (const c of fresh.filter((x) => x.name.trim() && x.email.trim())) {
@@ -179,7 +186,7 @@ function OrganisationForm({ orgId, orgName }: { orgId: string; orgName: string }
               <input className="bf-input" type="text" value={extras.website} onChange={(e) => set('website', e.target.value)} maxLength={200} autoComplete="off" />
             </Field>
             <Field label="Primary contact email *" error={tried ? errors.primary : ''}>
-              <input className="bf-input" type="email" value={extras.primaryEmail} onChange={(e) => set('primaryEmail', e.target.value)} maxLength={320} autoComplete="off" />
+              <input className="bf-input" type="email" value={extras.primaryContactEmail} onChange={(e) => set('primaryContactEmail', e.target.value)} maxLength={320} autoComplete="off" />
             </Field>
           </div>
         </div>
@@ -246,6 +253,42 @@ function OrganisationForm({ orgId, orgName }: { orgId: string; orgName: string }
             <button type="button" className="bf-btn green" style={{ marginTop: 4, height: 33 }} onClick={() => setContacts((c) => [...c, blank()])}>＋ {t('Add another contact')}</button>
           </div>
         </div>
+
+        {editing && !!org?.projects.length && (
+          <div className="bf-sec">
+            <div className="bf-aside">
+              <span className="bf-ico"><Icon><path d="M3 7h18M3 12h18M3 17h12" /></Icon></span>
+              <h3>{t('Project contacts')}</h3>
+              <p>{t('Choose the named client contacts of each project. Each project needs at least one.')}</p>
+            </div>
+            <div style={{ flex: 1 }}>
+              {org.projects.map((p) => {
+                const chosen = (projectPicks[p.id] ?? p.contacts.map((c) => c.id)).filter((x) => !removed.includes(x));
+                const options = members.filter((m) => !removed.includes(m.id));
+                return (
+                  <fieldset key={p.id} style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
+                    <legend><b>{p.name}</b></legend>
+                    {!options.length && <p className="bf-muted">{t('Add a client contact first.')}</p>}
+                    {options.map((m) => (
+                      <label key={m.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '4px 0' }}>
+                        <input
+                          type="checkbox"
+                          checked={chosen.includes(m.id)}
+                          onChange={(e) => {
+                            const next = e.target.checked ? [...chosen, m.id] : chosen.filter((x) => x !== m.id);
+                            setProjectPicks((all) => ({ ...all, [p.id]: next }));
+                          }}
+                        />
+                        {m.name} <span className="bf-muted">{m.email}</span>
+                      </label>
+                    ))}
+                    {projectPicks[p.id] && !projectPicks[p.id].length && <p className="bf-error" role="alert">{t('Choose at least one contact.')}</p>}
+                  </fieldset>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {error && <p className="bf-error" role="alert" style={{ padding: '12px 24px 0' }}>{error}</p>}
         <div className="bf-actions">

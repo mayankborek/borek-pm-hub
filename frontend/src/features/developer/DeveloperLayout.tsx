@@ -11,7 +11,7 @@ import './developer.css';
 
 /** Top bar title per screen (borek-flow-screens): Board, Backlog, Overview, Task Details. */
 function titleFor(pathname: string) {
-  if (pathname === paths.profile) return 'Profile';
+  if (pathname === paths.profile || pathname.startsWith(`${paths.profile}/`)) return 'Profile';
   if (pathname === paths.myWork) return 'My Work';
   if (pathname.startsWith(`${paths.tasks}/`)) return 'Task Details';
   if (/^\/projects\/[^/]+\/board\/?$/.test(pathname)) return 'Board';

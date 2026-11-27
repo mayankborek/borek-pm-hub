@@ -19,13 +19,13 @@ import {
   useProjectStatuses,
   useTask,
   useUpdateTask,
-  type Task,
   type TaskPatch,
   type TaskPriority,
 } from '@/features/tasks/tasksApi';
 import { DatePicker } from '@/features/tasks/DatePicker';
 import { MentionInput, mentionIdsFor } from '@/features/tasks/MentionInput';
-import { RelatedTaskDrawer, relationLabels, type Relationship } from '@/features/tasks/RelatedTaskDrawer';
+import { RelatedTaskDrawer } from '@/features/tasks/RelatedTaskDrawer';
+import { LINK_KIND, LINK_LABEL, useAddTaskLink, useRemoveTaskLink, useTaskLinks } from '@/features/tasks/taskLinksApi';
 import { PRIORITIES, PRIORITY_LABEL } from '@/features/accountManager/amWork';
 import '@/features/tasks/taskDetail.css';
 import { Dropdown, fmtDate, statusTone } from './devUi';
@@ -84,8 +84,10 @@ export function DevTaskPage() {
   const [dropping, setDropping] = useState(false);
   const [blocking, setBlocking] = useState<{ statusId: string; reason: string } | null>(null);
   const [drawer, setDrawer] = useState(false);
-  // No relations endpoint yet: kept in page state until the backend adds one.
-  const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
+  const links = useTaskLinks(taskId);
+  const addLink = useAddTaskLink(taskId);
+  const removeLink = useRemoveTaskLink(taskId);
+  const related = links.data ?? [];
   const picker = useRef<HTMLInputElement>(null);
 
   if (isPending) return <section className="dv-task"><LoadingState title="Loading task" /></section>;
@@ -353,11 +355,21 @@ export function DevTaskPage() {
               <h3>{t('Related tasks')}</h3>
               <button type="button" className="dv-link" onClick={() => setDrawer(true)}>{t('Relate task')}</button>
             </div>
-            {related.length === 0 && <p className="dv-none">{t('No related tasks yet.')}</p>}
+            {links.isError && <p className="dv-none" role="alert">{t('Related tasks could not be loaded.')}</p>}
+            {!links.isError && !links.isPending && related.length === 0 && <p className="dv-none">{t('No related tasks yet.')}</p>}
             {related.map((r) => (
-              <div key={`${r.relation}-${r.task.id}`} className="dv-rel">
+              <div key={r.id} className="dv-rel">
                 <Link to={paths.task(r.task.id)}>{r.task.key} · {r.task.title}</Link>
-                <span title={t(relationLabels[r.relation])}>{t(r.task.status.name)}</span>
+                <span title={t(LINK_LABEL[r.kind] ?? r.label)}>{t(r.task.status.name)}</span>
+                <button
+                  type="button"
+                  className="dv-link"
+                  aria-label={t('Remove link to {key}', { key: r.task.key })}
+                  disabled={removeLink.isPending}
+                  onClick={() => removeLink.mutate(r.id, { onError: (e) => toast.error(describeApiError(e, t('Could not remove the link.'))) })}
+                >
+                  {t('Remove')}
+                </button>
               </div>
             ))}
           </section>
@@ -367,10 +379,13 @@ export function DevTaskPage() {
         <RelatedTaskDrawer
           task={task}
           onClose={() => setDrawer(false)}
-          onAdd={(relation, other) => {
-            setRelated((prev) => (prev.some((r) => r.task.id === other.id && r.relation === relation) ? prev : [...prev, { relation, task: other }]));
-            setDrawer(false);
-          }}
+          onAdd={(relation, other) =>
+            addLink.mutate(
+              { kind: LINK_KIND[relation], otherId: other.id },
+              { onSuccess: () => setDrawer(false), onError: (e) => toast.error(describeApiError(e, t('Could not add the link.'))) },
+            )
+          }
+          busy={addLink.isPending}
         />
       )}
     </section>

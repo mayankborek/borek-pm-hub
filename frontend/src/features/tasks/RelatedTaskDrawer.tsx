@@ -15,16 +15,18 @@ interface Props {
   task: TaskDetail;
   onClose: () => void;
   onAdd: (relation: Relationship, other: Task) => void;
+  /** The link is being saved. */
+  busy?: boolean;
 }
 
 /** Right-hand drawer from Figma "PM · Related Task drawer · Search": pick a relationship, search a task, add it. */
-export function RelatedTaskDrawer({ task, onClose, onAdd }: Props) {
+export function RelatedTaskDrawer({ task, onClose, onAdd, busy }: Props) {
   const { t: tr } = usePrefs();
   const [relation, setRelation] = useState<Relationship>('related');
   const [q, setQ] = useState('');
   const [picked, setPicked] = useState<Task | null>(null);
   const query = q.trim();
-  const results = useAllTasks('', { ...emptyFilter, q: query });
+  const results = useAllTasks(task.project_id, { ...emptyFilter, q: query });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -90,7 +92,7 @@ export function RelatedTaskDrawer({ task, onClose, onAdd }: Props) {
           <button type="button" className="td-outline rd-btn" onClick={onClose}>
             {tr('Cancel')}
           </button>
-          <button type="button" className="btn rd-btn" disabled={!picked} onClick={() => picked && onAdd(relation, picked)}>
+          <button type="button" className="btn rd-btn" disabled={!picked || busy} onClick={() => picked && onAdd(relation, picked)}>
             {tr('Add related task')}
           </button>
         </div>

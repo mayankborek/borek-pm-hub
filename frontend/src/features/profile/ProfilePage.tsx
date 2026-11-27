@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
+import { useMyProfile, useUpdatePhone } from './meApi';
 import chevronIcon from './assets/chevron-down.svg';
 import themeSwitchLight from './assets/theme-switch-light.svg';
 import themeSwitchDark from './assets/theme-switch-dark.svg';
@@ -16,7 +17,9 @@ export function ProfilePage() {
 
   const [mode, setMode] = useState<Mode>('view');
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [phone, setPhone] = useState('');
+  const profile = useMyProfile();
+  const updatePhone = useUpdatePhone();
+  const phone = profile.data?.phone ?? '';
   const [draftPhone, setDraftPhone] = useState('');
   const { lang, setLang, theme, setTheme, t } = usePrefs();
   const dark = theme === 'dark';
@@ -44,8 +47,7 @@ export function ProfilePage() {
 
   const save = (e?: React.FormEvent) => {
     e?.preventDefault();
-    setPhone(draftPhone.trim());
-    setMode('saved');
+    updatePhone.mutate(draftPhone.trim(), { onSuccess: () => setMode('saved') });
   };
   const cancel = () => {
     if (draftPhone.trim() !== phone) setConfirmDiscard(true);

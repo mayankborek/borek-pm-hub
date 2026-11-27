@@ -21,11 +21,11 @@ import {
   useUpdateTask,
   ESTIMATE_UNITS,
   type EstimateUnit,
-  type Task,
   type TaskPatch,
 } from './tasksApi';
 import { formatDate } from '@/features/projects/projectUi';
-import { RelatedTaskDrawer, relationLabels, type Relationship } from './RelatedTaskDrawer';
+import { RelatedTaskDrawer } from './RelatedTaskDrawer';
+import { LINK_KIND, LINK_LABEL, useAddTaskLink, useRemoveTaskLink, useTaskLinks } from './taskLinksApi';
 import { AssigneeSelect } from './AssigneeSelect';
 import { Avatar } from './TaskParts';
 import { DatePicker } from './DatePicker';
@@ -102,8 +102,10 @@ export function TaskDetailPage() {
       document.removeEventListener('keydown', esc);
     };
   }, [menu]);
-  // No relations endpoint yet: kept in page state until the backend adds one.
-  const [related, setRelated] = useState<{ relation: Relationship; task: Task }[]>([]);
+  const links = useTaskLinks(taskId);
+  const addLink = useAddTaskLink(taskId);
+  const removeLink = useRemoveTaskLink(taskId);
+  const related = links.data ?? [];
   // Unsaved edits, sent together by the Save button.
   const [draft, setDraft] = useState<TaskPatch>({});
 
@@ -624,15 +626,25 @@ export function TaskDetailPage() {
                 {t('Relate task')}
               </button>
             </div>
-            {related.length === 0 && <p className="tdx-empty">{t('No related tasks yet.')}</p>}
+            {links.isError && <p className="td-error" role="alert">{t('Related tasks could not be loaded.')}</p>}
+            {!links.isError && !links.isPending && related.length === 0 && <p className="tdx-empty">{t('No related tasks yet.')}</p>}
             {related.map((r) => (
-              <div key={`${r.relation}-${r.task.id}`} className="td-related">
+              <div key={r.id} className="td-related">
                 <Link to={paths.task(r.task.id)}>
                   {r.task.key} · {r.task.title}
                 </Link>
                 <span>
-                  {t(relationLabels[r.relation])} · {t(r.task.status.name)}
+                  {t(LINK_LABEL[r.kind] ?? r.label)} · {t(r.task.status.name)}
                 </span>
+                <button
+                  type="button"
+                  className="tdx-link"
+                  aria-label={t('Remove link to {key}', { key: r.task.key })}
+                  disabled={removeLink.isPending}
+                  onClick={() => removeLink.mutate(r.id, { onError: (e) => toast.error(describeApiError(e, t('Could not remove the link.'))) })}
+                >
+                  {t('Remove')}
+                </button>
               </div>
             ))}
           </section>
@@ -668,12 +680,13 @@ export function TaskDetailPage() {
         <RelatedTaskDrawer
           task={task}
           onClose={() => setDrawer(false)}
-          onAdd={(relation, other) => {
-            setRelated((prev) =>
-              prev.some((r) => r.task.id === other.id && r.relation === relation) ? prev : [...prev, { relation, task: other }],
-            );
-            setDrawer(false);
-          }}
+          onAdd={(relation, other) =>
+            addLink.mutate(
+              { kind: LINK_KIND[relation], otherId: other.id },
+              { onSuccess: () => setDrawer(false), onError: (e) => toast.error(describeApiError(e, t('Could not add the link.'))) },
+            )
+          }
+          busy={addLink.isPending}
         />
       )}
     </section>

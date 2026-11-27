@@ -41,3 +41,5 @@
 .ms-check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-12); color: var(--ink); }
 .ms-dialog footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
 .ms-dialog footer .btn { height: 36px; padding: 0 20px; }
+button.ms-dia { border: 0; background: none; padding: 0; margin: 0; font: inherit; text-align: left; cursor: pointer; }
+button.ms-dia:focus-visible { outline: 2px solid #175dba; outline-offset: 4px; }

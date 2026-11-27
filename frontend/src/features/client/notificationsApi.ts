@@ -3,7 +3,7 @@ import { api } from '@/shared/api/client';
 import { paths } from '@/app/routes';
 import type { ClientNotification } from './types';
 
-type Role = 'client' | 'account_manager' | 'manager';
+type Role = 'client' | 'account_manager' | 'manager' | 'pm';
 
 /** GET /me/notifications: what happened, built into text here from `type` and `params`. */
 interface ApiNotification {
@@ -13,6 +13,7 @@ interface ApiNotification {
   entity_type: string;
   entity_id: string;
   params: Record<string, unknown>;
+  actor?: { id: string; name: string } | null;
   read_at: string | null;
 }
 interface ApiNotificationList {
@@ -46,6 +47,16 @@ function headline(n: ApiNotification, role: Role): string {
       return 'A requirement was answered';
     case 'milestone.late':
       return 'A milestone is running late';
+    case 'task.blocked':
+      return `“${String(n.params.title ?? n.params.key ?? 'A task')}” was blocked`;
+    case 'task.commented':
+      return `${n.actor?.name ?? 'Someone'} commented on “${String(n.params.title ?? n.params.key ?? 'a task')}”`;
+    case 'task.mentioned':
+      return `${n.actor?.name ?? 'Someone'} mentioned you in “${String(n.params.title ?? n.params.key ?? 'a task')}”`;
+    case 'task.assigned':
+      return `${n.actor?.name ?? 'Someone'} assigned “${String(n.params.title ?? n.params.key ?? 'a task')}” to you`;
+    case 'project.member_added':
+      return `You were added to ${String(n.params.name ?? 'a project')}`;
     default:
       return 'You have a new update';
   }
@@ -69,6 +80,14 @@ const SCREENS = {
     changeRequests: paths.managerChangeRequests,
     requirements: paths.managerProject,
   },
+  pm: {
+    projects: () => paths.projects,
+    project: paths.project,
+    milestones: paths.projectMilestones,
+    report: paths.projectReport,
+    changeRequests: paths.projectChangeRequests,
+    requirements: (id: string) => `${paths.project(id)}/requirements`,
+  },
   account_manager: {
     projects: () => paths.amProjects,
     project: paths.amProject,
@@ -85,6 +104,8 @@ function target(n: ApiNotification, role: Role): string {
   const project = n.project?.id;
   if (!project) return screens.projects();
   switch (n.entity_type) {
+    case 'task':
+      return role === 'pm' ? paths.task(n.entity_id) : screens.project(project);
     case 'change_request':
       return screens.changeRequests(project);
     case 'status_report':

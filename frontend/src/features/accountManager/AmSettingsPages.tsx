@@ -4,6 +4,9 @@ import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { initialsOf } from '@/features/client/format';
+import { describeApiError } from '@/shared/api/client';
+import { SETTING_COPY, useMyProfile, useNotificationSettings, useSetNotificationSetting, useUpdatePhone } from '@/features/profile/meApi';
+import { usePasswordChange } from '@/features/profile/usePasswordChange';
 import { useClientPortal } from '@/features/client/clientPortalApi';
 import { Toast, useSay } from './AccountManagerLayout';
 import './am.css';
@@ -66,10 +69,21 @@ export function AmProfilePage() {
   const pm = useIsPm();
   const organisation = useClientPortal().data?.organisation;
   const [editing, setEditing] = useState(false);
-  // Not persisted yet: there is no endpoint for the phone number.
-  const [phone, setPhone] = useState('');
+  const profile = useMyProfile();
+  const updatePhone = useUpdatePhone();
+  const phone = profile.data?.phone ?? '';
   const [draft, setDraft] = useState('');
   if (!user) return null;
+
+  const save = async () => {
+    try {
+      await updatePhone.mutateAsync(draft.trim());
+      setEditing(false);
+      say(t('Profile updated'));
+    } catch (e) {
+      say(describeApiError(e, t('That didn’t work. Try again.')));
+    }
+  };
 
   return (
     <Settings title="My profile" sub="Your account identity and contact details.">
@@ -77,9 +91,9 @@ export function AmProfilePage() {
         <span className="avatar" aria-hidden="true">{initialsOf(user.name)}</span>
         <div><h4>{user.name}</h4><p>{client ? t('Client · Customer organisation') : manager ? t('Manager · Borek Solutions') : pm ? t('Project Manager · Borek Solutions') : t('Account Manager · Borek Solutions')}</p></div>
         {editing ? (
-          <button className="btn primary" type="button" onClick={() => { setPhone(draft.trim()); setEditing(false); say(t('Profile updated')); }}>{t('Save changes')}</button>
+          <button className="btn primary" type="button" disabled={updatePhone.isPending} onClick={() => void save()}>{t('Save changes')}</button>
         ) : (
-          <button className="btn primary" type="button" onClick={() => { setDraft(phone); setEditing(true); }}>{t('Edit profile')}</button>
+          <button className="btn primary" type="button" disabled={!profile.data} onClick={() => { setDraft(phone); setEditing(true); }}>{t('Edit profile')}</button>
         )}
       </div>
       <h5>{t('Contact details')}</h5>
@@ -99,16 +113,37 @@ export function AmSecurityPage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { t } = usePrefs();
-  const say = useSay();
+  const pw = usePasswordChange();
   return (
     <Settings title="Security" sub="Manage your password and current session.">
       <div className="sect">
         <h5>{t('Password')}</h5>
-        <p className="sd">{t('Start a secure password reset for your account.')}</p>
-        <div className="setrow">
-          <div><b>{t('Password')}</b><small>{t('Reset your sign-in password.')}</small></div>
-          <button className="btn blue" type="button" onClick={() => say(t('Password reset email sent'))}>{t('Reset password')}</button>
-        </div>
+        <p className="sd">{t('Change your sign-in password. You will sign in again afterwards.')}</p>
+        <form
+          className="fields"
+          style={{ marginTop: 14 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void pw.submit();
+          }}
+        >
+          <div className="field">
+            <label htmlFor="am-pw-current">{t('Current password')}</label>
+            <input id="am-pw-current" type="password" autoComplete="current-password" value={pw.current} maxLength={200} onChange={(e) => pw.setCurrent(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="am-pw-new">{t('New password')}</label>
+            <input id="am-pw-new" type="password" autoComplete="new-password" value={pw.next} maxLength={200} onChange={(e) => pw.setNext(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="am-pw-confirm">{t('Confirm new password')}</label>
+            <input id="am-pw-confirm" type="password" autoComplete="new-password" value={pw.confirm} maxLength={200} onChange={(e) => pw.setConfirm(e.target.value)} />
+          </div>
+          {pw.error && <p role="alert" style={{ gridColumn: '1 / -1', color: 'var(--red, #b42318)', fontSize: 'var(--fs-12)' }}>{pw.error}</p>}
+          <div style={{ gridColumn: '1 / -1' }}>
+            <button className="btn blue" type="submit" disabled={pw.busy}>{t('Change password')}</button>
+          </div>
+        </form>
       </div>
       <div className="divider" />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -122,29 +157,39 @@ export function AmSecurityPage() {
   );
 }
 
-const TOPICS: [string, string][] = [
-  ['Project reports', 'New status reports shared by your project manager.'],
-  ['Milestones', 'Changes to milestone dates and completion.'],
-  ['Change requests', 'Updates on requests you submitted.'],
-];
-
 export function AmNotificationsPage() {
   const { t } = usePrefs();
-  const [on, setOn] = useState<Record<string, boolean>>({});
+  const say = useSay();
+  const settings = useNotificationSettings();
+  const set = useSetNotificationSetting();
   return (
     <Settings title="Notifications" sub="Choose which project updates you receive.">
+      {settings.isPending && <p className="sd">{t('Loading…')}</p>}
+      {settings.isError && (
+        <p className="sd" role="alert">
+          {describeApiError(settings.error, t('We couldn’t load your notification settings'))}{' '}
+          <button className="linkbtn" type="button" onClick={() => settings.refetch()}>{t('Retry')}</button>
+        </p>
+      )}
       <div className="nset">
-        {TOPICS.map(([name, text]) => {
-          const checked = on[name] ?? true;
+        {(settings.data ?? []).map(({ key, enabled }) => {
+          const [name, text] = SETTING_COPY[key] ?? [key, ''];
           return (
-            <div className="setting" key={name}>
+            <div className="setting" key={key}>
               <div>
                 <h4 className="setting-name">{t(name)}</h4>
                 <p className="setting-desc">{t(text)}</p>
               </div>
               <div className="setting-control">
-                <span className="setting-state">{checked ? t('On') : t('Off')}</span>
-                <button className="switch" type="button" role="switch" aria-checked={checked} aria-label={t(name)} onClick={() => setOn((s) => ({ ...s, [name]: !checked }))} />
+                <span className="setting-state">{enabled ? t('On') : t('Off')}</span>
+                <button
+                  className="switch"
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  aria-label={t(name)}
+                  onClick={() => set.mutate({ key, enabled: !enabled }, { onError: (e) => say(describeApiError(e, t('That didn’t work. Try again.'))) })}
+                />
               </div>
             </div>
           );

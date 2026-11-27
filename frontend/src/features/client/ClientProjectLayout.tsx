@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
+import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
-import { usePermissions, type AreaId } from '@/features/admin/permissionsStore';
 import { usePortalPaths } from './portalPaths';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { useClientPortal } from './clientPortalApi';
@@ -55,21 +55,12 @@ function ProjectSwitcher({ current, projects }: { current: ClientProject; projec
   );
 }
 
-/** The admin's role permissions for Client hide the tabs of areas set to Denied. */
-const TAB_AREA: Record<string, AreaId | undefined> = {
-  Milestones: 'milestones',
-  Reports: 'reports',
-  'Change Requests': 'change-requests',
-  Contacts: 'stakeholders',
-};
-
 /** Project title and the Overview / Milestones / Reports / Change Requests / Contacts tabs. */
 export function ClientProjectLayout() {
   const pp = usePortalPaths();
   const role = useAuth().user?.role;
   const isAm = role === 'account_manager';
   const isManager = role === 'manager';
-  const perms = usePermissions('client');
   const { projectId } = useParams();
   const { t } = usePrefs();
   const query = useClientPortal();
@@ -100,12 +91,11 @@ export function ClientProjectLayout() {
         [pp.milestones(project.id), 'Milestones'],
         [pp.reports(project.id), 'Reports'],
         [pp.changeRequests(project.id), 'Change Requests'],
+        ...(role === 'client' ? ([[paths.clientRequirements(project.id), 'Requirements']] as Tab[]) : []),
         [pp.people(project.id), isManager ? 'Stakeholders' : 'Contacts'],
       ];
-  const tabs = allTabs.filter(([, label]) => {
-    const area = TAB_AREA[label];
-    return isAm || isManager || !area || perms[area] !== 'denied';
-  });
+  // The server decides what each role may open; every tab of the project is listed.
+  const tabs = allTabs;
 
   // The manager shell is not inside the client portal's `.cp` scope, which the switcher menu and button reset rely on.
   const Wrap = isManager ? 'div' : Fragment;

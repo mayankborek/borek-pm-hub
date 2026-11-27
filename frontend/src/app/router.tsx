@@ -23,7 +23,7 @@ import { ProjectChangeRequestPage } from '@/features/changeRequests/ProjectChang
 import { ProjectReportsPage, ProjectReportPage } from '@/features/reports/ProjectReportsPages';
 import { ClientChangeRequestsPage } from '@/features/client/ClientChangeRequestsPage';
 import { ClientContactsPage } from '@/features/client/ClientContactsPage';
-import { ClientPlaceholderPage, ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
+import { ClientReportPage, ClientReportsPage } from '@/features/client/ClientReportsPages';
 import { AccountManagerLayout } from '@/features/accountManager/AccountManagerLayout';
 import { StakeholdersPage } from '@/features/accountManager/StakeholdersPage';
 import { ManagerLayout } from '@/features/manager/ManagerLayout';
@@ -56,7 +56,8 @@ import { TasksPage } from '@/features/tasks/TaskPages';
 import { TaskCreatePage } from '@/features/tasks/TaskCreatePage';
 import { MyWorkPage } from '@/features/tasks/MyWorkPage';
 import { TaskDetailPage } from '@/features/tasks/TaskDetailPage';
-import { ProfilePage } from '@/features/profile/ProfilePage';
+import { ClientRequirementsPage } from '@/features/requirements/ClientRequirementsPage';
+import { ManagerChangeRequestPage, ManagerChangeRequestsPage } from '@/features/changeRequests/ManagerChangeRequests';
 import { DeveloperLayout } from '@/features/developer/DeveloperLayout';
 import { DevProjectLayout } from '@/features/developer/DevProjectLayout';
 import { DevOverviewPage } from '@/features/developer/DevOverviewPage';
@@ -111,6 +112,7 @@ export const router = createBrowserRouter([
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
                   { path: 'change-requests', element: <ClientChangeRequestsPage /> },
+                  { path: 'requirements', element: <ClientRequirementsPage /> },
                   { path: 'contacts', element: <ClientContactsPage /> },
                 ],
               },
@@ -173,7 +175,8 @@ export const router = createBrowserRouter([
                   { path: 'milestones', element: <ClientMilestonesPage /> },
                   { path: 'reports', element: <ClientReportsPage /> },
                   { path: 'reports/:reportId', element: <ClientReportPage /> },
-                  { path: 'change-requests', element: <ClientPlaceholderPage /> },
+                  { path: 'change-requests', element: <ManagerChangeRequestsPage /> },
+                  { path: 'change-requests/:requestId', element: <ManagerChangeRequestPage /> },
                   { path: 'stakeholders', element: <ManagerStakeholdersPage /> },
                 ],
               },
@@ -256,10 +259,10 @@ export const router = createBrowserRouter([
               { path: 'settings/people', element: <ProjectPeoplePage /> },
             ],
           },
-          { path: 'profile', element: <ByRole developer={<ProfilePage />} other={<PmSettings><AmProfilePage /></PmSettings>} /> },
-          { path: 'profile/security', element: <PmSettings><AmSecurityPage /></PmSettings> },
-          { path: 'profile/notifications', element: <PmSettings><AmNotificationsPage /></PmSettings> },
-          { path: 'profile/preferences', element: <PmSettings><AmPreferencesPage /></PmSettings> },
+          { path: 'profile', element: <ByRole developer={<AdminSettingsPage section="profile" area="developer" />} other={<PmSettings><AmProfilePage /></PmSettings>} /> },
+          { path: 'profile/security', element: <ByRole developer={<AdminSettingsPage section="security" area="developer" />} other={<PmSettings><AmSecurityPage /></PmSettings>} /> },
+          { path: 'profile/notifications', element: <ByRole developer={<AdminSettingsPage section="notifications" area="developer" />} other={<PmSettings><AmNotificationsPage /></PmSettings>} /> },
+          { path: 'profile/preferences', element: <ByRole developer={<AdminSettingsPage section="preferences" area="developer" />} other={<PmSettings><AmPreferencesPage /></PmSettings>} /> },
           { path: 'tasks', element: <TasksPage /> },
           { path: 'tasks/new', element: <TaskCreatePage /> },
           { path: 'tasks/:taskId', element: <ByRole developer={<DevTaskPage />} other={<TaskDetailPage />} /> },
