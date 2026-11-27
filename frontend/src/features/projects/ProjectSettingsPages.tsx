@@ -3,7 +3,7 @@ import { Link, Navigate, NavLink, useNavigate, useParams } from 'react-router-do
 import { paths } from '@/app/routes';
 import { useAuth } from '@/features/auth/AuthContext';
 import { initialsOf } from '@/features/projects/MemberPicker';
-import { useProjectMembers } from '@/features/tasks/tasksApi';
+import { useMemberCandidates, useProjectMembers } from '@/features/tasks/tasksApi';
 import { describeApiError } from '@/shared/api/client';
 import { usePrefs } from '@/shared/prefs/PrefsContext';
 import { ErrorState, LoadingState } from '@/shared/ui/States';
@@ -11,9 +11,11 @@ import { useToast } from '@/shared/ui/Toast';
 import { useProjectContext } from './ProjectLayout';
 import { STATUS_LABEL } from './projectUi';
 import { useOrganisations } from '@/features/admin/organisationsApi';
-import { parseApiError, useSyncMembers, useUpdateProject, type FieldErrors } from './projectsApi';
+import { parseApiError, useAddMember, useRemoveMember, useUpdateProject, type FieldErrors } from './projectsApi';
 import { PROJECT_STATUSES, type Project, type ProjectInput, type ProjectStatus } from './types';
 import './pmSettings.css';
+
+const ROLE_LABEL: Record<string, string> = { pm: 'Project Manager', manager: 'Manager', developer: 'Developer', account_manager: 'Account Manager' };
 
 /** Sub-navigation shared by both Settings pages (Figma "Settings"). */
 function SettingsTabs({ project }: { project: Project }) {
@@ -201,13 +203,21 @@ export function ProjectPeoplePage() {
   const { t } = usePrefs();
   const toast = useToast();
   const members = useProjectMembers(project.id);
-  const sync = useSyncMembers(project.id);
+  const removeMember = useRemoveMember(project.id);
+  const addMember = useAddMember(project.id);
+  const [adding, setAdding] = useState(false);
+  const [search, setSearch] = useState('');
+  const candidates = useMemberCandidates(search, adding);
   if (user?.role !== 'pm') return <Navigate to={paths.project(project.id)} replace />;
 
   const people = (members.data ?? []).filter((m) => m.user_id !== user.id);
   const total = people.length + 1;
+  const taken = new Set([user.id, ...people.map((m) => m.user_id)]);
+  const options = (candidates.data?.items ?? []).filter((u) => !taken.has(u.id));
   const remove = (userId: string) =>
-    sync.mutate({ add: [], remove: [userId] }, { onError: (e) => toast.error(describeApiError(e, t('Could not remove this person.'))) });
+    removeMember.mutate(userId, { onError: (e) => toast.error(describeApiError(e, t('Could not remove this person.'))) });
+  const add = (userId: string) =>
+    addMember.mutate(userId, { onError: (e) => toast.error(describeApiError(e, t('Could not add this person.'))) });
 
   return (
     <div className="set">
@@ -217,8 +227,22 @@ export function ProjectPeoplePage() {
           <h2>{t('People & access')}</h2>
           <p>{t('Manage the people involved in this project and what they can access.')}</p>
         </div>
-        <Link className="btn" to={paths.projectEdit(project.id)}>{t('Add developer')}</Link>
+        <button type="button" className="btn" aria-expanded={adding} onClick={() => setAdding((a) => !a)}>{t('Add member')}</button>
       </div>
+      {adding && (
+        <section className="card set-add" aria-label={t('Add member')}>
+          <input className="input" autoFocus autoComplete="off" placeholder={t('Search people and add members')} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <ul>
+            {options.length === 0 && <li className="muted">{t(candidates.isPending ? 'Loading…' : 'No people found')}</li>}
+            {options.map((u) => (
+              <li key={u.id}>
+                <span><b>{u.name}</b><small>{u.email} · {t(ROLE_LABEL[u.role] ?? u.role)}</small></span>
+                <button type="button" className="btn secondary" disabled={addMember.isPending} onClick={() => add(u.id)}>{t('Add')}</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {members.isPending ? (
         <LoadingState title={t('Loading people')} text={t('Fetching the project team.')} />
       ) : members.isError ? (
@@ -254,7 +278,7 @@ export function ProjectPeoplePage() {
                   <td className="muted">{t('Assigned project work')}</td>
                   <td><span className="set-status">{t('Active')}</span></td>
                   <td>
-                    <button type="button" className="set-remove" disabled={sync.isPending} onClick={() => remove(m.user_id)}>{t('Remove')}</button>
+                    <button type="button" className="set-remove" disabled={removeMember.isPending} onClick={() => remove(m.user_id)}>{t('Remove')}</button>
                   </td>
                 </tr>
               ))}

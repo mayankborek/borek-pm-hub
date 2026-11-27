@@ -11,15 +11,17 @@ import {
   useStatusActions,
   useMoveTask,
   usePatchTask,
+  useActiveSprintId,
   useProjectTasks,
   type StatusCategory,
   type Task,
+  type TaskPage,
 } from '@/features/tasks/tasksApi';
 import { useProjectContext } from './ProjectLayout';
 import { CardAssignee, CardPriority } from './CardPickers';
 import { QuickCreate } from './QuickCreate';
 import { SprintBar } from './SprintBar';
-import { errorText, RenameInput, StatusMenu } from './StatusParts';
+import { errorText, RenameInput, StatusCreator, StatusMenu } from './StatusParts';
 import gripDots from './assets/grip-dots.svg';
 import './board.css';
 
@@ -37,6 +39,8 @@ interface Column {
   category: StatusCategory;
   tasks: Task[];
 }
+
+const NO_TASKS: TaskPage = { items: [], total: 0, page: 1, page_size: 0 };
 
 /** Board tab: one column per project status, planned work only (Backlog-category tasks stay in the Backlog tab). */
 export function ProjectBoardPage() {
@@ -58,11 +62,22 @@ export function ProjectBoardPage() {
   const edit = (task: Task, patch: Parameters<typeof patchTask.mutate>[0]['patch']) =>
     patchTask.mutate({ task, patch }, { onError: (e) => setActionError(errorText(e, tr('Could not update the task. Try again.'))) });
   const actions = useStatusActions(project.id);
-  const { data, isPending, isError, refetch } = useProjectTasks(project.id, applied);
+  // The board shows only the active sprint's tasks; with no active sprint it is empty.
+  const activeSprint = useActiveSprintId(project.id);
+  const activeId = activeSprint.data;
+  const tasksQuery = useProjectTasks(project.id, applied, { sprintId: activeId ?? undefined, enabled: !!activeId });
+  const { data: tasksData, isError: tasksError, refetch: refetchTasks } = tasksQuery;
+  const data = (activeId ? tasksData : undefined) ?? NO_TASKS;
+  const isPending = activeSprint.isPending || (!!activeId && tasksQuery.isPending);
+  const isError = activeSprint.isError || tasksError;
+  const refetch = () => {
+    void activeSprint.refetch();
+    void refetchTasks();
+  };
   const { data: statuses } = useProjectStatuses(project.id);
 
   const { columns } = useMemo(() => {
-    const tasks = (data?.items ?? []).filter((t) => t.status.category !== 'backlog');
+    const tasks = data.items; // already limited to the active sprint by the server
     const cols = new Map<string, Column>();
     (statuses ?? [])
       .filter((s) => s.category !== 'backlog')
@@ -249,6 +264,7 @@ export function ProjectBoardPage() {
                 )}
               </section>
             ))}
+            {isPm && <StatusCreator taken={taken} create={(name) => actions.create.mutateAsync(name)} />}
           </div>
           {actionError && (
             <p className="qc-error" role="alert">

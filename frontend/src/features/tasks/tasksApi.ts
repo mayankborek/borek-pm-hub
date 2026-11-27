@@ -87,15 +87,39 @@ export const useAllTasks = (projectId: string, f: TaskFilter) =>
   });
 
 /** GET /projects/{id}/tasks; the project list view shows every task, split into Board and Backlog groups. */
-export const useProjectTasks = (projectId: string, f: TaskFilter) =>
+export const useProjectTasks = (projectId: string, f: TaskFilter, scope: TaskScope = {}) =>
   useQuery({
-    queryKey: [...taskKeys.project(projectId), f],
+    queryKey: [...taskKeys.project(projectId), f, scope],
     queryFn: () =>
       api<TaskPage>(
-        `/projects/${projectId}/tasks${qs({ ...filterParams(f), view: 'list', sort: 'due_date', page_size: 200 })}`,
+        `/projects/${projectId}/tasks${qs({
+          ...filterParams(f),
+          sprint_id: scope.sprintId,
+          backlog: scope.backlog ? 'true' : undefined,
+          view: 'list',
+          sort: 'due_date',
+          page_size: 200,
+        })}`,
       ),
-    enabled: !!projectId,
+    enabled: !!projectId && scope.enabled !== false,
     placeholderData: keepPreviousData,
+  });
+
+/** Narrows the project task list by sprint on the server: one sprint's tasks, or the backlog (no sprint / unfinished in a closed one). */
+export interface TaskScope {
+  sprintId?: string;
+  backlog?: boolean;
+  enabled?: boolean;
+}
+
+/** The project's active sprint id: `undefined` while loading, `null` when none is running. Shares the sprint bar's cache. */
+export const useActiveSprintId = (projectId: string) =>
+  useQuery({
+    queryKey: ['projects', 'sprints', projectId],
+    queryFn: () => api<{ items: { id: string; state: 'planned' | 'active' | 'completed' }[] }>(`/projects/${projectId}/sprints`),
+    enabled: !!projectId,
+    retry: false,
+    select: (page) => page.items.find((s) => s.state === 'active')?.id ?? null,
   });
 
 export interface TaskDetail extends Task {
@@ -163,6 +187,16 @@ export const useAssignableUsers = (search: string, enabled = true) =>
   useQuery({
     queryKey: ['users', 'assignable', search.trim()],
     queryFn: () => api<Page<AssignableUser>>(`/users${qs({ role: 'developer', q: search.trim(), page_size: 200 })}`),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+
+/** GET /users with no role filter: everyone who can join a project (PMs, Managers, developers, Account Managers). */
+export const useMemberCandidates = (search: string, enabled = true) =>
+  useQuery({
+    queryKey: ['users', 'candidates', search.trim()],
+    queryFn: () => api<Page<AssignableUser>>(`/users${qs({ q: search.trim(), page_size: 200 })}`),
     enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,

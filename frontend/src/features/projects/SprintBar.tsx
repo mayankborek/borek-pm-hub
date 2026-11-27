@@ -36,7 +36,7 @@ function AddTasks({ projectId, sprint, onDone }: { projectId: string; sprint: Sp
   const { t } = usePrefs();
   const toast = useToast();
   const qc = useQueryClient();
-  const tasks = useProjectTasks(projectId, { ...emptyFilter, category: 'backlog' });
+  const tasks = useProjectTasks(projectId, emptyFilter, { backlog: true });
   const [picked, setPicked] = useState<string[]>([]);
   const move = useMutation({
     mutationFn: () => api(`/projects/${projectId}/sprints/move-tasks`, { method: 'POST', body: JSON.stringify({ task_ids: picked, sprint_id: sprint.id }) }),
@@ -47,7 +47,7 @@ function AddTasks({ projectId, sprint, onDone }: { projectId: string; sprint: Sp
     },
     onError: (e) => toast.error(describeApiError(e, t('Could not add the tasks.'))),
   });
-  const items = tasks.data?.items ?? [];
+  const items = (tasks.data?.items ?? []).filter((k) => k.status.category !== 'done');
   return (
     <div className="ms-add">
       <b>{t('Add tasks to {name}', { name: sprint.name })}</b>

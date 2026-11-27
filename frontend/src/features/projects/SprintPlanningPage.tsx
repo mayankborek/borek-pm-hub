@@ -112,7 +112,7 @@ function TaskRow({ task, action }: { task: Task; action?: { text: string; disabl
 
 /**
  * Sprint Planning tab, ahead of the Board (sprint-planning.html): shows the active sprint, lets a PM create the next
- * sprint, and moves backlog tasks into it. Planned work is the project's non-Backlog tasks, as in the Backlog tab.
+ * sprint, and moves backlog tasks into it. The backlog is the unfinished tasks with no sprint.
  */
 export function SprintPlanningPage() {
   const { t } = usePrefs();
@@ -123,14 +123,14 @@ export function SprintPlanningPage() {
   const isPm = useAuth().user?.role === 'pm';
   const [creating, setCreating] = useState(false);
   const sprints = useQuery({ queryKey: sprintKey(project.id), queryFn: () => api<{ items: Sprint[] }>(`/projects/${project.id}/sprints`), retry: false });
-  const tasks = useProjectTasks(project.id, emptyFilter);
-
   const items = sprints.data?.items ?? [];
   const active = items.find((s) => s.state === 'active');
   const planned = items.find((s) => s.state === 'planned');
-  const all = tasks.data?.items ?? [];
-  const backlog = all.filter((k) => k.status.category === 'backlog');
-  const inSprint = all.filter((k) => k.status.category !== 'backlog');
+  // Picker: unfinished tasks with no sprint. The planned sprint lists its own tasks.
+  const tasks = useProjectTasks(project.id, emptyFilter, { backlog: true });
+  const plannedTasks = useProjectTasks(project.id, emptyFilter, { sprintId: planned?.id, enabled: !!planned });
+  const backlog = (tasks.data?.items ?? []).filter((k) => k.status.category !== 'done');
+  const inSprint = planned ? plannedTasks.data?.items ?? [] : [];
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: sprintKey(project.id) });

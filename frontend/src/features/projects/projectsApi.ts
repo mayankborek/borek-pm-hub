@@ -60,6 +60,24 @@ export const useSyncMembers = (id: string) => {
   });
 };
 
+/** POST /projects/{id}/members: adds one existing person to the project. */
+export const useAddMember = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (user_id: string) => api(`/projects/${id}/members`, { method: 'POST', body: JSON.stringify({ user_id }) }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['projects', 'members', id] }),
+  });
+};
+
+/** DELETE /projects/{id}/members/{user_id}: their tasks in this project become unassigned. */
+export const useRemoveMember = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (user_id: string) => api(`/projects/${id}/members/${user_id}`, { method: 'DELETE' }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['projects', 'members', id] }),
+  });
+};
+
 /** GET /picklists: the PM-editable dropdown values. Returns the active values of one list, or [] while loading. */
 export const usePicklist = (key: string) =>
   useQuery({

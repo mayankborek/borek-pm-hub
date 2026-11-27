@@ -83,3 +83,9 @@ a.set-person:hover b { text-decoration: underline; }
 .mem-card > p { margin: 16px 0 0; color: var(--muted); }
 .mem-card .mem-note { margin-top: 18px; }
 .mem-back { display: inline-flex; align-items: center; justify-content: center; margin-top: 24px; height: 44px; padding: 0 40px; border-color: var(--ink); text-decoration: none; }
+
+.set-add { padding: 16px; display: flex; flex-direction: column; gap: 12px; border-radius: 12px; }
+.set-add ul { margin: 0; padding: 0; list-style: none; max-height: 280px; overflow: auto; }
+.set-add li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: var(--fs-14); }
+.set-add li b { display: block; font-weight: 600; }
+.set-add li small { color: var(--muted); font-size: var(--fs-13); }
