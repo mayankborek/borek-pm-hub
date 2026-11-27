@@ -17,7 +17,7 @@ export function DevProjectsNav() {
   return (
     <div className="nav-group">
       <div className="nav-group-head">
-        <NavLink to={paths.projects} end onClick={() => setOpen((o) => !o)} className={({ isActive }) => (isActive || onTask ? 'nav-link active' : 'nav-link')}>
+        <NavLink to={paths.projects} end onClick={() => setOpen(true)} className={({ isActive }) => (isActive || onTask ? 'nav-link active' : 'nav-link')}>
           {t('Projects')}
         </NavLink>
         <button
